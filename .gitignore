@@ -80,13 +80,26 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Model files and large binaries
+# Large files (>100MB) - Use Git LFS for these if needed
 *.safetensors
 model.safetensors
 model-*.safetensors
 *.dylib
 *.pack
 *.npz
+*.bin
+*.h5
+*.hdf5
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+
+# Large model directories
+models/
+model/
+product-ner-model/
 
 # Data files (potentially large or sensitive)
 data/
@@ -100,23 +113,19 @@ data/
 !requirements.txt
 
 # Package files
-*.zip
 linux_packages/
 macos_packages/
 linux_packages_*.zip
 macos_packages_*.zip
 mms_extractor.zip
 
-# Model directories
-models/
-product-ner-model/
-
-# Specific large files
-libtorch_cpu.dylib
-libtensorflow_cc.2.dylib
+# Specific large files found in the project
+app/linux_packages_250617.zip
 org_nm_embeddings_*.npz
 org_all_embeddings_*.npz
 item_embeddings_*.npz
+libtorch_cpu.dylib
+libtensorflow_cc.2.dylib
 
 # Git pack files
 pack-*.pack
@@ -149,3 +158,6 @@ neo4j_example.ipynb
 Llama_test.ipynb
 product_extractor.py
 product_extractor_nn.ipynb
+
+# Conda environment
+.conda/
