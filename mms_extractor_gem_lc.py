@@ -23,31 +23,26 @@ import re
 import json
 import glob
 import os
+from config import config
+
 pd.set_option('display.max_colwidth', 500)
-llm_api_key = config.CUSTOM_API_KEY"https://api.platform.a15t.com/v1"
-client = OpenAI(
-    api_key = llm_api_key,
-    base_url = llm_api_url
-)
+llm_api_key = config.CUSTOM_API_KEY
+llm_api_url = "https://api.platform.a15t.com/v1"
+
 # from langchain.chat_models import ChatOpenAI
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
-def ChatAnthropicSKT(model="skt/gemma3-12b-it", max_tokens=4000):
-    llm_api_key = config.CUSTOM_API_KEY"https://api.platform.a15t.com/v1"
-    # llm_api_url = "https://43.203.77.11:443/v1"
-    # model = "anthropic/claude-3-5-sonnet-20240620"
-    model = ChatOpenAI(
+
+llm_gem3 = ChatOpenAI(
         temperature=0,
         openai_api_key=llm_api_key,
         openai_api_base=llm_api_url,
-        model=model,
-        max_tokens=max_tokens
+        model='skt/gemma3-12b-it',
+        max_tokens=4000
         )
-    return model
-llm_gem3 = ChatAnthropicSKT(model='skt/gemma3-12b-it')
+
 # Import configuration
-from config import config
 llm_chat = ChatOpenAI(
         temperature=0,
         model="gpt-4o",
