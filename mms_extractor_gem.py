@@ -1284,9 +1284,22 @@ if num_cand_pgms>0:
 print("Entity from extractor:", list(set(cand_item_list)))
 print("Entity from LLM:", [x['name'] for x in ([item for item in json_objects['product']['items']] if isinstance(json_objects['product'], dict) else json_objects['product']) ])
 if similarities_fuzzy.shape[0]>0:
+    # Break down the complex query into simpler steps to avoid pandas/numexpr evaluation error
+    # Step 1: Get high similarity items
+    high_sim_items = similarities_fuzzy.query('sim >= 0.95')['item_nm_alias'].unique()
+    
+    # Step 2: Filter similarities_fuzzy for conditions
+    filtered_similarities = similarities_fuzzy[
+        (similarities_fuzzy['item_nm_alias'].isin(high_sim_items)) &
+        (~similarities_fuzzy['item_nm_alias'].str.contains('test', case=False)) &
+        (~similarities_fuzzy['item_name_in_msg'].isin(stop_item_names))
+    ]
+    
+    # Step 3: Merge with item_pdf_all
     product_tag = convert_df_to_json_list(
-        item_pdf_all.merge(similarities_fuzzy.query("item_nm_alias in @similarities_fuzzy.query('sim>=0.8')['item_nm_alias'].unique() and not item_nm_alias.str.contains('test', case=False) and item_nm_alias.str.contains('', case=False) and item_nm_alias not in @stop_item_names and item_name_in_msg not in @stop_item_names"), on=['item_nm_alias'])
+        item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
     )
+
     final_result = {
         "title":json_objects['title'],
         "purpose":json_objects['purpose'],

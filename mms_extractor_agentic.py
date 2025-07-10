@@ -1,4 +1,3 @@
-# %%
 from concurrent.futures import ThreadPoolExecutor
 import time
 from langchain_anthropic import ChatAnthropic
@@ -36,35 +35,22 @@ client = OpenAI(
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
-def ChatAnthropicSKT(model="skt/claude-3-7-sonnet-20250219", max_tokens=4000):
-    llm_api_key = config.CUSTOM_API_KEY
-    llm_api_url = "https://api.platform.a15t.com/v1"
-    # llm_api_url = "https://43.203.77.11:443/v1"
-    # model = "anthropic/claude-3-5-sonnet-20240620"
-    model = ChatOpenAI(
+
+llm_gem3 = ChatOpenAI(
         temperature=0,
         openai_api_key=llm_api_key,
         openai_api_base=llm_api_url,
-        model=model,
-        max_tokens=max_tokens
+        model='skt/gemma3-12b-it',
+        max_tokens=4000
         )
-    return model
-llm_cld37 = ChatAnthropicSKT()
-llm_gem3 = ChatAnthropicSKT(model='skt/gemma3-12b-it')
-# llm_ax = ChatAnthropicSKT(model='skt/a.x-3-lg')
-# Import configuration
-from config import config
-# llm_cld37 = ChatAnthropic(
-#     api_key=config.ANTHROPIC_API_KEY,
-#     model="claude-3-7-sonnet-20250219",
-#     max_tokens=3000
-# )
+
 llm_chat = ChatOpenAI(
         temperature=0,
         model="gpt-4.1",
         openai_api_key=config.OPENAI_API_KEY,
         max_tokens=2000,
 )
+
 llm_cld40 = ChatAnthropic(
     api_key=config.ANTHROPIC_API_KEY,
     model="claude-sonnet-4-20250514",
@@ -1257,6 +1243,9 @@ print()
 # result_json_text = llm_cld40.invoke(prompt).content
 result_json_text = llm_gem3.invoke(prompt).content
 json_objects = extract_json_objects(result_json_text)[0]
+
+final_result = json_objects.copy()
+
 similarities_fuzzy = parallel_fuzzy_similarity(
 [item['name'] for item in json_objects['product']['items']] if isinstance(json_objects['product'], dict) else [item['name'] for item in json_objects['product']],
 item_pdf_all['item_nm_alias'].unique(),
@@ -1275,7 +1264,7 @@ if similarities_fuzzy.shape[0]>0:
         batch_size=100,
         normalizaton_value='min'
     )
-final_result = json_objects.copy()
+
 if num_cand_pgms>0:
     pgm_json = pgm_pdf[pgm_pdf['pgm_nm'].apply(lambda x: re.sub(r'\[.*?\]', '', x) in ' '.join(json_objects['pgm']))][['pgm_nm','pgm_id']].to_dict('records')
     final_result['pgm'] = pgm_json
@@ -1284,9 +1273,22 @@ if num_cand_pgms>0:
 print("Entity from extractor:", list(set(cand_item_list)))
 print("Entity from LLM:", [x['name'] for x in ([item for item in json_objects['product']['items']] if isinstance(json_objects['product'], dict) else json_objects['product']) ])
 if similarities_fuzzy.shape[0]>0:
+    # Break down the complex query into simpler steps to avoid pandas/numexpr evaluation error
+    # Step 1: Get high similarity items
+    high_sim_items = similarities_fuzzy.query('sim >= 0.95')['item_nm_alias'].unique()
+    
+    # Step 2: Filter similarities_fuzzy for conditions
+    filtered_similarities = similarities_fuzzy[
+        (similarities_fuzzy['item_nm_alias'].isin(high_sim_items)) &
+        (~similarities_fuzzy['item_nm_alias'].str.contains('test', case=False)) &
+        (~similarities_fuzzy['item_name_in_msg'].isin(stop_item_names))
+    ]
+    
+    # Step 3: Merge with item_pdf_all
     product_tag = convert_df_to_json_list(
-        item_pdf_all.merge(similarities_fuzzy.query("item_nm_alias in @similarities_fuzzy.query('sim>=0.8')['item_nm_alias'].unique() and not item_nm_alias.str.contains('test', case=False) and item_nm_alias.str.contains('', case=False) and item_nm_alias not in @stop_item_names and item_name_in_msg not in @stop_item_names"), on=['item_nm_alias'])
+        item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
     )
+    
     final_result = {
         "title":json_objects['title'],
         "purpose":json_objects['purpose'],
@@ -1301,6 +1303,7 @@ else:
 if num_cand_pgms>0:
     pgm_json = pgm_pdf[pgm_pdf['pgm_nm'].apply(lambda x: re.sub(r'\[.*?\]', '', x) in ' '.join(json_objects['pgm']))][['pgm_nm','pgm_id']].to_dict('records')
     final_result['pgm'] = pgm_json
+
 channel_tag = []
 for d in [item for item in json_objects['channel']['items']] if isinstance(json_objects['channel'], dict) else json_objects['channel']:
     if d['type']=='대리점':
