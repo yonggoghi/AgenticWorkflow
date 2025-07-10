@@ -1,0 +1,6 @@
+include README.md
+include requirements.txt
+include .env.example
+include deploy.sh
+recursive-include data *.csv *.npz *.json
+recursive-include config *.py *.yaml *.json

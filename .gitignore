@@ -1,0 +1,151 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+myenv/
+tabnet_env/
+tabnet_env3/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Model files and large binaries
+*.safetensors
+model.safetensors
+model-*.safetensors
+*.dylib
+*.pack
+*.npz
+
+# Data files (potentially large or sensitive)
+data/
+*.csv
+*.xlsx
+*.pkl
+*.pdf
+*.pptx
+
+# Exclude requirements.txt from the above rule
+!requirements.txt
+
+# Package files
+*.zip
+linux_packages/
+macos_packages/
+linux_packages_*.zip
+macos_packages_*.zip
+mms_extractor.zip
+
+# Model directories
+models/
+product-ner-model/
+
+# Specific large files
+libtorch_cpu.dylib
+libtensorflow_cc.2.dylib
+org_nm_embeddings_*.npz
+org_all_embeddings_*.npz
+item_embeddings_*.npz
+
+# Git pack files
+pack-*.pack
+
+# Catboost temp files
+catboost_info/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Files that might contain API keys (exclude from git)
+*_vali.ipynb
+*_exp.ipynb
+*_gem.ipynb
+*_gem.py
+*_gem_lc.py
+*_exp.py
+*_exp_nice.py
+*_langchain_agent.py
+*_langgraph.py
+*_evolve.py
+test*.ipynb
+approach_validation.ipynb
+pgm_tag.ipynb
+mms_extractor.ipynb
+mms_extractor_dev.ipynb
+spacy_based_ner.ipynb
+neo4j_example.ipynb
+Llama_test.ipynb
+product_extractor.py
+product_extractor_nn.ipynb
