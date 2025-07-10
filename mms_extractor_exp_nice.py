@@ -11,13 +11,11 @@ from enum import Enum
 # Set pandas display options
 pd.set_option('display.max_colwidth', 500)
 
-
 class ExtractionApproach(Enum):
     """Enumeration for different extraction approaches"""
     ENTITY_ASSISTED = "entity_assisted"
     LLM_ONLY = "llm_only" 
     LLM_COT = "llm_cot"
-
 
 class MMSExtractor:
     """Main class for MMS message extraction with multiple approaches"""
@@ -37,8 +35,7 @@ class MMSExtractor:
         from langchain_anthropic import ChatAnthropic
         
         # API configurations
-        self.llm_api_key = "sk-gapk-Y70vdkPbXPRMWHK0dtaYU30hw-bi7B5C"
-        self.llm_api_url = "https://api.platform.a15t.com/v1"
+        self.llm_api_key = config.CUSTOM_API_KEY"https://api.platform.a15t.com/v1"
         
         self.client = OpenAI(
             api_key=self.llm_api_key,
@@ -505,7 +502,6 @@ class MMSExtractor:
         else:
             raise ValueError(f"Unknown approach: {approach}")
 
-
 def main():
     """Main function to run the extraction"""
     
@@ -561,7 +557,6 @@ def main():
         print(f"✗ Extraction failed: {e}")
         import traceback
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()

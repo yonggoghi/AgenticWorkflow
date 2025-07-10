@@ -1,4 +1,5 @@
 import pandas as pd
+import config
 import json
 import requests
 from typing import List, Dict, Any
@@ -350,8 +351,7 @@ def main():
     # LLM configurations
     llm_config = LLMConfig(
         url="https://api.platform.a15t.com/v1",
-        api_key="sk-gapk-Y70vdkPbXPRMWHK0dtaYU30hw-bi7B5C",
-        poor_model_name="skt/a.x-3-lg",
+        api_key=config.CUSTOM_API_KEY"skt/a.x-3-lg",
         good_model_name="skt/claude-3-5-sonnet-20241022"
     )
     
