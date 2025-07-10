@@ -42,8 +42,7 @@ os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_PROJECT'] = 'Multi-agent Collaboration'
 
 # Initialize OpenAI client
-llm_api_key = "sk-gapk-Y70vdkPbXPRMWHK0dtaYU30hw-bi7B5C"
-llm_api_url = "https://api.platform.a15t.com/v1"
+llm_api_key = config.CUSTOM_API_KEY"https://api.platform.a15t.com/v1"
 
 client = OpenAI(
     api_key=llm_api_key,
