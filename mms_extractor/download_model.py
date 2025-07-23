@@ -11,7 +11,7 @@ from pathlib import Path
 # Add the parent directory to the path to import our modules
 current_dir = Path(__file__).parent.absolute()
 parent_dir = current_dir.parent
-sys.path.insert(0, str(parent_dir))
+# sys.path.insert(0, str(parent_dir))  # Avoid importing from agentic files
 sys.path.insert(0, str(current_dir))
 
 # Try different import methods to handle both standalone and package execution

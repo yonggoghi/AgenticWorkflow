@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import time
 from datetime import datetime
+import pandas as pd # Added for loading stop_words
 
 from .core.entity_matcher import KoreanEntityMatcher, find_entities_in_text
 from .core.text_processor import TextProcessor
@@ -33,11 +34,11 @@ from .utils.data_utils import (
 )
 from .utils.text_utils import normalize_text, extract_keywords
 from .config.settings import (
-    DATA_PATHS,
-    ENTITY_MATCHING_CONFIG,
-    TEXT_PROCESSING_CONFIG,
-    LLM_PROCESSING_CONFIG,
-    API_CONFIG
+    DATA_CONFIG,
+    PROCESSING_CONFIG,
+    EXTRACTION_SCHEMA,
+    API_CONFIG,
+    MODEL_CONFIG
 )
 
 # Configure logging
@@ -99,14 +100,13 @@ class MMSExtractor:
     def _load_data(self) -> None:
         """Load required data files."""
         try:
-            # Load entity lists
-            self.item_info = load_csv(DATA_PATHS["item_info"])
-            self.mms_data = load_csv(DATA_PATHS["mms_data"])
-            self.pgm_tags = load_csv(DATA_PATHS["pgm_tags"])
+            # Load entity lists - using default paths from config
+            self.item_info = load_csv(DATA_CONFIG.item_info_path)
+            self.mms_data = load_csv(DATA_CONFIG.mms_data_path)
+            self.pgm_tags = load_csv(DATA_CONFIG.pgm_tag_path)
             
-            # Load rules and stop words
-            self.alias_rules = load_json(DATA_PATHS["alias_rules"])
-            self.stop_words = load_json(DATA_PATHS["stop_words"])
+            # Load stop words 
+            self.stop_words = pd.read_csv(DATA_CONFIG.stop_words_path)['stop_words'].tolist()
             
             # Build entity matcher
             self._build_entity_matcher()
@@ -169,7 +169,7 @@ class MMSExtractor:
                 matches = find_entities_in_text(
                     cleaned_text,
                     self.entity_matcher.entities,
-                    min_similarity=ENTITY_MATCHING_CONFIG["min_similarity"]
+                    min_similarity=PROCESSING_CONFIG["min_similarity"]
                 )
                 
                 # Update program info with matched entities
@@ -223,7 +223,7 @@ class MMSExtractor:
     def process_batch(
         self,
         texts: List[str],
-        batch_size: int = LLM_PROCESSING_CONFIG["batch_size"]
+        batch_size: int = PROCESSING_CONFIG["batch_size"]
     ) -> List[ExtractionResult]:
         """
         Process a batch of texts.
@@ -282,7 +282,7 @@ class MMSExtractor:
     def run_pipeline(
         self,
         input_file: str,
-        batch_size: int = LLM_PROCESSING_CONFIG["batch_size"]
+        batch_size: int = PROCESSING_CONFIG["batch_size"]
     ) -> List[ExtractionResult]:
         """
         Run the complete extraction pipeline.
@@ -337,51 +337,82 @@ def main():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=LLM_PROCESSING_CONFIG["batch_size"],
+        default=PROCESSING_CONFIG.batch_size,
         help="Batch size for processing"
     )
     parser.add_argument(
         "--openai-key",
-        default=API_CONFIG.get("openai_api_key"),
+        default=API_CONFIG.openai_api_key,
         help="OpenAI API key (defaults to config value)"
     )
     parser.add_argument(
         "--anthropic-key",
-        default=API_CONFIG.get("anthropic_api_key"),
+        default=API_CONFIG.anthropic_api_key,
         help="Anthropic API key (defaults to config value)"
     )
     parser.add_argument(
         "--openai-model",
-        default=DEFAULT_MODELS["openai"],
-        help=f"OpenAI model to use (default: {DEFAULT_MODELS['openai']})"
+        default=MODEL_CONFIG.gpt_model,
+        help=f"OpenAI model to use (default: {MODEL_CONFIG.gpt_model})"
     )
     parser.add_argument(
         "--anthropic-model",
-        default=DEFAULT_MODELS["anthropic"],
-        help=f"Anthropic model to use (default: {DEFAULT_MODELS['anthropic']})"
+        default=MODEL_CONFIG.claude_model,
+        help=f"Anthropic model to use (default: {MODEL_CONFIG.claude_model})"
     )
     parser.add_argument(
         "--max-tokens",
         type=int,
-        default=DEFAULT_MAX_TOKENS,
-        help=f"Maximum tokens for LLM response (default: {DEFAULT_MAX_TOKENS})"
+        default=MODEL_CONFIG.max_tokens,
+        help=f"Maximum tokens for LLM response (default: {MODEL_CONFIG.max_tokens})"
     )
     parser.add_argument(
         "--min-similarity",
-        type=int,
-        default=ENTITY_MATCHING_CONFIG["min_similarity"],
-        help=f"Minimum similarity for entity matching (default: {ENTITY_MATCHING_CONFIG['min_similarity']})"
+        type=float,
+        default=PROCESSING_CONFIG.similarity_threshold,
+        help=f"Minimum similarity for entity matching (default: {PROCESSING_CONFIG.similarity_threshold})"
     )
     parser.add_argument(
         "--ngram-size",
         type=int,
-        default=ENTITY_MATCHING_CONFIG["ngram_size"],
-        help=f"N-gram size for entity matching (default: {ENTITY_MATCHING_CONFIG['ngram_size']})"
+        default=3,  # reasonable default
+        help="N-gram size for entity matching (default: 3)"
+    )
+    # New arguments for extraction modes
+    parser.add_argument(
+        "--entity-extraction-mode",
+        choices=['logic', 'llm'],
+        default=PROCESSING_CONFIG.entity_extraction_mode,
+        help=f"Entity extraction mode (default: {PROCESSING_CONFIG.entity_extraction_mode})"
+    )
+    parser.add_argument(
+        "--product-info-extraction-mode",
+        choices=['rag', 'llm', 'nlp'],
+        default=PROCESSING_CONFIG.product_info_extraction_mode,
+        help=f"Product information extraction mode (default: {PROCESSING_CONFIG.product_info_extraction_mode})"
+    )
+    parser.add_argument(
+        "--similarity-threshold",
+        type=float,
+        default=PROCESSING_CONFIG.similarity_threshold,
+        help=f"Similarity threshold for entity matching (default: {PROCESSING_CONFIG.similarity_threshold})"
+    )
+    parser.add_argument(
+        "--fuzzy-threshold",
+        type=float,
+        default=PROCESSING_CONFIG.fuzzy_threshold,
+        help=f"Fuzzy matching threshold (default: {PROCESSING_CONFIG.fuzzy_threshold})"
     )
     
     args = parser.parse_args()
     
     try:
+        # Update processing configuration with command line arguments
+        PROCESSING_CONFIG.entity_extraction_mode = args.entity_extraction_mode
+        PROCESSING_CONFIG.product_info_extraction_mode = args.product_info_extraction_mode
+        PROCESSING_CONFIG.similarity_threshold = args.similarity_threshold
+        PROCESSING_CONFIG.fuzzy_threshold = args.fuzzy_threshold
+        
         # Initialize extractor with custom model settings
         extractor = MMSExtractor(
             openai_api_key=args.openai_key,
@@ -417,6 +448,10 @@ def main():
         logger.info(f"Max tokens: {args.max_tokens}")
         logger.info(f"Min similarity: {args.min_similarity}")
         logger.info(f"N-gram size: {args.ngram_size}")
+        logger.info(f"Entity extraction mode: {args.entity_extraction_mode}")
+        logger.info(f"Product info extraction mode: {args.product_info_extraction_mode}")
+        logger.info(f"Similarity threshold: {args.similarity_threshold}")
+        logger.info(f"Fuzzy threshold: {args.fuzzy_threshold}")
         
     except Exception as e:
         logger.error(f"Pipeline failed: {str(e)}")

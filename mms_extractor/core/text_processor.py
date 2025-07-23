@@ -5,29 +5,26 @@ Text processing module for cleaning and normalizing Korean text.
 from typing import List, Dict, Any, Set, Optional
 import re
 import unicodedata
-from ..config.settings import TEXT_PROCESSING_CONFIG
+from ..config.settings import PROCESSING_CONFIG
 
 class TextProcessor:
-    """
-    A class for processing and cleaning Korean text.
-    
-    This class handles text normalization, cleaning, and preprocessing
-    specifically optimized for Korean text processing.
-    """
+    """Korean text processor with filtering and normalization capabilities."""
     
     def __init__(
         self,
-        tags_to_exclude: Set[str] = set(TEXT_PROCESSING_CONFIG["tags_to_exclude"]),
-        space_tolerance: int = TEXT_PROCESSING_CONFIG["space_tolerance"]
+        tags_to_exclude: Set[str] = None,
+        space_tolerance: int = 2  # reasonable default
     ):
         """
-        Initialize the TextProcessor.
+        Initialize text processor.
         
         Args:
-            tags_to_exclude: Set of HTML/XML tags to remove
-            space_tolerance: Maximum number of consecutive spaces to normalize
+            tags_to_exclude: Set of POS tags to exclude
+            space_tolerance: Tolerance for space normalization
         """
-        self.tags_to_exclude = tags_to_exclude
+        self.tags_to_exclude = tags_to_exclude or {
+            'SW', 'SF', 'SP', 'SS', 'SE', 'SO', 'SB', 'SH'  # reasonable defaults
+        }
         self.space_tolerance = space_tolerance
         
         # Compile regex patterns

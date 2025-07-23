@@ -15,7 +15,28 @@ from flask_cors import CORS
 # Add current directory to Python path for imports
 current_dir = Path(__file__).parent.absolute()
 sys.path.insert(0, str(current_dir))
-sys.path.insert(0, str(current_dir.parent))
+
+# Try different import strategies to handle various execution contexts
+try:
+    # First try direct imports from current directory
+    from core.mms_extractor import MMSExtractor
+    from core.data_manager import DataManager
+    from config.settings import PROCESSING_CONFIG
+except ImportError:
+    try:
+        # Try package imports if run from parent directory
+        sys.path.insert(0, str(current_dir.parent))
+        from mms_extractor.core.mms_extractor import MMSExtractor
+        from mms_extractor.core.data_manager import DataManager
+        from mms_extractor.config.settings import PROCESSING_CONFIG
+    except ImportError:
+        # Fallback for relative imports
+        import sys
+        import os
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from core.mms_extractor import MMSExtractor
+        from core.data_manager import DataManager
+        from config.settings import PROCESSING_CONFIG
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -34,16 +55,6 @@ def get_extractor(model_name='gemma_3', use_mock_data=False, extraction_mode='nl
     
     if key not in extractors:
         logger.info(f"Creating new extractor: {key}")
-        
-        # Import the MMS extractor and DataManager
-        try:
-            from mms_extractor.core.mms_extractor import MMSExtractor
-            from mms_extractor.core.data_manager import DataManager
-            from mms_extractor.config.settings import PROCESSING_CONFIG
-        except ImportError:
-            from core.mms_extractor import MMSExtractor
-            from core.data_manager import DataManager
-            from config.settings import PROCESSING_CONFIG
         
         # Set the extraction mode
         PROCESSING_CONFIG.product_info_extraction_mode = extraction_mode

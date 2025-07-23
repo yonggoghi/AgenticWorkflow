@@ -10,7 +10,7 @@ import logging
 
 from ..models.language_models import EmbeddingManager
 from ..utils.text_processing import preprocess_text
-from ..config.settings import DATA_CONFIG, PROCESSING_CONFIG, MODEL_CONFIG
+from ..config.settings import DATA_CONFIG, PROCESSING_CONFIG, MODEL_CONFIG, DATABASE_CONFIG, get_device
 
 
 logger = logging.getLogger(__name__)
@@ -52,9 +52,10 @@ class DataManager:
                 'item_id': 'BEAR001',
                 'item_desc': '베어유 온라인 강의 서비스',
                 'domain': 'education',
-                'start_dt': 20250101,
-                'end_dt': 99991231,
-                'rank': 1,
+                'item_ctg': None,
+                'item_emb_vec': None,
+                'ofer_cd': 'BEAR001',
+                'oper_dt_hms': '20250101000000',
                 'item_nm_alias': '베어유'
             },
             {
@@ -62,9 +63,10 @@ class DataManager:
                 'item_id': 'TMEM001',
                 'item_desc': 'T 멤버십 서비스',
                 'domain': 'membership',
-                'start_dt': 20250101,
-                'end_dt': 99991231,
-                'rank': 1,
+                'item_ctg': None,
+                'item_emb_vec': None,
+                'ofer_cd': 'TMEM001',
+                'oper_dt_hms': '20250101000000',
                 'item_nm_alias': 'T 멤버십'
             },
             {
@@ -72,9 +74,10 @@ class DataManager:
                 'item_id': 'ADOT001',
                 'item_desc': '에이닷 AI 서비스',
                 'domain': 'ai',
-                'start_dt': 20250101,
-                'end_dt': 99991231,
-                'rank': 1,
+                'item_ctg': None,
+                'item_emb_vec': None,
+                'ofer_cd': 'ADOT001',
+                'oper_dt_hms': '20250101000000',
                 'item_nm_alias': '에이닷'
             },
             {
@@ -82,9 +85,10 @@ class DataManager:
                 'item_id': 'TOUS001',
                 'item_desc': '뚜레쥬르 베이커리',
                 'domain': 'food',
-                'start_dt': 20250101,
-                'end_dt': 99991231,
-                'rank': 1,
+                'item_ctg': None,
+                'item_emb_vec': None,
+                'ofer_cd': 'TOUS001',
+                'oper_dt_hms': '20250101000000',
                 'item_nm_alias': '뚜레쥬르'
             }
         ]
@@ -96,9 +100,10 @@ class DataManager:
                 'item_id': entity,
                 'item_desc': entity,
                 'domain': 'user_defined',
-                'start_dt': 20250101,
-                'end_dt': 99991231,
-                'rank': 1,
+                'item_ctg': None,
+                'item_emb_vec': None,
+                'ofer_cd': entity,
+                'oper_dt_hms': '20250101000000',
                 'item_nm_alias': entity
             })
         
@@ -155,64 +160,174 @@ class DataManager:
     
     def load_item_data(self) -> pd.DataFrame:
         """
-        Load and process item data.
+        Load and process item data from local CSV or Oracle database.
         
         Returns:
             Processed item DataFrame
         """
         logger.info("Loading item data")
         
-        if self.use_mock_data or not os.path.exists(DATA_CONFIG.item_info_path):
+        if self.use_mock_data:
             logger.info("Using mock item data")
             self.item_df = self._create_mock_item_data()
             self.alias_rules = [('T멤버십', 'T 멤버십'), ('에이닷', '에이닷_자사')]
-        else:
+            
+        elif DATA_CONFIG.offer_info_data_src == "local":
+            logger.info("Loading item data from local CSV files")
             try:
-                # Load real item data
-                item_df_raw = pd.read_csv(DATA_CONFIG.item_info_path)
+                if not os.path.exists(DATA_CONFIG.item_info_path):
+                    logger.warning(f"CSV file not found: {DATA_CONFIG.item_info_path}. Using mock data instead.")
+                    self.item_df = self._create_mock_item_data()
+                    self.alias_rules = [('T멤버십', 'T 멤버십'), ('에이닷', '에이닷_자사')]
+                else:
+                    # Load real item data from CSV
+                    item_df_raw = pd.read_csv(DATA_CONFIG.item_info_path)
+                    
+                    # Process item data
+                    self.item_df = (item_df_raw
+                                   .drop_duplicates(['item_nm', 'item_id'])
+                                   [['item_nm', 'item_id', 'item_desc', 'domain']]
+                                   .copy())
+                    
+                    # Add missing columns
+                    self.item_df['item_ctg'] = None
+                    self.item_df['item_emb_vec'] = None
+                    self.item_df['ofer_cd'] = self.item_df['item_id']
+                    self.item_df['oper_dt_hms'] = '20250101000000'
+                    
+                    # Rename columns to lowercase
+                    self.item_df = self.item_df.rename(columns={c: c.lower() for c in self.item_df.columns})
+                    
+                    # Load alias rules
+                    self._load_alias_rules()
+                    
+            except Exception as e:
+                logger.warning(f"Failed to load CSV item data: {e}. Using mock data instead.")
+                self.item_df = self._create_mock_item_data()
+                self.alias_rules = [('T멤버십', 'T 멤버십'), ('에이닷', '에이닷_자사')]
                 
-                # Process item data
-                self.item_df = (item_df_raw
-                               .drop_duplicates(['item_nm', 'item_id'])
-                               [['item_nm', 'item_id', 'item_desc', 'domain', 'start_dt', 'end_dt', 'rank']]
-                               .copy())
+        elif DATA_CONFIG.offer_info_data_src == "db":
+            logger.info("Loading item data from Oracle database")
+            try:
+                # Validate database configuration
+                if not DATABASE_CONFIG.validate():
+                    raise ValueError("Database configuration is incomplete. Check DB_USERNAME, DB_PASSWORD, DB_HOST, and DB_NAME environment variables.")
+                
+                # Import cx_Oracle
+                try:
+                    import cx_Oracle
+                except ImportError:
+                    raise ImportError("cx_Oracle is required for database connectivity. Install it with: pip install cx_Oracle")
+                
+                # Load dotenv to get database credentials
+                try:
+                    from dotenv import load_dotenv
+                    load_dotenv()
+                except ImportError:
+                    pass
+                
+                # Get database connection parameters
+                username = DATABASE_CONFIG.db_username
+                password = DATABASE_CONFIG.db_password
+                host = DATABASE_CONFIG.db_host
+                port = DATABASE_CONFIG.db_port
+                service_name = DATABASE_CONFIG.db_service_name
+                
+                # Create DSN and connect
+                dsn = cx_Oracle.makedsn(host, port, service_name=service_name)
+                conn = cx_Oracle.connect(user=username, password=password, dsn=dsn, encoding="UTF-8")
+                
+                logger.info(f"Connected to Oracle database: {host}:{port}/{service_name}")
+                
+                # Execute query
+                sql = DATABASE_CONFIG.item_info_query
+                self.item_df = pd.read_sql(sql, conn)
+                
+                # Close connection
+                conn.close()
+                logger.info(f"Loaded {len(self.item_df)} records from database")
+                
+                # Process database data - convert column names to expected format
+                # Adjust column mapping based on your database schema
+                if 'ITEM_NM' in self.item_df.columns:
+                    column_mapping = {
+                        'ITEM_NM': 'item_nm',
+                        'ITEM_ID': 'item_id', 
+                        'ITEM_DESC': 'item_desc',
+                        'DOMAIN': 'domain'
+                    }
+                    # Only rename columns that exist
+                    existing_columns = {k: v for k, v in column_mapping.items() if k in self.item_df.columns}
+                    self.item_df = self.item_df.rename(columns=existing_columns)
+                
+                # Ensure required columns exist
+                required_columns = ['item_nm', 'item_id', 'item_desc', 'domain']
+                for col in required_columns:
+                    if col not in self.item_df.columns:
+                        self.item_df[col] = 'Unknown'
+                        
+                # Add processing columns
+                self.item_df['item_ctg'] = None
+                self.item_df['item_emb_vec'] = None
+                self.item_df['ofer_cd'] = self.item_df['item_id']  
+                self.item_df['oper_dt_hms'] = '20250101000000'
                 
                 # Load alias rules
-                if os.path.exists(DATA_CONFIG.alias_rules_path):
-                    alias_df = pd.read_csv(DATA_CONFIG.alias_rules_path)
-                    self.alias_rules = list(zip(alias_df['alias_1'], alias_df['alias_2']))
-                else:
-                    self.alias_rules = []
-                
-                # Apply alias rules
-                self.item_df['item_nm_alias'] = self.item_df['item_nm'].apply(self._apply_alias_rules)
-                self.item_df = self.item_df.explode('item_nm_alias')
-                
-                # Add user-defined entities
-                user_defined_df = pd.DataFrame([
-                    {
-                        'item_nm': entity,
-                        'item_id': entity,
-                        'item_desc': entity,
-                        'domain': 'user_defined',
-                        'start_dt': 20250101,
-                        'end_dt': 99991231,
-                        'rank': 1,
-                        'item_nm_alias': entity
-                    }
-                    for entity in PROCESSING_CONFIG.user_defined_entities
-                ])
-                
-                self.item_df = pd.concat([self.item_df, user_defined_df], ignore_index=True)
+                self._load_alias_rules()
                 
             except Exception as e:
-                logger.warning(f"Failed to load real item data: {e}. Using mock data instead.")
+                logger.error(f"Failed to load data from database: {e}. Using mock data instead.")
                 self.item_df = self._create_mock_item_data()
                 self.alias_rules = [('T멤버십', 'T 멤버십'), ('에이닷', '에이닷_자사')]
         
-        logger.info(f"Loaded {len(self.item_df)} item records")
+        else:
+            raise ValueError(f"Invalid offer_info_data_src: {DATA_CONFIG.offer_info_data_src}. Must be 'local' or 'db'.")
         
+        # Apply alias rules and add user-defined entities (common processing)
+        self._process_item_data()
+        
+        logger.info(f"Loaded {len(self.item_df)} item records")
         return self.item_df
+    
+    def _load_alias_rules(self):
+        """Load alias rules from CSV file."""
+        try:
+            if os.path.exists(DATA_CONFIG.alias_rules_path):
+                alias_df = pd.read_csv(DATA_CONFIG.alias_rules_path)
+                self.alias_rules = list(zip(alias_df['alias_1'], alias_df['alias_2']))
+            else:
+                logger.warning(f"Alias rules file not found: {DATA_CONFIG.alias_rules_path}")
+                self.alias_rules = []
+        except Exception as e:
+            logger.warning(f"Failed to load alias rules: {e}")
+            self.alias_rules = []
+    
+    def _process_item_data(self):
+        """Apply common processing to item data (alias rules, user-defined entities)."""
+        if self.item_df is None:
+            return
+            
+        # Apply alias rules
+        self.item_df['item_nm_alias'] = self.item_df['item_nm'].apply(self._apply_alias_rules)
+        self.item_df = self.item_df.explode('item_nm_alias')
+        
+        # Add user-defined entities
+        user_defined_df = pd.DataFrame([
+            {
+                'item_nm': entity,
+                'item_id': entity,
+                'item_desc': entity,
+                'domain': 'user_defined',
+                'item_ctg': None,
+                'item_emb_vec': None,
+                'ofer_cd': entity,
+                'oper_dt_hms': '20250101000000',
+                'item_nm_alias': entity
+            }
+            for entity in PROCESSING_CONFIG.user_defined_entities
+        ])
+        
+        self.item_df = pd.concat([self.item_df, user_defined_df], ignore_index=True)
     
     def load_program_data(self) -> pd.DataFrame:
         """
@@ -390,8 +505,8 @@ class DataManager:
         """
         if self.embedding_manager is None:
             self.embedding_manager = EmbeddingManager(
-                local_model_path=MODEL_CONFIG.local_embedding_model_path,
-                loading_mode=MODEL_CONFIG.model_loading_mode
+                model_name=MODEL_CONFIG.embedding_model,
+                device=get_device()
             )
         
         # Generate clue embeddings for programs
@@ -465,8 +580,8 @@ class DataManager:
         """Load pre-computed embeddings from files."""
         if self.embedding_manager is None:
             self.embedding_manager = EmbeddingManager(
-                local_model_path=MODEL_CONFIG.local_embedding_model_path,
-                loading_mode=MODEL_CONFIG.model_loading_mode
+                model_name=MODEL_CONFIG.embedding_model,
+                device=get_device()
             )
         
         try:

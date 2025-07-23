@@ -36,6 +36,188 @@ class Sentence:
         self.subs = subs or []
 
 
+def extract_entities_by_logic(cand_entities: List[str], item_df_all: pd.DataFrame, 
+                            stop_words: List[str] = None) -> pd.DataFrame:
+    """
+    Extract entities using logic-based similarity matching.
+    
+    Args:
+        cand_entities: List of candidate entity names
+        item_df_all: DataFrame containing item information
+        stop_words: List of stop words to exclude
+        
+    Returns:
+        DataFrame with similarity results
+    """
+    if not cand_entities:
+        return pd.DataFrame(columns=['item_name_in_msg', 'item_nm_alias', 'sim'])
+    
+    stop_words = stop_words or []
+    
+    # Fuzzy similarity matching
+    similarities_fuzzy = parallel_fuzzy_similarity(
+        cand_entities, 
+        item_df_all['item_nm_alias'].unique(), 
+        threshold=0.8,
+        text_col_nm='item_name_in_msg',
+        item_col_nm='item_nm_alias',
+        n_jobs=PROCESSING_CONFIG.n_jobs,
+        batch_size=30
+    )
+
+    if not similarities_fuzzy.empty:
+        # Sequence similarity with different normalizations
+        similarities_s1 = parallel_seq_similarity(
+            sent_item_pdf=similarities_fuzzy,
+            text_col_nm='item_name_in_msg',
+            item_col_nm='item_nm_alias',
+            n_jobs=PROCESSING_CONFIG.n_jobs,
+            batch_size=30,
+            normalization_value='s1'
+        ).rename(columns={'sim':'sim_s1'})
+        
+        similarities_s2 = parallel_seq_similarity(
+            sent_item_pdf=similarities_fuzzy,
+            text_col_nm='item_name_in_msg',
+            item_col_nm='item_nm_alias',
+            n_jobs=PROCESSING_CONFIG.n_jobs,
+            batch_size=30,
+            normalization_value='s2'
+        ).rename(columns={'sim':'sim_s2'})
+        
+        # Combine similarities
+        similarities_combined = similarities_s1.merge(
+            similarities_s2, 
+            on=['item_name_in_msg','item_nm_alias']
+        )
+        
+        similarities_combined['sim'] = (
+            similarities_combined.groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']]
+            .apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum())
+            .reset_index(level=[0,1], drop=True)
+        )
+        
+        similarities_fuzzy = similarities_combined[['item_name_in_msg','item_nm_alias','sim']]
+
+    return similarities_fuzzy
+
+
+def extract_entities_by_llm(llm, msg_text: str, item_df_all: pd.DataFrame, 
+                          stop_words: List[str] = None, rank_limit: int = 5) -> pd.DataFrame:
+    """
+    Extract entities using LLM-based extraction.
+    
+    Args:
+        llm: Language model instance
+        msg_text: Input message text
+        item_df_all: DataFrame containing item information
+        stop_words: List of stop words to exclude
+        rank_limit: Maximum number of candidates per entity
+        
+    Returns:
+        DataFrame with extraction results
+    """
+    from langchain.prompts import PromptTemplate
+    from langchain.chains import LLMChain
+    
+    stop_words = stop_words or []
+    
+    # Zero-shot entity extraction prompt
+    zero_shot_prompt = PromptTemplate(
+        input_variables=["msg", "vocabulary"],
+        template="""Extract entities from the message. Exclude location and date/time entities.
+
+        Message: {msg}
+
+        Just return a list with matched entities where the entities are separated by commas."""
+    )
+    
+    chain = LLMChain(llm=llm, prompt=zero_shot_prompt)
+    cand_entities_text = chain.run({"msg": msg_text})
+    
+    # Parse candidate entities
+    cand_entity_list = [e.strip() for e in cand_entities_text.split(',') if e.strip()]
+    
+    # Filter out stop words using similarity
+    if stop_words and cand_entity_list:
+        stop_word_df = pd.DataFrame([
+            {"stop_word": d, "cand_entities": cand_entity_list} 
+            for d in stop_words
+        ]).explode('cand_entities')
+        
+        if not stop_word_df.empty:
+            stop_word_similarities = parallel_seq_similarity(
+                sent_item_pdf=stop_word_df,
+                text_col_nm='stop_word',
+                item_col_nm='cand_entities',
+                n_jobs=PROCESSING_CONFIG.n_jobs,
+                batch_size=30,
+                normalization_value='s2'
+            )
+            
+            excluded_entities = stop_word_similarities.query("sim>0.95")['cand_entities'].unique()
+            cand_entity_list = [e for e in cand_entity_list if e not in excluded_entities]
+    
+    if not cand_entity_list:
+        return pd.DataFrame(columns=['item_name_in_msg', 'item_nm_alias', 'sim'])
+    
+    # Fuzzy similarity matching
+    similarities_fuzzy = parallel_fuzzy_similarity(
+        cand_entity_list, 
+        item_df_all['item_nm_alias'].unique(), 
+        threshold=0.6,
+        text_col_nm='item_name_in_msg',
+        item_col_nm='item_nm_alias',
+        n_jobs=PROCESSING_CONFIG.n_jobs,
+        batch_size=30
+    ).query("item_nm_alias not in @stop_words")
+
+    if similarities_fuzzy.empty:
+        return pd.DataFrame(columns=['item_name_in_msg', 'item_nm_alias', 'sim'])
+    
+    # Sequence similarity with different normalizations
+    similarities_s1 = parallel_seq_similarity(
+        sent_item_pdf=similarities_fuzzy,
+        text_col_nm='item_name_in_msg',
+        item_col_nm='item_nm_alias',
+        n_jobs=PROCESSING_CONFIG.n_jobs,
+        batch_size=30,
+        normalization_value='s1'
+    ).rename(columns={'sim':'sim_s1'})
+    
+    similarities_s2 = parallel_seq_similarity(
+        sent_item_pdf=similarities_fuzzy,
+        text_col_nm='item_name_in_msg',
+        item_col_nm='item_nm_alias',
+        n_jobs=PROCESSING_CONFIG.n_jobs,
+        batch_size=30,
+        normalization_value='s2'
+    ).rename(columns={'sim':'sim_s2'})
+    
+    # Combine similarities
+    cand_entities_sim = similarities_s1.merge(
+        similarities_s2, 
+        on=['item_name_in_msg','item_nm_alias']
+    )
+    
+    cand_entities_sim['sim'] = (
+        cand_entities_sim.groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']]
+        .apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum())
+        .reset_index(level=[0,1], drop=True)
+    )
+    
+    # Filter and rank results
+    cand_entities_sim = cand_entities_sim.query("sim>=1.5")
+    cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(
+        method='first', ascending=False
+    )
+    cand_entities_sim = cand_entities_sim.query(f"rank<={rank_limit}").sort_values(
+        ['item_name_in_msg','rank'], ascending=[True,True]
+    )
+
+    return cand_entities_sim[['item_name_in_msg','item_nm_alias','sim']]
+
+
 class KiwiEntityExtractor:
     """Entity extractor using Kiwi Korean morphological analyzer."""
     

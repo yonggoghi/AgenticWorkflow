@@ -10,8 +10,9 @@ import openai
 import anthropic
 from ..config.settings import (
     API_CONFIG,
-    LLM_PROCESSING_CONFIG,
-    SCHEMA_DEFINITIONS
+    MODEL_CONFIG,
+    PROCESSING_CONFIG,
+    EXTRACTION_SCHEMA
 )
 
 @dataclass
@@ -35,11 +36,11 @@ class LLMProcessor:
         self,
         openai_api_key: Optional[str] = None,
         anthropic_api_key: Optional[str] = None,
-        default_model: str = LLM_PROCESSING_CONFIG["default_model"],
-        temperature: float = LLM_PROCESSING_CONFIG["temperature"],
-        max_tokens: int = LLM_PROCESSING_CONFIG["max_tokens"],
-        retry_count: int = LLM_PROCESSING_CONFIG["retry_count"],
-        retry_delay: float = LLM_PROCESSING_CONFIG["retry_delay"]
+        default_model: str = MODEL_CONFIG.gpt_model,
+        temperature: float = MODEL_CONFIG.temperature,
+        max_tokens: int = MODEL_CONFIG.max_tokens,
+        retry_count: int = 3,
+        retry_delay: float = 1.0
     ):
         """
         Initialize the LLMProcessor.
@@ -54,8 +55,8 @@ class LLMProcessor:
             retry_delay: Delay between retries in seconds
         """
         # Set API keys
-        self.openai_api_key = openai_api_key or API_CONFIG["openai_api_key"]
-        self.anthropic_api_key = anthropic_api_key or API_CONFIG["anthropic_api_key"]
+        self.openai_api_key = openai_api_key or API_CONFIG.openai_api_key
+        self.anthropic_api_key = anthropic_api_key or API_CONFIG.anthropic_api_key
         
         # Initialize clients
         if self.openai_api_key:
@@ -72,8 +73,8 @@ class LLMProcessor:
         self.retry_count = retry_count
         self.retry_delay = retry_delay
         
-        # Load schema definitions
-        self.schemas = SCHEMA_DEFINITIONS
+        # Use extraction schema from settings
+        self.extraction_schema = EXTRACTION_SCHEMA
     
     def process_text(
         self,
@@ -108,7 +109,7 @@ class LLMProcessor:
             )
         
         # Get schema
-        schema = self.schemas.get(schema_name)
+        schema = self.extraction_schema.get(schema_name)
         if not schema:
             return LLMResponse(
                 content="",
@@ -259,7 +260,7 @@ class LLMProcessor:
             Extracted data as dictionary
         """
         # Get schema
-        schema = self.schemas.get(schema_name)
+        schema = self.extraction_schema.get(schema_name)
         if not schema:
             raise ValueError(f"Unknown schema: {schema_name}")
         
@@ -352,8 +353,8 @@ Example output format:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        batch_size: int = LLM_PROCESSING_CONFIG["batch_size"],
-        max_concurrent: int = LLM_PROCESSING_CONFIG["max_concurrent"]
+        batch_size: int = None,
+        max_concurrent: int = None
     ) -> List[Union[Dict[str, Any], LLMResponse]]:
         """
         Process multiple texts in batches.
@@ -370,6 +371,11 @@ Example output format:
         Returns:
             List of processed results
         """
+        if batch_size is None:
+            batch_size = PROCESSING_CONFIG.batch_size
+        if max_concurrent is None:
+            max_concurrent = PROCESSING_CONFIG.n_jobs
+            
         results = []
         
         # Process in batches

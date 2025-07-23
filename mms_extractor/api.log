@@ -1,0 +1,43 @@
+2025-07-23 14:37:15,122 - INFO - 🚀 Starting MMS Extractor API Service
+2025-07-23 14:37:15,122 - INFO - 🌐 Host: 0.0.0.0, Port: 8080, Debug: False
+2025-07-23 14:37:15,122 - INFO - 🔧 Model loading mode: auto
+2025-07-23 14:37:20,350 - INFO - 📋 Model loading mode set to: auto
+2025-07-23 14:37:20,350 - INFO - 📝 Description: Automatically use local model if available, otherwise download from internet
+2025-07-23 14:37:20,350 - INFO - 🚀 Preloading default extractors...
+2025-07-23 14:37:20,350 - INFO - 📥 Loading gemma_3 with nlp mode...
+2025-07-23 14:37:20,350 - INFO - Creating new extractor: gemma_3_False_nlp
+2025-07-23 14:37:20,350 - INFO - Initialized data manager (mock_data=False)
+2025-07-23 14:37:20,649 - INFO - Successfully initialized all language models
+2025-07-23 14:37:20,669 - INFO - Initializing embedding model: jhgan/ko-sbert-nli on mps
+2025-07-23 14:37:20,669 - INFO - Use pytorch device_name: mps
+2025-07-23 14:37:20,669 - INFO - Load pretrained SentenceTransformer: jhgan/ko-sbert-nli
+2025-07-23 14:37:25,255 - INFO - Successfully loaded embedding model on mps
+2025-07-23 14:37:25,255 - INFO - Initialized MMS extractor
+2025-07-23 14:37:25,255 - INFO - Loading data using data manager
+2025-07-23 14:37:25,255 - INFO - Loading item data
+2025-07-23 14:37:25,724 - INFO - Loaded 94282 item records
+2025-07-23 14:37:25,725 - INFO - Loading program data
+2025-07-23 14:37:25,727 - INFO - Loaded 25 program records
+2025-07-23 14:37:25,727 - INFO - Loading organization data
+2025-07-23 14:37:26,223 - INFO - Loaded 259233 organization records
+2025-07-23 14:37:26,224 - INFO - Loading stop words
+2025-07-23 14:37:26,226 - INFO - Loaded 143 stop words
+2025-07-23 14:37:26,226 - INFO - Initializing embedding model: jhgan/ko-sbert-nli on mps
+2025-07-23 14:37:26,226 - INFO - Use pytorch device_name: mps
+2025-07-23 14:37:26,226 - INFO - Load pretrained SentenceTransformer: jhgan/ko-sbert-nli
+2025-07-23 14:37:29,714 - INFO - Successfully loaded embedding model on mps
+2025-07-23 14:37:29,714 - INFO - Generating program clue embeddings
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:01<00:00,  1.70s/it]Batches: 100%|██████████| 1/1 [00:01<00:00,  1.70s/it]
+2025-07-23 14:37:31,428 - INFO - Generated program clue embeddings
+2025-07-23 14:37:32,934 - INFO - Created entity vocabulary with 89503 entries
+2025-07-23 14:37:33,427 - INFO - Initializing Kiwi entity extractor
+2025-07-23 14:37:33,542 - INFO - Added 65053 entities to Kiwi vocabulary
+2025-07-23 14:37:33,543 - INFO - Data loaded successfully
+2025-07-23 14:37:33,543 - INFO - Extractor ready: gemma_3_False_nlp
+2025-07-23 14:37:33,543 - INFO - ✅ Successfully preloaded gemma_3(nlp) in 13.2s
+2025-07-23 14:37:33,543 - INFO - 🎯 Preloaded extractors: ['gemma_3_False_nlp']
+2025-07-23 14:37:33,543 - INFO - 🎯 API server ready to accept requests!
+ * Serving Flask app 'api'
+ * Debug mode: off
+Address already in use
+Port 8080 is in use by another program. Either identify and stop that program, or start the server with a different port.

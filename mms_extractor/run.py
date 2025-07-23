@@ -26,7 +26,7 @@ from pathlib import Path
 # Add current directory to Python path for imports
 current_dir = Path(__file__).parent.absolute()
 sys.path.insert(0, str(current_dir))
-sys.path.insert(0, str(current_dir.parent))
+# sys.path.insert(0, str(current_dir.parent))  # Avoid importing from agentic files
 
 def main():
     """Main function for standalone execution."""
