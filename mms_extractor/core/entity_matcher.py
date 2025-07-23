@@ -6,31 +6,26 @@ from typing import List, Dict, Any, Tuple, Set, Optional
 import re
 from rapidfuzz import fuzz, process
 import numpy as np
-from ..config.settings import ENTITY_MATCHING_CONFIG
+from ..config.settings import PROCESSING_CONFIG
 
 class KoreanEntityMatcher:
-    """
-    A class for fuzzy matching Korean entities in text.
-    
-    This class implements various similarity metrics and matching strategies
-    optimized for Korean text processing.
-    """
+    """Enhanced Korean entity matcher using fuzzy string matching."""
     
     def __init__(
         self,
-        min_similarity: int = ENTITY_MATCHING_CONFIG["min_similarity"],
-        ngram_size: int = ENTITY_MATCHING_CONFIG["ngram_size"],
-        min_entity_length: int = ENTITY_MATCHING_CONFIG["min_entity_length"],
-        token_similarity: bool = ENTITY_MATCHING_CONFIG["token_similarity"]
+        min_similarity: int = 70,  # reasonable default
+        ngram_size: int = 3,      # reasonable default
+        min_entity_length: int = 2,  # reasonable default
+        token_similarity: bool = True  # reasonable default
     ):
         """
-        Initialize the KoreanEntityMatcher.
+        Initialize Korean entity matcher.
         
         Args:
-            min_similarity: Minimum similarity score (0-100) for fuzzy matching
-            ngram_size: Size of character n-grams to use for indexing
+            min_similarity: Minimum similarity score (0-100)
+            ngram_size: Size of n-grams for matching
             min_entity_length: Minimum length of entities to consider
-            token_similarity: Whether to use token-based similarity measures
+            token_similarity: Whether to use token-based similarity
         """
         self.min_similarity = min_similarity
         self.ngram_size = ngram_size
@@ -270,8 +265,8 @@ class KoreanEntityMatcher:
     def _resolve_overlapping_matches(
         self,
         matches: List[Dict[str, Any]],
-        high_score_threshold: int = ENTITY_MATCHING_CONFIG["high_score_threshold"],
-        overlap_tolerance: float = ENTITY_MATCHING_CONFIG["overlap_tolerance"]
+        high_score_threshold: int = 90,  # reasonable default
+        overlap_tolerance: float = 0.3   # reasonable default
     ) -> List[Dict[str, Any]]:
         """Resolve overlapping matches by keeping the best ones."""
         if not matches:
@@ -355,12 +350,12 @@ class KoreanEntityMatcher:
 def find_entities_in_text(
     text: str,
     entity_list: List[Tuple[str, Dict[str, Any]]],
-    min_similarity: int = ENTITY_MATCHING_CONFIG["min_similarity"],
-    ngram_size: int = ENTITY_MATCHING_CONFIG["ngram_size"],
-    min_entity_length: int = ENTITY_MATCHING_CONFIG["min_entity_length"],
-    token_similarity: bool = ENTITY_MATCHING_CONFIG["token_similarity"],
-    high_score_threshold: int = ENTITY_MATCHING_CONFIG["high_score_threshold"],
-    overlap_tolerance: float = ENTITY_MATCHING_CONFIG["overlap_tolerance"]
+    min_similarity: int = 70,    # reasonable default
+    ngram_size: int = 3,         # reasonable default
+    min_entity_length: int = 2,  # reasonable default
+    token_similarity: bool = True,  # reasonable default
+    high_score_threshold: int = 90,  # reasonable default
+    overlap_tolerance: float = 0.3   # reasonable default
 ) -> List[Dict[str, Any]]:
     """
     Find entity matches in text using fuzzy matching.

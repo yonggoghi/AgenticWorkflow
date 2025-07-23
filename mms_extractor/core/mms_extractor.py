@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Tuple, Optional
 import logging
 
 from ..models.language_models import LLMManager, EmbeddingManager
-from ..core.entity_extractor import KiwiEntityExtractor
+from ..core.entity_extractor import KiwiEntityExtractor, extract_entities_by_logic, extract_entities_by_llm
 from ..utils.text_processing import extract_json_objects, convert_df_to_json_list
 from ..utils.similarity import combined_sequence_similarity, parallel_fuzzy_similarity, parallel_seq_similarity
 from ..config.settings import (
@@ -36,8 +36,8 @@ class MMSExtractor:
         self.model_name = model_name
         self.llm_manager = LLMManager()
         self.embedding_manager = EmbeddingManager(
-            local_model_path=MODEL_CONFIG.local_embedding_model_path,
-            loading_mode=MODEL_CONFIG.model_loading_mode
+            model_name=MODEL_CONFIG.embedding_model,
+            device=get_device()
         )
         self.entity_extractor = None
         
@@ -442,8 +442,38 @@ class MMSExtractor:
                     "pgm": []
                 }
             
-            # Match products to vocabulary
-            product_similarities = self.match_products_to_vocabulary(llm_result.get('product', []))
+            # Apply entity extraction mode for product matching
+            entity_extraction_mode = PROCESSING_CONFIG.entity_extraction_mode
+            
+            if entity_extraction_mode == 'logic':
+                # Logic-based entity extraction
+                llm_products = llm_result.get('product', [])
+                if isinstance(llm_products, dict) and 'items' in llm_products:
+                    product_names = [str(item.get('name', '')) for item in llm_products['items']]
+                elif isinstance(llm_products, list):
+                    product_names = [str(item.get('name', '')) for item in llm_products]
+                else:
+                    product_names = []
+                
+                # Filter out empty names
+                product_names = [name for name in product_names if name.strip()]
+                
+                if product_names:
+                    similarities_fuzzy = extract_entities_by_logic(product_names, self.item_df, self.stop_words)
+                else:
+                    similarities_fuzzy = pd.DataFrame(columns=['item_name_in_msg', 'item_nm_alias', 'sim'])
+                    
+            elif entity_extraction_mode == 'llm':
+                # LLM-based entity extraction
+                similarities_fuzzy = extract_entities_by_llm(
+                    self.llm_manager.get_model(self.model_name), 
+                    message, 
+                    self.item_df, 
+                    self.stop_words
+                )
+            else:
+                # Default to original product matching logic
+                similarities_fuzzy = self.match_products_to_vocabulary(llm_result.get('product', []))
             
             # Build final result
             final_result = {
@@ -454,19 +484,36 @@ class MMSExtractor:
                 "pgm": []
             }
             
-            # Process products
-            if not product_similarities.empty:
-                # Safe filtering for product matches
-                sim_mask = product_similarities['sim'] >= 0.8
-                test_mask = ~product_similarities['item_nm_alias'].str.contains('test', case=False, na=False)
-                stop_mask = ~product_similarities['item_nm_alias'].isin(self.stop_words)
-                msg_stop_mask = ~product_similarities['item_name_in_msg'].isin(self.stop_words)
-                
-                filtered_similarities = product_similarities[sim_mask & test_mask & stop_mask & msg_stop_mask]
-                
-                if not filtered_similarities.empty:
-                    product_matches = self.item_df.merge(filtered_similarities, on=['item_nm_alias'])
-                    final_result['product'] = convert_df_to_json_list(product_matches)
+            # Process products based on similarity results
+            if not similarities_fuzzy.empty:
+                # Apply filtering thresholds based on entity extraction mode
+                if entity_extraction_mode in ['logic', 'llm']:
+                    # Use higher threshold for logic/llm modes
+                    high_sim_items = similarities_fuzzy.query('sim >= 1.5')['item_nm_alias'].unique()
+                    
+                    # Filter similarities_fuzzy for conditions
+                    filtered_similarities = similarities_fuzzy[
+                        (similarities_fuzzy['item_nm_alias'].isin(high_sim_items)) &
+                        (~similarities_fuzzy['item_nm_alias'].str.contains('test', case=False)) &
+                        (~similarities_fuzzy['item_name_in_msg'].isin(self.stop_words))
+                    ]
+                    
+                    if not filtered_similarities.empty:
+                        # Merge with item data and convert to final format
+                        product_matches = self.item_df.merge(filtered_similarities, on=['item_nm_alias'])
+                        final_result['product'] = convert_df_to_json_list(product_matches)
+                else:
+                    # Use original logic for backward compatibility
+                    sim_mask = similarities_fuzzy['sim'] >= 0.8
+                    test_mask = ~similarities_fuzzy['item_nm_alias'].str.contains('test', case=False, na=False)
+                    stop_mask = ~similarities_fuzzy['item_nm_alias'].isin(self.stop_words)
+                    msg_stop_mask = ~similarities_fuzzy['item_name_in_msg'].isin(self.stop_words)
+                    
+                    filtered_similarities = similarities_fuzzy[sim_mask & test_mask & stop_mask & msg_stop_mask]
+                    
+                    if not filtered_similarities.empty:
+                        product_matches = self.item_df.merge(filtered_similarities, on=['item_nm_alias'])
+                        final_result['product'] = convert_df_to_json_list(product_matches)
             
             # Use LLM products as fallback if no matches found
             if not final_result['product']:

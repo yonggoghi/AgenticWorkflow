@@ -23,8 +23,8 @@ except ImportError:
 @dataclass
 class APIConfig:
     """API configuration settings."""
-    llm_api_key: str = os.getenv("CUSTOM_OPENAI_API_KEY", "")
-    llm_api_url: str = os.getenv("CUSTOM_OPENAI_BASE_URL", "https://api.platform.a15t.com/v1")
+    llm_api_key: str = os.getenv("CUSTOM_API_KEY", "")
+    llm_api_url: str = os.getenv("CUSTOM_BASE_URL", "https://api.platform.a15t.com/v1")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
@@ -66,6 +66,10 @@ class DataConfig:
     # Get the package root directory
     _package_root = Path(__file__).parent.parent.absolute()
     
+    # Data source selection: 'local' for CSV files, 'db' for database
+    offer_info_data_src: str = os.getenv("OFFER_INFO_DATA_SRC", "local")
+    
+    # Local file paths
     item_info_path: str = str(_package_root / "data" / "item_info_all_250527.csv")
     alias_rules_path: str = str(_package_root / "data" / "alias_rules.csv")
     stop_words_path: str = str(_package_root / "data" / "stop_words.csv")
@@ -79,6 +83,25 @@ class DataConfig:
     org_nm_embeddings_path: str = str(_package_root / "data" / "org_nm_embeddings_250605.npz")
 
 
+@dataclass 
+class DatabaseConfig:
+    """Database configuration settings."""
+    # Oracle DB connection settings
+    db_username: str = os.getenv("DB_USERNAME", "")
+    db_password: str = os.getenv("DB_PASSWORD", "")
+    db_host: str = os.getenv("DB_HOST", "")
+    db_port: str = os.getenv("DB_PORT", "1521")
+    db_service_name: str = os.getenv("DB_NAME", "")
+    
+    # SQL queries
+    item_info_query: str = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000"
+    
+    def validate(self) -> bool:
+        """Validate database configuration."""
+        required_fields = [self.db_username, self.db_password, self.db_host, self.db_service_name]
+        return all(field.strip() for field in required_fields)
+
+
 @dataclass
 class ProcessingConfig:
     """Processing configuration settings."""
@@ -90,6 +113,8 @@ class ProcessingConfig:
     user_defined_entities: List[str] = None
     # Product information extraction mode
     product_info_extraction_mode: str = 'nlp'  # options: 'rag', 'llm', 'nlp'
+    # Entity extraction mode
+    entity_extraction_mode: str = 'logic'  # options: 'llm', 'logic'
     
     def __post_init__(self):
         if self.user_defined_entities is None:
@@ -103,6 +128,11 @@ class ProcessingConfig:
         valid_modes = ['rag', 'llm', 'nlp']
         if self.product_info_extraction_mode not in valid_modes:
             raise ValueError(f"product_info_extraction_mode must be one of {valid_modes}")
+        
+        # Validate entity_extraction_mode
+        valid_entity_modes = ['llm', 'logic']
+        if self.entity_extraction_mode not in valid_entity_modes:
+            raise ValueError(f"entity_extraction_mode must be one of {valid_entity_modes}")
 
     @property
     def chain_of_thought(self) -> str:
@@ -134,6 +164,48 @@ class ProcessingConfig:
 @dataclass
 class ExtractionSchema:
     """Schema for information extraction."""
+    
+    def get_schema_prd(self, product_elements: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Get complete schema definition matching the agentic version's schema_prd.
+        
+        Args:
+            product_elements: Pre-filled product elements for NLP mode
+            
+        Returns:
+            Complete schema dictionary
+        """
+        schema = {
+            "title": '광고 제목. 광고의 핵심 주제와 가치 제안을 명확하게 설명할 수 있도록 생성',
+            'purpose': '광고의 주요 목적을 다음 중에서 선택(복수 가능): [상품 가입 유도, 대리점/매장 방문 유도, 웹/앱 접속 유도, 이벤트 응모 유도, 혜택 안내, 쿠폰 제공 안내, 경품 제공 안내, 수신 거부 안내, 기타 정보 제공]',
+            'product': {
+                'type': 'array',
+                'items': {
+                    'name': '광고하는 제품이나 서비스 이름',
+                    'action': '고객에게 기대하는 행동: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타] 중에서 선택'
+                }
+            },
+            'channel': {
+                'type': 'array', 
+                'items': {
+                    'properties': {
+                        'type': '[URL, 전화번호, 앱, 대리점] 중에서 선택',
+                        'value': '실제 URL, 전화번호, 앱 이름, 대리점 이름 등 구체적 정보',
+                        'action': '채널 목적: [가입, 추가 정보, 문의, 수신, 수신 거부] 중에서 선택',
+                    }
+                }
+            },
+            'pgm':{
+                'type': 'array', 
+                'description': '아래 광고 분류 기준 정보에서 선택. 메세지 내용과 광고 분류 기준을 참고하여, 광고 메세지에 가장 부합하는 2개의 pgm_nm을 적합도 순서대로 제공'
+            },
+        }
+        
+        # Override product schema with pre-filled elements for NLP mode
+        if product_elements:
+            schema['product'] = product_elements
+        
+        return schema
     
     def get_product_schema(self, product_elements: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -208,6 +280,7 @@ class ExtractionSchema:
 API_CONFIG = APIConfig()
 MODEL_CONFIG = ModelConfig()
 DATA_CONFIG = DataConfig()
+DATABASE_CONFIG = DatabaseConfig()
 PROCESSING_CONFIG = ProcessingConfig()
 EXTRACTION_SCHEMA = ExtractionSchema()
 

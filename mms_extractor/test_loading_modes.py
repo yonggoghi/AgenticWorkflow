@@ -12,7 +12,7 @@ from pathlib import Path
 # Add current directory to Python path for imports
 current_dir = Path(__file__).parent.absolute()
 parent_dir = current_dir.parent
-sys.path.insert(0, str(parent_dir))
+# sys.path.insert(0, str(parent_dir))  # Avoid importing from agentic files
 sys.path.insert(0, str(current_dir))
 
 # Try different import methods to handle both standalone and package execution
@@ -40,7 +40,7 @@ def test_loading_mode(mode: str, description: str):
         start_time = time.time()
         
         # Create EmbeddingManager with specific loading mode
-        embedding_manager = EmbeddingManager(loading_mode=mode)
+        embedding_manager = EmbeddingManager(model_name=MODEL_CONFIG.embedding_model)
         
         load_time = time.time() - start_time
         
@@ -119,7 +119,7 @@ def main():
     print("  export MODEL_LOADING_MODE=local")
     print()
     print("  # Programmatic:")
-    print("  manager = EmbeddingManager(loading_mode='auto')")
+    print("  manager = EmbeddingManager(model_name='jhgan/ko-sbert-nli')")
 
 if __name__ == "__main__":
     main() 
