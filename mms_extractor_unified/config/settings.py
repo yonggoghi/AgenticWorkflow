@@ -37,11 +37,11 @@ class ModelConfig:
     local_embedding_model_path: str = os.getenv("LOCAL_EMBEDDING_MODEL_PATH", "./models/ko-sbert-nli")
     # Model loading mode: 'auto', 'local', 'remote'
     model_loading_mode: str = os.getenv("MODEL_LOADING_MODE", "auto")
-    claude_model: str = "skt/claude-sonnet-4-20250514"
     gemma_model: str = "skt/gemma3-12b-it"
-    gpt_model: str = "gpt-4.1"
-    claude_sonnet_model: str = "claude-sonnet-4-20250514"
-    max_tokens: int = 4000
+    gpt_model: str = "gpt-4o"
+    claude_model: str = "claude-sonnet-4-20250514"
+    llm_model: str = os.getenv("LLM_MODEL", "gemma")
+    llm_max_tokens: int = 4000
     temperature: float = 0.0
     
     def __post_init__(self):
