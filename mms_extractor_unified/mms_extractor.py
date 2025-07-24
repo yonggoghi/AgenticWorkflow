@@ -387,11 +387,12 @@ def convert_df_to_json_list(df):
 
 
 class MMSExtractor:
-    def __init__(self, model_path='./models/ko-sbert-nli', data_dir='./data/', product_info_extraction_mode='nlp', entity_extraction_mode='logic', offer_info_data_src='local'):
+    def __init__(self, model_path='./models/ko-sbert-nli', data_dir='./data/', product_info_extraction_mode='nlp', entity_extraction_mode='logic', offer_info_data_src='local', llm_model='gemma'):
         self.data_dir = data_dir
         self.offer_info_data_src = offer_info_data_src  # 'local' or 'db'
         self.product_info_extraction_mode = product_info_extraction_mode
         self.entity_extraction_mode = entity_extraction_mode
+        self.llm_model_name = llm_model
         self.num_cand_pgms = 5
         
         # Load environment variables
@@ -413,14 +414,30 @@ class MMSExtractor:
         print(f"Using device: {self.device}")
 
     def _initialize_llm(self):
-        self.llm_gem3 = ChatOpenAI(
-            temperature=0,
-            openai_api_key=settings.API_CONFIG.llm_api_key,
-            openai_api_base=settings.API_CONFIG.llm_api_url,
-            model='skt/gemma3-12b-it',
-            max_tokens=4000
-        )
-        print("Initialized LLM: skt/gemma3-12b-it")
+        if self.llm_model_name == "gemma":
+            self.llm_model = ChatOpenAI(
+                temperature=settings.ModelConfig.temperature,
+                openai_api_key=settings.API_CONFIG.llm_api_key,
+                openai_api_base=settings.API_CONFIG.llm_api_url,
+                model=settings.ModelConfig.gemma_model,
+                max_tokens=settings.ModelConfig.llm_max_tokens
+            )
+        elif self.llm_model_name == "gpt":
+            self.llm_model = ChatOpenAI(
+                temperature=settings.ModelConfig.temperature,
+                openai_api_key=settings.API_CONFIG.openai_api_key,
+                model=settings.ModelConfig.gpt_model,
+                max_tokens=settings.ModelConfig.llm_max_tokens
+            )
+        elif self.llm_model_name == "claude":
+            self.llm_model = ChatAnthropic(
+                temperature=settings.ModelConfig.temperature,
+                api_key=settings.API_CONFIG.anthropic_api_key,
+                model=settings.ModelConfig.claude_model,
+                max_tokens=settings.ModelConfig.llm_max_tokens
+            )
+
+        print(f"Initialized LLM: {self.llm_model_name}")
 
     def _initialize_embedding_model(self, model_path):
         self.emb_model = load_sentence_transformer(model_path, self.device)
@@ -602,7 +619,7 @@ class MMSExtractor:
         {rag_context}
         """
 
-        result_json_text = self.llm_gem3.invoke(prompt).content
+        result_json_text = self.llm_model.invoke(prompt).content
         json_objects_list = extract_json_objects(result_json_text)
         if not json_objects_list:
             print("LLM did not return a valid JSON object.")
@@ -685,18 +702,21 @@ if __name__ == '__main__':
     parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
                        help='Data source to use (local CSV or database)')
     parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm' ,'rag'], default='nlp',
-                       help='Product info extraction mode (nlp or llm)')
-    parser.add_argument('--entity-extraction-mode', choices=['logic', 'llm'], default='logic',
-                       help='Entity extraction mode (logic or llm)')
+                       help='Product info extraction mode (nlp or llm or rag)')
+    parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='logic',
+                       help='Entity matching mode (logic or llm)')
+    parser.add_argument('--llm-model', choices=['gemma', 'gpt', 'claude'], default='gemma',
+                       help='LLM model to use (gemma or gpt or claude)')
     
     args = parser.parse_args()
     
     # Use parsed arguments or defaults
     offer_info_data_src = args.offer_data_source
     product_info_extraction_mode = args.product_info_extraction_mode
-    entity_extraction_mode = args.entity_extraction_mode
+    entity_extraction_mode = args.entity_matching_mode
+    llm_model = args.llm_model
     
-    extractor = MMSExtractor(data_dir='./data', offer_info_data_src=offer_info_data_src, product_info_extraction_mode=product_info_extraction_mode, entity_extraction_mode=entity_extraction_mode)
+    extractor = MMSExtractor(data_dir='./data', offer_info_data_src=offer_info_data_src, product_info_extraction_mode=product_info_extraction_mode, entity_extraction_mode=entity_extraction_mode, llm_model=llm_model)
     
     test_text = """
     [SK텔레콤] ZEM폰 포켓몬에디션3 안내

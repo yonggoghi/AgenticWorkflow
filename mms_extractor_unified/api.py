@@ -11,6 +11,7 @@ import argparse
 from pathlib import Path
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from config import settings
 
 # Add current directory to Python path for imports
 current_dir = Path(__file__).parent.absolute()
@@ -33,30 +34,47 @@ CORS(app)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Global extractor instances
-extractors = {}
+# Global extractor instance - loaded once at startup
+global_extractor = None
 
 # Global configuration for CLI data source
 CLI_DATA_SOURCE = 'local'
 
-def get_extractor(data_source='local', offer_info_data_src='local'):
-    """Get or create extractor instance."""
-    key = f"{data_source}_{offer_info_data_src}"
+def initialize_global_extractor(offer_info_data_src='local'):
+    """Initialize the global extractor instance once at startup."""
+    global global_extractor
     
-    if key not in extractors:
-        logger.info(f"Creating new extractor: {key}")
+    if global_extractor is None:
+        logger.info(f"Initializing global extractor with data source: {offer_info_data_src}")
         
-        # Initialize extractor with specified data source
-        extractor = MMSExtractor(
+        # Initialize extractor with data loading
+        global_extractor = MMSExtractor(
             model_path='./models/ko-sbert-nli',
             data_dir='./data',
-            offer_info_data_src=offer_info_data_src
+            offer_info_data_src=offer_info_data_src,
+            llm_model='gemma',  # Default model, will be overridden per request
+            product_info_extraction_mode='nlp',  # Default mode, will be overridden per request
+            entity_extraction_mode='logic'  # Default mode, will be overridden per request
         )
         
-        extractors[key] = extractor
-        logger.info(f"Extractor ready: {key}")
+        logger.info("Global extractor initialized successfully")
     
-    return extractors[key]
+    return global_extractor
+
+def get_configured_extractor(llm_model='gemma', product_info_extraction_mode='nlp', entity_matching_mode='logic'):
+    """Get the global extractor with runtime configuration."""
+    if global_extractor is None:
+        raise RuntimeError("Global extractor not initialized. Call initialize_global_extractor() first.")
+    
+    # Update runtime configuration without reloading data
+    global_extractor.llm_model_name = llm_model
+    global_extractor.product_info_extraction_mode = product_info_extraction_mode
+    global_extractor.entity_extraction_mode = entity_matching_mode
+    
+    # Reinitialize LLM if model changed
+    global_extractor._initialize_llm()
+    
+    return global_extractor
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -71,16 +89,22 @@ def health_check():
 
 @app.route('/models', methods=['GET'])
 def list_models():
-    """List available models and data sources."""
+    """List available models and configuration options."""
     return jsonify({
-        "model": "skt/gemma3-12b-it",
+        "available_llm_models": ["gemma", "gpt", "claude"],
+        "default_llm_model": "gemma",
         "available_data_sources": ["local", "db"],
         "default_data_source": "local",
+        "available_product_info_extraction_modes": ["nlp", "llm", "rag"],
+        "default_product_info_extraction_mode": "nlp",
+        "available_entity_matching_modes": ["logic", "llm"],
+        "default_entity_matching_mode": "logic",
         "features": [
             "Korean morphological analysis (Kiwi)",
             "Embedding-based similarity search",
             "Entity extraction and matching",
-            "Program classification"
+            "Program classification",
+            "Multiple LLM support (Gemma, GPT, Claude)"
         ]
     })
 
@@ -88,6 +112,9 @@ def list_models():
 def extract_message():
     """Extract information from MMS message."""
     try:
+        # Check if global extractor is initialized
+        if global_extractor is None:
+            return jsonify({"error": "Extractor not initialized. Server startup may have failed."}), 500
         # Get request data
         if not request.is_json:
             return jsonify({"error": "Content-Type must be application/json"}), 400
@@ -105,15 +132,30 @@ def extract_message():
         # Get optional parameters  
         data_source = data.get('data_source', CLI_DATA_SOURCE)
         offer_info_data_src = data.get('offer_info_data_src', CLI_DATA_SOURCE)
+        llm_model = data.get('llm_model', settings.ModelConfig.llm_model)
+        product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
+        entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         
-        # Validate data source
+        # Validate parameters
         valid_sources = ['local', 'db']
         if offer_info_data_src not in valid_sources:
             return jsonify({"error": f"Invalid offer_info_data_src. Available: {valid_sources}"}), 400
+            
+        valid_llm_models = ['gemma', 'gpt', 'claude']
+        if llm_model not in valid_llm_models:
+            return jsonify({"error": f"Invalid llm_model. Available: {valid_llm_models}"}), 400
+            
+        valid_product_modes = ['nlp', 'llm', 'rag']
+        if product_info_extraction_mode not in valid_product_modes:
+            return jsonify({"error": f"Invalid product_info_extraction_mode. Available: {valid_product_modes}"}), 400
+            
+        valid_entity_modes = ['logic', 'llm']
+        if entity_matching_mode not in valid_entity_modes:
+            return jsonify({"error": f"Invalid entity_matching_mode. Available: {valid_entity_modes}"}), 400
         
-        # Get extractor and process
+        # Get configured extractor and process
         start_time = time.time()
-        extractor = get_extractor(data_source, offer_info_data_src)
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode)
         
         logger.info(f"Processing message with data_source: {offer_info_data_src}")
         result = extractor.process_message(message)
@@ -124,8 +166,10 @@ def extract_message():
             "success": True,
             "result": result,
             "metadata": {
-                "model": "skt/gemma3-12b-it",
-                "data_source": offer_info_data_src,
+                "llm_model": llm_model,
+                "offer_info_data_src": offer_info_data_src,
+                "product_info_extraction_mode": product_info_extraction_mode,
+                "entity_matching_mode": entity_matching_mode,
                 "processing_time_seconds": round(processing_time, 3),
                 "timestamp": time.time(),
                 "message_length": len(message)
@@ -147,6 +191,9 @@ def extract_message():
 def extract_batch():
     """Extract information from multiple MMS messages."""
     try:
+        # Check if global extractor is initialized
+        if global_extractor is None:
+            return jsonify({"error": "Extractor not initialized. Server startup may have failed."}), 500
         if not request.is_json:
             return jsonify({"error": "Content-Type must be application/json"}), 400
         
@@ -164,9 +211,29 @@ def extract_batch():
         
         # Get optional parameters
         offer_info_data_src = data.get('offer_info_data_src', CLI_DATA_SOURCE)
+        llm_model = data.get('llm_model', settings.ModelConfig.llm_model)
+        product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
+        entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         
-        # Get extractor
-        extractor = get_extractor(CLI_DATA_SOURCE, offer_info_data_src)
+        # Validate parameters
+        valid_sources = ['local', 'db']
+        if offer_info_data_src not in valid_sources:
+            return jsonify({"error": f"Invalid offer_info_data_src. Available: {valid_sources}"}), 400
+            
+        valid_llm_models = ['gemma', 'gpt', 'claude']
+        if llm_model not in valid_llm_models:
+            return jsonify({"error": f"Invalid llm_model. Available: {valid_llm_models}"}), 400
+            
+        valid_product_modes = ['nlp', 'llm', 'rag']
+        if product_info_extraction_mode not in valid_product_modes:
+            return jsonify({"error": f"Invalid product_info_extraction_mode. Available: {valid_product_modes}"}), 400
+            
+        valid_entity_modes = ['logic', 'llm']
+        if entity_matching_mode not in valid_entity_modes:
+            return jsonify({"error": f"Invalid entity_matching_mode. Available: {valid_entity_modes}"}), 400
+        
+        # Get configured extractor
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode)
         
         # Process all messages
         start_time = time.time()
@@ -211,8 +278,10 @@ def extract_batch():
                 "failed": failed
             },
             "metadata": {
-                "model": "skt/gemma3-12b-it",
-                "data_source": offer_info_data_src,
+                "llm_model": llm_model,
+                "offer_info_data_src": offer_info_data_src,
+                "product_info_extraction_mode": product_info_extraction_mode,
+                "entity_matching_mode": entity_matching_mode,
                 "processing_time_seconds": round(processing_time, 3),
                 "timestamp": time.time()
             }
@@ -231,12 +300,20 @@ def extract_batch():
 
 @app.route('/status', methods=['GET'])
 def get_status():
-    """Get API status and loaded extractors."""
+    """Get API status and extractor information."""
+    global global_extractor
+    
+    extractor_status = {
+        "initialized": global_extractor is not None,
+        "data_source": CLI_DATA_SOURCE if global_extractor else None,
+        "current_llm_model": global_extractor.llm_model_name if global_extractor else None,
+        "current_product_mode": global_extractor.product_info_extraction_mode if global_extractor else None,
+        "current_entity_mode": global_extractor.entity_extraction_mode if global_extractor else None
+    }
+    
     return jsonify({
         "status": "running",
-        "loaded_extractors": list(extractors.keys()),
-        "total_extractors": len(extractors),
-        "model": "skt/gemma3-12b-it",
+        "extractor": extractor_status,
         "timestamp": time.time()
     })
 
@@ -262,14 +339,20 @@ def main():
                        help='Data source to use (local CSV or database)')
     parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm' ,'rag'], default='nlp',
                        help='Product info extraction mode (nlp or llm)')
-    parser.add_argument('--entity-extraction-mode', choices=['logic', 'llm'], default='logic',
-                       help='Entity extraction mode (logic or llm)')
+    parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='logic',
+                       help='Entity matching mode (logic or llm)')
+    parser.add_argument('--llm-model', choices=['gemma', 'gpt', 'claude'], default='gemma',
+                       help='LLM model to use (gemma or gpt or claude)')
     
     args = parser.parse_args()
     
     # Set global CLI data source
     CLI_DATA_SOURCE = args.offer_data_source
     logger.info(f"CLI data source set to: {CLI_DATA_SOURCE}")
+    
+    # Initialize global extractor with the specified data source
+    logger.info("Initializing global extractor...")
+    initialize_global_extractor(CLI_DATA_SOURCE)
     
     if args.test:
         # Test mode
@@ -284,8 +367,8 @@ def main():
         """
         
         try:
-            logger.info(f"Initializing extractor with data source: {args.offer_data_source}")
-            extractor = get_extractor(args.offer_data_source, args.offer_data_source)
+            logger.info(f"Configuring extractor with parameters: llm_model={args.llm_model}, product_mode={args.product_info_extraction_mode}, entity_mode={args.entity_matching_mode}")
+            extractor = get_configured_extractor(args.llm_model, args.product_info_extraction_mode, args.entity_matching_mode)
             
             if not message.strip():
                 logger.info("No text provided, using sample message...")
@@ -307,6 +390,7 @@ def main():
     else:
         # Server mode
         logger.info(f"Parsed arguments: host={args.host}, port={args.port}, debug={args.debug}")
+        logger.info("✅ Global extractor initialized and ready for requests")
         logger.info(f"Starting MMS Extractor API server on {args.host}:{args.port}")
         logger.info("Available endpoints:")
         logger.info("  GET  /health - Health check")
