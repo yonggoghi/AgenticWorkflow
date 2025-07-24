@@ -50,8 +50,8 @@ logger = logging.getLogger(__name__)
 
 # Default model settings from original code
 DEFAULT_MODELS = {
-    "openai": "skt/a.x-3-lg",
-    "anthropic": "skt/claude-3-5-sonnet-20241022"
+    "openai": "skt/gemma3-12b-it",
+    "anthropic": "anthropic/claude-sonnet-4-20250514"
 }
 
 DEFAULT_MAX_TOKENS = 100
