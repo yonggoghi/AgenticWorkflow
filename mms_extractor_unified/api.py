@@ -36,6 +36,9 @@ logger = logging.getLogger(__name__)
 # Global extractor instances
 extractors = {}
 
+# Global configuration for CLI data source
+CLI_DATA_SOURCE = 'local'
+
 def get_extractor(data_source='local', offer_info_data_src='local'):
     """Get or create extractor instance."""
     key = f"{data_source}_{offer_info_data_src}"
@@ -100,8 +103,8 @@ def extract_message():
             return jsonify({"error": "Message cannot be empty"}), 400
         
         # Get optional parameters  
-        data_source = data.get('data_source', 'local')
-        offer_info_data_src = data.get('offer_info_data_src', 'local')
+        data_source = data.get('data_source', CLI_DATA_SOURCE)
+        offer_info_data_src = data.get('offer_info_data_src', CLI_DATA_SOURCE)
         
         # Validate data source
         valid_sources = ['local', 'db']
@@ -160,10 +163,10 @@ def extract_batch():
             return jsonify({"error": "Maximum 100 messages per batch"}), 400
         
         # Get optional parameters
-        offer_info_data_src = data.get('offer_info_data_src', 'local')
+        offer_info_data_src = data.get('offer_info_data_src', CLI_DATA_SOURCE)
         
         # Get extractor
-        extractor = get_extractor('local', offer_info_data_src)
+        extractor = get_extractor(CLI_DATA_SOURCE, offer_info_data_src)
         
         # Process all messages
         start_time = time.time()
@@ -247,6 +250,8 @@ def internal_error(error):
 
 def main():
     """Main function for CLI usage."""
+    global CLI_DATA_SOURCE
+    
     parser = argparse.ArgumentParser(description='MMS Extractor API Server')
     parser.add_argument('--host', default='0.0.0.0', help='Host to bind to')
     parser.add_argument('--port', type=int, default=8000, help='Port to bind to')
@@ -257,6 +262,10 @@ def main():
                        help='Data source to use (local CSV or database)')
     
     args = parser.parse_args()
+    
+    # Set global CLI data source
+    CLI_DATA_SOURCE = args.data_source
+    logger.info(f"CLI data source set to: {CLI_DATA_SOURCE}")
     
     if args.test:
         # Test mode
@@ -272,7 +281,7 @@ def main():
         
         try:
             logger.info(f"Initializing extractor with data source: {args.data_source}")
-            extractor = get_extractor('local', args.data_source)
+            extractor = get_extractor(args.data_source, args.data_source)
             
             if not message.strip():
                 logger.info("No text provided, using sample message...")
@@ -293,6 +302,7 @@ def main():
             sys.exit(1)
     else:
         # Server mode
+        logger.info(f"Parsed arguments: host={args.host}, port={args.port}, debug={args.debug}")
         logger.info(f"Starting MMS Extractor API server on {args.host}:{args.port}")
         logger.info("Available endpoints:")
         logger.info("  GET  /health - Health check")
@@ -301,7 +311,14 @@ def main():
         logger.info("  POST /extract - Extract from single message")
         logger.info("  POST /extract/batch - Extract from multiple messages")
         
-        app.run(host=args.host, port=args.port, debug=args.debug)
+        # Ensure Flask uses the correct configuration
+        app.config['DEBUG'] = args.debug
+        
+        try:
+            app.run(host=args.host, port=args.port, debug=args.debug, use_reloader=False, threaded=True)
+        except Exception as e:
+            logger.error(f"Failed to start server: {e}")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
