@@ -387,11 +387,11 @@ def convert_df_to_json_list(df):
 
 
 class MMSExtractor:
-    def __init__(self, model_path='./models/ko-sbert-nli', data_dir='./data/', offer_info_data_src='local'):
+    def __init__(self, model_path='./models/ko-sbert-nli', data_dir='./data/', product_info_extraction_mode='nlp', entity_extraction_mode='logic', offer_info_data_src='local'):
         self.data_dir = data_dir
         self.offer_info_data_src = offer_info_data_src  # 'local' or 'db'
-        self.product_info_extraction_mode = 'llm'
-        self.entity_extraction_mode = 'logic'
+        self.product_info_extraction_mode = product_info_extraction_mode
+        self.entity_extraction_mode = entity_extraction_mode
         self.num_cand_pgms = 5
         
         # Load environment variables
@@ -678,14 +678,25 @@ class MMSExtractor:
         return final_result
 
 if __name__ == '__main__':
+    import argparse
     
-    # Make sure to have the correct data files in ./data/ and models in ./models/
-    # And a config/settings.py file with your API keys
+    parser = argparse.ArgumentParser(description='MMS Extractor')
+    parser.add_argument('--message', type=str, help='Message to test with')
+    parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
+                       help='Data source to use (local CSV or database)')
+    parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm' ,'rag'], default='nlp',
+                       help='Product info extraction mode (nlp or llm)')
+    parser.add_argument('--entity-extraction-mode', choices=['logic', 'llm'], default='logic',
+                       help='Entity extraction mode (logic or llm)')
     
-    # Set offer_info_data_src to "db" to use database, "local" to use CSV files
-    offer_info_data_src = "local"  # Change to "db" if you want to use database
+    args = parser.parse_args()
     
-    extractor = MMSExtractor(data_dir='./data', offer_info_data_src=offer_info_data_src)
+    # Use parsed arguments or defaults
+    offer_info_data_src = args.offer_data_source
+    product_info_extraction_mode = args.product_info_extraction_mode
+    entity_extraction_mode = args.entity_extraction_mode
+    
+    extractor = MMSExtractor(data_dir='./data', offer_info_data_src=offer_info_data_src, product_info_extraction_mode=product_info_extraction_mode, entity_extraction_mode=entity_extraction_mode)
     
     test_text = """
     [SK텔레콤] ZEM폰 포켓몬에디션3 안내

@@ -258,13 +258,17 @@ def main():
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     parser.add_argument('--test', action='store_true', help='Run a test extraction')
     parser.add_argument('--message', type=str, help='Message to test with')
-    parser.add_argument('--data-source', choices=['local', 'db'], default='local',
+    parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
                        help='Data source to use (local CSV or database)')
+    parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm' ,'rag'], default='nlp',
+                       help='Product info extraction mode (nlp or llm)')
+    parser.add_argument('--entity-extraction-mode', choices=['logic', 'llm'], default='logic',
+                       help='Entity extraction mode (logic or llm)')
     
     args = parser.parse_args()
     
     # Set global CLI data source
-    CLI_DATA_SOURCE = args.data_source
+    CLI_DATA_SOURCE = args.offer_data_source
     logger.info(f"CLI data source set to: {CLI_DATA_SOURCE}")
     
     if args.test:
@@ -280,8 +284,8 @@ def main():
         """
         
         try:
-            logger.info(f"Initializing extractor with data source: {args.data_source}")
-            extractor = get_extractor(args.data_source, args.data_source)
+            logger.info(f"Initializing extractor with data source: {args.offer_data_source}")
+            extractor = get_extractor(args.offer_data_source, args.offer_data_source)
             
             if not message.strip():
                 logger.info("No text provided, using sample message...")
