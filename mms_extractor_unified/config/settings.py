@@ -121,10 +121,6 @@ class ProcessingConfig:
         else:
             return base_guide
 
-
-
-
-
 # Global configuration instances
 API_CONFIG = APIConfig()
 MODEL_CONFIG = ModelConfig()
