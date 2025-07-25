@@ -1434,67 +1434,84 @@ def extract_entities_by_logic(cand_entities):
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
-def extract_entities_by_llm(llm, msg_text, rank_limit=5):
-    zero_shot_prompt = PromptTemplate(
-        input_variables=["msg"],
-        template="""
-    Extract all product names, including tangible products, services, promotional events, programs, and loyalty initiatives, from the provided advertisement text.
-    Consider any named offerings, such as apps, membership programs, events, or specific branded items, as products.
-    For terms that may be platforms or brand elements, include them only if they are presented as distinct offerings.
-    Exclude customer support services, such as customer centers or helplines, even if named in the text.
-    Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
-    If multiple terms refer to the same or closely related promotional events (e.g., a general campaign and its specific instances or dates), include only the most general or primary term as the named offering.
-    Ensure that extracted names are presented exactly as they appear in the original text, without translation into English or any other language.
-    Provide the extracted names in a bulleted list, with a brief explanation for each, and note any ambiguities.
-    Ensure the response is formal, concise, and uses precise language.
-    Just return a list with matched entities where the entities are separated by commas.
+def extract_entities_by_llm(llm_model, msg_text, rank_limit=5):
+        """
+        Extract entities using LLM-based approach.
+        """
+        from langchain.prompts import PromptTemplate
+        
+        zero_shot_prompt = PromptTemplate(
+            input_variables=["msg"],
+            template="""
+        Extract all product names, including tangible products, services, promotional events, programs, and loyalty initiatives, from the provided advertisement text.
+        Consider any named offerings, such as apps, membership programs, events, or specific branded items, as products.
+        For terms that may be platforms or brand elements, include them only if they are presented as distinct offerings.
+        Exclude customer support services, such as customer centers or helplines, even if named in the text.
+        Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
+        If multiple terms refer to the same or closely related promotional events (e.g., a general campaign and its specific instances or dates), include only the most general or primary term as the named offering.
+        Ensure that extracted names are presented exactly as they appear in the original text, without translation into English or any other language.
+        Provide the extracted names in a bulleted list, with a brief explanation for each, and note any ambiguities.
+        Ensure the response is formal, concise, and uses precise language.
+        Just return a list with matched entities where the entities are separated by commas.
 
-    ## Message: 
-    {msg}
-    """
-    )
-    chain = LLMChain(llm=llm, prompt=zero_shot_prompt)  # Use your existing LLM
-    cand_entities = chain.run({"msg": msg_text})
+        ## Message: 
+        {msg}
+        """
+        )
+        # Use the new LangChain pattern instead of deprecated LLMChain
+        chain = zero_shot_prompt | llm_model
+        cand_entities = chain.invoke({"msg": msg_text}).content
 
-    cand_entity_list = [e for e in cand_entities.split(',') if not e in parallel_seq_similarity(
-            sent_item_pdf=pd.DataFrame([{"stop_word":d, "cand_entities":cand_entities.split(',')} for d in stop_item_names]).explode('cand_entities'),
-            text_col_nm='stop_word',
-            item_col_nm='cand_entities',
+        # Filter out stop words
+        cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
+        cand_entity_list = [e for e in cand_entity_list if e not in stop_item_names]
+
+        if not cand_entity_list:
+            return pd.DataFrame()
+
+        # Fuzzy similarity matching
+        similarities_fuzzy = parallel_fuzzy_similarity(
+            cand_entity_list, 
+            item_pdf_all['item_nm_alias'].unique(), 
+            threshold=0.6,
+            text_col_nm='item_name_in_msg',
+            item_col_nm='item_nm_alias',
+            n_jobs=6,
+            batch_size=30
+        )
+        
+        if similarities_fuzzy.empty:
+            return pd.DataFrame()
+        
+        # Filter out stop words from results
+        similarities_fuzzy = similarities_fuzzy[~similarities_fuzzy['item_nm_alias'].isin(stop_item_names)]
+
+        # Sequence similarity matching
+        cand_entities_sim = parallel_seq_similarity(
+            sent_item_pdf=similarities_fuzzy,
+            text_col_nm='item_name_in_msg',
+            item_col_nm='item_nm_alias',
+            n_jobs=6,
+            batch_size=30,
+            normalizaton_value='s1'
+        ).rename(columns={'sim':'sim_s1'}).merge(parallel_seq_similarity(
+            sent_item_pdf=similarities_fuzzy,
+            text_col_nm='item_name_in_msg',
+            item_col_nm='item_nm_alias',
             n_jobs=6,
             batch_size=30,
             normalizaton_value='s2'
-    ).query("sim>0.95")['cand_entities'].unique()]
+        ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias'])
+        
+        # Combine similarity scores
+        cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
+        cand_entities_sim = cand_entities_sim.query("sim>=1.5")
 
-    similarities_fuzzy = parallel_fuzzy_similarity(
-    cand_entity_list, 
-    item_pdf_all['item_nm_alias'].unique(), 
-    threshold=0.6,
-    text_col_nm='item_name_in_msg',
-    item_col_nm='item_nm_alias',
-    n_jobs=6,
-    batch_size=30
-    ).query("item_nm_alias not in @stop_item_names")
+        # Rank and limit results
+        cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(method='first',ascending=False)
+        cand_entities_sim = cand_entities_sim.query(f"rank<={rank_limit}").sort_values(['item_name_in_msg','rank'], ascending=[True,True])
 
-    cand_entities_sim = parallel_seq_similarity(
-        sent_item_pdf=similarities_fuzzy,
-        text_col_nm='item_name_in_msg',
-        item_col_nm='item_nm_alias',
-        n_jobs=6,
-        batch_size=30,
-        normalizaton_value='s1'
-    ).rename(columns={'sim':'sim_s1'}).merge(parallel_seq_similarity(
-        sent_item_pdf=similarities_fuzzy,
-        text_col_nm='item_name_in_msg',
-        item_col_nm='item_nm_alias',
-        n_jobs=6,
-        batch_size=30,
-        normalizaton_value='s2'
-    ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias']).groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim').query("sim>=1.5")
-
-    cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(method='first',ascending=False)
-    cand_entities_sim = cand_entities_sim.query(f"rank<={rank_limit}").sort_values(['item_name_in_msg','rank'], ascending=[True,True])
-
-    return cand_entities_sim
+        return cand_entities_sim
 
 # extract_entities_by_llm(llm_gem3, msg_text_list[1])
 
@@ -1779,66 +1796,4 @@ final_result['channel'] = channel_tag
 print(json.dumps(final_result, indent=4, ensure_ascii=False))
 
 print("\n\n")
-
-
-# %%
-zero_shot_prompt = PromptTemplate(
-    input_variables=["msg"],
-    template="""
-Extract all product names, including tangible products, services, promotional events, programs, and loyalty initiatives, from the provided advertisement text.
-Consider any named offerings, such as apps, membership programs, events, or specific branded items, as products.
-For terms that may be platforms or brand elements, include them only if they are presented as distinct offerings.
-Exclude customer support services, such as customer centers or helplines, even if named in the text.
-Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
-If multiple terms refer to the same or closely related promotional events (e.g., a general campaign and its specific instances or dates), include only the most general or primary term as the named offering.
-Ensure that extracted names are presented exactly as they appear in the original text, without translation into English or any other language.
-Provide the extracted names in a bulleted list, with a brief explanation for each, and note any ambiguities.
-Ensure the response is formal, concise, and uses precise language.
-Just return a list with matched entities where the entities are separated by commas.
-
-## Message: 
-{msg}
-"""
-)
-chain = LLMChain(llm=llm_gem3, prompt=zero_shot_prompt)  # Use your existing LLM
-cand_entities = chain.run({"msg": msg_text_list[4]})   
-
-cand_entities
-
-# %%
-import requests
-import json
-# Extract information
-response = requests.post('http://127.0.0.1:8080/extract', json={
-    "message": """광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
-광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc__■ 에이닷 X T 멤버십 시크릿코드 이벤트_에이닷 T 멤버십 쿠폰함에 ‘에이닷이빵쏜닷’을 입력해보세요!_뚜레쥬르 데일리우유식빵 무료 쿠폰을 드립니다._▶ 시크릿코드 입력하러 가기: https://bit.ly/3HCUhLM__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504""",
-    "llm_model": "gemma",
-    "product_info_extraction_mode": "nlp",
-    "entity_matching_mode": "logic"
-})
-result = response.json()
-print(json.dumps(result['result'], indent=4, ensure_ascii=False))
-
-# %%
-llm_gem3.invoke("""
-Extract all product names, including tangible products, services, promotional events, programs, and loyalty initiatives, from the provided advertisement text.
-Consider any named offerings, such as apps, membership programs, events, or specific branded items, as products.
-For terms that may be platforms or brand elements, include them only if they are presented as distinct offerings.
-Exclude customer support services, such as customer centers or helplines, even if named in the text.
-If multiple terms refer to the same or closely related promotional events (e.g., a general campaign and its specific instances or dates), include only the most general or primary term as the named offering.
-Provide the extracted names in a bulleted list, with a brief explanation for each, and note any ambiguities.
-Ensure the response is formal, concise, and uses precise language.
-Just return a list with matched entities where the entities are separated by commas.
-                
-광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
-광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc__■ 에이닷 X T 멤버십 시크릿코드 이벤트_에이닷 T 멤버십 쿠폰함에 ‘에이닷이빵쏜닷’을 입력해보세요!뚜레쥬르 데일리우유식빵 무료 쿠폰을 드립니다.▶ 시크릿코드 입력하러 가기: https://bit.ly/3HCUhLM__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504
-                
-                """).content
-
-# %%
-
-
-# %%
-
-
 
