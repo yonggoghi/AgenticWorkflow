@@ -573,10 +573,94 @@ class MMSExtractor:
         ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias']).groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
         return cand_entities_sim
 
+    def extract_entities_by_llm(self, msg_text, rank_limit=5):
+        """
+        Extract entities using LLM-based approach.
+        """
+        from langchain.prompts import PromptTemplate
+        from langchain.chains import LLMChain
+        
+        zero_shot_prompt = PromptTemplate(
+            input_variables=["msg"],
+            template="""
+        Extract all product names, including tangible products, services, promotional events, programs, and loyalty initiatives, from the provided advertisement text.
+        Consider any named offerings, such as apps, membership programs, events, or specific branded items, as products.
+        For terms that may be platforms or brand elements, include them only if they are presented as distinct offerings.
+        Exclude customer support services, such as customer centers or helplines, even if named in the text.
+        Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
+        If multiple terms refer to the same or closely related promotional events (e.g., a general campaign and its specific instances or dates), include only the most general or primary term as the named offering.
+        Ensure that extracted names are presented exactly as they appear in the original text, without translation into English or any other language.
+        Provide the extracted names in a bulleted list, with a brief explanation for each, and note any ambiguities.
+        Ensure the response is formal, concise, and uses precise language.
+        Just return a list with matched entities where the entities are separated by commas.
+
+        ## Message: 
+        {msg}
+        """
+        )
+        chain = LLMChain(llm=self.llm_model, prompt=zero_shot_prompt)
+        cand_entities = chain.run({"msg": msg_text})
+
+        # Filter out stop words
+        cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
+        cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names]
+
+        if not cand_entity_list:
+            return pd.DataFrame()
+
+        # Fuzzy similarity matching
+        similarities_fuzzy = parallel_fuzzy_similarity(
+            cand_entity_list, 
+            self.item_pdf_all['item_nm_alias'].unique(), 
+            threshold=0.6,
+            text_col_nm='item_name_in_msg',
+            item_col_nm='item_nm_alias',
+            n_jobs=6,
+            batch_size=30
+        )
+        
+        if similarities_fuzzy.empty:
+            return pd.DataFrame()
+        
+        # Filter out stop words from results
+        similarities_fuzzy = similarities_fuzzy[~similarities_fuzzy['item_nm_alias'].isin(self.stop_item_names)]
+
+        # Sequence similarity matching
+        cand_entities_sim = parallel_seq_similarity(
+            sent_item_pdf=similarities_fuzzy,
+            text_col_nm='item_name_in_msg',
+            item_col_nm='item_nm_alias',
+            n_jobs=6,
+            batch_size=30,
+            normalizaton_value='s1'
+        ).rename(columns={'sim':'sim_s1'}).merge(parallel_seq_similarity(
+            sent_item_pdf=similarities_fuzzy,
+            text_col_nm='item_name_in_msg',
+            item_col_nm='item_nm_alias',
+            n_jobs=6,
+            batch_size=30,
+            normalizaton_value='s2'
+        ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias'])
+        
+        # Combine similarity scores
+        cand_entities_sim['sim'] = cand_entities_sim.groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum(), axis=1)
+        cand_entities_sim = cand_entities_sim.query("sim>=1.5")
+
+        # Rank and limit results
+        cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(method='first',ascending=False)
+        cand_entities_sim = cand_entities_sim.query(f"rank<={rank_limit}").sort_values(['item_name_in_msg','rank'], ascending=[True,True])
+
+        return cand_entities_sim
+
     def process_message(self, mms_msg):
         print(f"Processing message: {mms_msg[:100]}...")
         msg = mms_msg.strip()
         cand_item_list, extra_item_pdf = self.extract_entities_from_kiwi(msg)
+        
+        # Prepare product elements for NLP mode
+        product_df = extra_item_pdf.rename(columns={'item_nm':'name'}).query("not name in @self.stop_item_names")[['name']]
+        product_df['action'] = '고객에게 기대하는 행동: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타] 중에서 선택'
+        product_element = product_df.to_dict(orient='records') if product_df.shape[0] > 0 else None
         
         mms_embedding = self.emb_model.encode([msg.lower()], convert_to_tensor=True)
         similarities = torch.nn.functional.cosine_similarity(mms_embedding, self.clue_embeddings, dim=1).cpu().numpy()
@@ -587,37 +671,123 @@ class MMSExtractor:
         pgm_cand_info = "\n\t".join(pgm_pdf_tmp.iloc[:self.num_cand_pgms][['pgm_nm','clue_tag']].apply(lambda x: re.sub(r'\[.*?\]', '', x['pgm_nm'])+" : "+x['clue_tag'], axis=1).to_list())
         rag_context = f"\n### 광고 분류 기준 정보 ###\n\t{pgm_cand_info}" if self.num_cand_pgms > 0 else ""
 
-        prd_ext_guide = "* 상품 추출시 정확도(precision) 보다는 재현율(recall)에 중심을 두어라."
-        if len(cand_item_list)>0 and self.product_info_extraction_mode == 'rag':
-             rag_context += f"\n\n### 후보 상품 이름 목록 ###\n\t{cand_item_list}"
-             prd_ext_guide += "\n* 후보 상품 이름 목록에 포함된 상품 이름은 참고하여 Product 정보를 추출하라."
-        
+        # Updated chain of thought
+        chain_of_thought = """
+1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
+2. Extract product names based on the identified purpose, ensuring only distinct offerings are included and using original text expressions.
+3. Provide channel information considering the extracted product information, preserving original text expressions.
+"""
+
+        # Updated schema with better structure
         schema_prd = {
-            "title": '광고 제목. 광고의 핵심 주제와 가치 제안을 명확하게 설명할 수 있도록 생성',
-            'purpose': '광고의 주요 목적을 다음 중에서 선택(복수 가능): [상품 가입 유도, 대리점/매장 방문 유도, 웹/앱 접속 유도, 이벤트 응모 유도, 혜택 안내, 쿠폰 제공 안내, 경품 제공 안내, 수신 거부 안내, 기타 정보 제공]',
-            'product': {'type': 'array', 'items': {'name': '광고하는 제품이나 서비스 이름', 'action': '고객에게 기대하는 행동: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타] 중에서 선택'}},
-            'channel': {'type': 'array', 'items': {'properties': {'type': '[URL, 전화번호, 앱, 대리점] 중에서 선택', 'value': '실제 URL, 전화번호, 앱 이름, 대리점 이름 등 구체적 정보', 'action': '채널 목적: [가입, 추가 정보, 문의, 수신, 수신 거부] 중에서 선택'}}},
-            'pgm': {'type': 'array', 'description': '아래 광고 분류 기준 정보에서 선택. 메세지 내용과 광고 분류 기준을 참고하여, 광고 메세지에 가장 부합하는 2개의 pgm_nm을 적합도 순서대로 제공'},
+            "title": {
+                "type": "string",
+                "description": "Advertisement title, using the exact expressions as they appear in the original text. Clearly describe the core theme and value proposition of the advertisement."
+            },
+            "purpose": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": ["상품 가입 유도", "대리점/매장 방문 유도", "웹/앱 접속 유도", "이벤트 응모 유도", "혜택 안내", "쿠폰 제공 안내", "경품 제공 안내", "수신 거부 안내", "기타 정보 제공"]
+                },
+                "description": "Primary purpose(s) of the advertisement, expressed using the exact terms from the original text where applicable."
+            },
+            "product": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Name of the advertised product or service, as it appears in the original text without translation."
+                        },
+                        "action": {
+                            "type": "string",
+                            "enum": ["구매", "가입", "사용", "방문", "참여", "코드입력", "쿠폰다운로드", "기타"],
+                            "description": "Expected customer action for the product, derived from the original text context."
+                        }
+                    }
+                },
+                "description": "Extract all product names, including tangible products, services, promotional events, programs, and loyalty initiatives, using the exact expressions as they appear in the original text without translation. Consider only named offerings (e.g., apps, membership programs, events, specific branded items) presented as distinct products or services. Include platform or brand elements only if explicitly presented as standalone offerings. Exclude customer support services (e.g., customer centers, helplines). Exclude descriptive modifiers, attributes, or qualifiers (e.g., '디지털 전용'). If multiple terms refer to the same or closely related promotional events (e.g., a general campaign and its specific instances or dates), include only the most general or primary term. Prioritize recall over precision, but verify each term is a distinct offering."
+            },
+            "channel": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": ["URL", "전화번호", "앱", "대리점"],
+                            "description": "Channel type, as derived from the original text."
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "Specific information for the channel (e.g., URL, phone number, app name, agency name), as it appears in the original text."
+                        },
+                        "action": {
+                            "type": "string",
+                            "enum": ["가입", "추가 정보", "문의", "수신", "수신 거부"],
+                            "description": "Purpose of the channel, derived from the original text context."
+                        }
+                    }
+                },
+                "description": "Channels provided in the advertisement, including URLs, phone numbers, apps, or agencies, using the exact expressions from the original text where applicable, based on the purpose and products."
+            },
+            "pgm": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "description": "Select the two most relevant pgm_nm from the advertising classification criteria, using the exact expressions from the criteria, ordered by relevance, based on the message content."
+            }
         }
-        
+
+        prd_ext_guide = """
+* Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering.
+* Extract all information (title, purpose, product, channel, pgm) using the exact expressions as they appear in the original text without translation, as specified in the schema.
+* If the advertisement purpose includes encouraging agency/store visits, provide agency channel information.
+"""
+
+        if len(cand_item_list) > 0:
+            if self.product_info_extraction_mode == 'rag':
+                rag_context += f"\n\n### 후보 상품 이름 목록 ###\n\t{cand_item_list}"
+                prd_ext_guide += """
+* Use the provided candidate product names as a reference to guide product extraction, ensuring alignment with the advertisement content and using exact expressions from the original text.
+"""
+            elif self.product_info_extraction_mode == 'nlp' and product_element:
+                schema_prd['product'] = product_element
+                chain_of_thought = """
+1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
+2. Extract product information based on the identified purpose, ensuring only distinct offerings are included and using original text expressions.
+3. Extract the action field for each product based on the provided name information, derived from the original text context.
+4. Provide channel information considering the extracted product information, preserving original text expressions.
+"""
+                prd_ext_guide += """
+* Extract the action field for each product based on the identified product names, using the original text context.
+"""
+
+        schema_prompt = f"""
+Provide the results in the following schema:
+
+{json.dumps(schema_prd, indent=4, ensure_ascii=False)}
+"""
+
         prompt = f"""
-        아래 광고 메시지에서 광고 목적과 상품 이름을 추출해 주세요.
-        ### 광고 메시지 ###
-        {msg}
-        ### 추출 작업 순서 ###
-        1. 광고 목적을 먼저 파악한다.
-        2. 파악된 목적에 기반하여 Main 상품을 추출한다.
-        3. 추출한 Main 상품에 관련되는 Sub 상품을 추출한다.
-        4. 추출된 상품 정보를 고려하여 채널 정보를 제공한다.
-        ### 추출 작업 가이드 ###
-        * 상품 추출시 정확도(precision) 보다는 재현율(recall)에 중심을 두어라.
-        * 광고 목적에 대리점 방문이 포함되어 있으면 대리점 채널 정보를 제공해라.
-        {prd_ext_guide}
-        * Only generate the json object, do not include any other text to save as a json file
-        아래와 같은 스키마로 결과를 제공해 주세요.
-        {json.dumps(schema_prd, indent=4, ensure_ascii=False)}
-        {rag_context}
-        """
+Extract the advertisement purpose and product names from the provided advertisement text.
+
+### Advertisement Message ###
+{msg}
+
+### Extraction Steps ###
+{chain_of_thought}
+
+### Extraction Guidelines ###
+{prd_ext_guide}
+
+{schema_prompt}
+
+{rag_context}
+"""
 
         result_json_text = self.llm_model.invoke(prompt).content
         json_objects_list = extract_json_objects(result_json_text)
@@ -633,8 +803,8 @@ class MMSExtractor:
                 product_items = product_items.get('items', [])
             cand_entities = [item['name'] for item in product_items]
             similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
-        else: # llm mode (not fully implemented in original script but placeholder here)
-            similarities_fuzzy = pd.DataFrame()
+        else: # llm mode - now fully implemented
+            similarities_fuzzy = self.extract_entities_by_llm(msg)
 
         final_result = json_objects.copy()
         
