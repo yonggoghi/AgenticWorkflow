@@ -339,7 +339,7 @@ def main():
                        help='Data source to use (local CSV or database)')
     parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm' ,'rag'], default='nlp',
                        help='Product info extraction mode (nlp or llm)')
-    parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='logic',
+    parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='Entity matching mode (logic or llm)')
     parser.add_argument('--llm-model', choices=['gemma', 'gpt', 'claude'], default='gemma',
                        help='LLM model to use (gemma or gpt or claude)')
