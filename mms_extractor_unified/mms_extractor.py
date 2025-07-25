@@ -578,7 +578,6 @@ class MMSExtractor:
         Extract entities using LLM-based approach.
         """
         from langchain.prompts import PromptTemplate
-        from langchain.chains import LLMChain
         
         zero_shot_prompt = PromptTemplate(
             input_variables=["msg"],
@@ -598,8 +597,9 @@ class MMSExtractor:
         {msg}
         """
         )
-        chain = LLMChain(llm=self.llm_model, prompt=zero_shot_prompt)
-        cand_entities = chain.run({"msg": msg_text})
+        # Use the new LangChain pattern instead of deprecated LLMChain
+        chain = zero_shot_prompt | self.llm_model
+        cand_entities = chain.invoke({"msg": msg_text}).content
 
         # Filter out stop words
         cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
@@ -643,7 +643,7 @@ class MMSExtractor:
         ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias'])
         
         # Combine similarity scores
-        cand_entities_sim['sim'] = cand_entities_sim.groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum(), axis=1)
+        cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
         cand_entities_sim = cand_entities_sim.query("sim>=1.5")
 
         # Rank and limit results
@@ -797,10 +797,12 @@ Extract the advertisement purpose and product names from the provided advertisem
         
         json_objects = json_objects_list[0]
         
+        # Extract product items from LLM response
+        product_items = json_objects.get('product', [])
+        if isinstance(product_items, dict): # Handle cases where LLM returns a dict instead of list
+            product_items = product_items.get('items', [])
+        
         if self.entity_extraction_mode == 'logic':
-            product_items = json_objects.get('product', [])
-            if isinstance(product_items, dict): # Handle cases where LLM returns a dict instead of list
-                product_items = product_items.get('items', [])
             cand_entities = [item['name'] for item in product_items]
             similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
         else: # llm mode - now fully implemented
