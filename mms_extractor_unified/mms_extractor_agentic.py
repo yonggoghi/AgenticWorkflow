@@ -1391,11 +1391,11 @@ def extract_entities_from_kiwi(mms_msg, item_pdf_all, stop_item_names):
 
 
 # %%
-def extract_entities_by_logic(cand_entities):
+def extract_entities_by_logic(cand_entities, threshold_for_fuzzy=0.8):
     similarities_fuzzy = parallel_fuzzy_similarity(
     cand_entities, 
     item_pdf_all['item_nm_alias'].unique(), 
-    threshold=0.8,
+    threshold=threshold_for_fuzzy,
     text_col_nm='item_name_in_msg',
     item_col_nm='item_nm_alias',
     n_jobs=6,
@@ -1403,16 +1403,8 @@ def extract_entities_by_logic(cand_entities):
     )
 
     if similarities_fuzzy.shape[0]>0:
-        # similarities_fuzzy = parallel_seq_similarity(
-        #     sent_item_pdf=similarities_fuzzy,
-        #     text_col_nm='item_name_in_msg',
-        #     item_col_nm='item_nm_alias',
-        #     n_jobs=6,
-        #     batch_size=30,
-        #     normalizaton_value='min'
-        # )
 
-        similarities_fuzzy = cand_entities_sim = parallel_seq_similarity(
+        similarities_fuzzy = parallel_seq_similarity(
             sent_item_pdf=similarities_fuzzy,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
@@ -1439,29 +1431,34 @@ def extract_entities_by_llm(llm_model, msg_text, rank_limit=5):
         Extract entities using LLM-based approach.
         """
         from langchain.prompts import PromptTemplate
+
+        cand_entities_by_sim = extract_entities_by_logic([msg_text], threshold_for_fuzzy=0.7)['item_nm_alias'].unique()
         
         zero_shot_prompt = PromptTemplate(
-            input_variables=["msg"],
+            input_variables=["msg","cand_entities"],
             template="""
-        Extract all product names, including tangible products, services, promotional events, programs, and loyalty initiatives, from the provided advertisement text.
-        Consider any named offerings, such as apps, membership programs, events, or specific branded items, as products.
-        For terms that may be platforms or brand elements, include them only if they are presented as distinct offerings.
-        Avoid extracting base or parent brand names (e.g., 'FLO' or 'POOQ') if they are components of more specific offerings (e.g., 'FLO 앤 데이터' or 'POOQ 앤 데이터') presented in the text; focus on the full, distinct product or service names as they appear.
-        Exclude customer support services, such as customer centers or helplines, even if named in the text.
-        Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
-        If multiple terms refer to the same or closely related promotional events (e.g., a general campaign and its specific instances or dates), include only the most general or primary term as the named offering.
-        Ensure that extracted names are presented exactly as they appear in the original text, without translation into English or any other language.
-        Provide the extracted names in a bulleted list, with a brief explanation for each, and note any ambiguities.
-        Ensure the response is formal, concise, and uses precise language.
-        Just return a list with matched entities where the entities are separated by commas.
+            Extract all product names, including tangible products, services, promotional events, programs, loyalty initiatives, and named campaigns or event identifiers, from the provided advertisement text.
+            Reference the provided candidate entities list as a guide for potential matches. Extract only those terms from the candidate list that appear in the advertisement text and qualify as distinct product names based on the following criteria.
+            Consider any named offerings, such as apps, membership programs, events, specific branded items, or campaign names like 'T day' or '0 day', as products if presented as distinct products, services, or promotional entities.
+            For terms that may be platforms or brand elements, include them only if they are presented as standalone offerings.
+            Avoid extracting base or parent brand names (e.g., 'FLO' or 'POOQ') if they are components of more specific offerings (e.g., 'FLO 앤 데이터' or 'POOQ 앤 데이터') presented in the text; focus on the full, distinct product or service names as they appear.
+            Exclude customer support services, such as customer centers or helplines, even if named in the text.
+            Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
+            If multiple terms refer to closely related promotional events (e.g., a general campaign and its specific instances or dates), include the most prominent or overarching campaign name (e.g., '0 day' as a named event) in addition to specific offerings tied to it, unless they are clearly identical.
+            Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering from the candidate list that matches the text.
+            Ensure that extracted names are presented exactly as they appear in the original text, without translation into English or any other language.
+            Just return a list with matched entities where the entities are separated by commas without any other text.
 
-        ## Message: 
-        {msg}
-        """
+            ## message:                
+            {msg}
+
+            ## Candidate entities:
+            {cand_entities}
+            """
         )
         # Use the new LangChain pattern instead of deprecated LLMChain
         chain = zero_shot_prompt | llm_model
-        cand_entities = chain.invoke({"msg": msg_text}).content
+        cand_entities = chain.invoke({"msg": msg_text, "cand_entities": cand_entities_by_sim}).content
 
         # Filter out stop words
         cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
