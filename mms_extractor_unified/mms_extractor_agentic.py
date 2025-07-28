@@ -23,12 +23,12 @@ import re
 import json
 import glob
 import os
-from config import settings
+from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG, METADATA_CONFIG, EMBEDDING_CONFIG
 
 pd.set_option('display.max_colwidth', 500)
 
-llm_api_key = settings.API_CONFIG.llm_api_key
-llm_api_url = settings.API_CONFIG.llm_api_url
+llm_api_key = API_CONFIG.llm_api_key
+llm_api_url = API_CONFIG.llm_api_url
 client = OpenAI(
     api_key = llm_api_key,
     base_url = llm_api_url
@@ -42,19 +42,19 @@ llm_gem3 = ChatOpenAI(
         temperature=0,
         openai_api_key=llm_api_key,
         openai_api_base=llm_api_url,
-        model=settings.ModelConfig.gemma_model,
-        max_tokens=settings.ModelConfig.llm_max_tokens
+        model=MODEL_CONFIG.gemma_model,
+        max_tokens=MODEL_CONFIG.llm_max_tokens
         )
 
 llm_chat = ChatOpenAI(
         temperature=0,
         model="gpt-4.1",
-        openai_api_key=settings.API_CONFIG.openai_api_key,
+        openai_api_key=API_CONFIG.openai_api_key,
         max_tokens=2000,
 )
 llm_cld40 = ChatAnthropic(
-    api_key=settings.API_CONFIG.anthropic_api_key,
-    model=settings.ModelConfig.claude_model,
+    api_key=API_CONFIG.anthropic_api_key,
+    model=MODEL_CONFIG.claude_model,
     max_tokens=3000
 )
 
@@ -166,7 +166,7 @@ def clean_ill_structured_json(text):
     """
     Given a string that is intended to represent a JSON-like structure
     but may be ill-formed (for example, it might contain nested quotes that
-    break standard JSON rules), attempt to “clean” it by processing each
+    break standard JSON rules), attempt to "clean" it by processing each
     key–value pair.
     
     The function uses the following heuristics:
@@ -1007,13 +1007,13 @@ else:
     device = "cpu"
 
 # emb_model = SentenceTransformer('jhgan/ko-sbert-nli').to(device)
-emb_model = load_sentence_transformer('./models/ko-sbert-nli', device)
-# emb_model = SentenceTransformer('jhgan/ko-sroberta-multitask').to(device)
+emb_model = load_sentence_transformer(EMBEDDING_CONFIG.ko_sbert_model_path, device)
+# emb_model = SentenceTransformer('jhgan/ko-roberta-multitask').to(device)
 
 
 # %%
 
-item_pdf_raw = pd.read_csv("./data/item_info_all_250527.csv")
+item_pdf_raw = pd.read_csv(METADATA_CONFIG.offer_data_path)
 
 item_pdf_all = item_pdf_raw.drop_duplicates(['item_nm','item_id'])[['item_nm','item_id','item_desc','domain']].copy()
 item_pdf_all['item_ctg'] = None
@@ -1024,7 +1024,7 @@ item_pdf_all['oper_dt_hms'] = '20250101000000'
 item_pdf_all = item_pdf_all.rename(columns={c:c.lower() for c in item_pdf_all.columns})
 
 # item_pdf_all.query("rank<1000")[['item_nm']].drop_duplicates().to_csv("./data/item_nm_1000.csv", index=False)
-alias_pdf = pd.read_csv("./data/alias_rules.csv")
+alias_pdf = pd.read_csv(METADATA_CONFIG.alias_rules_path)
 alia_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2']))
 
 def apply_alias_rule(item_nm):
@@ -1041,11 +1041,11 @@ item_pdf_all['item_nm_alias'] = item_pdf_all['item_nm'].apply(apply_alias_rule)
 
 item_pdf_all = item_pdf_all.explode('item_nm_alias')
 
-user_defined_entity = ['AIA Vitality' , '부스트 파크 건대입구' , 'Boost Park 건대입구']
+user_defined_entity = PROCESSING_CONFIG.user_defined_entities
 item_pdf_ext = pd.DataFrame([{'item_nm':e,'item_id':e,'item_desc':e, 'domain':'user_defined', 'start_dt':20250101, 'end_dt':99991231, 'rank':1, 'item_nm_alias':e} for e in user_defined_entity])
 item_pdf_all = pd.concat([item_pdf_all,item_pdf_ext])
 
-stop_item_names = pd.read_csv("./data/stop_words.csv")['stop_words'].to_list()
+stop_item_names = pd.read_csv(METADATA_CONFIG.stop_items_path)['stop_words'].to_list()
 
 entity_vocab = []
 for row in item_pdf_all.to_dict('records'):
@@ -1063,10 +1063,10 @@ for row in item_pdf_all.to_dict('records'):
 #                             ,convert_to_tensor=True
 #                             ,show_progress_bar=True)
 
-# save_embeddings_numpy(item_embeddings, text_list_item, './data/item_embeddings_250527.npz')
+# save_embeddings_numpy(item_embeddings, text_list_item, EMBEDDING_CONFIG.item_embeddings_path)
 
 # %%
-mms_pdf = pd.read_csv("./data/mms_data_250408.csv")
+mms_pdf = pd.read_csv(METADATA_CONFIG.mms_msg_path)
 mms_pdf['msg'] = mms_pdf['msg_nm']+"\n"+mms_pdf['mms_phrs']
 mms_pdf = mms_pdf.groupby(["msg_nm","mms_phrs","msg"])['offer_dt'].min().reset_index(name="offer_dt")
 mms_pdf = mms_pdf.reset_index()
@@ -1075,8 +1075,8 @@ mms_pdf = mms_pdf.astype('str')
 # %%
 
 import re
-num_cand_pgms = 5
-pgm_pdf = pd.read_csv("./data/pgm_tag_ext_250516.csv")
+num_cand_pgms = PROCESSING_CONFIG.num_candidate_programs
+pgm_pdf = pd.read_csv(METADATA_CONFIG.pgm_info_path)
 clue_embeddings = emb_model.encode(pgm_pdf[["pgm_nm","clue_tag"]].apply(lambda x: preprocess_text(x['pgm_nm'].lower())+" "+x['clue_tag'].lower(), axis=1).tolist()
                             # ,batch_size=64  # Optimal for MPS
                             ,convert_to_tensor=True
@@ -1084,25 +1084,25 @@ clue_embeddings = emb_model.encode(pgm_pdf[["pgm_nm","clue_tag"]].apply(lambda x
 
 
 # %%
-org_pdf = pd.read_csv("./data/org_info_all_250605.csv", encoding='cp949')
+org_pdf = pd.read_csv(METADATA_CONFIG.org_info_path, encoding='cp949')
 org_pdf['sub_org_cd'] = org_pdf['sub_org_cd'].apply(lambda x: x.zfill(4))
 # text_list_org_all = org_pdf[["org_abbr_nm","bas_addr","dtl_addr"]].apply(lambda x: preprocess_text(x['org_abbr_nm'].lower())+" "+x['bas_addr'].lower()+" "+x['dtl_addr'].lower(), axis=1).tolist()
 # org_all_embeddings = emb_model.encode(text_list_org_all
 #                     # ,batch_size=32  # Optimal for MPS
 #                     ,convert_to_tensor=True
 #                     ,show_progress_bar=True)
-# save_embeddings_numpy(org_all_embeddings, text_list_org_all, './data/org_all_embeddings_250605.npz')
+# save_embeddings_numpy(org_all_embeddings, text_list_org_all, EMBEDDING_CONFIG.org_all_embeddings_path)
 # text_list_org_nm = org_pdf[["org_abbr_nm"]].apply(lambda x: preprocess_text(x['org_abbr_nm'].lower()), axis=1).tolist()
 # org_nm_embeddings = emb_model.encode(text_list_org_nm
 #                     # ,batch_size=32  # Optimal for MPS
 #                     ,convert_to_tensor=True
 #                     ,show_progress_bar=True)
-# save_embeddings_numpy(org_nm_embeddings, text_list_org_nm, './data/org_nm_embeddings_250605.npz')
+# save_embeddings_numpy(org_nm_embeddings, text_list_org_nm, EMBEDDING_CONFIG.org_nm_embeddings_path)
 
 # %%
-# item_embeddings, text_list_item = load_embeddings_numpy('./data/item_embeddings_250527.npz')
-# org_all_embeddings, text_list_org_all = load_embeddings_numpy('./data/org_all_embeddings_250605.npz')
-# org_nm_embeddings, text_list_org_nm = load_embeddings_numpy('./data/org_nm_embeddings_250605.npz')
+# item_embeddings, text_list_item = load_embeddings_numpy(EMBEDDING_CONFIG.item_embeddings_path)
+# org_all_embeddings, text_list_org_all = load_embeddings_numpy(EMBEDDING_CONFIG.org_all_embeddings_path)
+# org_nm_embeddings, text_list_org_nm = load_embeddings_numpy(EMBEDDING_CONFIG.org_nm_embeddings_path)
 # item_embeddings = torch.from_numpy(item_embeddings).to(device)
 # org_all_embeddings = torch.from_numpy(org_all_embeddings).to(device)
 # org_nm_embeddings = torch.from_numpy(org_nm_embeddings).to(device)
@@ -1284,7 +1284,7 @@ exc_tag_patterns = [['SN', 'NNB'],
 # %%
 msg_text_list = ["""
 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
-광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc__■ 에이닷 X T 멤버십 시크릿코드 이벤트_에이닷 T 멤버십 쿠폰함에 ‘에이닷이빵쏜닷’을 입력해보세요!_뚜레쥬르 데일리우유식빵 무료 쿠폰을 드립니다._▶ 시크릿코드 입력하러 가기: https://bit.ly/3HCUhLM__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc__■ 에이닷 X T 멤버십 시크릿코드 이벤트_에이닷 T 멤버십 쿠폰함에 '에이닷이빵쏜닷'을 입력해보세요!_뚜레쥬르 데일리우유식빵 무료 쿠폰을 드립니다._▶ 시크릿코드 입력하러 가기: https://bit.ly/3HCUhLM__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504
 """,
 """
 광고 제목:통화 부가서비스를 패키지로 저렴하게!
@@ -1356,10 +1356,10 @@ def extract_entities_from_kiwi(mms_msg, item_pdf_all, stop_item_names):
     similarities_fuzzy = parallel_fuzzy_similarity(
         sentence_list, 
         item_pdf_all['item_nm_alias'].unique(), 
-        threshold=0.4,
+        threshold=PROCESSING_CONFIG.fuzzy_threshold,
         text_col_nm='sent',
         item_col_nm='item_nm_alias',
-        n_jobs=6,
+        n_jobs=PROCESSING_CONFIG.n_jobs,
         batch_size=30
     )
 
@@ -1367,11 +1367,11 @@ def extract_entities_from_kiwi(mms_msg, item_pdf_all, stop_item_names):
         sent_item_pdf=similarities_fuzzy,
         text_col_nm='sent',
         item_col_nm='item_nm_alias',
-        n_jobs=6,
-        batch_size=100
+        n_jobs=PROCESSING_CONFIG.n_jobs,
+        batch_size=PROCESSING_CONFIG.batch_size
     )
 
-    cand_items = similarities_seq.query("sim>=0.7 and item_nm_alias.str.contains('', case=False) and item_nm_alias not in @stop_item_names")
+    cand_items = similarities_seq.query("sim>=@PROCESSING_CONFIG.similarity_threshold and item_nm_alias.str.contains('', case=False) and item_nm_alias not in @stop_item_names")
 
     entities_from_kiwi_pdf = item_pdf_all.query("item_nm_alias in @entities_from_kiwi")[['item_nm','item_nm_alias']]
     entities_from_kiwi_pdf['sim'] = 1.0
@@ -1398,7 +1398,7 @@ def extract_entities_by_logic(cand_entities, threshold_for_fuzzy=0.8):
     threshold=threshold_for_fuzzy,
     text_col_nm='item_name_in_msg',
     item_col_nm='item_nm_alias',
-    n_jobs=6,
+    n_jobs=PROCESSING_CONFIG.n_jobs,
     batch_size=30
     )
 
@@ -1408,14 +1408,14 @@ def extract_entities_by_logic(cand_entities, threshold_for_fuzzy=0.8):
             sent_item_pdf=similarities_fuzzy,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
-            n_jobs=6,
+            n_jobs=PROCESSING_CONFIG.n_jobs,
             batch_size=30,
             normalizaton_value='s1'
         ).rename(columns={'sim':'sim_s1'}).merge(parallel_seq_similarity(
             sent_item_pdf=similarities_fuzzy,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
-            n_jobs=6,
+            n_jobs=PROCESSING_CONFIG.n_jobs,
             batch_size=30,
             normalizaton_value='s2'
         ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias']).groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
@@ -1432,7 +1432,7 @@ def extract_entities_by_llm(llm_model, msg_text, rank_limit=5):
         """
         from langchain.prompts import PromptTemplate
 
-        cand_entities_by_sim = extract_entities_by_logic([msg_text], threshold_for_fuzzy=0.7)['item_nm_alias'].unique()
+        cand_entities_by_sim = extract_entities_by_logic([msg_text], threshold_for_fuzzy=PROCESSING_CONFIG.similarity_threshold)['item_nm_alias'].unique()
         
         zero_shot_prompt = PromptTemplate(
             input_variables=["msg","cand_entities"],
@@ -1474,7 +1474,7 @@ def extract_entities_by_llm(llm_model, msg_text, rank_limit=5):
             threshold=0.6,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
-            n_jobs=6,
+            n_jobs=PROCESSING_CONFIG.n_jobs,
             batch_size=30
         )
         
@@ -1489,14 +1489,14 @@ def extract_entities_by_llm(llm_model, msg_text, rank_limit=5):
             sent_item_pdf=similarities_fuzzy,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
-            n_jobs=6,
+            n_jobs=PROCESSING_CONFIG.n_jobs,
             batch_size=30,
             normalizaton_value='s1'
         ).rename(columns={'sim':'sim_s1'}).merge(parallel_seq_similarity(
             sent_item_pdf=similarities_fuzzy,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
-            n_jobs=6,
+            n_jobs=PROCESSING_CONFIG.n_jobs,
             batch_size=30,
             normalizaton_value='s2'
         ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias'])
@@ -1516,8 +1516,8 @@ def extract_entities_by_llm(llm_model, msg_text, rank_limit=5):
 
 # %%
 
-product_info_extraction_mode = 'llm' # options: 'rag', 'llm', 'nlp'
-entity_matching_mode = 'llm' # options: 'llm', 'logic'
+product_info_extraction_mode = PROCESSING_CONFIG.product_info_extraction_mode
+entity_matching_mode = PROCESSING_CONFIG.entity_extraction_mode
 
 # for test_text in mms_pdf.query("msg.str.contains('대리점')").sample(10)['msg'].tolist():
 
@@ -1560,7 +1560,7 @@ pgm_cand_info = "\n\t".join(pgm_pdf_tmp.iloc[:num_cand_pgms][['pgm_nm','clue_tag
 rag_context = f"\n### 광고 분류 기준 정보 ###\n\t{pgm_cand_info}" if num_cand_pgms > 0 else ""
 
 chain_of_thought = """
-1. Identify the advertisement’s purpose first, using expressions as they appear in the original text.
+1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
 2. Extract product names based on the identified purpose, ensuring only distinct offerings are included and using original text expressions.
 3. Provide channel information considering the extracted product information, preserving original text expressions.
 """
@@ -1646,7 +1646,7 @@ if len(cand_item_list) > 0:
     elif product_info_extraction_mode == 'nlp':
         schema_prd['product'] = product_element  # Assuming product_element is defined elsewhere
         chain_of_thought = """
-1. Identify the advertisement’s purpose first, using expressions as they appear in the original text.
+1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
 2. Extract product information based on the identified purpose, ensuring only distinct offerings are included and using original text expressions.
 3. Extract the action field for each product based on the provided name information, derived from the original text context.
 4. Provide channel information considering the extracted product information, preserving original text expressions.
@@ -1762,17 +1762,17 @@ for d in [item for item in json_objects['channel']['items']] if isinstance(json_
             threshold=0.5,
             text_col_nm='org_nm_in_msg',
             item_col_nm='org_abbr_nm',
-            n_jobs=6,
-            batch_size=100
+            n_jobs=PROCESSING_CONFIG.n_jobs,
+            batch_size=PROCESSING_CONFIG.batch_size
         ).drop('org_nm_in_msg', axis=1)
 
         org_pdf_cand = org_pdf.merge(org_pdf_cand, on=['org_abbr_nm'])
 
         org_pdf_cand['sim'] = org_pdf_cand['sim'].round(5)
         
-        org_pdf_tmp = org_pdf_cand.query("org_cd.str.startswith('D')").sort_values('sim', ascending=False).query("sim>=0.7")
+        org_pdf_tmp = org_pdf_cand.query("org_cd.str.startswith('D')").sort_values('sim', ascending=False).query("sim>=@PROCESSING_CONFIG.similarity_threshold")
         if org_pdf_tmp.shape[0]<1:
-            org_pdf_tmp = org_pdf_cand.sort_values('sim', ascending=False).query("sim>=0.7")
+            org_pdf_tmp = org_pdf_cand.sort_values('sim', ascending=False).query("sim>=@PROCESSING_CONFIG.similarity_threshold")
 
         org_pdf_tmp['sim'] = org_pdf_tmp.apply(lambda x: combined_sequence_similarity(d['value'], x['org_nm'])[0], axis=1)
         org_pdf_tmp['rank'] = org_pdf_tmp['sim'].rank(method='dense',ascending=False)

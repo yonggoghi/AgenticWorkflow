@@ -24,7 +24,7 @@ import re
 import json
 import glob
 import os
-from config import settings
+from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG, METADATA_CONFIG, EMBEDDING_CONFIG
 from kiwipiepy import Kiwi
 from joblib import Parallel, delayed
 import numpy as np
@@ -387,20 +387,22 @@ def convert_df_to_json_list(df):
 
 
 class MMSExtractor:
-    def __init__(self, model_path='./models/ko-sbert-nli', data_dir='./data/', product_info_extraction_mode='nlp', entity_extraction_mode='logic', offer_info_data_src='local', llm_model='gemma'):
-        self.data_dir = data_dir
+    def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, entity_extraction_mode=None, offer_info_data_src='local', llm_model='gemma'):
+        # Use settings as defaults if not provided
+        self.data_dir = data_dir if data_dir is not None else './data/'
+        self.model_path = model_path if model_path is not None else EMBEDDING_CONFIG.ko_sbert_model_path
         self.offer_info_data_src = offer_info_data_src  # 'local' or 'db'
-        self.product_info_extraction_mode = product_info_extraction_mode
-        self.entity_extraction_mode = entity_extraction_mode
+        self.product_info_extraction_mode = product_info_extraction_mode if product_info_extraction_mode is not None else PROCESSING_CONFIG.product_info_extraction_mode
+        self.entity_extraction_mode = entity_extraction_mode if entity_extraction_mode is not None else PROCESSING_CONFIG.entity_extraction_mode
         self.llm_model_name = llm_model
-        self.num_cand_pgms = 5
+        self.num_cand_pgms = PROCESSING_CONFIG.num_candidate_programs
         
         # Load environment variables
         load_dotenv()
         
         self._initialize_device()
         self._initialize_llm()
-        self._initialize_embedding_model(model_path)
+        self._initialize_embedding_model(self.model_path)
         self._initialize_kiwi()
         self._load_data()
 
@@ -416,25 +418,25 @@ class MMSExtractor:
     def _initialize_llm(self):
         if self.llm_model_name == "gemma":
             self.llm_model = ChatOpenAI(
-                temperature=settings.ModelConfig.temperature,
-                openai_api_key=settings.API_CONFIG.llm_api_key,
-                openai_api_base=settings.API_CONFIG.llm_api_url,
-                model=settings.ModelConfig.gemma_model,
-                max_tokens=settings.ModelConfig.llm_max_tokens
+                temperature=MODEL_CONFIG.temperature,
+                openai_api_key=API_CONFIG.llm_api_key,
+                openai_api_base=API_CONFIG.llm_api_url,
+                model=MODEL_CONFIG.gemma_model,
+                max_tokens=MODEL_CONFIG.llm_max_tokens
             )
         elif self.llm_model_name == "gpt":
             self.llm_model = ChatOpenAI(
-                temperature=settings.ModelConfig.temperature,
-                openai_api_key=settings.API_CONFIG.openai_api_key,
-                model=settings.ModelConfig.gpt_model,
-                max_tokens=settings.ModelConfig.llm_max_tokens
+                temperature=MODEL_CONFIG.temperature,
+                openai_api_key=API_CONFIG.openai_api_key,
+                model=MODEL_CONFIG.gpt_model,
+                max_tokens=MODEL_CONFIG.llm_max_tokens
             )
         elif self.llm_model_name == "claude":
             self.llm_model = ChatAnthropic(
-                temperature=settings.ModelConfig.temperature,
-                api_key=settings.API_CONFIG.anthropic_api_key,
-                model=settings.ModelConfig.claude_model,
-                max_tokens=settings.ModelConfig.llm_max_tokens
+                temperature=MODEL_CONFIG.temperature,
+                api_key=API_CONFIG.anthropic_api_key,
+                model=MODEL_CONFIG.claude_model,
+                max_tokens=MODEL_CONFIG.llm_max_tokens
             )
 
         print(f"Initialized LLM: {self.llm_model_name}")
@@ -456,7 +458,7 @@ class MMSExtractor:
         print("Loading data...")
         
         if self.offer_info_data_src == "local":
-            item_pdf_raw = pd.read_csv(os.path.join(self.data_dir, "item_info_all_250527.csv"))
+            item_pdf_raw = pd.read_csv(METADATA_CONFIG.offer_data_path)
             self.item_pdf_all = item_pdf_raw.drop_duplicates(['item_nm','item_id'])[['item_nm','item_id','item_desc','domain']].copy()
             self.item_pdf_all['item_ctg'] = None
             self.item_pdf_all['item_emb_vec'] = None
@@ -483,7 +485,7 @@ class MMSExtractor:
             # 컬럼명을 소문자로 변환
             self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
 
-        alias_pdf = pd.read_csv(os.path.join(self.data_dir, "alias_rules.csv"))
+        alias_pdf = pd.read_csv(METADATA_CONFIG.alias_rules_path)
         alia_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2']))
 
         def apply_alias_rule(item_nm):
@@ -498,22 +500,22 @@ class MMSExtractor:
         self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
         self.item_pdf_all = self.item_pdf_all.explode('item_nm_alias')
         
-        user_defined_entity = ['AIA Vitality' , '부스트 파크 건대입구' , 'Boost Park 건대입구']
+        user_defined_entity = PROCESSING_CONFIG.user_defined_entities
         item_pdf_ext = pd.DataFrame([{'item_nm':e,'item_id':e,'item_desc':e, 'domain':'user_defined', 'start_dt':20250101, 'end_dt':99991231, 'rank':1, 'item_nm_alias':e} for e in user_defined_entity])
         # self.item_pdf_all = pd.concat([self.item_pdf_all,item_pdf_ext]) # This was causing issues with missing columns in original code
         
-        self.stop_item_names = pd.read_csv(os.path.join(self.data_dir, "stop_words.csv"))['stop_words'].to_list()
+        self.stop_item_names = pd.read_csv(METADATA_CONFIG.stop_items_path)['stop_words'].to_list()
 
         for w in self.item_pdf_all['item_nm_alias'].unique():
             self.kiwi.add_user_word(w, "NNP")
 
-        self.pgm_pdf = pd.read_csv(os.path.join(self.data_dir, "pgm_tag_ext_250516.csv"))
+        self.pgm_pdf = pd.read_csv(METADATA_CONFIG.pgm_info_path)
         self.clue_embeddings = self.emb_model.encode(
             self.pgm_pdf[["pgm_nm","clue_tag"]].apply(lambda x: preprocess_text(x['pgm_nm'].lower())+" "+x['clue_tag'].lower(), axis=1).tolist(),
             convert_to_tensor=True, show_progress_bar=True
         )
 
-        self.org_pdf = pd.read_csv(os.path.join(self.data_dir, "org_info_all_250605.csv"), encoding='cp949')
+        self.org_pdf = pd.read_csv(METADATA_CONFIG.org_info_path, encoding='cp949')
         self.org_pdf['sub_org_cd'] = self.org_pdf['sub_org_cd'].apply(lambda x: str(x).zfill(4))
         print("Data loading complete.")
 
@@ -534,8 +536,8 @@ class MMSExtractor:
         print("추출된 개체명 (Kiwi):", list(set(entities_from_kiwi)))
 
         similarities_fuzzy = parallel_fuzzy_similarity(
-            sentence_list, self.item_pdf_all['item_nm_alias'].unique(), threshold=0.4,
-            text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=6, batch_size=30
+            sentence_list, self.item_pdf_all['item_nm_alias'].unique(), threshold=PROCESSING_CONFIG.fuzzy_threshold,
+            text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=PROCESSING_CONFIG.n_jobs, batch_size=30
         )
         if similarities_fuzzy.empty:
             cand_item_list = entities_from_kiwi
@@ -544,9 +546,9 @@ class MMSExtractor:
 
         similarities_seq = parallel_seq_similarity(
             sent_item_pdf=similarities_fuzzy, text_col_nm='sent', item_col_nm='item_nm_alias',
-            n_jobs=6, batch_size=100
+            n_jobs=PROCESSING_CONFIG.n_jobs, batch_size=PROCESSING_CONFIG.batch_size
         )
-        cand_items = similarities_seq.query("sim>=0.7 and item_nm_alias.str.contains('', case=False) and item_nm_alias not in @self.stop_item_names")
+        cand_items = similarities_seq.query("sim>=@PROCESSING_CONFIG.similarity_threshold and item_nm_alias.str.contains('', case=False) and item_nm_alias not in @self.stop_item_names")
         entities_from_kiwi_pdf = self.item_pdf_all.query("item_nm_alias in @entities_from_kiwi")[['item_nm','item_nm_alias']]
         entities_from_kiwi_pdf['sim'] = 1.0
 
@@ -559,17 +561,17 @@ class MMSExtractor:
     def extract_entities_by_logic(self, cand_entities, threshold_for_fuzzy=0.8):
         similarities_fuzzy = parallel_fuzzy_similarity(
             cand_entities, self.item_pdf_all['item_nm_alias'].unique(), threshold=threshold_for_fuzzy,
-            text_col_nm='item_name_in_msg', item_col_nm='item_nm_alias', n_jobs=6, batch_size=30
+            text_col_nm='item_name_in_msg', item_col_nm='item_nm_alias', n_jobs=PROCESSING_CONFIG.n_jobs, batch_size=30
         )
         if similarities_fuzzy.empty:
             return pd.DataFrame()
         
         cand_entities_sim = parallel_seq_similarity(
             sent_item_pdf=similarities_fuzzy, text_col_nm='item_name_in_msg', item_col_nm='item_nm_alias',
-            n_jobs=6, batch_size=30, normalizaton_value='s1'
+            n_jobs=PROCESSING_CONFIG.n_jobs, batch_size=30, normalizaton_value='s1'
         ).rename(columns={'sim':'sim_s1'}).merge(parallel_seq_similarity(
             sent_item_pdf=similarities_fuzzy, text_col_nm='item_name_in_msg', item_col_nm='item_nm_alias',
-            n_jobs=6, batch_size=30, normalizaton_value='s2'
+            n_jobs=PROCESSING_CONFIG.n_jobs, batch_size=30, normalizaton_value='s2'
         ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias']).groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
         return cand_entities_sim
 
@@ -579,7 +581,7 @@ class MMSExtractor:
         """
         from langchain.prompts import PromptTemplate
         
-        cand_entities_by_sim = self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=0.7)['item_nm_alias'].unique()
+        cand_entities_by_sim = self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=PROCESSING_CONFIG.similarity_threshold)['item_nm_alias'].unique()
         
         zero_shot_prompt = PromptTemplate(
             input_variables=["msg","cand_entities"],
@@ -621,7 +623,7 @@ class MMSExtractor:
             threshold=0.6,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
-            n_jobs=6,
+            n_jobs=PROCESSING_CONFIG.n_jobs,
             batch_size=30
         )
         
@@ -636,14 +638,14 @@ class MMSExtractor:
             sent_item_pdf=similarities_fuzzy,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
-            n_jobs=6,
+            n_jobs=PROCESSING_CONFIG.n_jobs,
             batch_size=30,
             normalizaton_value='s1'
         ).rename(columns={'sim':'sim_s1'}).merge(parallel_seq_similarity(
             sent_item_pdf=similarities_fuzzy,
             text_col_nm='item_name_in_msg',
             item_col_nm='item_nm_alias',
-            n_jobs=6,
+            n_jobs=PROCESSING_CONFIG.n_jobs,
             batch_size=30,
             normalizaton_value='s2'
         ).rename(columns={'sim':'sim_s2'}), on=['item_name_in_msg','item_nm_alias'])
@@ -845,15 +847,15 @@ Extract the advertisement purpose and product names from the provided advertisem
             if d.get('type') == '대리점' and d.get('value'):
                 org_pdf_cand = parallel_fuzzy_similarity(
                     [preprocess_text(d['value'].lower())], self.org_pdf['org_abbr_nm'].unique(), threshold=0.5,
-                    text_col_nm='org_nm_in_msg', item_col_nm='org_abbr_nm', n_jobs=6, batch_size=100
+                    text_col_nm='org_nm_in_msg', item_col_nm='org_abbr_nm', n_jobs=PROCESSING_CONFIG.n_jobs, batch_size=PROCESSING_CONFIG.batch_size
                 ).drop('org_nm_in_msg', axis=1)
 
                 if not org_pdf_cand.empty:
                     org_pdf_cand = self.org_pdf.merge(org_pdf_cand, on=['org_abbr_nm'])
                     org_pdf_cand['sim'] = org_pdf_cand.apply(lambda x: combined_sequence_similarity(d['value'], x['org_nm'])[0], axis=1).round(5)
-                    org_pdf_tmp = org_pdf_cand.query("org_cd.str.startswith('D') & sim >= 0.7", engine='python').sort_values('sim', ascending=False)
+                    org_pdf_tmp = org_pdf_cand.query("org_cd.str.startswith('D') & sim >= @PROCESSING_CONFIG.similarity_threshold", engine='python').sort_values('sim', ascending=False)
                     if org_pdf_tmp.empty:
-                        org_pdf_tmp = org_pdf_cand.query("sim>=0.7").sort_values('sim', ascending=False)
+                        org_pdf_tmp = org_pdf_cand.query("sim>=@PROCESSING_CONFIG.similarity_threshold").sort_values('sim', ascending=False)
                     
                     if not org_pdf_tmp.empty:
                         org_pdf_tmp['rank'] = org_pdf_tmp['sim'].rank(method='dense',ascending=False)
@@ -893,7 +895,7 @@ if __name__ == '__main__':
     entity_extraction_mode = args.entity_matching_mode
     llm_model = args.llm_model
     
-    extractor = MMSExtractor(data_dir='./data', offer_info_data_src=offer_info_data_src, product_info_extraction_mode=product_info_extraction_mode, entity_extraction_mode=entity_extraction_mode, llm_model=llm_model)
+    extractor = MMSExtractor(offer_info_data_src=offer_info_data_src, product_info_extraction_mode=product_info_extraction_mode, entity_extraction_mode=entity_extraction_mode, llm_model=llm_model)
     
     test_text = """
     [SK텔레콤] ZEM폰 포켓몬에디션3 안내

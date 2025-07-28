@@ -28,7 +28,28 @@ class APIConfig:
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
+@dataclass
+class METADATAConfig:
+    """Metadata path configuration settings."""
+    alias_rules_path: str = os.getenv("ALIAS_RULE_PATH", "./data/alias_rules.csv")
+    stop_items_path: str = os.getenv("STOP_ITEM_PATH", "./data/stop_words.csv")
+    offer_data_path: str = os.getenv("OFFER_DATA_PATH", "./data/item_info_all_250527.csv")
+    org_info_path: str = os.getenv("ORG_INFO_PATH", "./data/org_info_all_250605.csv")
+    pgm_info_path: str = os.getenv("PGM_INFO_PATH", "./data/pgm_tag_ext_250516.csv")
+    mms_msg_path: str = os.getenv("MMS_MSG_PATH", "./data/mms_data_250408.csv")
 
+@dataclass
+class EmbeddingConfig:
+    """Embedding and model file path configuration settings."""
+    # Embedding cache paths
+    item_embeddings_path: str = os.getenv("ITEM_EMBEDDINGS_PATH", "./data/item_embeddings_250527.npz")
+    org_all_embeddings_path: str = os.getenv("ORG_ALL_EMBEDDINGS_PATH", "./data/org_all_embeddings_250605.npz")
+    org_nm_embeddings_path: str = os.getenv("ORG_NM_EMBEDDINGS_PATH", "./data/org_nm_embeddings_250605.npz")
+    
+    # Model paths
+    local_model_base_path: str = os.getenv("LOCAL_MODEL_BASE_PATH", "./models")
+    ko_sbert_model_path: str = os.getenv("KO_SBERT_MODEL_PATH", "./models/ko-sbert-nli")
+    
 @dataclass
 class ModelConfig:
     """Model configuration settings."""
@@ -59,10 +80,6 @@ class ModelConfig:
         }
         return descriptions.get(self.model_loading_mode, 'Unknown mode')
 
-
-
-
-
 @dataclass
 class ProcessingConfig:
     """Processing configuration settings."""
@@ -73,9 +90,9 @@ class ProcessingConfig:
     n_jobs: int = 6
     user_defined_entities: List[str] = None
     # Product information extraction mode
-    product_info_extraction_mode: str = 'nlp'  # options: 'rag', 'llm', 'nlp'
+    product_info_extraction_mode: str = 'llm'  # options: 'rag', 'llm', 'nlp'
     # Entity extraction mode
-    entity_extraction_mode: str = 'logic'  # options: 'llm', 'logic'
+    entity_extraction_mode: str = 'llm'  # options: 'llm', 'logic'
     
     def __post_init__(self):
         if self.user_defined_entities is None:
@@ -124,4 +141,6 @@ class ProcessingConfig:
 # Global configuration instances
 API_CONFIG = APIConfig()
 MODEL_CONFIG = ModelConfig()
-PROCESSING_CONFIG = ProcessingConfig() 
+PROCESSING_CONFIG = ProcessingConfig()
+METADATA_CONFIG = METADATAConfig()
+EMBEDDING_CONFIG = EmbeddingConfig()
