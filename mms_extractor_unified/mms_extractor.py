@@ -585,6 +585,7 @@ class MMSExtractor:
         Extract all product names, including tangible products, services, promotional events, programs, and loyalty initiatives, from the provided advertisement text.
         Consider any named offerings, such as apps, membership programs, events, or specific branded items, as products.
         For terms that may be platforms or brand elements, include them only if they are presented as distinct offerings.
+        Avoid extracting base or parent brand names (e.g., 'FLO' or 'POOQ') if they are components of more specific offerings (e.g., 'FLO 앤 데이터' or 'POOQ 앤 데이터') presented in the text; focus on the full, distinct product or service names as they appear.
         Exclude customer support services, such as customer centers or helplines, even if named in the text.
         Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
         If multiple terms refer to the same or closely related promotional events (e.g., a general campaign and its specific instances or dates), include only the most general or primary term as the named offering.
@@ -603,7 +604,7 @@ class MMSExtractor:
 
         # Filter out stop words
         cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
-        cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names]
+        cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e)>=2]
 
         if not cand_entity_list:
             return pd.DataFrame()
@@ -708,8 +709,7 @@ class MMSExtractor:
                         }
                     }
                 },
-                "description": "Extract all product names, including tangible products, services, promotional events, programs, loyalty initiatives, and named campaigns or event identifiers, using the exact expressions as they appear in the original text without translation. Consider only named offerings (e.g., apps, membership programs, events, specific branded items, or campaign names like 'T day' or '0 day') presented as distinct products, services, or promotional entities. Include platform or brand elements only if explicitly presented as standalone offerings. Exclude customer support services (e.g., customer centers, helplines). Exclude descriptive modifiers, attributes, or qualifiers (e.g., '디지털 전용'). If multiple terms refer to closely related promotional events (e.g., a general campaign and its specific instances or dates), include the most prominent or overarching campaign name (e.g., '0 day' as a named event) in addition to specific offerings tied to it, unless they are clearly identical. Prioritize recall over precision, but verify each term is a distinct offering."
-            },
+                "description": "Extract all product names, including tangible products, services, promotional events, programs, loyalty initiatives, and named campaigns or event identifiers, using the exact expressions as they appear in the original text without translation. Consider only named offerings (e.g., apps, membership programs, events, specific branded items, or campaign names like 'T day' or '0 day') presented as distinct products, services, or promotional entities. Include platform or brand elements only if explicitly presented as standalone offerings. Avoid extracting base or parent brand names (e.g., 'FLO' or 'POOQ') if they are components of more specific offerings (e.g., 'FLO 앤 데이터' or 'POOQ 앤 데이터') presented in the text; focus on the full, distinct product or service names as they appear. Exclude customer support services (e.g., customer centers, helplines). Exclude descriptive modifiers, attributes, or qualifiers (e.g., '디지털 전용'). If multiple terms refer to closely related promotional events (e.g., a general campaign and its specific instances or dates), include the most prominent or overarching campaign name (e.g., '0 day' as a named event) in addition to specific offerings tied to it, unless they are clearly identical. Prioritize recall over precision, but verify each term is a distinct offering."            },
             "channel": {
                 "type": "array",
                 "items": {
