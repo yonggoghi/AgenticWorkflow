@@ -1722,7 +1722,7 @@ if similarities_fuzzy.shape[0]>0:
     
     # Step 3: Merge with item_pdf_all
     product_tag = convert_df_to_json_list(
-        item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
+        item_pdf_all.query("domain!='R'").merge(filtered_similarities, on=['item_nm_alias'])
     )
 
     final_result = {

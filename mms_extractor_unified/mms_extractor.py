@@ -1261,7 +1261,7 @@ Extract the advertisement purpose and product names from the provided advertisem
                 (~similarities_fuzzy['item_name_in_msg'].isin(self.stop_item_names))
             ]
             # 상품 정보와 매핑하여 최종 결과 생성
-            product_tag = convert_df_to_json_list(self.item_pdf_all.merge(filtered_similarities, on=['item_nm_alias']))
+            product_tag = convert_df_to_json_list(self.item_pdf_all.query("domain!='R'").merge(filtered_similarities, on=['item_nm_alias'])) # 대리점 제외
             final_result['product'] = product_tag
         else:
             # 유사도 결과가 없으면 LLM 결과 그대로 사용
