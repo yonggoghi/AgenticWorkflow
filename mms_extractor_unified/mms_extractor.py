@@ -797,7 +797,7 @@ class MMSExtractor:
             self.item_pdf_all['item_emb_vec'] = None
             self.item_pdf_all['ofer_cd'] = self.item_pdf_all['item_id']
             self.item_pdf_all['oper_dt_hms'] = '20250101000000'
-            self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
+            self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns}).query("domain!='R'")
             
         elif self.offer_info_data_src == "db":
             # 데이터베이스 연결 정보
@@ -812,7 +812,7 @@ class MMSExtractor:
             conn = cx_Oracle.connect(user=username, password=password, dsn=dsn, encoding="UTF-8")
             
             # 상품 정보 조회 (최대 100만 건)
-            sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000"
+            sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000 and ITEM_DMN!='R'"
             self.item_pdf_all = pd.read_sql(sql, conn)
             conn.close()
             
@@ -1261,7 +1261,7 @@ Extract the advertisement purpose and product names from the provided advertisem
                 (~similarities_fuzzy['item_name_in_msg'].isin(self.stop_item_names))
             ]
             # 상품 정보와 매핑하여 최종 결과 생성
-            product_tag = convert_df_to_json_list(self.item_pdf_all.query("domain!='R'").merge(filtered_similarities, on=['item_nm_alias'])) # 대리점 제외
+            product_tag = convert_df_to_json_list(self.item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])) # 대리점 제외
             final_result['product'] = product_tag
         else:
             # 유사도 결과가 없으면 LLM 결과 그대로 사용
