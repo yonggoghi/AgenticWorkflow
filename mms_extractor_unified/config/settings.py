@@ -124,6 +124,8 @@ class ProcessingConfig:
     batch_size: int = 100  # Batch size for parallel processing operations
     n_jobs: int = 6  # Number of parallel jobs for similarity calculations
     
+    excluded_domain_codes_for_items: List[str] = None # Domain codes to exclude from item processing (e.g., ['R'] for agency domains)
+
     # User-defined entities that should always be recognized
     user_defined_entities: List[str] = None  # Custom entities to add to the recognition vocabulary
     
@@ -133,6 +135,10 @@ class ProcessingConfig:
     
     def __post_init__(self):
         """Initialize default values and validate configuration after creation."""
+        # Set default excluded domain codes if none provided
+        if self.excluded_domain_codes_for_items is None:
+            self.excluded_domain_codes_for_items = ['R']  # 'R' represents agency/dealer domain codes
+        
         # Set default user-defined entities if none provided
         if self.user_defined_entities is None:
             self.user_defined_entities = [

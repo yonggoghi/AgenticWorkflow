@@ -108,13 +108,19 @@ def get_configured_extractor(llm_model='gemma', product_info_extraction_mode='nl
     if global_extractor is None:
         raise RuntimeError("전역 추출기가 초기화되지 않았습니다. initialize_global_extractor()를 먼저 호출하세요.")
     
+    # 현재 설정과 비교하여 변경된 경우만 업데이트
+    current_llm_model = getattr(global_extractor, 'llm_model_name', None)
+    llm_model_changed = current_llm_model != llm_model
+    
     # 데이터 재로딩 없이 런타임 설정만 업데이트
     global_extractor.llm_model_name = llm_model
     global_extractor.product_info_extraction_mode = product_info_extraction_mode
     global_extractor.entity_extraction_mode = entity_matching_mode
     
-    # 모델이 변경된 경우 LLM 재초기화
-    global_extractor._initialize_llm()
+    # LLM 모델이 실제로 변경된 경우에만 재초기화
+    if llm_model_changed:
+        logger.info(f"LLM 모델이 {current_llm_model} -> {llm_model}로 변경됨. 재초기화 중...")
+        global_extractor._initialize_llm()
     
     return global_extractor
 

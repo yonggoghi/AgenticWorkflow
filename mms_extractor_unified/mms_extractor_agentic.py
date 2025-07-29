@@ -1021,7 +1021,10 @@ item_pdf_all['item_emb_vec'] = None
 item_pdf_all['ofer_cd'] = item_pdf_all['item_id']
 item_pdf_all['oper_dt_hms'] = '20250101000000'
 
-item_pdf_all = item_pdf_all.rename(columns={c:c.lower() for c in item_pdf_all.columns}).query("item_dmn!='R'")
+item_pdf_all = item_pdf_all.rename(columns={c:c.lower() for c in item_pdf_all.columns})
+
+if PROCESSING_CONFIG.excluded_domain_codes_for_items:
+    item_pdf_all = item_pdf_all.query("item_dmn not in @PROCESSING_CONFIG.excluded_domain_codes_for_items")
 
 # item_pdf_all.query("rank<1000")[['item_nm']].drop_duplicates().to_csv("./data/item_nm_1000.csv", index=False)
 alias_pdf = pd.read_csv(METADATA_CONFIG.alias_rules_path)
@@ -1504,7 +1507,7 @@ def extract_entities_by_llm(llm_model, msg_text, rank_limit=5):
         
         # Combine similarity scores
         cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
-        cand_entities_sim = cand_entities_sim.query("sim>=1.5")
+        cand_entities_sim = cand_entities_sim.query("sim>=1.5").copy()
 
         # Rank and limit results
         cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(method='first',ascending=False)
