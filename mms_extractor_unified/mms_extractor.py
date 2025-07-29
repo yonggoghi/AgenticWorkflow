@@ -792,13 +792,13 @@ class MMSExtractor:
         # 상품 정보 로드 (로컬 파일 또는 데이터베이스)
         if self.offer_info_data_src == "local":
             item_pdf_raw = pd.read_csv(METADATA_CONFIG.offer_data_path)
-            self.item_pdf_all = item_pdf_raw.drop_duplicates(['item_nm','item_id'])[['item_nm','item_id','item_desc','domain']].copy()
+            self.item_pdf_all = item_pdf_raw.drop_duplicates(['item_nm','item_id'])[['item_nm','item_id','item_desc','item_dmn']].copy()
             self.item_pdf_all['item_ctg'] = None
             self.item_pdf_all['item_emb_vec'] = None
             self.item_pdf_all['ofer_cd'] = self.item_pdf_all['item_id']
             self.item_pdf_all['oper_dt_hms'] = '20250101000000'
-            self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns}).query("domain!='R'")
-            
+            self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
+                        
         elif self.offer_info_data_src == "db":
             # 데이터베이스 연결 정보
             username = os.getenv("DB_USERNAME")
@@ -812,12 +812,17 @@ class MMSExtractor:
             conn = cx_Oracle.connect(user=username, password=password, dsn=dsn, encoding="UTF-8")
             
             # 상품 정보 조회 (최대 100만 건)
-            sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000 and ITEM_DMN!='R'"
+            sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000"
             self.item_pdf_all = pd.read_sql(sql, conn)
             conn.close()
             
             # 컬럼명 소문자 변환
             self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
+
+        if PROCESSING_CONFIG.excluded_domain_codes_for_items:
+            self.item_pdf_all = self.item_pdf_all.query("item_dmn not in @PROCESSING_CONFIG.excluded_domain_codes_for_items")
+        # else:
+        #     self.item_pdf_all = self.item_pdf_all.copy()
 
         # 별칭 규칙 로드 및 적용
         alias_pdf = pd.read_csv(METADATA_CONFIG.alias_rules_path)
@@ -839,7 +844,7 @@ class MMSExtractor:
         # 사용자 정의 엔티티 추가
         user_defined_entity = PROCESSING_CONFIG.user_defined_entities
         item_pdf_ext = pd.DataFrame([
-            {'item_nm':e,'item_id':e,'item_desc':e, 'domain':'user_defined', 
+            {'item_nm':e,'item_id':e,'item_desc':e, 'item_dmn':'user_defined', 
              'start_dt':20250101, 'end_dt':99991231, 'rank':1, 'item_nm_alias':e} 
             for e in user_defined_entity
         ])
@@ -854,13 +859,15 @@ class MMSExtractor:
             self.kiwi.add_user_word(w, "NNP")
 
         # 프로그램 분류 정보 로드 및 임베딩 생성
+        print("🔄 프로그램 분류 임베딩 생성 시작...")
         self.pgm_pdf = pd.read_csv(METADATA_CONFIG.pgm_info_path)
         self.clue_embeddings = self.emb_model.encode(
             self.pgm_pdf[["pgm_nm","clue_tag"]].apply(
                 lambda x: preprocess_text(x['pgm_nm'].lower())+" "+x['clue_tag'].lower(), axis=1
             ).tolist(),
-            convert_to_tensor=True, show_progress_bar=True
+            convert_to_tensor=True, show_progress_bar=False
         )
+        print("✅ 프로그램 분류 임베딩 생성 완료!")
 
         # 조직/매장 정보 로드
         self.org_pdf = pd.read_csv(METADATA_CONFIG.org_info_path, encoding='cp949')
@@ -1057,7 +1064,7 @@ class MMSExtractor:
         
         # 유사도 점수 합산
         cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg','item_nm_alias'])[['sim_s1','sim_s2']].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
-        cand_entities_sim = cand_entities_sim.query("sim>=1.5")
+        cand_entities_sim = cand_entities_sim.query("sim>=1.5").copy()
 
         # 순위 매기기 및 결과 제한
         cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(method='first',ascending=False)
@@ -1092,7 +1099,7 @@ class MMSExtractor:
         product_element = product_df.to_dict(orient='records') if product_df.shape[0] > 0 else None
         
         # 메시지 임베딩 및 프로그램 분류 유사도 계산
-        mms_embedding = self.emb_model.encode([msg.lower()], convert_to_tensor=True)
+        mms_embedding = self.emb_model.encode([msg.lower()], convert_to_tensor=True, show_progress_bar=False)
         similarities = torch.nn.functional.cosine_similarity(mms_embedding, self.clue_embeddings, dim=1).cpu().numpy()
         
         # 상위 후보 프로그램들 선별
