@@ -1015,13 +1015,13 @@ emb_model = load_sentence_transformer(EMBEDDING_CONFIG.ko_sbert_model_path, devi
 
 item_pdf_raw = pd.read_csv(METADATA_CONFIG.offer_data_path)
 
-item_pdf_all = item_pdf_raw.drop_duplicates(['item_nm','item_id'])[['item_nm','item_id','item_desc','domain']].copy()
+item_pdf_all = item_pdf_raw.drop_duplicates(['item_nm','item_id'])[['item_nm','item_id','item_desc','item_dmn']].copy()
 item_pdf_all['item_ctg'] = None
 item_pdf_all['item_emb_vec'] = None
 item_pdf_all['ofer_cd'] = item_pdf_all['item_id']
 item_pdf_all['oper_dt_hms'] = '20250101000000'
 
-item_pdf_all = item_pdf_all.rename(columns={c:c.lower() for c in item_pdf_all.columns})
+item_pdf_all = item_pdf_all.rename(columns={c:c.lower() for c in item_pdf_all.columns}).query("item_dmn!='R'")
 
 # item_pdf_all.query("rank<1000")[['item_nm']].drop_duplicates().to_csv("./data/item_nm_1000.csv", index=False)
 alias_pdf = pd.read_csv(METADATA_CONFIG.alias_rules_path)
@@ -1042,7 +1042,7 @@ item_pdf_all['item_nm_alias'] = item_pdf_all['item_nm'].apply(apply_alias_rule)
 item_pdf_all = item_pdf_all.explode('item_nm_alias')
 
 user_defined_entity = PROCESSING_CONFIG.user_defined_entities
-item_pdf_ext = pd.DataFrame([{'item_nm':e,'item_id':e,'item_desc':e, 'domain':'user_defined', 'start_dt':20250101, 'end_dt':99991231, 'rank':1, 'item_nm_alias':e} for e in user_defined_entity])
+item_pdf_ext = pd.DataFrame([{'item_nm':e,'item_id':e,'item_desc':e, 'item_dmn':'user_defined', 'start_dt':20250101, 'end_dt':99991231, 'rank':1, 'item_nm_alias':e} for e in user_defined_entity])
 item_pdf_all = pd.concat([item_pdf_all,item_pdf_ext])
 
 stop_item_names = pd.read_csv(METADATA_CONFIG.stop_items_path)['stop_words'].to_list()
@@ -1051,11 +1051,11 @@ entity_vocab = []
 for row in item_pdf_all.to_dict('records'):
     if row['item_nm_alias'] in stop_item_names:
         continue
-    entity_vocab.append((row['item_nm_alias'], {'item_nm':row['item_nm'], 'item_id':row['item_id'], 'description':row['item_desc'], 'domain':row['domain'],'item_nm_alias':row['item_nm_alias']}))
+    entity_vocab.append((row['item_nm_alias'], {'item_nm':row['item_nm'], 'item_id':row['item_id'], 'description':row['item_desc'], 'item_dmn':row['item_dmn'],'item_nm_alias':row['item_nm_alias']}))
 
 entity_list_for_fuzzy = []
 for row in item_pdf_all.to_dict('records'):
-    entity_list_for_fuzzy.append((row['item_nm_alias'], {'item_nm':row['item_nm'], 'item_id':row['item_id'], 'description':row['item_desc'], 'domain':row['domain'], 'start_dt':row['start_dt'], 'end_dt':row['end_dt'], 'rank':1, 'item_nm_alias':row['item_nm_alias']}))
+    entity_list_for_fuzzy.append((row['item_nm_alias'], {'item_nm':row['item_nm'], 'item_id':row['item_id'], 'description':row['item_desc'], 'item_dmn':row['item_dmn'], 'start_dt':row['start_dt'], 'end_dt':row['end_dt'], 'rank':1, 'item_nm_alias':row['item_nm_alias']}))
 
 # text_list_item = [preprocess_text(x).lower() for x in item_pdf_all['item_nm_alias'].tolist()]
 # item_embeddings = emb_model.encode(text_list_item
@@ -1722,7 +1722,7 @@ if similarities_fuzzy.shape[0]>0:
     
     # Step 3: Merge with item_pdf_all
     product_tag = convert_df_to_json_list(
-        item_pdf_all.query("domain!='R'").merge(filtered_similarities, on=['item_nm_alias'])
+        item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
     )
 
     final_result = {
