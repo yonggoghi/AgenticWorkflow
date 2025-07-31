@@ -997,18 +997,7 @@ class MMSExtractor:
         zero_shot_prompt = PromptTemplate(
             input_variables=["msg","cand_entities"],
             template="""
-            Extract all product names, including tangible products, services, promotional events, programs, loyalty initiatives, and named campaigns or event identifiers, from the provided advertisement text.
-            Reference the provided candidate entities list as a guide for potential matches, but you are free to extract items beyond it as well, and qualify as distinct product names based on the following criteria.
-            Consider any named offerings, such as apps, membership programs, events, specific branded items, or campaign names like 'T day' or '0 day', as products if presented as distinct products, services, or promotional entities.
-            For terms that may be platforms or brand elements, include them only if they are presented as standalone offerings.
-            Avoid extracting base or parent brand names (e.g., 'FLO' or 'POOQ') if they are components of more specific offerings (e.g., 'FLO 앤 데이터' or 'POOQ 앤 데이터') presented in the text; focus on the full, distinct product or service names as they appear.
-            Exclude customer support services, such as customer centers or helplines, even if named in the text.
-            Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
-            Exclude sales agency names such as '###대리점'.
-            If multiple terms refer to closely related promotional events (e.g., a general campaign and its specific instances or dates), include the most prominent or overarching campaign name (e.g., '0 day' as a named event) in addition to specific offerings tied to it, unless they are clearly identical.
-            Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering from the candidate list that matches the text.
-            Ensure that extracted names are presented exactly as they appear in the original text, without translation into English or any other language.
-            Just return a list with matched entities where the entities are separated by commas without any other text.
+            {entity_extraction_prompt}
 
             ## message:                
             {msg}
@@ -1020,7 +1009,7 @@ class MMSExtractor:
         
         # LLM 체인 실행
         chain = zero_shot_prompt | self.llm_model
-        cand_entities = chain.invoke({"msg": msg_text, "cand_entities": cand_entities_by_sim}).content
+        cand_entities = chain.invoke({"entity_extraction_prompt": PROCESSING_CONFIG.entity_extraction_prompt, "msg": msg_text, "cand_entities": cand_entities_by_sim}).content
 
         # LLM 응답 파싱 및 정리
         cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
