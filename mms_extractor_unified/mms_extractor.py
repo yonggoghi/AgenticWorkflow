@@ -990,14 +990,15 @@ class MMSExtractor:
         from langchain.prompts import PromptTemplate
         
         # 로직 기반 방식으로 후보 엔티티 먼저 추출
-        cand_entities_by_sim = self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=PROCESSING_CONFIG.similarity_threshold)['item_nm_alias'].unique()
+        cand_entities_by_sim = sorted([e.strip() for e in self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=0.7)['item_nm_alias'].unique() if e.strip() not in self.stop_item_names and len(e.strip())>=2])
+
         
         # LLM 프롬프트 템플릿 정의
         zero_shot_prompt = PromptTemplate(
             input_variables=["msg","cand_entities"],
             template="""
             Extract all product names, including tangible products, services, promotional events, programs, loyalty initiatives, and named campaigns or event identifiers, from the provided advertisement text.
-            Reference the provided candidate entities list as a guide for potential matches. Extract only those terms from the candidate list that appear in the advertisement text and qualify as distinct product names based on the following criteria.
+            Reference the provided candidate entities list as a guide for potential matches, but you are free to extract items beyond it as well, and qualify as distinct product names based on the following criteria.
             Consider any named offerings, such as apps, membership programs, events, specific branded items, or campaign names like 'T day' or '0 day', as products if presented as distinct products, services, or promotional entities.
             For terms that may be platforms or brand elements, include them only if they are presented as standalone offerings.
             Avoid extracting base or parent brand names (e.g., 'FLO' or 'POOQ') if they are components of more specific offerings (e.g., 'FLO 앤 데이터' or 'POOQ 앤 데이터') presented in the text; focus on the full, distinct product or service names as they appear.
