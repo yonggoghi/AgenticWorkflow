@@ -45,9 +45,44 @@ except ImportError as e:
 app = Flask(__name__)
 CORS(app)  # CORS 활성화 (크로스 오리진 요청 허용)
 
-# 로깅 설정
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# 로깅 설정 - 콘솔과 파일 모두에 출력
+import logging.handlers
+
+# 로그 디렉토리 생성
+log_dir = Path(__file__).parent / 'logs'
+log_dir.mkdir(exist_ok=True)
+
+# 로그 파일 경로
+log_file = log_dir / 'api_server.log'
+
+# 로거 설정
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# 포맷터 설정
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# 콘솔 핸들러
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
+
+# 파일 핸들러 (회전 로그 - 10MB씩 최대 5개 파일)
+file_handler = logging.handlers.RotatingFileHandler(
+    log_file, 
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+# 핸들러 추가
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
+
+# 기본 로깅 설정 비활성화 (중복 로그 방지)
+logging.getLogger().handlers = []
 
 # 전역 추출기 인스턴스 - 서버 시작 시 한 번만 로드
 global_extractor = None

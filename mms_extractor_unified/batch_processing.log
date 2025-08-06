@@ -1,0 +1,44 @@
+2025-08-06 13:51:27,656 - INFO - ==================================================
+2025-08-06 13:51:27,656 - INFO - Starting Batch MMS Processing
+2025-08-06 13:51:27,656 - INFO - ==================================================
+2025-08-06 13:51:27,656 - INFO - Batch size: 3
+2025-08-06 13:51:27,656 - INFO - Output file: batch_results.csv
+2025-08-06 13:51:27,656 - INFO - Extractor config: {'offer_info_data_src': 'local', 'product_info_extraction_mode': 'llm', 'entity_extraction_mode': 'llm', 'llm_model': 'gemma'}
+2025-08-06 13:51:27,656 - INFO - ==================================================
+2025-08-06 13:51:27,656 - INFO - Loading MMS data from: ./data/mms_data_250806.csv
+2025-08-06 13:51:28,128 - INFO - Loaded 23950 messages
+2025-08-06 13:51:28,130 - INFO - Unprocessed messages: 23950
+2025-08-06 13:51:28,130 - INFO - Initializing MMS Extractor...
+2025-08-06 13:51:29,273 - INFO - Use pytorch device_name: mps
+2025-08-06 13:51:29,273 - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-06 13:51:37,053 - INFO - MMS Extractor initialized successfully
+2025-08-06 13:51:37,061 - INFO - Sampled 3 messages for processing
+2025-08-06 13:51:37,062 - INFO - Processing 3 messages...
+2025-08-06 13:51:37,062 - INFO - Processing message 21565: 메트로대리점 유천직영점에서 오픈 기념 혜택을 받아보세요.
+(광고)[SKT] 메트로대리점 유...
+2025-08-06 13:51:55,272 - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-06 13:51:56,578 - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-06 13:51:57,567 - INFO - Successfully processed message 21565
+2025-08-06 13:51:57,567 - INFO - Processing message 6720: [SK텔레콤] 9월 T Day 혜택 안내
+(광고)[SKT] 9월 T Day 혜택 안내 __...
+2025-08-06 13:52:08,974 - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-06 13:52:10,084 - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-06 13:52:10,519 - INFO - Successfully processed message 6720
+2025-08-06 13:52:10,520 - INFO - Processing message 22172: 쉿! SKT 고객님께만 최대 5% 금리 혜택을 드리는 적금 상품을 소개합니다
+(광고)[SK...
+2025-08-06 13:52:19,711 - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-06 13:52:20,734 - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-06 13:52:20,941 - INFO - Successfully processed message 22172
+2025-08-06 13:52:20,941 - INFO - Completed processing 3 messages
+2025-08-06 13:52:20,942 - INFO - Creating new results file: batch_results.csv
+2025-08-06 13:52:20,949 - INFO - Results saved to: batch_results.csv
+2025-08-06 13:52:21,319 - INFO - Updated ext_yn='Y' for 3 messages
+2025-08-06 13:52:21,319 - INFO - ==================================================
+2025-08-06 13:52:21,319 - INFO - Batch Processing Summary
+2025-08-06 13:52:21,319 - INFO - ==================================================
+2025-08-06 13:52:21,319 - INFO - status: completed
+2025-08-06 13:52:21,319 - INFO - processed_count: 3
+2025-08-06 13:52:21,319 - INFO - successful_count: 3
+2025-08-06 13:52:21,319 - INFO - failed_count: 0
+2025-08-06 13:52:21,319 - INFO - results_file: batch_results.csv
+2025-08-06 13:52:21,319 - INFO - ==================================================
