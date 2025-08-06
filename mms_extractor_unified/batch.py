@@ -49,7 +49,7 @@ class BatchProcessor:
     Batch processor for MMS message extraction
     """
     
-    def __init__(self, result_file_path="batch_results.csv"):
+    def __init__(self, result_file_path="./data/batch_results.csv"):
         """
         Initialize batch processor
         
@@ -299,7 +299,7 @@ def main():
     # Batch processing arguments
     parser.add_argument('--batch-size', '-b', type=int, default=10,
                        help='Number of messages to process (default: 10)')
-    parser.add_argument('--output-file', '-o', type=str, default='batch_results.csv',
+    parser.add_argument('--output-file', '-o', type=str, default='./data/batch_results.csv',
                        help='Output CSV file for results (default: batch_results.csv)')
     
     # MMSExtractor arguments

@@ -6,6 +6,7 @@ MMS Extractor는 한국어 광고 메시지에서 상품 정보, 채널 정보, 
 - [시스템 개요](#시스템-개요)
 - [설치 및 설정](#설치-및-설정)
 - [CLI 사용법 (mms_extractor.py)](#cli-사용법-mms_extractorpy)
+- [배치 처리 사용법 (batch.py)](#배치-처리-사용법-batchpy)
 - [API 서버 사용법 (api.py)](#api-서버-사용법-apipy)
 - [설정 옵션](#설정-옵션)
 - [예제](#예제)
@@ -119,6 +120,186 @@ python mms_extractor.py \
 python mms_extractor.py \
   --message "광고 메시지" \
   --offer-data-source db
+```
+
+## 배치 처리 사용법 (batch.py)
+
+배치 처리 스크립트는 대량의 MMS 메시지를 자동으로 처리하는 기능을 제공합니다. CSV 파일에서 미처리 메시지를 랜덤하게 선택하여 처리하고, 결과를 저장한 후 처리 상태를 업데이트합니다.
+
+### 주요 기능
+- **자동 메시지 선택**: `ext_yn='N'`인 미처리 메시지를 랜덤하게 선택
+- **배치 처리**: 지정된 개수만큼 메시지를 일괄 처리
+- **결과 저장**: 처리 결과를 CSV 파일에 저장 (기존 파일에 추가 또는 신규 생성)
+- **상태 업데이트**: 처리 완료된 메시지의 `ext_yn`을 'Y'로 자동 업데이트
+- **오류 처리**: 개별 메시지 처리 실패 시에도 계속 진행
+- **상세 로깅**: 처리 과정과 결과를 파일과 콘솔에 기록
+
+### 기본 사용법
+
+#### 기본 배치 처리 (10개 메시지)
+```bash
+python batch.py
+```
+
+#### 배치 크기 지정
+```bash
+python batch.py --batch-size 50
+```
+
+#### 출력 파일 지정
+```bash
+python batch.py --batch-size 20 --output-file my_results.csv
+```
+
+### 전체 옵션
+```bash
+python batch.py \
+  --batch-size 30 \
+  --output-file batch_results.csv \
+  --offer-data-source local \
+  --product-info-extraction-mode nlp \
+  --entity-extraction-mode llm \
+  --llm-model gemma
+```
+
+### 옵션 설명
+
+#### 배치 처리 옵션
+- `--batch-size` (`-b`): 처리할 메시지 개수 (기본값: 10)
+- `--output-file` (`-o`): 결과 저장 CSV 파일명 (기본값: batch_results.csv)
+
+#### MMSExtractor 옵션
+- `--offer-data-source`: 데이터 소스 (`local` 또는 `db`, 기본값: local)
+- `--product-info-extraction-mode`: 상품 정보 추출 모드 (`nlp`, `llm`, `rag`, 기본값: nlp)
+- `--entity-extraction-mode`: 엔티티 추출 모드 (`logic`, `llm`, 기본값: llm)
+- `--llm-model`: 사용할 LLM 모델 (`gemma`, `gpt`, `claude`, 기본값: gemma)
+
+### 입력 데이터 형식
+
+배치 처리는 `config/settings.py`의 `METADATA_CONFIG.mms_msg_path`에 지정된 CSV 파일을 사용합니다.
+
+**필수 컬럼:**
+- `msg`: 처리할 MMS 메시지 텍스트
+- `msg_id`: 메시지 고유 식별자 (없으면 자동 생성)
+- `ext_yn`: 처리 상태 ('N': 미처리, 'Y': 처리완료, 없으면 자동으로 'N' 설정)
+
+### 출력 결과 형식
+
+배치 처리 결과는 다음 컬럼을 포함하는 CSV 파일로 저장됩니다:
+
+```csv
+msg_id,msg,extraction_result,processed_at,title,purpose,product_count,channel_count,pgm
+1,"[SK텔레콤] 5G 요금제 안내","{""title"":""SK텔레콤 5G 요금제 안내"",...}","2025-01-15 14:30:25","SK텔레콤 5G 요금제 안내","[""상품 가입 유도""]",1,1,"[""통신서비스""]"
+```
+
+**컬럼 설명:**
+- `msg_id`: 메시지 고유 식별자
+- `msg`: 원본 메시지 텍스트
+- `extraction_result`: 전체 추출 결과 (JSON 형식)
+- `processed_at`: 처리 완료 시각
+- `title`: 추출된 광고 제목
+- `purpose`: 광고 목적 (JSON 배열)
+- `product_count`: 추출된 상품 개수
+- `channel_count`: 추출된 채널 개수
+- `pgm`: 프로그램 분류 (JSON 배열)
+
+### 예제
+
+#### 1. 기본 배치 처리
+```bash
+# 10개 메시지를 처리하고 batch_results.csv에 저장
+python batch.py
+
+# 처리 결과 확인
+cat batch_results.csv
+```
+
+#### 2. 대량 배치 처리
+```bash
+# 100개 메시지를 GPT 모델로 처리
+python batch.py \
+  --batch-size 100 \
+  --llm-model gpt \
+  --product-info-extraction-mode llm \
+  --output-file gpt_results.csv
+```
+
+#### 3. RAG 모드 배치 처리
+```bash
+# RAG 모드로 50개 메시지 처리
+python batch.py \
+  --batch-size 50 \
+  --product-info-extraction-mode rag \
+  --entity-extraction-mode llm \
+  --output-file rag_batch_results.csv
+```
+
+#### 4. 데이터베이스 연동 배치 처리
+```bash
+# 데이터베이스에서 상품 정보를 가져와서 처리
+python batch.py \
+  --batch-size 25 \
+  --offer-data-source db \
+  --output-file db_results.csv
+```
+
+### 로그 및 모니터링
+
+배치 처리 과정은 다음과 같이 로깅됩니다:
+
+#### 로그 파일
+- `batch_processing.log`: 상세한 처리 로그
+
+#### 콘솔 출력 예제
+```
+2025-01-15 14:30:20 - INFO - ==================================================
+2025-01-15 14:30:20 - INFO - Starting Batch MMS Processing
+2025-01-15 14:30:20 - INFO - ==================================================
+2025-01-15 14:30:20 - INFO - Batch size: 10
+2025-01-15 14:30:20 - INFO - Output file: batch_results.csv
+2025-01-15 14:30:20 - INFO - Loading MMS data from: ./data/mms_data_250408.csv
+2025-01-15 14:30:21 - INFO - Loaded 5000 messages
+2025-01-15 14:30:21 - INFO - Unprocessed messages: 4850
+2025-01-15 14:30:21 - INFO - Initializing MMS Extractor...
+2025-01-15 14:30:25 - INFO - MMS Extractor initialized successfully
+2025-01-15 14:30:25 - INFO - Sampled 10 messages for processing
+2025-01-15 14:30:25 - INFO - Processing 10 messages...
+2025-01-15 14:30:26 - INFO - Processing message 1234: [SK텔레콤] 5G 요금제 안내...
+2025-01-15 14:30:28 - INFO - Successfully processed message 1234
+...
+2025-01-15 14:30:45 - INFO - Completed processing 10 messages
+2025-01-15 14:30:45 - INFO - Results saved to: batch_results.csv
+2025-01-15 14:30:45 - INFO - Updated ext_yn='Y' for 10 messages
+2025-01-15 14:30:45 - INFO - ==================================================
+2025-01-15 14:30:45 - INFO - Batch Processing Summary
+2025-01-15 14:30:45 - INFO - ==================================================
+2025-01-15 14:30:45 - INFO - status: completed
+2025-01-15 14:30:45 - INFO - processed_count: 10
+2025-01-15 14:30:45 - INFO - successful_count: 10
+2025-01-15 14:30:45 - INFO - failed_count: 0
+2025-01-15 14:30:45 - INFO - results_file: batch_results.csv
+```
+
+### Python 스크립트에서 사용
+
+배치 처리를 Python 코드에서 직접 사용할 수도 있습니다:
+
+```python
+from batch import BatchProcessor
+
+# 배치 처리기 초기화
+processor = BatchProcessor(result_file_path="my_results.csv")
+
+# 배치 처리 실행
+summary = processor.run_batch(
+    batch_size=20,
+    llm_model='gpt',
+    product_info_extraction_mode='rag',
+    entity_extraction_mode='llm'
+)
+
+print(f"처리 완료: {summary['processed_count']}개 메시지")
+print(f"성공: {summary['successful_count']}, 실패: {summary['failed_count']}")
 ```
 
 ## API 서버 사용법 (api.py)
@@ -455,6 +636,28 @@ extractMessage(message)
 - 더 많은 RAM이 있는 환경에서 실행
 - `MODEL_LOADING_MODE=local`로 설정하여 로컬 모델 사용
 
+#### 5. 배치 처리 관련 오류
+
+##### "No unprocessed messages found" 오류
+**원인**: 모든 메시지가 이미 처리됨 (`ext_yn='Y'`)
+**해결방법**: 
+- 새로운 메시지 데이터 추가
+- 필요시 `ext_yn` 컬럼을 'N'으로 재설정
+
+##### "Failed to load MMS data" 오류
+**원인**: CSV 파일 경로 또는 형식 문제
+**해결방법**: 
+- `config/settings.py`의 `mms_msg_path` 경로 확인
+- CSV 파일에 `msg` 컬럼이 있는지 확인
+- 파일 인코딩 확인 (UTF-8 권장)
+
+##### 배치 처리 중단 오류
+**원인**: 개별 메시지 처리 중 오류 발생
+**해결방법**: 
+- `batch_processing.log` 파일에서 상세 오류 확인
+- 문제가 되는 메시지 확인 후 수동으로 제외
+- 더 작은 배치 크기로 재시도
+
 ### 성능 최적화
 
 #### 1. 응답 시간 개선
@@ -471,6 +674,12 @@ extractMessage(message)
 - GPT 또는 Claude 모델 사용
 - 도메인별 불용어 목록 업데이트
 
+#### 4. 배치 처리 최적화
+- 적절한 배치 크기 설정 (메모리와 처리 시간의 균형)
+- 처리 완료된 메시지는 자동으로 제외되므로 중복 처리 방지
+- 로그 파일을 통한 진행 상황 모니터링
+- 오류 발생 시에도 나머지 메시지 계속 처리
+
 ### 로그 확인
 서버 실행 시 로그를 통해 상태를 확인할 수 있습니다:
 ```bash
@@ -484,5 +693,6 @@ python api.py --debug  # 디버그 모드로 실행
 
 ---
 
-**마지막 업데이트**: 2025년 7월
-**버전**: 1.0.0 
+**마지막 업데이트**: 2025년 1월
+**버전**: 2.0.0
+**새로운 기능**: 배치 처리 시스템 (batch.py) 추가 
