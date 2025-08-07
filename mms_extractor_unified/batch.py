@@ -7,7 +7,6 @@ This script performs batch processing of MMS messages using the MMSExtractor.
 It reads messages from a CSV file, processes them in batches, and saves results.
 
 Features:
-- Random sampling of unprocessed messages (ext_yn='N')
 - Batch processing with MMSExtractor
 - Result storage with timestamps
 - Automatic update of processing status
@@ -86,31 +85,55 @@ class BatchProcessor:
             self.mms_pdf = pd.read_csv(METADATA_CONFIG.mms_msg_path)
             self.mms_pdf = self.mms_pdf.astype('str')
             
-            # Add msg_id and ext_yn columns if they don't exist
+            # Add msg_id column if it doesn't exist
             if 'msg_id' not in self.mms_pdf.columns:
                 self.mms_pdf['msg_id'] = self.mms_pdf.index.astype(str)
             
-            if 'ext_yn' not in self.mms_pdf.columns:
-                self.mms_pdf['ext_yn'] = 'N'
-            
             logger.info(f"Loaded {len(self.mms_pdf)} messages")
-            logger.info(f"Unprocessed messages: {len(self.mms_pdf[self.mms_pdf['ext_yn'] == 'N'])}")
             
         except Exception as e:
             logger.error(f"Failed to load MMS data: {str(e)}")
             raise
     
+    def get_processed_msg_ids(self):
+        """
+        Load processed message IDs from the result file
+        
+        Returns:
+            set: Set of processed message IDs
+        """
+        processed_ids = set()
+        
+        if os.path.exists(self.result_file_path):
+            try:
+                results_df = pd.read_csv(self.result_file_path)
+                if 'msg_id' in results_df.columns:
+                    processed_ids = set(results_df['msg_id'].astype(str))
+                    logger.info(f"Found {len(processed_ids)} previously processed messages")
+                else:
+                    logger.warning("No msg_id column found in results file")
+            except Exception as e:
+                logger.error(f"Failed to load processed message IDs: {str(e)}")
+        else:
+            logger.info("No existing results file found - all messages are unprocessed")
+            
+        return processed_ids
+    
     def sample_unprocessed_messages(self, batch_size):
         """
-        Sample M random unprocessed messages
+        Sample M random unprocessed messages based on result file
         
         Args:
             batch_size: Number of messages to sample
             
         Returns:
-            pandas.DataFrame: Sampled messages with ext_yn='N'
+            pandas.DataFrame: Sampled messages that haven't been processed yet
         """
-        unprocessed = self.mms_pdf[self.mms_pdf['ext_yn'] == 'N'].copy()
+        # Get processed message IDs from result file
+        processed_ids = self.get_processed_msg_ids()
+        
+        # Filter out already processed messages
+        unprocessed = self.mms_pdf[~self.mms_pdf['msg_id'].isin(processed_ids)].copy()
         
         if len(unprocessed) == 0:
             logger.warning("No unprocessed messages found")
@@ -120,6 +143,9 @@ class BatchProcessor:
         sample_size = min(batch_size, len(unprocessed))
         sampled_messages = unprocessed.sample(n=sample_size, random_state=None)
         
+        logger.info(f"Total messages: {len(self.mms_pdf)}")
+        logger.info(f"Previously processed: {len(processed_ids)}")
+        logger.info(f"Unprocessed messages: {len(unprocessed)}")
         logger.info(f"Sampled {len(sampled_messages)} messages for processing")
         return sampled_messages
     
@@ -216,29 +242,18 @@ class BatchProcessor:
         logger.info(f"Results saved to: {self.result_file_path}")
         return self.result_file_path
     
-    def update_processing_status(self, processed_msg_ids):
+    def log_processing_summary(self, processed_msg_ids):
         """
-        Update ext_yn='Y' for processed message IDs in mms_pdf
+        Log processing summary for processed message IDs
         
         Args:
             processed_msg_ids: List of message IDs that were processed
         """
-        if not processed_msg_ids:
-            logger.warning("No message IDs to update")
-            return
-        
-        # Update ext_yn to 'Y' for processed messages
-        mask = self.mms_pdf['msg_id'].isin(processed_msg_ids)
-        updated_count = mask.sum()
-        
-        if updated_count > 0:
-            self.mms_pdf.loc[mask, 'ext_yn'] = 'Y'
-            
-            # Save updated mms_pdf back to file
-            self.mms_pdf.to_csv(METADATA_CONFIG.mms_msg_path, index=False)
-            logger.info(f"Updated ext_yn='Y' for {updated_count} messages")
+        if processed_msg_ids:
+            logger.info(f"Successfully processed {len(processed_msg_ids)} messages")
+            logger.info(f"Processed message IDs: {processed_msg_ids[:10]}{'...' if len(processed_msg_ids) > 10 else ''}")
         else:
-            logger.warning("No matching message IDs found for status update")
+            logger.warning("No messages were successfully processed")
     
     def run_batch(self, batch_size, **extractor_kwargs):
         """
@@ -268,10 +283,10 @@ class BatchProcessor:
             
             results = self.process_messages(sampled_messages)
             
-            # Save results and update status
+            # Save results and log summary
             self.save_results(results)
             processed_msg_ids = [r['msg_id'] for r in results if 'error' not in r.get('extraction_result', '')]
-            self.update_processing_status(processed_msg_ids)
+            self.log_processing_summary(processed_msg_ids)
             
             return {
                 'status': 'completed',
