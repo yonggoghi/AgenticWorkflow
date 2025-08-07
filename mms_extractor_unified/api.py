@@ -378,7 +378,7 @@ def extract_batch():
         if offer_info_data_src not in valid_sources:
             return jsonify({"error": f"잘못된 offer_info_data_src입니다. 사용 가능: {valid_sources}"}), 400
             
-        valid_llm_models = ['gemma', 'gpt', 'claude']
+        valid_llm_models = ['gemma', 'ax', 'claude', 'gemini']
         if llm_model not in valid_llm_models:
             return jsonify({"error": f"잘못된 llm_model입니다. 사용 가능: {valid_llm_models}"}), 400
             
