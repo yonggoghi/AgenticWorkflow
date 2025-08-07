@@ -88,7 +88,8 @@ class ModelConfig:
     gemma_model: str = "skt/gemma3-12b-it"  # Gemma model ID for Korean language processing
     gemini_model: str = "gcp/gemini-2.5-flash" 
     claude_model: str = "amazon/anthropic/claude-sonnet-4-20250514"  # Anthropic Claude model for advanced reasoning
-    ax_model: str = "skt/ax4"  
+    ax_model: str = "skt/ax4"
+    gpt_model: str = "openai/gpt-4o-2024-11-20"  # OpenAI GPT-4o model for high-quality reasoning  
     
     # Active LLM selection
     llm_model: str = os.getenv("LLM_MODEL", "skt/ax4")  # Currently active LLM: 'gemma', 'ax', or 'claude'

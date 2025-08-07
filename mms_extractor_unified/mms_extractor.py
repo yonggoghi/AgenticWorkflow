@@ -689,7 +689,7 @@ class MMSExtractor:
             product_info_extraction_mode: 상품 정보 추출 모드 ('rag', 'llm', 'nlp')
             entity_extraction_mode: 엔티티 추출 모드 ('llm', 'logic')
             offer_info_data_src: 상품 정보 데이터 소스 ('local', 'db')
-            llm_model: 사용할 LLM 모델 ('gemma', 'gpt', 'claude')
+            llm_model: 사용할 LLM 모델 ('gemma', 'gpt', 'claude', 'ax', 'gemini')
         """
         # 설정에서 기본값 가져오기
         self.data_dir = data_dir if data_dir is not None else './data/'
@@ -736,6 +736,8 @@ class MMSExtractor:
             llm_model_init = MODEL_CONFIG.claude_model
         elif self.llm_model_name == "gemini":
             llm_model_init = MODEL_CONFIG.gemini_model
+        elif self.llm_model_name == "gpt":
+            llm_model_init = MODEL_CONFIG.gpt_model
 
         self.llm_model = ChatOpenAI(
                 temperature=MODEL_CONFIG.temperature,
@@ -1330,8 +1332,8 @@ if __name__ == '__main__':
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini'], default='ax',
-                       help='사용할 LLM 모델 (gemma: Gemma, ax: ax, claude: Claude)')
+    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini', 'gpt'], default='ax',
+                       help='사용할 LLM 모델 (gemma: Gemma, ax: ax, claude: Claude, gpt: GPT-4o)')
     
     args = parser.parse_args()
     

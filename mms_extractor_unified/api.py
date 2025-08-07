@@ -130,7 +130,7 @@ def get_configured_extractor(llm_model='ax', product_info_extraction_mode='nlp',
     API 요청별로 다른 설정을 사용할 수 있습니다.
     
     Args:
-        llm_model: 사용할 LLM 모델 ('gemma', 'ax', 'claude')
+        llm_model: 사용할 LLM 모델 ('gemma', 'ax', 'claude', 'gpt', 'gemini')
         product_info_extraction_mode: 상품 정보 추출 모드 ('nlp', 'llm', 'rag')
         entity_matching_mode: 엔티티 매칭 모드 ('logic', 'llm')
     
@@ -544,8 +544,8 @@ def main():
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini'], default='ax',
-                       help='사용할 LLM 모델 (gemma: Gemma, ax: AX, claude: Claude, gemini: Gemini)')
+    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini', 'gpt'], default='ax',
+                       help='사용할 LLM 모델 (gemma: Gemma, ax: AX, claude: Claude, gemini: Gemini, gpt: GPT-4o)')
     
     args = parser.parse_args()
     
