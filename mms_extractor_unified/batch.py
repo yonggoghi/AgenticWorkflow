@@ -324,7 +324,7 @@ def main():
                        help='Product information extraction mode (default: nlp)')
     parser.add_argument('--entity-extraction-mode', choices=['logic', 'llm'], default='llm',
                        help='Entity extraction mode (default: llm)')
-    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini'], default='ax',
+    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini', 'gpt'], default='ax',
                        help='LLM model to use (default: ax)')
     
     args = parser.parse_args()

@@ -70,6 +70,14 @@ llm_gen = ChatOpenAI(
         max_tokens=MODEL_CONFIG.llm_max_tokens
         )
 
+llm_gpt = ChatOpenAI(
+        temperature=0,
+        openai_api_key=llm_api_key,
+        openai_api_base=llm_api_url,
+        model=MODEL_CONFIG.gpt_model,
+        max_tokens=MODEL_CONFIG.llm_max_tokens
+        )
+
 llm_model = llm_ax
 
 # %%
