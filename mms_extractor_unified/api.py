@@ -113,7 +113,7 @@ def initialize_global_extractor(offer_info_data_src='local'):
             model_path='./models/ko-sbert-nli',      # 임베딩 모델 경로
             data_dir='./data',                       # 데이터 디렉토리
             offer_info_data_src=offer_info_data_src, # 상품 정보 소스
-            llm_model='gemma',                       # 기본 LLM (요청별 변경 가능)
+            llm_model='ax',                       # 기본 LLM (요청별 변경 가능)
             product_info_extraction_mode='nlp',     # 기본 상품 추출 모드
             entity_extraction_mode='logic'          # 기본 엔티티 매칭 모드
         )
@@ -122,7 +122,7 @@ def initialize_global_extractor(offer_info_data_src='local'):
     
     return global_extractor
 
-def get_configured_extractor(llm_model='gemma', product_info_extraction_mode='nlp', entity_matching_mode='logic'):
+def get_configured_extractor(llm_model='ax', product_info_extraction_mode='nlp', entity_matching_mode='logic'):
     """
     런타임 설정으로 전역 추출기 구성
     
@@ -130,7 +130,7 @@ def get_configured_extractor(llm_model='gemma', product_info_extraction_mode='nl
     API 요청별로 다른 설정을 사용할 수 있습니다.
     
     Args:
-        llm_model: 사용할 LLM 모델 ('gemma', 'gpt', 'claude')
+        llm_model: 사용할 LLM 모델 ('gemma', 'ax', 'claude')
         product_info_extraction_mode: 상품 정보 추출 모드 ('nlp', 'llm', 'rag')
         entity_matching_mode: 엔티티 매칭 모드 ('logic', 'llm')
     
@@ -200,8 +200,8 @@ def list_models():
             - features: 주요 기능 목록
     """
     return jsonify({
-        "available_llm_models": ["gemma", "gpt", "claude"],
-        "default_llm_model": "gemma",
+        "available_llm_models": ["gemma", "ax", "claude", "gemini"],
+        "default_llm_model": "ax",
         "available_data_sources": ["local", "db"],
         "default_data_source": "local",
         "available_product_info_extraction_modes": ["nlp", "llm", "rag"],
@@ -226,7 +226,7 @@ def extract_message():
     
     Request Body (JSON):
         - message (required): 추출할 MMS 메시지 텍스트
-        - llm_model (optional): 사용할 LLM 모델 (기본값: 'gemma')
+        - llm_model (optional): 사용할 LLM 모델 (기본값: 'ax')
         - offer_info_data_src (optional): 데이터 소스 (기본값: CLI 설정값)
         - product_info_extraction_mode (optional): 상품 추출 모드 (기본값: 'nlp')
         - entity_matching_mode (optional): 엔티티 매칭 모드 (기본값: 'logic')
@@ -273,7 +273,7 @@ def extract_message():
         if offer_info_data_src not in valid_sources:
             return jsonify({"error": f"잘못된 offer_info_data_src입니다. 사용 가능: {valid_sources}"}), 400
             
-        valid_llm_models = ['gemma', 'gpt', 'claude']
+        valid_llm_models = ['gemma', 'ax', 'claude', 'gemini']
         if llm_model not in valid_llm_models:
             return jsonify({"error": f"잘못된 llm_model입니다. 사용 가능: {valid_llm_models}"}), 400
             
@@ -544,8 +544,8 @@ def main():
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gemma', 'gpt', 'claude'], default='gemma',
-                       help='사용할 LLM 모델 (gemma: Gemma, gpt: GPT, claude: Claude)')
+    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini'], default='ax',
+                       help='사용할 LLM 모델 (gemma: Gemma, ax: AX, claude: Claude, gemini: Gemini)')
     
     args = parser.parse_args()
     

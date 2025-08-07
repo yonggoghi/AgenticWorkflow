@@ -38,7 +38,7 @@ from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 
-llm_gem3 = ChatOpenAI(
+llm_gem = ChatOpenAI(
         temperature=0,
         openai_api_key=llm_api_key,
         openai_api_base=llm_api_url,
@@ -46,17 +46,31 @@ llm_gem3 = ChatOpenAI(
         max_tokens=MODEL_CONFIG.llm_max_tokens
         )
 
-llm_chat = ChatOpenAI(
+llm_ax = ChatOpenAI(
         temperature=0,
-        model="gpt-4.1",
-        openai_api_key=API_CONFIG.openai_api_key,
-        max_tokens=2000,
-)
-llm_cld40 = ChatAnthropic(
-    api_key=API_CONFIG.anthropic_api_key,
-    model=MODEL_CONFIG.claude_model,
-    max_tokens=3000
-)
+        openai_api_key=llm_api_key,
+        openai_api_base=llm_api_url,
+        model=MODEL_CONFIG.ax_model,
+        max_tokens=MODEL_CONFIG.llm_max_tokens
+        )
+
+llm_cld = ChatOpenAI(
+        temperature=0,
+        openai_api_key=llm_api_key,
+        openai_api_base=llm_api_url,
+        model=MODEL_CONFIG.claude_model,
+        max_tokens=MODEL_CONFIG.llm_max_tokens
+        )
+
+llm_gen = ChatOpenAI(
+        temperature=0,
+        openai_api_key=llm_api_key,
+        openai_api_base=llm_api_url,
+        model=MODEL_CONFIG.gemini_model,
+        max_tokens=MODEL_CONFIG.llm_max_tokens
+        )
+
+llm_model = llm_ax
 
 # %%
 from typing import List, Tuple, Union, Dict, Any
@@ -1675,7 +1689,7 @@ print()
 
 
 # result_json_text = llm_cld40.invoke(prompt).content
-result_json_text = llm_gem3.invoke(prompt).content
+result_json_text = llm_model.invoke(prompt).content
 
 json_objects = extract_json_objects(result_json_text)[0]
 
@@ -1686,7 +1700,7 @@ if entity_matching_mode == 'logic':
     cand_entities = [item['name'] for item in json_objects['product']['items']] if isinstance(json_objects['product'], dict) else [item['name'] for item in json_objects['product']]
     similarities_fuzzy = extract_entities_by_logic(cand_entities)
 elif entity_matching_mode == 'llm':
-    similarities_fuzzy = extract_entities_by_llm(llm_gem3, msg)
+    similarities_fuzzy = extract_entities_by_llm(llm_model, msg)
 
 final_result = json_objects.copy()
 
