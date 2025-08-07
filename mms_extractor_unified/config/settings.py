@@ -86,11 +86,12 @@ class ModelConfig:
     
     # LLM model specifications
     gemma_model: str = "skt/gemma3-12b-it"  # Gemma model ID for Korean language processing
-    gpt_model: str = "gpt-4o"  # OpenAI GPT model for general language tasks
-    claude_model: str = "claude-sonnet-4-20250514"  # Anthropic Claude model for advanced reasoning
+    gemini_model: str = "gcp/gemini-2.5-flash" 
+    claude_model: str = "amazon/anthropic/claude-sonnet-4-20250514"  # Anthropic Claude model for advanced reasoning
+    ax_model: str = "skt/ax4"  
     
     # Active LLM selection
-    llm_model: str = os.getenv("LLM_MODEL", "gemma")  # Currently active LLM: 'gemma', 'gpt', or 'claude'
+    llm_model: str = os.getenv("LLM_MODEL", "skt/ax4")  # Currently active LLM: 'gemma', 'ax', or 'claude'
     
     # LLM generation parameters
     llm_max_tokens: int = 4000  # Maximum tokens for LLM responses

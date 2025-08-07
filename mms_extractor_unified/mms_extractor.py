@@ -726,28 +726,24 @@ class MMSExtractor:
         """
         선택된 LLM 모델 초기화
         """
+
+        llm_model_init = MODEL_CONFIG.llm_model
         if self.llm_model_name == "gemma":
-            self.llm_model = ChatOpenAI(
+            llm_model_init = MODEL_CONFIG.gemma_model
+        elif self.llm_model_name == "ax":
+            llm_model_init = MODEL_CONFIG.ax_model
+        elif self.llm_model_name == "claude":
+            llm_model_init = MODEL_CONFIG.claude_model
+        elif self.llm_model_name == "gemini":
+            llm_model_init = MODEL_CONFIG.gemini_model
+
+        self.llm_model = ChatOpenAI(
                 temperature=MODEL_CONFIG.temperature,
                 openai_api_key=API_CONFIG.llm_api_key,
                 openai_api_base=API_CONFIG.llm_api_url,
-                model=MODEL_CONFIG.gemma_model,
+                model=llm_model_init,
                 max_tokens=MODEL_CONFIG.llm_max_tokens
-            )
-        elif self.llm_model_name == "gpt":
-            self.llm_model = ChatOpenAI(
-                temperature=MODEL_CONFIG.temperature,
-                openai_api_key=API_CONFIG.openai_api_key,
-                model=MODEL_CONFIG.gpt_model,
-                max_tokens=MODEL_CONFIG.llm_max_tokens
-            )
-        elif self.llm_model_name == "claude":
-            self.llm_model = ChatAnthropic(
-                temperature=MODEL_CONFIG.temperature,
-                api_key=API_CONFIG.anthropic_api_key,
-                model=MODEL_CONFIG.claude_model,
-                max_tokens=MODEL_CONFIG.llm_max_tokens
-            )
+        )
 
         print(f"Initialized LLM: {self.llm_model_name}")
 
@@ -1334,8 +1330,8 @@ if __name__ == '__main__':
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gemma', 'gpt', 'claude'], default='gemma',
-                       help='사용할 LLM 모델 (gemma: Gemma, gpt: GPT, claude: Claude)')
+    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini'], default='ax',
+                       help='사용할 LLM 모델 (gemma: Gemma, ax: ax, claude: Claude)')
     
     args = parser.parse_args()
     
