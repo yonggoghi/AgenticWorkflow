@@ -122,8 +122,8 @@ def split_node(raw: str) -> Dict[str,str]:
     if len(parts) == 1:                       # entity only
         ent, act, kpi = parts[0], "", ""
     elif len(parts) == 2:                     # entity:metric
-        ent, kpi = parts
-        act = ""
+        ent, act = parts
+        kpi = ""
     elif len(parts) == 3:                     # entity:action:metric
         ent, act, kpi = parts
     elif len(parts) == 4:                     # entity:action:behavior:metric
@@ -169,36 +169,28 @@ def build_dag(nodes: List[str], edges: List[Tuple[str,str,str]]) -> nx.DiGraph:
     
     return g
 
-# ###############################################################################
-# # ─── DEMO ────────────────────────────────────────────────────────────────────
-# ###############################################################################
-# RAW = """
-# (ADT캡스 보안 상품:구매:구매율) -[triggers]-> (무료 혜택:제공:수령율)
-# (LG Q92:구매:구매율) -[triggers]-> (15% 할인:적용:할인적용율)
-# (갤럭시 노트 20:구매:구매율) -[triggers]-> (중고폰 시세의 2배 보상:제공:수령율)
-# (휴대폰 액정 보호 필름:방문:방문율) -[triggers]-> (무료 교체:적용:교체율)
-# (가족 요금:상담:상담율) -[requires]-> (방문:방문율)
-# (가정 내 인터넷:상담:상담율) -[requires]-> (방문:방문율)
-# (IPTV:상담:상담율)
-# """
 
-# nodes, edges = parse_block(RAW)
-# dag = build_dag(nodes, edges)
-
-# print("\nRoot nodes (nodes with no incoming edges):")
-# root_nodes = [node for node in dag.nodes() if dag.in_degree(node) == 0]
-# for root in root_nodes:
-#     node_data = dag.nodes[root]
-#     print(f"  {root} | {node_data}")
-
-# print("\nNodes")
-# for n, d in dag.nodes(data=True):
-#     print(f"  {n:30} | {d}")
-
-# print("\nEdges")
-# for u, v, d in dag.edges(data=True):
-#     print(f"  {u:30} → {v:30}  ({d['relation']})")
-
+###############################################################################
+# 5) Path Finder
+###############################################################################
+def get_root_to_leaf_paths(dag):
+    """Generate all paths from root nodes (no predecessors) to leaf nodes (no successors)"""
+    # Find root nodes (no incoming edges)
+    root_nodes = [node for node in dag.nodes() if dag.in_degree(node) == 0]
+    
+    # Find leaf nodes (no outgoing edges)
+    leaf_nodes = [node for node in dag.nodes() if dag.out_degree(node) == 0]
+    
+    all_paths = []
+    for root in root_nodes:
+        for leaf in leaf_nodes:
+            try:
+                paths = list(nx.all_simple_paths(dag, root, leaf))
+                all_paths.extend(paths)
+            except nx.NetworkXNoPath:
+                continue
+    
+    return all_paths, root_nodes, leaf_nodes
 
 import random
 
@@ -217,8 +209,8 @@ def extract_dag():
         통신사 광고 메시지에서 개체명과 기대 행동을 추출하고 DAG 형식으로 출력하세요.
 
         ## 출력 형식
-        - 독립: `(개체명:기대행동:성과지표)`
-        - 관계: `(개체명:기대행동:성과지표) -[동사구]-> (개체명:기대행동:성과지표)`
+        - 독립: `(개체명:기대행동)`
+        - 관계: `(개체명:기대행동) -[동사구]-> (개체명:기대행동)`
 
         ## 개체명 유형
         - 제품: 갤럭시 S24, 아이폰 15, 갤럭시워치
@@ -229,16 +221,6 @@ def extract_dag():
 
         ## 기대 행동
         [구매, 가입, 사용, 방문, 참여, 등록, 다운로드, 확인]
-
-        ## 성과지표
-        - 구매 → 구매율
-        - 가입 → 가입율
-        - 사용 → 사용율
-        - 방문 → 방문율
-        - 참여 → 참여율
-        - 등록 → 등록율
-        - 다운로드 → 다운로드율
-        - 확인 → 클릭율
 
         ## 관계 동사구
         - requires: B가 A의 필수조건
@@ -254,11 +236,11 @@ def extract_dag():
 
         출력:
         ```
-        (갤럭시 S24 Ultra:구매:구매율) -[requires]-> (5G 프라임요금제:가입:가입율)
-        (5G 프라임요금제:가입:가입율) -[includes]-> (데이터 무제한:사용:사용율)
-        (5G 프라임요금제:가입:가입율) -[bundles_with]-> (인터넷 패밀리 결합:가입:가입율)
-        (인터넷 패밀리 결합:가입:가입율) -[triggers]-> (5천원 월 할인:사용:사용율)
-        (T멤버십 앱:등록:등록율) -[enables]-> (1만원 할인쿠폰:다운로드:다운로드율)
+        (갤럭시 S24 Ultra:구매) -[requires]-> (5G 프라임요금제:가입)
+        (5G 프라임요금제:가입) -[includes]-> (데이터 무제한:사용)
+        (5G 프라임요금제:가입) -[bundles_with]-> (인터넷 패밀리 결합:가입)
+        (인터넷 패밀리 결합:가입) -[triggers]-> (5천원 월 할인:사용)
+        (T멤버십 앱:등록) -[enables]-> (1만원 할인쿠폰:다운로드)
         ```
 
         ## 규칙
@@ -295,42 +277,19 @@ def extract_dag():
             node_data = dag.nodes[root]
             print(f"  {root} | {node_data}")
 
-        # print("==="*15+" DAG (2) "+"==="*15)
-        # dag = llm_gem3.invoke(prompt_1).content
-        # print(dag)
+        print("==="*15+" Paths "+"==="*15)
+        paths, roots, leaves = get_root_to_leaf_paths(dag)
 
-
-
-        # prompt_2 = f"""
-        # 아래 DAG는 통신사 광고 메시지에서 아래 출력 형식으로 추출된 구조이다.
-        # DAG에서 광고 기획자가 메시지 수신자에 실제로 원하는 '개체명:액션:성과지표'를 추출하고 싶다.
-        # 루트 노드는 복수개일 수도 있다.
-        # 루트 노드는 해당 광고 메시지의 성공율을 측정하는데 사용될 것이다.
-        # 너무 일반적인 노드는 제외하고 추출하세요.
-
-        # 아래 DAG에서 루트 노드를 추출하고 출력하세요.
-        # 결과만 제공하세요.
-
-
-        # ## DAG 형식
-        # - 독립: `(개체명:기대행동:성과지표)`
-        # - 관계: `(개체명:기대행동:성과지표) -[동사구]-> (개체명:기대행동:성과지표)`
-
-
-        # ## DAG
-        # {dag}
-
-        # ## 메시지   
-        # {msg}
-
-
-        # """
-
-        # # print("==="*15+" Core Node "+"==="*15)
-        # # print(llm_gem.invoke(prompt_2).content)
-        # print("==="*15+" Core Node (AX4) "+"==="*15)
-        # print(llm_ax.invoke(prompt_2).content)
-
+        for i, path in enumerate(paths):
+            print(f"\nPath {i+1}:")
+            for j, node in enumerate(path):
+                if j < len(path) - 1:
+                    edge_data = dag.get_edge_data(node, path[j+1])
+                    relation = edge_data['relation'] if edge_data else ''
+                    print(f"  {node}")
+                    print(f"    --[{relation}]-->")
+                else:
+                    print(f"  {node}")
 
         print()
 
