@@ -194,12 +194,12 @@ def get_root_to_leaf_paths(dag):
 
 import random
 
-def extract_dag():
+def extract_dag(num_msgs=50):
     
     # 출력을 파일에 저장하기 위한 설정
     output_file = "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/dag_extraction_output.txt"
     
-    with open(output_file, 'a', encoding='utf-8') as f:
+    with open(output_file, 'w', encoding='utf-8') as f:
         # 실행 시작 시점 기록
         from datetime import datetime
         start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -207,7 +207,7 @@ def extract_dag():
         f.write(f"DAG 추출 실행 시작: {start_time}\n")
         f.write(f"{'='*80}\n\n")
         
-        for msg in random.sample(mms_pdf.query("msg.str.contains('')")['msg'].unique().tolist(), 50):
+        for msg in random.sample(mms_pdf.query("msg.str.contains('')")['msg'].unique().tolist(), num_msgs):
 
 
             prompt_1 = f"""
@@ -226,7 +226,7 @@ def extract_dag():
             - 이벤트: 봄맞이행사, 신규가입이벤트
 
             ## 기대 행동
-            [구매, 가입, 사용, 방문, 참여, 등록, 다운로드, 확인]
+            [구매, 가입, 사용, 방문, 참여, 등록, 다운로드, 확인, 수령, 적립]
 
             ## 관계 동사구
             - requires: B가 A의 필수조건
@@ -254,6 +254,7 @@ def extract_dag():
             2. 중복 제거
             3. 순환 없음 (A→B→A 불가)
             4. 핵심 개체만 추출
+            5. 기대 행동은 위 목록에서 선택하세요.
 
             메시지를 분석하여 위 형식으로 출력하세요.
 
@@ -322,9 +323,14 @@ def extract_dag():
             print(separator)
             f.write(separator)
 
-            break
+            # break
     
     print(f"출력이 파일에 저장되었습니다: {output_file}")
 
 if __name__ == "__main__":
-    extract_dag()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='DAG 추출기')
+    parser.add_argument('--num_msgs', type=int, default=50, help='추출할 메시지 수')
+    args = parser.parse_args()
+    extract_dag(num_msgs=args.num_msgs)
