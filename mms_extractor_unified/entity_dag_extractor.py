@@ -194,12 +194,25 @@ def get_root_to_leaf_paths(dag):
 
 import random
 
-def extract_dag(num_msgs=50):
-    
+def extract_dag(num_msgs=50, llm_model_nm='ax'):
+
+    if llm_model_nm == 'ax':
+        llm_model = llm_ax
+    elif llm_model_nm == 'gem':
+        llm_model = llm_gem
+    elif llm_model_nm == 'cld':
+        llm_model = llm_cld
+    elif llm_model_nm == 'gen':
+        llm_model = llm_gen
+    elif llm_model_nm == 'gpt':
+        llm_model = llm_gpt
+
     # 출력을 파일에 저장하기 위한 설정
     output_file = "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/dag_extraction_output.txt"
+
+    line_break_patterns = ["__", "■", "▶", "_"]
     
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, 'a', encoding='utf-8') as f:
         # 실행 시작 시점 기록
         from datetime import datetime
         start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -208,7 +221,13 @@ def extract_dag(num_msgs=50):
         f.write(f"{'='*80}\n\n")
         
         for msg in random.sample(mms_pdf.query("msg.str.contains('')")['msg'].unique().tolist(), num_msgs):
+#             msg = """
+# [SK텔레콤] 강남터미널대리점 본점 갤럭시 S25 사전예약 안내드립니다.
+# (광고)[SKT] 강남터미널대리점 본점 갤럭시 S25 사전예약 안내__고객님, 안녕하세요. _새로운 시작, 설레이는 1월! SK텔레콤 강남터미널 대리점이 고객님의 특별한 새해를 응원합니다._곧 출시하는 삼성의 최신 플래그십 스마트폰 갤럭시 S25 사전예약 혜택 받아 가세요.__■ 새 학기 맞이 키즈폰 특별 행사_- 월정액 요금 및 기기 할인 최대 설계_- 12개월 약정__■ 갤럭시 S25 사전예약 중!_- 개통일 : 2월4일_- 더블 스토리지, 워치7 등 푸짐한 사은 혜택은 아래 매장 연락처로 문의주세요._- 예약 선물도 챙기시고, 좋은 조건으로 구매 상담도 받아 보세요.__■ 갤럭시 S24 마지막 찬스_- 요금 및 기기 할인 최대 설계_- 워치7 무료 증정 (※프라임 요금제 사용 기준)__■ 인터넷+TV결합 혜택_- 60만 원 상당의 최대 사은품 증정_- 월 최저 요금 설계__■ 강남터미널대리점 본점_- 주소 : 서울시 서초구 신반포로 176, 1층 130호 (신세계백화점 옆, 센트럴시티내 호남선 하차장 아웃백 아래 1층)_- 연락처 : 02-6282-1011_▶ 매장 홈페이지/예약/상담 : http://t-mms.kr/t.do?m=#61&s=30251&a=&u=http://tworldfriends.co.kr/D145410000__■ 문의: SKT 고객센터(1558, 무료)_SKT와 함께 해주셔서 감사합니다.__무료 수신거부 1504
+#             """
 
+            for pattern in line_break_patterns:
+                msg = msg.replace(pattern, "\n")
 
             prompt_1 = f"""
             ## 작업
@@ -265,18 +284,18 @@ def extract_dag(num_msgs=50):
             """ # https://claude.ai/share/0354d926-8b35-42f8-935e-5e05c03e3664 에서 7번 버전
             
 
-                # 메시지 출력
-            msg_header = "###"*15+" msg "+"###"*15
+            # 메시지 출력
+            msg_header = "==="*15+" Message "+"==="*15
             print(msg_header)
             f.write(msg_header + "\n")
             print(msg)
             f.write(msg + "\n")
             
             # DAG 출력
-            dag_header = "==="*15+" DAG (AX4) "+"==="*15
+            dag_header = "==="*15+f" DAG ({llm_model_nm}) "+"==="*15
             print(dag_header)
             f.write(dag_header + "\n")
-            dag_raw = llm_ax.invoke(prompt_1).content
+            dag_raw = llm_model.invoke(prompt_1).content
             print(dag_raw)
             f.write(dag_raw + "\n")
 
@@ -332,5 +351,6 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='DAG 추출기')
     parser.add_argument('--num_msgs', type=int, default=50, help='추출할 메시지 수')
+    parser.add_argument('--llm_model', type=str, default='ax', help='사용할 LLM 모델')
     args = parser.parse_args()
-    extract_dag(num_msgs=args.num_msgs)
+    extract_dag(num_msgs=args.num_msgs, llm_model_nm=args.llm_model)
