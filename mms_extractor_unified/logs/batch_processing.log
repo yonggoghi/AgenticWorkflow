@@ -1,0 +1,99 @@
+2025-08-13 17:17:24,327 - __main__ - INFO - ==================================================
+2025-08-13 17:17:24,327 - __main__ - INFO - Starting Batch MMS Processing
+2025-08-13 17:17:24,327 - __main__ - INFO - ==================================================
+2025-08-13 17:17:24,327 - __main__ - INFO - Batch size: 3
+2025-08-13 17:17:24,327 - __main__ - INFO - Output file: ./data/batch_results.csv
+2025-08-13 17:17:24,327 - __main__ - INFO - Extractor config: {'offer_info_data_src': 'local', 'product_info_extraction_mode': 'llm', 'entity_extraction_mode': 'llm', 'llm_model': 'ax'}
+2025-08-13 17:17:24,327 - __main__ - INFO - ==================================================
+2025-08-13 17:17:24,327 - __main__ - INFO - Loading MMS data from: ./data/mms_data_250806.csv
+2025-08-13 17:17:24,814 - __main__ - INFO - Loaded 23950 messages
+2025-08-13 17:17:24,814 - __main__ - INFO - Initializing MMS Extractor...
+2025-08-13 17:17:24,814 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-08-13 17:17:24,853 - mms_extractor - INFO - Using device: mps
+2025-08-13 17:17:24,853 - mms_extractor - INFO - _initialize_device 실행완료: 0.04초
+2025-08-13 17:17:25,410 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 17:17:25,410 - mms_extractor - INFO - _initialize_llm 실행완료: 0.56초
+2025-08-13 17:17:25,410 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 17:17:25,410 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 17:17:25,410 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 17:17:27,599 - mms_extractor - INFO - Model loaded on mps
+2025-08-13 17:17:27,599 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 2.19초
+2025-08-13 17:17:28,045 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 17:17:28,045 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.45초
+2025-08-13 17:17:28,045 - mms_extractor - INFO - 데이터 로딩 시작
+2025-08-13 17:17:28,172 - mms_extractor - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 17:17:28,482 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 17:17:28,484 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-08-13 17:17:28,545 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 17:17:28,546 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 17:17:28,549 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 17:17:28,549 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 17:17:28,725 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 17:17:29,219 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 17:17:29,219 - mms_extractor - INFO - 데이터 로딩 완료
+2025-08-13 17:17:29,219 - mms_extractor - INFO - _load_data 실행완료: 1.17초
+2025-08-13 17:17:29,219 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-08-13 17:17:29,219 - __main__ - INFO - MMS Extractor initialized successfully
+2025-08-13 17:17:29,222 - __main__ - INFO - Found 18 previously processed messages
+2025-08-13 17:17:29,234 - __main__ - INFO - Total messages: 23950
+2025-08-13 17:17:29,234 - __main__ - INFO - Previously processed: 18
+2025-08-13 17:17:29,234 - __main__ - INFO - Unprocessed messages: 23932
+2025-08-13 17:17:29,234 - __main__ - INFO - Sampled 3 messages for processing
+2025-08-13 17:17:29,234 - __main__ - INFO - Processing 3 messages...
+2025-08-13 17:17:29,234 - __main__ - INFO - Processing message 21987: 새로 가입만 하면 100% 선물을 드립니다!
+(광고)[SKT] 0캠퍼스 신규가입 혜택 안내...
+2025-08-13 17:17:29,235 - mms_extractor - INFO - 메시지 처리 시작: 새로 가입만 하면 100% 선물을 드립니다!
+(광고)[SKT] 0캠퍼스 신규가입 혜택 안내  스타벅스 비아 vs 올리브영 5,000원 쿠폰, 당신의 선택은? 0캠퍼스 새로 가입하고...
+2025-08-13 17:17:29,776 - mms_extractor - INFO - Kiwi 추출 엔티티: ['아쿠아', '록시땅', '히어로8', '뿌링클', '여기어때', '올리브영', '레오티에', '스페셜', '데이브', '비아', '스타벅스', '미니빔', '고프로', '치즈볼', '굿 나잇', '0캠퍼스', '꿀팁', '홈캉스', '스키', '키트']
+2025-08-13 17:17:36,352 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 7.12초
+2025-08-13 17:17:46,178 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:17:46,193 - mms_extractor - INFO - LLM 추출 엔티티: ['0캠퍼스', '스타벅스 비아 아이스커피(5개입)', '올리브영 5,000원 할인 쿠폰', '고프로 히어로8 블랙', '록시땅 아쿠아 레오티에 스킨 키트', '여기어때 50,000원 할인권', 'LG 시네빔 PH550', 'BHC 뿌링클+치즈볼+콜라 쿠폰', '굿나잇데이브 파자마 교환권']
+2025-08-13 17:17:48,456 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:17:50,130 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 3.94초
+2025-08-13 17:17:50,138 - mms_extractor - INFO - 메시지 처리 완료
+2025-08-13 17:17:50,138 - mms_extractor - INFO - process_message 실행완료: 20.90초
+2025-08-13 17:17:50,138 - __main__ - INFO - Successfully processed message 21987
+2025-08-13 17:17:50,138 - __main__ - INFO - Processing message 10339: [SK텔레콤] 걷는 것에 자신있나요? 
+(광고)[SKT] AIA Vitality 앱 혜택 ...
+2025-08-13 17:17:50,138 - mms_extractor - INFO - 메시지 처리 시작: [SK텔레콤] 걷는 것에 자신있나요? 
+(광고)[SKT] AIA Vitality 앱 혜택 안내  #04 고객님, 안녕하세요. 걷기만 해도 갤럭시 워치, 스타벅스 커피 등의 혜택을 ...
+2025-08-13 17:17:50,149 - mms_extractor - INFO - Kiwi 추출 엔티티: ['AIA Vitality', '갤럭시', '기프트', '스타벅스', '이마트', '교보문고']
+2025-08-13 17:17:51,387 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.25초
+2025-08-13 17:18:02,464 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:18:02,466 - mms_extractor - INFO - LLM 추출 엔티티: []
+2025-08-13 17:18:03,503 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:18:04,133 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.67초
+2025-08-13 17:18:04,141 - mms_extractor - WARNING - 필수 필드 누락: title
+2025-08-13 17:18:04,141 - mms_extractor - WARNING - 필수 필드 누락: purpose
+2025-08-13 17:18:04,141 - mms_extractor - INFO - 메시지 처리 완료
+2025-08-13 17:18:04,141 - mms_extractor - INFO - process_message 실행완료: 14.00초
+2025-08-13 17:18:04,141 - __main__ - INFO - Successfully processed message 10339
+2025-08-13 17:18:04,141 - __main__ - INFO - Processing message 13885: [SK텔레콤] 신창 대리점 광운대직영점 봄맞이 행사
+(광고)[SKT]신창 대리점 광운대직영...
+2025-08-13 17:18:04,141 - mms_extractor - INFO - 메시지 처리 시작: [SK텔레콤] 신창 대리점 광운대직영점 봄맞이 행사
+(광고)[SKT]신창 대리점 광운대직영점 봄맞이 행사__고객님, 안녕하세요._SK텔레콤 광운대점에서 다양한 이벤트를 진행합니다....
+2025-08-13 17:18:04,152 - mms_extractor - INFO - Kiwi 추출 엔티티: ['도어가드', '에디션', '캡스', '포켓몬', '신창', '잼폰', '광운대', '택1', '갤럭시S', '태블릿', '문자']
+2025-08-13 17:18:07,315 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 3.17초
+2025-08-13 17:18:20,811 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:18:20,813 - mms_extractor - INFO - LLM 추출 엔티티: []
+2025-08-13 17:18:22,348 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:18:22,830 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 2.02초
+2025-08-13 17:18:22,837 - mms_extractor - WARNING - 필수 필드 누락: title
+2025-08-13 17:18:22,837 - mms_extractor - WARNING - 필수 필드 누락: purpose
+2025-08-13 17:18:22,837 - mms_extractor - INFO - 메시지 처리 완료
+2025-08-13 17:18:22,837 - mms_extractor - INFO - process_message 실행완료: 18.70초
+2025-08-13 17:18:22,837 - __main__ - INFO - Successfully processed message 13885
+2025-08-13 17:18:22,837 - __main__ - INFO - Completed processing 3 messages
+2025-08-13 17:18:22,837 - __main__ - INFO - Appending 3 results to existing file: ./data/batch_results.csv
+2025-08-13 17:18:22,848 - __main__ - INFO - Results saved to: ./data/batch_results.csv
+2025-08-13 17:18:22,848 - __main__ - INFO - Successfully processed 3 messages
+2025-08-13 17:18:22,848 - __main__ - INFO - Processed message IDs: ['21987', '10339', '13885']
+2025-08-13 17:18:22,848 - __main__ - INFO - ==================================================
+2025-08-13 17:18:22,849 - __main__ - INFO - Batch Processing Summary
+2025-08-13 17:18:22,849 - __main__ - INFO - ==================================================
+2025-08-13 17:18:22,849 - __main__ - INFO - status: completed
+2025-08-13 17:18:22,849 - __main__ - INFO - processed_count: 3
+2025-08-13 17:18:22,849 - __main__ - INFO - successful_count: 3
+2025-08-13 17:18:22,849 - __main__ - INFO - failed_count: 0
+2025-08-13 17:18:22,849 - __main__ - INFO - results_file: ./data/batch_results.csv
+2025-08-13 17:18:22,849 - __main__ - INFO - ==================================================

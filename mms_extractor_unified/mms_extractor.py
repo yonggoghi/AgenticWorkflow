@@ -1237,10 +1237,7 @@ class MMSExtractor:
 
         # JSON 스키마 정의
         schema_prd = {
-            "title": {
-                "type": "string",
-                "description": "Advertisement title, using the exact expressions as they appear in the original text."
-            },
+            "title": "Advertisement title, using the exact expressions as they appear in the original text.",
             "purpose": {
                 "type": "array",
                 "items": {
@@ -1486,6 +1483,8 @@ Extract the advertisement purpose and product names from the provided advertisem
             # 5단계: LLM 프롬프트 구성 및 실행
             prompt = self._build_extraction_prompt(msg, rag_context, product_element)
             result_json_text = self._safe_llm_invoke(prompt)
+
+            # print(result_json_text)
             
             # 6단계: JSON 파싱
             json_objects_list = extract_json_objects(result_json_text)
@@ -1493,7 +1492,9 @@ Extract the advertisement purpose and product names from the provided advertisem
                 logger.warning("LLM이 유효한 JSON 객체를 반환하지 않았습니다")
                 return self._create_fallback_result(msg)
             
-            json_objects = json_objects_list[0]
+            json_objects = json_objects_list[-1]
+
+            # print(json_objects)
             
             # 7단계: 엔티티 매칭 및 최종 결과 구성
             final_result = self._build_final_result(json_objects, msg, pgm_info)
@@ -1626,8 +1627,8 @@ def main():
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini', 'gpt'], default='ax',
-                       help='사용할 LLM 모델 (gemma: Gemma, ax: ax, claude: Claude, gpt: GPT-4o)')
+    parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
+                       help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
     
