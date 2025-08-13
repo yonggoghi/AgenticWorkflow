@@ -52,37 +52,48 @@ import logging.handlers
 log_dir = Path(__file__).parent / 'logs'
 log_dir.mkdir(exist_ok=True)
 
-# 로그 파일 경로
+# API 전용 로그 파일 경로 - 실시간 API 요청/응답 로그
 log_file = log_dir / 'api_server.log'
 
 # 로거 설정
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# 포맷터 설정
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+# 포맷터 설정 - 모듈명 포함하여 로그 출처 명확화
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # 콘솔 핸들러
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 
-# 파일 핸들러 (회전 로그 - 10MB씩 최대 5개 파일)
+# API 전용 파일 핸들러 (회전 로그 - 5MB씩 최대 10개 파일, 짧은 보존기간)
 file_handler = logging.handlers.RotatingFileHandler(
     log_file, 
-    maxBytes=10*1024*1024,  # 10MB
-    backupCount=5,
+    maxBytes=5*1024*1024,   # 5MB (API 로그는 상대적으로 작음)
+    backupCount=10,         # 더 많은 파일 보존 (실시간 모니터링용)
     encoding='utf-8'
 )
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
 
-# 핸들러 추가
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
+# 루트 로거에만 핸들러 추가하여 모든 하위 로거의 로그를 처리
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.addHandler(console_handler)
+root_logger.addHandler(file_handler)
 
-# 기본 로깅 설정 비활성화 (중복 로그 방지)
-logging.getLogger().handlers = []
+# 기존 핸들러 제거 (중복 방지)
+root_logger.handlers = [console_handler, file_handler]
+
+# 개별 로거들은 루트 로거로 전파하도록 설정 (핸들러 중복 등록 방지)
+logger.setLevel(logging.INFO)
+mms_logger = logging.getLogger('mms_extractor')
+mms_logger.setLevel(logging.INFO)
+
+# 전파 설정 확인 (기본값이 True이므로 명시적으로 설정)
+logger.propagate = True
+mms_logger.propagate = True
 
 # 전역 추출기 인스턴스 - 서버 시작 시 한 번만 로드
 global_extractor = None

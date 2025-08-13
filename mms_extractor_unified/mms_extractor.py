@@ -51,16 +51,26 @@ except ImportError:
     logging.warning("설정 파일을 찾을 수 없습니다. 기본값을 사용합니다.")
     # 기본 설정값들을 여기에 정의할 수 있습니다.
 
-# 로깅 설정
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('mms_extractor.log'),
-        logging.StreamHandler()
-    ]
-)
+# 로깅 설정 - api.py에서 실행될 때는 해당 설정을 사용하고, 직접 실행될 때만 기본 설정 적용
 logger = logging.getLogger(__name__)
+
+# 직접 실행될 때만 로깅 설정 (api.py에서 임포트될 때는 api.py의 설정 사용)
+if __name__ == '__main__':
+    import sys
+    from pathlib import Path
+    
+    # 로그 디렉토리 생성
+    log_dir = Path(__file__).parent / 'logs'
+    log_dir.mkdir(exist_ok=True)
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_dir / 'mms_extractor.log'),
+            logging.StreamHandler()
+        ]
+    )
 
 # pandas 출력 설정
 pd.set_option('display.max_colwidth', 500)
