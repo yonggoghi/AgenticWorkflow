@@ -230,7 +230,7 @@ def extract_dag(num_msgs=50, llm_model_nm='ax'):
                 for pattern, replacement in line_break_patterns.items():
                     msg = msg.replace(pattern, replacement)
 
-                prompt_1 = f"""
+                prompt = f"""
 ## 작업
 통신사 광고 메시지에서 개체명과 기대 행동을 추출하고 DAG 형식으로 출력하세요.
 
@@ -262,7 +262,7 @@ def extract_dag(num_msgs=50, llm_model_nm='ax'):
 - 멤버십: T멤버십, 단골등록, 친구추가
 
 ### 주의 사항
-- 광고 타겟은 개체명으로 추출하지 마세요.
+- 광고 타겟 (대상자)은 개체명으로 추출하지 마세요.
 - 일정/기간은 개체명으로 추출하지 마세요.
 
 ## 기대 행동 (표준화된 10개 동사)
@@ -374,7 +374,7 @@ def extract_dag(num_msgs=50, llm_model_nm='ax'):
                 dag_header = "==="*15+f" DAG ({llm_model_nm.upper()}) "+"==="*15
                 print(dag_header)
                 f.write(dag_header + "\n")
-                dag_raw = llm_model.invoke(prompt_1).content
+                dag_raw = llm_model.invoke(prompt).content
                 print(dag_raw)
                 f.write(dag_raw + "\n")
 

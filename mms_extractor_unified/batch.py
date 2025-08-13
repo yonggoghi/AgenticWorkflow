@@ -31,15 +31,36 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from config.settings import METADATA_CONFIG
 from mms_extractor import MMSExtractor
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('batch_processing.log'),
-        logging.StreamHandler()
-    ]
-)
+# Configure logging - 통합 로그 파일 사용
+from pathlib import Path
+
+# 로그 디렉토리 생성
+log_dir = Path(__file__).parent / 'logs'
+log_dir.mkdir(exist_ok=True)
+
+# 배치 처리 전용 로깅 설정
+import logging.handlers
+
+root_logger = logging.getLogger()
+if not root_logger.handlers:
+    # 배치 처리용 파일 핸들러 (회전 로그 - 20MB씩 최대 5개 파일, 장기 보존)
+    batch_file_handler = logging.handlers.RotatingFileHandler(
+        log_dir / 'batch_processing.log',
+        maxBytes=20*1024*1024,  # 20MB (배치 로그는 많은 양)
+        backupCount=5,          # 감사 목적으로 장기 보존
+        encoding='utf-8'
+    )
+    
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    batch_file_handler.setFormatter(formatter)
+    
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[batch_file_handler, console_handler]
+    )
 logger = logging.getLogger(__name__)
 
 
