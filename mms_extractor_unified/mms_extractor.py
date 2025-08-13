@@ -11,6 +11,7 @@ MMS 추출기 (MMS Extractor) - 개선된 버전
 - 예외 처리 강화: 안전한 LLM 호출 및 에러 복구
 - 로깅 시스템 추가: 성능 모니터링 및 디버깅 지원
 - 데이터 검증 추가: 추출 결과 품질 보장
+- 데이터베이스 지원: 상품 정보와 프로그램 분류 정보 모두 DB에서 로드 가능
 """
 
 from concurrent.futures import ThreadPoolExecutor
@@ -707,7 +708,7 @@ class MMSExtractor:
                 
             elif self.offer_info_data_src == "db":
                 # 데이터베이스에서 로드
-                self._load_from_database()
+                self._load_item_from_database()
             
             # 제외할 도메인 코드 필터링
             excluded_domains = getattr(PROCESSING_CONFIG, 'excluded_domain_codes_for_items', [])
@@ -721,10 +722,9 @@ class MMSExtractor:
             # 빈 DataFrame으로 fallback
             self.item_pdf_all = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
 
-    def _load_from_database(self):
-        """데이터베이스에서 상품 정보 로드"""
+    def _get_database_connection(self):
+        """Oracle 데이터베이스 연결 생성"""
         try:
-            # Oracle 데이터베이스 연결
             username = os.getenv("DB_USERNAME")
             password = os.getenv("DB_PASSWORD")
             host = os.getenv("DB_HOST")
@@ -737,6 +737,17 @@ class MMSExtractor:
             dsn = cx_Oracle.makedsn(host, port, service_name=service_name)
             conn = cx_Oracle.connect(user=username, password=password, dsn=dsn, encoding="UTF-8")
             
+            return conn
+            
+        except Exception as e:
+            logger.error(f"데이터베이스 연결 실패: {e}")
+            raise
+
+    def _load_item_from_database(self):
+        """데이터베이스에서 상품 정보 로드"""
+        try:
+            conn = self._get_database_connection()
+            
             sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000"
             self.item_pdf_all = pd.read_sql(sql, conn)
             conn.close()
@@ -744,7 +755,33 @@ class MMSExtractor:
             self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
             
         except Exception as e:
-            logger.error(f"데이터베이스 로드 실패: {e}")
+            logger.error(f"상품 정보 데이터베이스 로드 실패: {e}")
+            raise
+
+    def _load_program_from_database(self):
+        """데이터베이스에서 프로그램 분류 정보 로드"""
+        try:
+            conn = self._get_database_connection()
+            
+            # 프로그램 분류 정보 쿼리
+            sql = """SELECT CMPGN_PGM_NUM pgm_id, CMPGN_PGM_NM pgm_nm, RMK clue_tag 
+                     FROM TCAM_CMPGN_PGM_INFO
+                     WHERE DEL_YN = 'N' 
+                     AND APRV_OP_RSLT_CD = 'APPR'
+                     AND EXPS_YN = 'Y'
+                     AND CMPGN_PGM_NUM like '2025%' 
+                     AND RMK is not null"""
+            
+            self.pgm_pdf = pd.read_sql(sql, conn)
+            self.pgm_pdf = self.pgm_pdf.rename(columns={c:c.lower() for c in self.pgm_pdf.columns})
+            conn.close()
+            
+            logger.info(f"데이터베이스에서 프로그램 분류 정보 로드 완료: {len(self.pgm_pdf)}개")
+            
+        except Exception as e:
+            logger.error(f"프로그램 분류 정보 데이터베이스 로드 실패: {e}")
+            # 빈 데이터로 fallback
+            self.pgm_pdf = pd.DataFrame(columns=['pgm_nm', 'clue_tag', 'pgm_id'])
             raise
 
     def _apply_alias_rules(self):
@@ -798,20 +835,32 @@ class MMSExtractor:
     def _load_program_data(self):
         """프로그램 분류 정보 로드 및 임베딩 생성"""
         try:
-            logger.info("프로그램 분류 임베딩 생성 시작...")
+            logger.info("프로그램 분류 정보 로딩 시작...")
             
-            self.pgm_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'pgm_info_path', './data/program_info.csv'))
+            if self.offer_info_data_src == "local":
+                # 로컬 CSV 파일에서 로드
+                self.pgm_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'pgm_info_path', './data/program_info.csv'))
+                logger.info(f"로컬 파일에서 프로그램 정보 로드: {len(self.pgm_pdf)}개")
+            elif self.offer_info_data_src == "db":
+                # 데이터베이스에서 로드
+                self._load_program_from_database()
+                logger.info(f"데이터베이스에서 프로그램 정보 로드: {len(self.pgm_pdf)}개")
             
             # 프로그램 분류를 위한 임베딩 생성
-            clue_texts = self.pgm_pdf[["pgm_nm","clue_tag"]].apply(
-                lambda x: preprocess_text(x['pgm_nm'].lower()) + " " + x['clue_tag'].lower(), axis=1
-            ).tolist()
-            
-            self.clue_embeddings = self.emb_model.encode(
-                clue_texts, convert_to_tensor=True, show_progress_bar=False
-            )
-            
-            logger.info(f"프로그램 분류 임베딩 생성 완료: {len(self.pgm_pdf)}개 프로그램")
+            if not self.pgm_pdf.empty:
+                logger.info("프로그램 분류 임베딩 생성 시작...")
+                clue_texts = self.pgm_pdf[["pgm_nm","clue_tag"]].apply(
+                    lambda x: preprocess_text(x['pgm_nm'].lower()) + " " + x['clue_tag'].lower(), axis=1
+                ).tolist()
+                
+                self.clue_embeddings = self.emb_model.encode(
+                    clue_texts, convert_to_tensor=True, show_progress_bar=False
+                )
+                
+                logger.info(f"프로그램 분류 임베딩 생성 완료: {len(self.pgm_pdf)}개 프로그램")
+            else:
+                logger.warning("프로그램 데이터가 비어있어 임베딩을 생성할 수 없습니다")
+                self.clue_embeddings = torch.tensor([])
             
         except Exception as e:
             logger.error(f"프로그램 데이터 로드 실패: {e}")
