@@ -555,8 +555,8 @@ def main():
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gemma', 'ax', 'claude', 'gemini', 'gpt'], default='ax',
-                       help='사용할 LLM 모델 (gemma: Gemma, ax: AX, claude: Claude, gemini: Gemini, gpt: GPT-4o)')
+    parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
+                       help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     
     args = parser.parse_args()
     

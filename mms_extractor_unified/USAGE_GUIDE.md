@@ -8,6 +8,7 @@ MMS Extractor는 한국어 광고 메시지에서 상품 정보, 채널 정보, 
 - [CLI 사용법 (mms_extractor.py)](#cli-사용법-mms_extractorpy)
 - [배치 처리 사용법 (batch.py)](#배치-처리-사용법-batchpy)
 - [API 서버 사용법 (api.py)](#api-서버-사용법-apipy)
+- [Entity DAG 추출기 (entity_dag_extractor.py)](#entity-dag-추출기-entity_dag_extractorpy)
 - [설정 옵션](#설정-옵션)
 - [예제](#예제)
 - [문제 해결](#문제-해결)
@@ -18,7 +19,7 @@ MMS Extractor는 한국어 광고 메시지에서 상품 정보, 채널 정보, 
 - **상품 정보 추출**: 광고 메시지에서 제품/서비스 이름과 고객 행동 추출
 - **채널 정보 추출**: URL, 전화번호, 앱, 대리점 정보 추출
 - **프로그램 분류**: 광고 메시지를 사전 정의된 프로그램으로 분류
-- **다중 LLM 지원**: Gemma, GPT, Claude 모델 지원
+- **다중 LLM 지원**: Gemma, AX, Claude, Gemini, GPT 모델 지원
 - **유연한 데이터 소스**: 로컬 CSV 파일 또는 Oracle 데이터베이스 지원
 
 ### 시스템 아키텍처
@@ -61,7 +62,7 @@ DB_PORT=1521
 DB_NAME=your_service_name
 
 # 모델 설정
-LLM_MODEL=gemma
+LLM_MODEL=ax
 LOCAL_EMBEDDING_MODEL_PATH=./models/ko-sbert-nli
 MODEL_LOADING_MODE=auto
 ```
@@ -93,15 +94,15 @@ python mms_extractor.py --message "광고 메시지 텍스트"
 python mms_extractor.py \
   --message "광고 메시지" \
   --offer-data-source local \
-  --llm-model gemma \
+  --llm-model ax \
   --product-info-extraction-mode nlp \
-  --entity-matching-mode logic
+  --entity-matching-mode llm
 ```
 
 ### 옵션 설명
 - `--message`: 처리할 MMS 메시지 텍스트
 - `--offer-data-source`: 데이터 소스 (`local` 또는 `db`)
-- `--llm-model`: 사용할 LLM 모델 (`gemma`, `gpt`, `claude`)
+- `--llm-model`: 사용할 LLM 모델 (`gemma`, `ax`, `claude`, `gemini`, `gpt`)
 - `--product-info-extraction-mode`: 상품 정보 추출 모드 (`nlp`, `llm`, `rag`)
 - `--entity-matching-mode`: 엔티티 매칭 모드 (`logic`, `llm`)
 
@@ -115,6 +116,12 @@ python mms_extractor.py \
   --message "[SK텔레콤] 5G 요금제 안내" \
   --llm-model gpt \
   --product-info-extraction-mode rag
+
+# AX 모델과 LLM 엔티티 매칭 사용
+python mms_extractor.py \
+  --message "[SK텔레콤] 5G 요금제 안내" \
+  --llm-model ax \
+  --entity-matching-mode llm
 
 # 데이터베이스 사용
 python mms_extractor.py \
@@ -148,18 +155,18 @@ python batch.py --batch-size 50
 
 #### 출력 파일 지정
 ```bash
-python batch.py --batch-size 20 --output-file my_results.csv
+python batch.py --batch-size 20 --output-file ./data/my_results.csv
 ```
 
 ### 전체 옵션
 ```bash
 python batch.py \
   --batch-size 30 \
-  --output-file batch_results.csv \
+  --output-file ./data/batch_results.csv \
   --offer-data-source local \
-  --product-info-extraction-mode nlp \
+  --product-info-extraction-mode llm \
   --entity-extraction-mode llm \
-  --llm-model gemma
+  --llm-model ax
 ```
 
 ### 옵션 설명
@@ -170,9 +177,10 @@ python batch.py \
 
 #### MMSExtractor 옵션
 - `--offer-data-source`: 데이터 소스 (`local` 또는 `db`, 기본값: local)
-- `--product-info-extraction-mode`: 상품 정보 추출 모드 (`nlp`, `llm`, `rag`, 기본값: nlp)
+- `--product-info-extraction-mode`: 상품 정보 추출 모드 (`nlp`, `llm`, `rag`, 기본값: llm)
 - `--entity-extraction-mode`: 엔티티 추출 모드 (`logic`, `llm`, 기본값: llm)
-- `--llm-model`: 사용할 LLM 모델 (`gemma`, `gpt`, `claude`, 기본값: gemma)
+  - **참고**: CLI에서는 `--entity-matching-mode`로도 사용 가능
+- `--llm-model`: 사용할 LLM 모델 (`gemma`, `ax`, `claude`, `gemini`, `gpt`, 기본값: ax)
 
 ### 입력 데이터 형식
 
@@ -222,6 +230,11 @@ python batch.py \
   --llm-model gpt \
   --product-info-extraction-mode llm \
   --output-file gpt_results.csv
+
+# 100개 메시지를 AX 모델로 처리 (기본 설정)
+python batch.py \
+  --batch-size 100 \
+  --output-file ax_results.csv
 ```
 
 #### 3. RAG 모드 배치 처리
@@ -302,6 +315,49 @@ print(f"처리 완료: {summary['processed_count']}개 메시지")
 print(f"성공: {summary['successful_count']}, 실패: {summary['failed_count']}")
 ```
 
+## Entity DAG 추출기 (entity_dag_extractor.py)
+
+Entity DAG 추출기는 MMS 메시지에서 엔티티 간의 관계를 DAG(Directed Acyclic Graph) 형태로 추출하는 특화된 기능입니다.
+
+### 주요 기능
+- **엔티티 관계 분석**: 메시지 내 엔티티 간의 의존성 및 관계 추출
+- **DAG 구조 생성**: 추출된 엔티티를 DAG 형태로 구조화
+- **배치 처리 지원**: 다수의 메시지를 일괄 처리
+
+### 기본 사용법
+
+```bash
+# 기본 DAG 추출 (50개 메시지)
+python entity_dag_extractor.py
+
+# 처리할 메시지 수 지정
+python entity_dag_extractor.py --num_msgs 100
+```
+
+### 옵션 설명
+- `--num_msgs`: 처리할 메시지 수 (기본값: 50)
+
+### 출력 결과
+처리 결과는 다음 파일들에 저장됩니다:
+- `dag_extraction_output.txt`: 전체 DAG 추출 결과
+- `dag_extraction_output_test.txt`: 테스트 결과
+
+### Python 스크립트에서 사용
+
+```python
+from entity_dag_extractor import extract_dag
+
+# DAG 추출 실행
+extract_dag(num_msgs=30)
+```
+
+### 예제
+
+```bash
+# 200개 메시지로 DAG 추출
+python entity_dag_extractor.py --num_msgs 200
+```
+
 ## API 서버 사용법 (api.py)
 
 ### 서버 시작
@@ -350,14 +406,14 @@ GET /models
 **응답 예제:**
 ```json
 {
-  "available_llm_models": ["gemma", "gpt", "claude"],
-  "default_llm_model": "gemma",
+  "available_llm_models": ["gemma", "ax", "claude", "gemini", "gpt"],
+  "default_llm_model": "ax",
   "available_data_sources": ["local", "db"],
   "default_data_source": "local",
   "available_product_info_extraction_modes": ["nlp", "llm", "rag"],
   "default_product_info_extraction_mode": "nlp",
   "available_entity_matching_modes": ["logic", "llm"],
-  "default_entity_matching_mode": "logic",
+  "default_entity_matching_mode": "llm",
   "features": [
     "Korean morphological analysis (Kiwi)",
     "Embedding-based similarity search",
@@ -380,9 +436,9 @@ GET /status
   "extractor": {
     "initialized": true,
     "data_source": "local",
-    "current_llm_model": "gemma",
-    "current_product_mode": "nlp",
-    "current_entity_mode": "logic"
+    "current_llm_model": "ax",
+    "current_product_mode": "llm",
+    "current_entity_mode": "llm"
   },
   "timestamp": 1640995200.0
 }
@@ -398,9 +454,9 @@ Content-Type: application/json
 ```json
 {
   "message": "[SK텔레콤] 5G 요금제 가입 안내",
-  "llm_model": "gemma",
+  "llm_model": "ax",
   "product_info_extraction_mode": "nlp",
-  "entity_matching_mode": "logic",
+  "entity_matching_mode": "llm",
   "offer_info_data_src": "local"
 }
 ```
@@ -432,10 +488,10 @@ Content-Type: application/json
     ]
   },
   "metadata": {
-    "llm_model": "gemma",
+    "llm_model": "ax",
     "offer_info_data_src": "local",
     "product_info_extraction_mode": "nlp",
-    "entity_matching_mode": "logic",
+    "entity_matching_mode": "llm",
     "processing_time_seconds": 2.456,
     "timestamp": 1640995200.0,
     "message_length": 25
@@ -503,9 +559,9 @@ curl -X POST http://localhost:8000/extract \
   -H "Content-Type: application/json" \
   -d '{
     "message": "[SK텔레콤] 5G 요금제 가입하고 혜택 받으세요!",
-    "llm_model": "gemma",
-    "product_info_extraction_mode": "nlp",
-    "entity_matching_mode": "logic"
+          "llm_model": "ax",
+      "product_info_extraction_mode": "nlp",
+      "entity_matching_mode": "llm"
   }'
 ```
 
@@ -525,9 +581,11 @@ curl -X POST http://localhost:8000/extract/batch \
 ## 설정 옵션
 
 ### LLM 모델 선택
-- **gemma**: 기본 모델, 빠른 처리 속도
+- **ax**: 기본 모델, 빠른 처리 속도와 높은 성능
+- **gemma**: Google Gemma 모델, 높은 성능
 - **gpt**: OpenAI GPT 모델, 높은 정확도
 - **claude**: Anthropic Claude 모델, 균형잡힌 성능
+- **gemini**: Google Gemini 모델, 다양한 언어 지원
 
 ### 상품 정보 추출 모드
 - **nlp**: 규칙 기반 추출 (기본값)
@@ -535,8 +593,8 @@ curl -X POST http://localhost:8000/extract/batch \
 - **rag**: RAG 기반 추출 (후보 상품 목록 활용)
 
 ### 엔티티 매칭 모드
-- **logic**: 논리 기반 유사도 매칭 (기본값) - 빠르고 정확한 규칙 기반 매칭
-- **llm**: LLM 기반 매칭 - 더 지능적이지만 느린 LLM 기반 엔티티 추출 및 매칭
+- **llm**: LLM 기반 매칭 (기본값) - 더 지능적인 LLM 기반 엔티티 추출 및 매칭
+- **logic**: 논리 기반 유사도 매칭 - 빠르고 정확한 규칙 기반 매칭
 
 ### 데이터 소스
 - **local**: 로컬 CSV 파일 사용 (기본값)
@@ -565,9 +623,9 @@ def extract_single_message(message):
         f"{API_URL}/extract",
         json={
             "message": message,
-            "llm_model": "gemma",
+            "llm_model": "ax",
             "product_info_extraction_mode": "nlp",
-            "entity_matching_mode": "logic"
+            "entity_matching_mode": "llm"
         }
     )
     return response.json()
@@ -624,7 +682,7 @@ extractMessage(message)
 
 #### 2. "Invalid llm_model" 오류
 **원인**: 지원하지 않는 LLM 모델 지정
-**해결방법**: `gemma`, `gpt`, `claude` 중 하나를 사용
+**해결방법**: `gemma`, `ax`, `gpt`, `claude`, `gemini` 중 하나를 사용
 
 #### 3. API 키 오류
 **원인**: LLM API 키가 설정되지 않음
@@ -636,7 +694,14 @@ extractMessage(message)
 - 더 많은 RAM이 있는 환경에서 실행
 - `MODEL_LOADING_MODE=local`로 설정하여 로컬 모델 사용
 
-#### 5. 배치 처리 관련 오류
+#### 5. CLI 플래그 이름 혼동
+**원인**: 일부 스크립트에서 `--entity-extraction-mode`, 다른 스크립트에서 `--entity-matching-mode` 사용
+**해결방법**: 
+- `batch.py`: `--entity-extraction-mode` 사용
+- `api.py`, `mms_extractor.py`: `--entity-matching-mode` 사용
+- API 요청: JSON에서 `entity_matching_mode` 키 사용
+
+#### 6. 배치 처리 관련 오류
 
 ##### "No unprocessed messages found" 오류
 **원인**: 모든 메시지가 이미 처리됨 (`ext_yn='Y'`)
@@ -694,5 +759,8 @@ python api.py --debug  # 디버그 모드로 실행
 ---
 
 **마지막 업데이트**: 2025년 1월
-**버전**: 2.0.0
-**새로운 기능**: 배치 처리 시스템 (batch.py) 추가 
+**버전**: 2.1.0
+**새로운 기능**: 
+- 배치 처리 시스템 (batch.py) 추가
+- 다중 LLM 모델 지원 확장 (AX, Gemini 모델 추가)
+- 향상된 엔티티 매칭 모드 (LLM 기반 기본값 변경) 

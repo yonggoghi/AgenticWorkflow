@@ -1,0 +1,852 @@
+2025-08-13 17:19:57,050 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 17:19:57,050 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 17:19:57,087 - __main__ - INFO - Using device: mps
+2025-08-13 17:19:57,087 - __main__ - INFO - _initialize_device 실행완료: 0.04초
+2025-08-13 17:19:57,281 - __main__ - INFO - LLM 초기화 완료: gpt (openai/gpt-4o-2024-11-20)
+2025-08-13 17:19:57,282 - __main__ - INFO - _initialize_llm 실행완료: 0.19초
+2025-08-13 17:19:57,282 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 17:19:57,282 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 17:19:57,282 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 17:19:58,361 - __main__ - INFO - Model loaded on mps
+2025-08-13 17:19:58,361 - __main__ - INFO - _initialize_embedding_model 실행완료: 1.08초
+2025-08-13 17:19:58,776 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 17:19:58,776 - __main__ - INFO - _initialize_kiwi 실행완료: 0.42초
+2025-08-13 17:19:58,776 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 17:19:58,900 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 17:19:59,199 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 17:19:59,200 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 17:19:59,263 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 17:19:59,263 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 17:19:59,265 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 17:19:59,265 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 17:19:59,425 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 17:19:59,897 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 17:19:59,897 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 17:19:59,897 - __main__ - INFO - _load_data 실행완료: 1.12초
+2025-08-13 17:19:59,897 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 17:19:59,897 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 17:19:59,897 - __main__ - INFO - 메시지 처리 시작: [LG유플러스] 인터넷 서비스 안내...
+2025-08-13 17:20:00,411 - __main__ - INFO - Kiwi 추출 엔티티: ['LG유플러스']
+2025-08-13 17:20:01,150 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 1.25초
+2025-08-13 17:20:02,119 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 403 Forbidden"
+2025-08-13 17:20:02,123 - __main__ - WARNING - LLM 호출 재시도 1/3: Error code: 403 - {'error': {'message': 'Not allowed to use the requested model', 'type': 'forbidden', 'code': 'unauthorized'}}
+2025-08-13 17:20:03,172 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 403 Forbidden"
+2025-08-13 17:20:03,173 - __main__ - WARNING - LLM 호출 재시도 2/3: Error code: 403 - {'error': {'message': 'Not allowed to use the requested model', 'type': 'forbidden', 'code': 'unauthorized'}}
+2025-08-13 17:20:05,202 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 403 Forbidden"
+2025-08-13 17:20:05,204 - __main__ - ERROR - LLM 호출 최종 실패: Error code: 403 - {'error': {'message': 'Not allowed to use the requested model', 'type': 'forbidden', 'code': 'unauthorized'}}
+2025-08-13 17:20:05,204 - __main__ - INFO - Fallback 추출 로직 실행
+2025-08-13 17:20:05,206 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 17:20:05,458 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 403 Forbidden"
+2025-08-13 17:20:05,459 - __main__ - WARNING - LLM 호출 재시도 1/3: Error code: 403 - {'error': {'message': 'Not allowed to use the requested model', 'type': 'forbidden', 'code': 'unauthorized'}}
+2025-08-13 17:20:06,500 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 403 Forbidden"
+2025-08-13 17:20:06,501 - __main__ - WARNING - LLM 호출 재시도 2/3: Error code: 403 - {'error': {'message': 'Not allowed to use the requested model', 'type': 'forbidden', 'code': 'unauthorized'}}
+2025-08-13 17:20:08,532 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 403 Forbidden"
+2025-08-13 17:20:08,533 - __main__ - ERROR - LLM 호출 최종 실패: Error code: 403 - {'error': {'message': 'Not allowed to use the requested model', 'type': 'forbidden', 'code': 'unauthorized'}}
+2025-08-13 17:20:08,534 - __main__ - INFO - Fallback 추출 로직 실행
+2025-08-13 17:20:09,024 - __main__ - INFO - extract_entities_by_llm 실행완료: 3.82초
+2025-08-13 17:20:09,031 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 17:20:09,031 - __main__ - INFO - process_message 실행완료: 9.13초
+2025-08-13 17:20:27,243 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 17:20:27,243 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 17:20:27,265 - __main__ - INFO - Using device: mps
+2025-08-13 17:20:27,265 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 17:20:27,421 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 17:20:27,421 - __main__ - INFO - _initialize_llm 실행완료: 0.16초
+2025-08-13 17:20:27,421 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 17:20:27,421 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 17:20:27,421 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 17:20:28,238 - __main__ - INFO - Model loaded on mps
+2025-08-13 17:20:28,238 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.82초
+2025-08-13 17:20:28,634 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 17:20:28,635 - __main__ - INFO - _initialize_kiwi 실행완료: 0.40초
+2025-08-13 17:20:28,635 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 17:20:28,757 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 17:20:29,058 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 17:20:29,059 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 17:20:29,121 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 17:20:29,121 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 17:20:29,123 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 17:20:29,123 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 17:20:29,267 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 17:20:29,739 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 17:20:29,739 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 17:20:29,739 - __main__ - INFO - _load_data 실행완료: 1.10초
+2025-08-13 17:20:29,739 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 17:20:29,739 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 17:20:29,739 - __main__ - INFO - 메시지 처리 시작: [LG유플러스] 인터넷 서비스 안내...
+2025-08-13 17:20:30,250 - __main__ - INFO - Kiwi 추출 엔티티: ['LG유플러스']
+2025-08-13 17:20:31,001 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 1.26초
+2025-08-13 17:20:34,363 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:20:34,376 - __main__ - INFO - LLM 추출 엔티티: ['인터넷 서비스']
+2025-08-13 17:20:36,106 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:20:36,337 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.96초
+2025-08-13 17:20:36,343 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 17:20:36,344 - __main__ - INFO - process_message 실행완료: 6.60초
+2025-08-13 17:20:57,834 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 17:20:57,834 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 17:20:57,857 - __main__ - INFO - Using device: mps
+2025-08-13 17:20:57,857 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 17:20:58,005 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 17:20:58,005 - __main__ - INFO - _initialize_llm 실행완료: 0.15초
+2025-08-13 17:20:58,005 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 17:20:58,005 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 17:20:58,005 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 17:20:58,820 - __main__ - INFO - Model loaded on mps
+2025-08-13 17:20:58,820 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.82초
+2025-08-13 17:20:59,228 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 17:20:59,228 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 17:20:59,228 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 17:20:59,350 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 17:20:59,648 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 17:20:59,649 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 17:20:59,721 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 17:20:59,722 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 17:20:59,723 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 17:20:59,723 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 17:20:59,894 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 17:21:00,379 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 17:21:00,379 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 17:21:00,379 - __main__ - INFO - _load_data 실행완료: 1.15초
+2025-08-13 17:21:00,379 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 17:21:00,379 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 17:21:00,379 - __main__ - INFO - 메시지 처리 시작: [LG유플러스] 인터넷 서비스 안내...
+2025-08-13 17:21:00,891 - __main__ - INFO - Kiwi 추출 엔티티: ['LG유플러스']
+2025-08-13 17:21:01,626 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 1.25초
+2025-08-13 17:21:14,857 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:21:14,871 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 17:21:15,477 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 17:21:15,706 - __main__ - INFO - extract_entities_by_llm 실행완료: 0.83초
+2025-08-13 17:21:15,713 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 17:21:15,713 - __main__ - WARNING - 필수 필드 누락: purpose
+2025-08-13 17:21:15,713 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 17:21:15,713 - __main__ - INFO - process_message 실행완료: 15.33초
+2025-08-13 18:26:51,835 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:26:51,835 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:26:51,861 - __main__ - INFO - Using device: mps
+2025-08-13 18:26:51,861 - __main__ - INFO - _initialize_device 실행완료: 0.03초
+2025-08-13 18:26:52,040 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:26:52,040 - __main__ - INFO - _initialize_llm 실행완료: 0.18초
+2025-08-13 18:26:52,040 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:26:52,040 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:26:52,040 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:26:53,125 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:26:53,125 - __main__ - INFO - _initialize_embedding_model 실행완료: 1.08초
+2025-08-13 18:26:53,534 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:26:53,534 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 18:26:53,534 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:26:53,656 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:26:53,955 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:26:53,958 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:26:54,020 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:26:54,020 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:26:54,022 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:26:54,022 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:26:54,174 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:26:54,666 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:26:54,666 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:26:54,666 - __main__ - INFO - _load_data 실행완료: 1.13초
+2025-08-13 18:26:54,666 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:26:54,666 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:26:54,666 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:26:55,188 - __main__ - INFO - Kiwi 추출 엔티티: ['시크릿', '0 day', '뚜레쥬르', '에이닷이빵쏜닷', '데일리', '베어유']
+2025-08-13 18:26:57,300 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.63초
+2025-08-13 18:27:15,519 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:27:15,533 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 18:27:16,671 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:27:17,013 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.48초
+2025-08-13 18:27:17,020 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 18:27:17,020 - __main__ - WARNING - 필수 필드 누락: purpose
+2025-08-13 18:27:17,020 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:27:17,020 - __main__ - INFO - process_message 실행완료: 22.35초
+2025-08-13 18:28:22,988 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:28:22,988 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:28:23,009 - __main__ - INFO - Using device: mps
+2025-08-13 18:28:23,009 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:28:23,199 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:28:23,199 - __main__ - INFO - _initialize_llm 실행완료: 0.19초
+2025-08-13 18:28:23,199 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:28:23,199 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:28:23,199 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:28:24,115 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:28:24,115 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.92초
+2025-08-13 18:28:24,517 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:28:24,517 - __main__ - INFO - _initialize_kiwi 실행완료: 0.40초
+2025-08-13 18:28:24,517 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:28:24,636 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:28:24,939 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:28:24,940 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:28:24,998 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:28:24,998 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:28:25,000 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:28:25,000 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:28:25,144 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:28:25,619 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:28:25,619 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:28:25,619 - __main__ - INFO - _load_data 실행완료: 1.10초
+2025-08-13 18:28:25,619 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:28:25,619 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:28:25,620 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:28:26,100 - __main__ - INFO - Kiwi 추출 엔티티: ['베어유', '데일리', '0 day', '시크릿', '에이닷이빵쏜닷', '뚜레쥬르']
+2025-08-13 18:28:28,069 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.45초
+2025-08-13 18:28:46,304 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:28:46,313 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 18:28:47,262 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:28:47,600 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.29초
+2025-08-13 18:28:47,606 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 18:28:47,606 - __main__ - WARNING - 필수 필드 누락: purpose
+2025-08-13 18:28:47,607 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:28:47,607 - __main__ - INFO - process_message 실행완료: 21.99초
+2025-08-13 18:31:07,471 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:31:07,471 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:31:07,537 - __main__ - INFO - Using device: mps
+2025-08-13 18:31:07,537 - __main__ - INFO - _initialize_device 실행완료: 0.06초
+2025-08-13 18:31:09,057 - __main__ - INFO - LLM 초기화 완료: cld (skt/ax4)
+2025-08-13 18:31:09,057 - __main__ - INFO - _initialize_llm 실행완료: 1.52초
+2025-08-13 18:31:09,057 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:31:09,058 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:31:09,058 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:31:14,983 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:31:14,983 - __main__ - INFO - _initialize_embedding_model 실행완료: 5.93초
+2025-08-13 18:31:15,455 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:31:15,455 - __main__ - INFO - _initialize_kiwi 실행완료: 0.47초
+2025-08-13 18:31:15,455 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:31:15,581 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:31:15,888 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:31:15,896 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:31:15,953 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:31:15,953 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:31:15,963 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:31:15,963 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:31:16,154 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:31:16,657 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:31:16,657 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:31:16,657 - __main__ - INFO - _load_data 실행완료: 1.20초
+2025-08-13 18:31:16,657 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:31:16,657 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:31:16,657 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:31:17,129 - __main__ - INFO - Kiwi 추출 엔티티: ['에이닷이빵쏜닷', '데일리', '베어유', '뚜레쥬르', '시크릿', '0 day']
+2025-08-13 18:31:19,134 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.48초
+2025-08-13 18:31:37,234 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:31:37,265 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 18:31:38,237 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:31:38,624 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.36초
+2025-08-13 18:31:38,630 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 18:31:38,630 - __main__ - WARNING - 필수 필드 누락: purpose
+2025-08-13 18:31:38,630 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:31:38,631 - __main__ - INFO - process_message 실행완료: 21.97초
+2025-08-13 18:33:08,418 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:33:08,418 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:33:08,439 - __main__ - INFO - Using device: mps
+2025-08-13 18:33:08,439 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:33:08,655 - __main__ - INFO - LLM 초기화 완료: cld (skt/ax4)
+2025-08-13 18:33:08,656 - __main__ - INFO - _initialize_llm 실행완료: 0.22초
+2025-08-13 18:33:08,656 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:33:08,656 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:33:08,656 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:33:10,689 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:33:10,689 - __main__ - INFO - _initialize_embedding_model 실행완료: 2.03초
+2025-08-13 18:33:11,090 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:33:11,090 - __main__ - INFO - _initialize_kiwi 실행완료: 0.40초
+2025-08-13 18:33:11,090 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:33:11,212 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:33:11,513 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:33:11,514 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:33:11,570 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:33:11,570 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:33:11,572 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:33:11,572 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:33:11,709 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:33:12,182 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:33:12,182 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:33:12,182 - __main__ - INFO - _load_data 실행완료: 1.09초
+2025-08-13 18:33:12,182 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:33:12,182 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:33:12,182 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:33:12,658 - __main__ - INFO - Kiwi 추출 엔티티: ['시크릿', '데일리', '뚜레쥬르', '0 day', '에이닷이빵쏜닷', '베어유']
+2025-08-13 18:33:14,608 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.43초
+2025-08-13 18:33:32,641 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:33:32,656 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 18:33:33,562 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:33:33,925 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.27초
+2025-08-13 18:33:33,932 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 18:33:33,932 - __main__ - WARNING - 필수 필드 누락: purpose
+2025-08-13 18:33:33,932 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:33:33,932 - __main__ - INFO - process_message 실행완료: 21.75초
+2025-08-13 18:35:49,304 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:35:49,304 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:35:49,335 - __main__ - INFO - Using device: mps
+2025-08-13 18:35:49,335 - __main__ - INFO - _initialize_device 실행완료: 0.03초
+2025-08-13 18:35:49,610 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:35:49,610 - __main__ - INFO - _initialize_llm 실행완료: 0.28초
+2025-08-13 18:35:49,610 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:35:49,610 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:35:49,610 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:35:50,536 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:35:50,536 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.93초
+2025-08-13 18:35:50,941 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:35:50,941 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 18:35:50,941 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:35:51,060 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:35:51,361 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:35:51,362 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:35:51,420 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:35:51,420 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:35:51,422 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:35:51,422 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:35:51,571 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:35:52,044 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:35:52,044 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:35:52,044 - __main__ - INFO - _load_data 실행완료: 1.10초
+2025-08-13 18:35:52,044 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:35:52,044 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:35:52,044 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:35:52,531 - __main__ - INFO - Kiwi 추출 엔티티: ['0 day', '에이닷이빵쏜닷', '시크릿', '뚜레쥬르', '데일리', '베어유']
+2025-08-13 18:35:54,479 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.43초
+2025-08-13 18:36:07,760 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:36:07,774 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 18:36:08,611 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:36:08,958 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.18초
+2025-08-13 18:36:08,965 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 18:36:08,965 - __main__ - WARNING - 필수 필드 누락: purpose
+2025-08-13 18:36:08,965 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:36:08,965 - __main__ - INFO - process_message 실행완료: 16.92초
+2025-08-13 18:42:43,133 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:42:43,133 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:42:43,154 - __main__ - INFO - Using device: mps
+2025-08-13 18:42:43,154 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:42:43,314 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:42:43,314 - __main__ - INFO - _initialize_llm 실행완료: 0.16초
+2025-08-13 18:42:43,314 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:42:43,315 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:42:43,315 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:42:44,712 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:42:44,712 - __main__ - INFO - _initialize_embedding_model 실행완료: 1.40초
+2025-08-13 18:42:45,127 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:42:45,127 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 18:42:45,127 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:42:45,247 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:42:45,556 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:42:45,557 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:42:45,626 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:42:45,626 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:42:45,627 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:42:45,627 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:42:45,775 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:42:46,245 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:42:46,245 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:42:46,245 - __main__ - INFO - _load_data 실행완료: 1.12초
+2025-08-13 18:42:46,245 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:42:46,245 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:42:46,245 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:42:46,729 - __main__ - INFO - Kiwi 추출 엔티티: ['0 day', '베어유', '에이닷이빵쏜닷', '시크릿', '데일리', '뚜레쥬르']
+2025-08-13 18:42:48,774 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.53초
+2025-08-13 18:43:06,826 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:43:06,838 - __main__ - ERROR - 메시지 처리 실패: 'str' object has no attribute 'keys'
+2025-08-13 18:43:06,839 - __main__ - ERROR - Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1500, in process_message
+    if "value" in json_objects_temp[k].keys():
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'keys'
+
+2025-08-13 18:43:06,840 - __main__ - INFO - process_message 실행완료: 20.59초
+2025-08-13 18:43:55,497 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:43:55,497 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:43:55,525 - __main__ - INFO - Using device: mps
+2025-08-13 18:43:55,525 - __main__ - INFO - _initialize_device 실행완료: 0.03초
+2025-08-13 18:43:55,755 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:43:55,755 - __main__ - INFO - _initialize_llm 실행완료: 0.23초
+2025-08-13 18:43:55,755 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:43:55,756 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:43:55,756 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:43:59,417 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:43:59,418 - __main__ - INFO - _initialize_embedding_model 실행완료: 3.66초
+2025-08-13 18:43:59,851 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:43:59,851 - __main__ - INFO - _initialize_kiwi 실행완료: 0.43초
+2025-08-13 18:43:59,851 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:43:59,978 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:44:00,292 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:44:00,293 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:44:00,355 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:44:00,355 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:44:00,356 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:44:00,356 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:44:00,510 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:44:00,995 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:44:00,995 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:44:00,995 - __main__ - INFO - _load_data 실행완료: 1.14초
+2025-08-13 18:44:00,995 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:44:00,995 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:44:00,995 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:44:01,500 - __main__ - INFO - Kiwi 추출 엔티티: ['베어유', '0 day', '뚜레쥬르', '에이닷이빵쏜닷', '데일리', '시크릿']
+2025-08-13 18:44:03,448 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.45초
+2025-08-13 18:44:21,452 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:44:21,476 - __main__ - ERROR - 메시지 처리 실패: 'str' object has no attribute 'keys'
+2025-08-13 18:44:21,478 - __main__ - ERROR - Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1504, in process_message
+    if "value" in json_objects_temp[k].keys():
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'keys'
+
+2025-08-13 18:44:21,479 - __main__ - INFO - process_message 실행완료: 20.48초
+2025-08-13 18:47:13,052 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:47:13,053 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:47:13,129 - __main__ - INFO - Using device: mps
+2025-08-13 18:47:13,129 - __main__ - INFO - _initialize_device 실행완료: 0.07초
+2025-08-13 18:47:16,027 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:47:16,027 - __main__ - INFO - _initialize_llm 실행완료: 2.90초
+2025-08-13 18:47:16,027 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:47:16,028 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:47:16,028 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:47:24,562 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:47:24,563 - __main__ - INFO - _initialize_embedding_model 실행완료: 8.54초
+2025-08-13 18:47:25,023 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:47:25,024 - __main__ - INFO - _initialize_kiwi 실행완료: 0.46초
+2025-08-13 18:47:25,024 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:47:25,150 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:47:25,456 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:47:25,463 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:47:25,520 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:47:25,520 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:47:25,530 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:47:25,530 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:47:25,742 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:47:26,240 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:47:26,241 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:47:26,241 - __main__ - INFO - _load_data 실행완료: 1.22초
+2025-08-13 18:47:26,241 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:47:26,241 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:47:26,241 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:47:26,729 - __main__ - INFO - Kiwi 추출 엔티티: ['뚜레쥬르', '베어유', '0 day', '에이닷이빵쏜닷', '시크릿', '데일리']
+2025-08-13 18:47:28,741 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.50초
+2025-08-13 18:47:42,175 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:47:42,190 - __main__ - ERROR - 메시지 처리 실패: 'str' object has no attribute 'keys'
+2025-08-13 18:47:42,191 - __main__ - ERROR - Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1504, in process_message
+    if "value" in json_objects_temp[k].keys():
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'keys'
+
+2025-08-13 18:47:42,191 - __main__ - INFO - process_message 실행완료: 15.95초
+2025-08-13 18:48:51,022 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:48:51,022 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:48:51,043 - __main__ - INFO - Using device: mps
+2025-08-13 18:48:51,043 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:48:51,223 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:48:51,223 - __main__ - INFO - _initialize_llm 실행완료: 0.18초
+2025-08-13 18:48:51,223 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:48:51,224 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:48:51,224 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:48:52,188 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:48:52,188 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.97초
+2025-08-13 18:48:52,599 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:48:52,599 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 18:48:52,599 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:48:52,720 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:48:53,023 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:48:53,025 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:48:53,083 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:48:53,083 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:48:53,084 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:48:53,084 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:48:53,221 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:48:53,692 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:48:53,692 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:48:53,692 - __main__ - INFO - _load_data 실행완료: 1.09초
+2025-08-13 18:48:53,692 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:48:53,692 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:48:53,692 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:48:54,169 - __main__ - INFO - Kiwi 추출 엔티티: ['시크릿', '0 day', '뚜레쥬르', '베어유', '데일리', '에이닷이빵쏜닷']
+2025-08-13 18:48:56,223 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.53초
+2025-08-13 18:49:09,486 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:49:09,500 - __main__ - ERROR - 메시지 처리 실패: expected string or bytes-like object, got 'dict'
+2025-08-13 18:49:09,523 - __main__ - ERROR - Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1498, in process_message
+    json_objects_temp = extract_json_objects(json_objects_list[0])[0]
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 223, in extract_json_objects
+    for match in re.finditer(pattern, text):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/re/__init__.py", line 224, in finditer
+    return _compile(pattern, flags).finditer(string)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: expected string or bytes-like object, got 'dict'
+
+2025-08-13 18:49:09,524 - __main__ - INFO - process_message 실행완료: 15.83초
+2025-08-13 18:50:50,810 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:50:50,811 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:50:50,829 - __main__ - INFO - Using device: mps
+2025-08-13 18:50:50,829 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:50:50,975 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:50:50,975 - __main__ - INFO - _initialize_llm 실행완료: 0.15초
+2025-08-13 18:50:50,975 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:50:50,976 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:50:50,976 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:50:51,735 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:50:51,735 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.76초
+2025-08-13 18:50:52,136 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:50:52,136 - __main__ - INFO - _initialize_kiwi 실행완료: 0.40초
+2025-08-13 18:50:52,136 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:50:52,256 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:50:52,564 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:50:52,565 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:50:52,623 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:50:52,623 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:50:52,624 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:50:52,624 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:50:52,782 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:50:53,261 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:50:53,261 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:50:53,261 - __main__ - INFO - _load_data 실행완료: 1.12초
+2025-08-13 18:50:53,261 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:50:53,261 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:50:53,261 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:50:53,749 - __main__ - INFO - Kiwi 추출 엔티티: ['뚜레쥬르', '베어유', '0 day', '데일리', '시크릿', '에이닷이빵쏜닷']
+2025-08-13 18:50:55,756 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.50초
+2025-08-13 18:51:10,131 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:51:10,146 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 18:51:11,197 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:51:11,621 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.47초
+2025-08-13 18:51:11,629 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 18:51:11,629 - __main__ - WARNING - 필수 필드 누락: purpose
+2025-08-13 18:51:11,629 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:51:11,629 - __main__ - INFO - process_message 실행완료: 18.37초
+2025-08-13 18:51:55,562 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:51:55,562 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:51:55,590 - __main__ - INFO - Using device: mps
+2025-08-13 18:51:55,590 - __main__ - INFO - _initialize_device 실행완료: 0.03초
+2025-08-13 18:51:55,913 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:51:55,913 - __main__ - INFO - _initialize_llm 실행완료: 0.32초
+2025-08-13 18:51:55,913 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:51:55,913 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:51:55,913 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:51:56,858 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:51:56,858 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.95초
+2025-08-13 18:51:57,306 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:51:57,306 - __main__ - INFO - _initialize_kiwi 실행완료: 0.45초
+2025-08-13 18:51:57,306 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:51:57,434 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:51:57,735 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:51:57,737 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:51:57,795 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:51:57,795 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:51:57,797 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:51:57,797 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:51:57,948 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:51:58,425 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:51:58,425 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:51:58,425 - __main__ - INFO - _load_data 실행완료: 1.12초
+2025-08-13 18:51:58,425 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:51:58,425 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:51:58,425 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:51:58,902 - __main__ - INFO - Kiwi 추출 엔티티: ['0 day', '에이닷이빵쏜닷', '베어유', '뚜레쥬르', '시크릿', '데일리']
+2025-08-13 18:52:00,868 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.44초
+2025-08-13 18:52:16,110 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:52:16,131 - __main__ - ERROR - 최종 결과 구성 실패: 'list' object has no attribute 'get'
+2025-08-13 18:52:16,132 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 18:52:16,132 - __main__ - ERROR - 결과 검증 실패: list indices must be integers or slices, not str
+2025-08-13 18:52:16,132 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:52:16,132 - __main__ - INFO - process_message 실행완료: 17.71초
+2025-08-13 18:52:16,133 - __main__ - ERROR - 실행 실패: 'list' object has no attribute 'get'
+2025-08-13 18:52:16,136 - __main__ - ERROR - Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1686, in main
+    print(f"✅ 제목: {result.get('title', 'N/A')}")
+                      ^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'get'
+
+2025-08-13 18:54:41,309 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:54:41,309 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:54:41,328 - __main__ - INFO - Using device: mps
+2025-08-13 18:54:41,328 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:54:41,483 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:54:41,484 - __main__ - INFO - _initialize_llm 실행완료: 0.16초
+2025-08-13 18:54:41,484 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:54:41,484 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:54:41,484 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:54:42,343 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:54:42,343 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.86초
+2025-08-13 18:54:42,741 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:54:42,741 - __main__ - INFO - _initialize_kiwi 실행완료: 0.40초
+2025-08-13 18:54:42,741 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:54:42,857 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:54:43,156 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:54:43,157 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:54:43,213 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:54:43,213 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:54:43,214 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:54:43,214 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:54:43,361 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:54:43,833 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:54:43,833 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:54:43,833 - __main__ - INFO - _load_data 실행완료: 1.09초
+2025-08-13 18:54:43,833 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:54:43,834 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:54:43,834 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:54:44,314 - __main__ - INFO - Kiwi 추출 엔티티: ['시크릿', '베어유', '데일리', '에이닷이빵쏜닷', '뚜레쥬르', '0 day']
+2025-08-13 18:54:48,101 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 4.27초
+2025-08-13 18:54:56,985 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:54:56,996 - __main__ - ERROR - 최종 결과 구성 실패: 'list' object has no attribute 'get'
+2025-08-13 18:54:56,996 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 18:54:56,996 - __main__ - ERROR - 결과 검증 실패: list indices must be integers or slices, not str
+2025-08-13 18:54:56,996 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:54:56,997 - __main__ - INFO - process_message 실행완료: 13.16초
+2025-08-13 18:54:56,997 - __main__ - ERROR - 실행 실패: 'list' object has no attribute 'get'
+2025-08-13 18:54:56,998 - __main__ - ERROR - Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1686, in main
+    print(f"✅ 제목: {result.get('title', 'N/A')}")
+                      ^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'get'
+
+2025-08-13 18:56:48,879 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:56:48,879 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:56:48,900 - __main__ - INFO - Using device: mps
+2025-08-13 18:56:48,901 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:56:49,059 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 18:56:49,059 - __main__ - INFO - _initialize_llm 실행완료: 0.16초
+2025-08-13 18:56:49,059 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:56:49,059 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:56:49,059 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:56:49,955 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:56:49,955 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.90초
+2025-08-13 18:56:50,366 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:56:50,366 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 18:56:50,366 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:56:50,487 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:56:50,787 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:56:50,788 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:56:50,845 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:56:50,846 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:56:50,847 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:56:50,847 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:56:50,994 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:56:51,483 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:56:51,483 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:56:51,483 - __main__ - INFO - _load_data 실행완료: 1.12초
+2025-08-13 18:56:51,483 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:56:51,483 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:56:51,483 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:56:51,975 - __main__ - INFO - Kiwi 추출 엔티티: ['시크릿', '데일리', '0 day', '에이닷이빵쏜닷', '뚜레쥬르', '베어유']
+2025-08-13 18:56:53,949 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.47초
+2025-08-13 18:57:02,081 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:57:02,093 - __main__ - INFO - LLM 추출 엔티티: ['0 day', '베어유', 'T 멤버십', '뚜레쥬르 데일리우유식빵']
+2025-08-13 18:57:03,002 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:57:03,326 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.23초
+2025-08-13 18:57:03,334 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:57:03,334 - __main__ - INFO - process_message 실행완료: 11.85초
+2025-08-13 18:57:50,055 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:57:50,055 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:57:50,077 - __main__ - INFO - Using device: mps
+2025-08-13 18:57:50,078 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:57:50,309 - __main__ - INFO - LLM 초기화 완료: cld (skt/ax4)
+2025-08-13 18:57:50,309 - __main__ - INFO - _initialize_llm 실행완료: 0.23초
+2025-08-13 18:57:50,309 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:57:50,309 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:57:50,309 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:57:52,854 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:57:52,854 - __main__ - INFO - _initialize_embedding_model 실행완료: 2.55초
+2025-08-13 18:57:53,264 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:57:53,264 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 18:57:53,264 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:57:53,386 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:57:53,691 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:57:53,692 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:57:53,749 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:57:53,749 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:57:53,751 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:57:53,751 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:57:53,894 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:57:54,367 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:57:54,367 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:57:54,367 - __main__ - INFO - _load_data 실행완료: 1.10초
+2025-08-13 18:57:54,367 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:57:54,367 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:57:54,367 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:57:54,845 - __main__ - INFO - Kiwi 추출 엔티티: ['시크릿', '에이닷이빵쏜닷', '데일리', '0 day', '뚜레쥬르', '베어유']
+2025-08-13 18:57:56,794 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.43초
+2025-08-13 18:58:04,988 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:58:05,001 - __main__ - INFO - LLM 추출 엔티티: ['0 day', '베어유', 'T 멤버십', '뚜레쥬르 데일리우유식빵']
+2025-08-13 18:58:05,908 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:58:06,237 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.23초
+2025-08-13 18:58:06,244 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:58:06,244 - __main__ - INFO - process_message 실행완료: 11.88초
+2025-08-13 18:58:51,259 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 18:58:51,259 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 18:58:51,279 - __main__ - INFO - Using device: mps
+2025-08-13 18:58:51,279 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 18:58:51,446 - __main__ - INFO - LLM 초기화 완료: cld (skt/ax4)
+2025-08-13 18:58:51,447 - __main__ - INFO - _initialize_llm 실행완료: 0.17초
+2025-08-13 18:58:51,447 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 18:58:51,447 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 18:58:51,447 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 18:58:53,977 - __main__ - INFO - Model loaded on mps
+2025-08-13 18:58:53,977 - __main__ - INFO - _initialize_embedding_model 실행완료: 2.53초
+2025-08-13 18:58:54,740 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 18:58:54,740 - __main__ - INFO - _initialize_kiwi 실행완료: 0.76초
+2025-08-13 18:58:54,740 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 18:58:54,890 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 18:58:55,225 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 18:58:55,226 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 18:58:55,286 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 18:58:55,286 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 18:58:55,288 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 18:58:55,288 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 18:58:55,491 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 18:58:55,995 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 18:58:55,995 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 18:58:55,996 - __main__ - INFO - _load_data 실행완료: 1.26초
+2025-08-13 18:58:55,996 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 18:58:55,996 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 18:58:55,996 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 18:58:56,483 - __main__ - INFO - Kiwi 추출 엔티티: ['에이닷이빵쏜닷', '0 day', '베어유', '시크릿', '데일리', '뚜레쥬르']
+2025-08-13 18:58:58,467 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.47초
+2025-08-13 18:59:06,428 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:59:06,440 - __main__ - INFO - LLM 추출 엔티티: ['0 day', '베어유', 'T 멤버십', '뚜레쥬르 데일리우유식빵']
+2025-08-13 18:59:07,464 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 18:59:07,841 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.40초
+2025-08-13 18:59:07,848 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 18:59:07,849 - __main__ - INFO - process_message 실행완료: 11.85초
+2025-08-13 19:02:06,477 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 19:02:06,477 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 19:02:06,542 - __main__ - INFO - Using device: mps
+2025-08-13 19:02:06,542 - __main__ - INFO - _initialize_device 실행완료: 0.06초
+2025-08-13 19:02:08,143 - __main__ - INFO - LLM 초기화 완료: cld (skt/ax4)
+2025-08-13 19:02:08,143 - __main__ - INFO - _initialize_llm 실행완료: 1.60초
+2025-08-13 19:02:08,143 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 19:02:08,144 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 19:02:08,144 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 19:02:12,858 - __main__ - INFO - Model loaded on mps
+2025-08-13 19:02:12,858 - __main__ - INFO - _initialize_embedding_model 실행완료: 4.71초
+2025-08-13 19:02:13,345 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 19:02:13,345 - __main__ - INFO - _initialize_kiwi 실행완료: 0.49초
+2025-08-13 19:02:13,345 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 19:02:13,476 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 19:02:13,828 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 19:02:13,831 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 19:02:13,895 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 19:02:13,895 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 19:02:13,906 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 19:02:13,906 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 19:02:14,140 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 19:02:14,680 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 19:02:14,680 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 19:02:14,680 - __main__ - INFO - _load_data 실행완료: 1.33초
+2025-08-13 19:02:14,680 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 19:02:14,680 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 19:02:14,680 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 19:02:15,190 - __main__ - INFO - Kiwi 추출 엔티티: ['뚜레쥬르', '에이닷이빵쏜닷', '0 day', '베어유', '시크릿', '데일리']
+2025-08-13 19:02:17,249 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.57초
+2025-08-13 19:02:24,291 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 19:02:24,304 - __main__ - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-13 19:02:25,241 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 19:02:25,636 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.33초
+2025-08-13 19:02:25,643 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 19:02:25,643 - __main__ - INFO - process_message 실행완료: 10.96초
+2025-08-13 19:02:50,773 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 19:02:50,773 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 19:02:50,793 - __main__ - INFO - Using device: mps
+2025-08-13 19:02:50,793 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 19:02:51,025 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 19:02:51,025 - __main__ - INFO - _initialize_llm 실행완료: 0.23초
+2025-08-13 19:02:51,026 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 19:02:51,026 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 19:02:51,026 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 19:02:53,491 - __main__ - INFO - Model loaded on mps
+2025-08-13 19:02:53,491 - __main__ - INFO - _initialize_embedding_model 실행완료: 2.47초
+2025-08-13 19:02:53,901 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 19:02:53,901 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 19:02:53,901 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 19:02:54,022 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 19:02:54,326 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 19:02:54,327 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 19:02:54,385 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 19:02:54,385 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 19:02:54,386 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 19:02:54,386 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 19:02:54,532 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 19:02:55,020 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 19:02:55,021 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 19:02:55,021 - __main__ - INFO - _load_data 실행완료: 1.12초
+2025-08-13 19:02:55,021 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 19:02:55,021 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 19:02:55,021 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 19:02:55,507 - __main__ - INFO - Kiwi 추출 엔티티: ['데일리', '베어유', '뚜레쥬르', '에이닷이빵쏜닷', '0 day', '시크릿']
+2025-08-13 19:02:57,455 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.43초
+2025-08-13 19:03:08,108 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 19:03:08,123 - __main__ - INFO - LLM 추출 엔티티: []
+2025-08-13 19:03:09,031 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 19:03:09,373 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.25초
+2025-08-13 19:03:09,380 - __main__ - WARNING - 필수 필드 누락: title
+2025-08-13 19:03:09,381 - __main__ - WARNING - 필수 필드 누락: purpose
+2025-08-13 19:03:09,381 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 19:03:09,381 - __main__ - INFO - process_message 실행완료: 14.36초
+2025-08-13 19:04:28,795 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 19:04:28,795 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 19:04:28,817 - __main__ - INFO - Using device: mps
+2025-08-13 19:04:28,817 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 19:04:29,014 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 19:04:29,014 - __main__ - INFO - _initialize_llm 실행완료: 0.20초
+2025-08-13 19:04:29,014 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 19:04:29,014 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 19:04:29,014 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 19:04:31,552 - __main__ - INFO - Model loaded on mps
+2025-08-13 19:04:31,552 - __main__ - INFO - _initialize_embedding_model 실행완료: 2.54초
+2025-08-13 19:04:31,966 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 19:04:31,966 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 19:04:31,966 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 19:04:32,087 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 19:04:32,388 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 19:04:32,389 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 19:04:32,447 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 19:04:32,447 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 19:04:32,448 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 19:04:32,448 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 19:04:32,591 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 19:04:33,065 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 19:04:33,066 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 19:04:33,066 - __main__ - INFO - _load_data 실행완료: 1.10초
+2025-08-13 19:04:33,066 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 19:04:33,066 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 19:04:33,066 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 19:04:33,585 - __main__ - INFO - Kiwi 추출 엔티티: ['뚜레쥬르', '데일리', '베어유', '에이닷이빵쏜닷', '시크릿', '0 day']
+2025-08-13 19:04:35,557 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 2.49초
+2025-08-13 19:04:43,344 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 19:04:43,356 - __main__ - INFO - LLM 추출 엔티티: ['0 day', '베어유', 'T 멤버십', '뚜레쥬르 데일리우유식빵']
+2025-08-13 19:04:44,337 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 19:04:44,720 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.36초
+2025-08-13 19:04:44,727 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 19:04:44,727 - __main__ - INFO - process_message 실행완료: 11.66초
+2025-08-13 19:05:32,574 - __main__ - INFO - MMS 추출기 초기화 중...
+2025-08-13 19:05:32,574 - __main__ - INFO - MMSExtractor 초기화 시작
+2025-08-13 19:05:32,600 - __main__ - INFO - Using device: mps
+2025-08-13 19:05:32,600 - __main__ - INFO - _initialize_device 실행완료: 0.02초
+2025-08-13 19:05:32,767 - __main__ - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-13 19:05:32,768 - __main__ - INFO - _initialize_llm 실행완료: 0.17초
+2025-08-13 19:05:32,768 - __main__ - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-13 19:05:32,768 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-13 19:05:32,768 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-13 19:05:33,686 - __main__ - INFO - Model loaded on mps
+2025-08-13 19:05:33,686 - __main__ - INFO - _initialize_embedding_model 실행완료: 0.92초
+2025-08-13 19:05:34,091 - __main__ - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-13 19:05:34,091 - __main__ - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-08-13 19:05:34,091 - __main__ - INFO - 데이터 로딩 시작
+2025-08-13 19:05:34,213 - __main__ - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-13 19:05:34,519 - __main__ - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-13 19:05:34,520 - __main__ - INFO - 정지어 로드 완료: 166개
+2025-08-13 19:05:34,599 - __main__ - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-13 19:05:34,599 - __main__ - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-13 19:05:34,600 - __main__ - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-13 19:05:34,600 - __main__ - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-13 19:05:34,789 - __main__ - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-13 19:05:35,270 - __main__ - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-13 19:05:35,270 - __main__ - INFO - 데이터 로딩 완료
+2025-08-13 19:05:35,270 - __main__ - INFO - _load_data 실행완료: 1.18초
+2025-08-13 19:05:35,270 - __main__ - INFO - MMSExtractor 초기화 완료
+2025-08-13 19:05:35,270 - __main__ - INFO - 메시지 처리 시작
+2025-08-13 19:05:35,270 - __main__ - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내 광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-13 19:05:35,831 - __main__ - INFO - Kiwi 추출 엔티티: ['뚜레쥬르', '에이닷이빵쏜닷', '시크릿', '0 day', '데일리', '베어유']
+2025-08-13 19:05:38,349 - __main__ - INFO - extract_entities_from_kiwi 실행완료: 3.08초
+2025-08-13 19:05:45,331 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 19:05:45,345 - __main__ - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-13 19:05:46,329 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-13 19:05:46,743 - __main__ - INFO - extract_entities_by_llm 실행완료: 1.40초
+2025-08-13 19:05:46,751 - __main__ - INFO - 메시지 처리 완료
+2025-08-13 19:05:46,751 - __main__ - INFO - process_message 실행완료: 11.48초

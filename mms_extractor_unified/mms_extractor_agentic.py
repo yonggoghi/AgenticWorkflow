@@ -1581,77 +1581,58 @@ chain_of_thought = """
 """
 
 # Revised schema with updated guidelines for preserving original text
-schema_prd = """
-{
-  "title": {
-    "type": "string",
-    "description": "Advertisement title, using the exact expressions as they appear in the original text. Clearly describe the core theme and value proposition of the advertisement."
-  },
-  "purpose": {
-    "type": "array",
-    "items": {
-      "type": "string",
-      "enum": ["상품 가입 유도", "대리점/매장 방문 유도", "웹/앱 접속 유도", "이벤트 응모 유도", "혜택 안내", "쿠폰 제공 안내", "경품 제공 안내", "수신 거부 안내", "기타 정보 제공"]
-    },
-    "description": "Primary purpose(s) of the advertisement, expressed using the exact terms from the original text where applicable."
-  },
-  "product": {
-    "type": "array",
-    "items": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Name of the advertised product or service, as it appears in the original text without translation."
-        },
-        "action": {
-          "type": "string",
-          "enum": ["구매", "가입", "사용", "방문", "참여", "코드입력", "쿠폰다운로드", "기타"],
-          "description": "Expected customer action for the product, derived from the original text context."
+schema_prd = {
+            "title": "Advertisement title, using the exact expressions as they appear in the original text.",
+            "purpose": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": ["상품 가입 유도", "대리점/매장 방문 유도", "웹/앱 접속 유도", "이벤트 응모 유도", 
+                           "혜택 안내", "쿠폰 제공 안내", "경품 제공 안내", "수신 거부 안내", "기타 정보 제공"]
+                },
+                "description": "Primary purpose(s) of the advertisement."
+            },
+            "product": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Name of the advertised product or service."},
+                        "action": {
+                            "type": "string",
+                            "enum": ["구매", "가입", "사용", "방문", "참여", "코드입력", "쿠폰다운로드", "기타"],
+                            "description": "Expected customer action for the product."
+                        }
+                    }
+                },
+                "description": "Extract all product names from the advertisement."
+            },
+            "channel": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": ["URL", "전화번호", "앱", "대리점"],
+                            "description": "Channel type."
+                        },
+                        "value": {"type": "string", "description": "Specific information for the channel."},
+                        "action": {
+                            "type": "string",
+                            "enum": ["가입", "추가 정보", "문의", "수신", "수신 거부"],
+                            "description": "Purpose of the channel."
+                        }
+                    }
+                },
+                "description": "Channels provided in the advertisement."
+            },
+            "pgm": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Select the two most relevant pgm_nm from the advertising classification criteria."
+            }
         }
-      },
-    "description": "Extract all product names, including tangible products, services, promotional events, programs, loyalty initiatives, and named campaigns or event identifiers, using the exact expressions as they appear in the original text without translation. 
-    Consider only named offerings (e.g., apps, membership programs, events, specific branded items, or campaign names like 'T day' or '0 day') presented as distinct products, services, or promotional entities. 
-    Include platform or brand elements only if explicitly presented as standalone offerings. 
-    Avoid extracting base or parent brand names (e.g., 'FLO' or 'POOQ') if they are components of more specific offerings (e.g., 'FLO 앤 데이터' or 'POOQ 앤 데이터') presented in the text; focus on the full, distinct product or service names as they appear. 
-    Exclude customer support services (e.g., customer centers, helplines). 
-    Exclude descriptive modifiers, attributes, or qualifiers (e.g., '디지털 전용'). 
-    Exclude sales agency names such as '###대리점'. 
-    If multiple terms refer to closely related promotional events (e.g., a general campaign and its specific instances or dates), include the most prominent or overarching campaign name (e.g., '0 day' as a named event) in addition to specific offerings tied to it, unless they are clearly identical. 
-    Prioritize recall over precision, but verify each term is a distinct offering."      }
-  },
-  "channel": {
-    "type": "array",
-    "items": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["URL", "전화번호", "앱", "대리점"],
-          "description": "Channel type, as derived from the original text."
-        },
-        "value": {
-          "type": "string",
-          "description": "Specific information for the channel (e.g., URL, phone number, app name, agency name), as it appears in the original text."
-        },
-        "action": {
-          "type": "string",
-          "enum": ["가입", "추가 정보", "문의", "수신", "수신 거부"],
-          "description": "Purpose of the channel, derived from the original text context."
-        }
-      }
-    },
-    "description": "Channels provided in the advertisement, including URLs, phone numbers, apps, or agencies, using the exact expressions from the original text where applicable, based on the purpose and products."
-  },
-  "pgm": {
-    "type": "array",
-    "items": {
-      "type": "string"
-    },
-    "description": "Select the two most relevant pgm_nm from the advertising classification criteria, using the exact expressions from the criteria, ordered by relevance, based on the message content."
-  }
-}
-"""
 
 prd_ext_guide = """
 * Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering.
@@ -1706,7 +1687,7 @@ print()
 # result_json_text = llm_cld40.invoke(prompt).content
 result_json_text = llm_model.invoke(prompt).content
 
-json_objects = extract_json_objects(result_json_text)[0]
+json_objects = extract_json_objects(result_json_text)[-1]
 
 # print(json.dumps(json_objects, indent=4, ensure_ascii=False))
 
