@@ -34,6 +34,7 @@ from difflib import SequenceMatcher
 import difflib
 from dotenv import load_dotenv
 import cx_Oracle
+from contextlib import contextmanager
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
@@ -684,60 +685,123 @@ class MMSExtractor:
     def _load_data(self):
         """필요한 데이터 파일들 로드"""
         try:
-            logger.info("데이터 로딩 시작")
+            logger.info("=" * 60)
+            logger.info("📊 데이터 로딩 시작")
+            logger.info("=" * 60)
+            logger.info(f"데이터 소스 모드: {self.offer_info_data_src}")
             
             # 상품 정보 로드
+            logger.info("1️⃣ 상품 정보 로드 중...")
             self._load_item_data()
+            logger.info(f"상품 정보 로드 후 데이터 크기: {self.item_pdf_all.shape}")
+            logger.info(f"상품 정보 컬럼들: {list(self.item_pdf_all.columns)}")
             
             # 별칭 규칙 적용
+            logger.info("2️⃣ 별칭 규칙 적용 중...")
             self._apply_alias_rules()
+            logger.info(f"별칭 규칙 적용 후 데이터 크기: {self.item_pdf_all.shape}")
             
             # 정지어 로드
+            logger.info("3️⃣ 정지어 로드 중...")
             self._load_stop_words()
+            logger.info(f"로드된 정지어 수: {len(self.stop_item_names)}개")
             
             # Kiwi에 상품명 등록
+            logger.info("4️⃣ Kiwi에 상품명 등록 중...")
             self._register_items_to_kiwi()
             
             # 프로그램 분류 정보 로드
+            logger.info("5️⃣ 프로그램 분류 정보 로드 중...")
             self._load_program_data()
+            logger.info(f"프로그램 분류 정보 로드 후 데이터 크기: {self.pgm_pdf.shape}")
             
             # 조직 정보 로드
+            logger.info("6️⃣ 조직 정보 로드 중...")
             self._load_organization_data()
+            logger.info(f"조직 정보 로드 후 데이터 크기: {self.org_pdf.shape}")
             
-            logger.info("데이터 로딩 완료")
+            # 최종 데이터 상태 요약
+            logger.info("=" * 60)
+            logger.info("📋 데이터 로딩 완료 - 최종 상태 요약")
+            logger.info("=" * 60)
+            logger.info(f"✅ 상품 데이터: {self.item_pdf_all.shape}")
+            logger.info(f"✅ 프로그램 데이터: {self.pgm_pdf.shape}")
+            logger.info(f"✅ 조직 데이터: {self.org_pdf.shape}")
+            logger.info(f"✅ 정지어: {len(self.stop_item_names)}개")
+            
+            # 데이터 소스별 상태 비교를 위한 추가 정보
+            if hasattr(self, 'item_pdf_all') and not self.item_pdf_all.empty:
+                logger.info("=== 상품 데이터 상세 정보 ===")
+                if 'item_nm' in self.item_pdf_all.columns:
+                    unique_items = self.item_pdf_all['item_nm'].nunique()
+                    logger.info(f"고유 상품명 수: {unique_items}개")
+                if 'item_nm_alias' in self.item_pdf_all.columns:
+                    unique_aliases = self.item_pdf_all['item_nm_alias'].nunique()
+                    logger.info(f"고유 별칭 수: {unique_aliases}개")
+                if 'item_id' in self.item_pdf_all.columns:
+                    unique_ids = self.item_pdf_all['item_id'].nunique()
+                    logger.info(f"고유 상품ID 수: {unique_ids}개")
             
         except Exception as e:
             logger.error(f"데이터 로딩 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
             raise
 
     def _load_item_data(self):
         """상품 정보 로드"""
         try:
+            logger.info(f"=== 상품 정보 로드 시작 (모드: {self.offer_info_data_src}) ===")
+            
             if self.offer_info_data_src == "local":
                 # 로컬 CSV 파일에서 로드
-                item_pdf_raw = pd.read_csv(getattr(METADATA_CONFIG, 'offer_data_path', './data/items.csv'))
+                logger.info("로컬 CSV 파일에서 상품 정보 로드 중...")
+                csv_path = getattr(METADATA_CONFIG, 'offer_data_path', './data/items.csv')
+                logger.info(f"CSV 파일 경로: {csv_path}")
+                
+                item_pdf_raw = pd.read_csv(csv_path)
+                logger.info(f"로컬 CSV에서 로드된 원본 데이터 크기: {item_pdf_raw.shape}")
+                logger.info(f"로컬 CSV 원본 컬럼들: {list(item_pdf_raw.columns)}")
+                
                 self.item_pdf_all = item_pdf_raw.drop_duplicates(['item_nm','item_id'])[['item_nm','item_id','item_desc','item_dmn']].copy()
+                logger.info(f"중복 제거 후 데이터 크기: {self.item_pdf_all.shape}")
+                
+                # 추가 컬럼들 생성
                 self.item_pdf_all['item_ctg'] = None
                 self.item_pdf_all['item_emb_vec'] = None
                 self.item_pdf_all['ofer_cd'] = self.item_pdf_all['item_id']
                 self.item_pdf_all['oper_dt_hms'] = '20250101000000'
+                
+                # 컬럼명 소문자 변환
+                original_columns = list(self.item_pdf_all.columns)
                 self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
+                logger.info(f"로컬 모드 컬럼명 변환: {dict(zip(original_columns, self.item_pdf_all.columns))}")
+                
+                # 로컬 데이터 샘플 확인
+                if not self.item_pdf_all.empty:
+                    sample_items = self.item_pdf_all['item_nm'].dropna().head(5).tolist()
+                    logger.info(f"로컬 모드 상품명 샘플: {sample_items}")
                 
             elif self.offer_info_data_src == "db":
                 # 데이터베이스에서 로드
+                logger.info("데이터베이스에서 상품 정보 로드 중...")
                 self._load_item_from_database()
             
             # 제외할 도메인 코드 필터링
             excluded_domains = getattr(PROCESSING_CONFIG, 'excluded_domain_codes_for_items', [])
             if excluded_domains:
+                before_filter_size = len(self.item_pdf_all)
                 self.item_pdf_all = self.item_pdf_all.query("item_dmn not in @excluded_domains")
+                after_filter_size = len(self.item_pdf_all)
+                logger.info(f"도메인 필터링: {before_filter_size} -> {after_filter_size} (제외된 도메인: {excluded_domains})")
                 
-            logger.info(f"상품 정보 로드 완료: {len(self.item_pdf_all)}개 상품")
+            logger.info(f"=== 상품 정보 로드 최종 완료: {len(self.item_pdf_all)}개 상품 ===")
             
         except Exception as e:
             logger.error(f"상품 정보 로드 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
             # 빈 DataFrame으로 fallback
             self.item_pdf_all = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
+            logger.warning("빈 DataFrame으로 fallback 설정됨")
 
     def _get_database_connection(self):
         """Oracle 데이터베이스 연결 생성"""
@@ -754,49 +818,144 @@ class MMSExtractor:
             dsn = cx_Oracle.makedsn(host, port, service_name=service_name)
             conn = cx_Oracle.connect(user=username, password=password, dsn=dsn, encoding="UTF-8")
             
+            # LOB 데이터 처리를 위한 outputtypehandler 설정
+            def output_type_handler(cursor, name, default_type, size, precision, scale):
+                if default_type == cx_Oracle.CLOB:
+                    return cursor.var(cx_Oracle.LONG_STRING, arraysize=cursor.arraysize)
+                elif default_type == cx_Oracle.BLOB:
+                    return cursor.var(cx_Oracle.LONG_BINARY, arraysize=cursor.arraysize)
+            
+            conn.outputtypehandler = output_type_handler
+            
             return conn
             
         except Exception as e:
             logger.error(f"데이터베이스 연결 실패: {e}")
             raise
 
+    @contextmanager
+    def _database_connection(self):
+        """데이터베이스 연결 context manager"""
+        conn = None
+        try:
+            conn = self._get_database_connection()
+            yield conn
+        except Exception as e:
+            logger.error(f"데이터베이스 작업 중 오류: {e}")
+            raise
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                    logger.debug("데이터베이스 연결 정상 종료")
+                except Exception as close_error:
+                    logger.warning(f"연결 종료 중 오류: {close_error}")
+
     def _load_item_from_database(self):
         """데이터베이스에서 상품 정보 로드"""
         try:
-            conn = self._get_database_connection()
+            logger.info("=== 데이터베이스에서 상품 정보 로드 시작 ===")
             
-            sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000"
-            self.item_pdf_all = pd.read_sql(sql, conn)
-            conn.close()
-            
-            self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
+            with self._database_connection() as conn:
+                sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000"
+                logger.info(f"실행할 SQL: {sql}")
+                
+                self.item_pdf_all = pd.read_sql(sql, conn)
+                logger.info(f"DB에서 로드된 원본 데이터 크기: {self.item_pdf_all.shape}")
+                logger.info(f"DB에서 로드된 컬럼들: {list(self.item_pdf_all.columns)}")
+                
+                # 데이터 타입 정보 로깅
+                logger.info("=== DB 데이터 타입 정보 ===")
+                for col in self.item_pdf_all.columns:
+                    dtype = self.item_pdf_all[col].dtype
+                    null_count = self.item_pdf_all[col].isnull().sum()
+                    logger.info(f"  {col}: {dtype}, null값: {null_count}개")
+                
+                # 컬럼명 소문자 변환
+                original_columns = list(self.item_pdf_all.columns)
+                self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
+                logger.info(f"컬럼명 변환: {dict(zip(original_columns, self.item_pdf_all.columns))}")
+                
+                # LOB 데이터가 있는 경우를 대비해 데이터 강제 로드
+                if not self.item_pdf_all.empty:
+                    logger.info("DataFrame 데이터 강제 로드 시작...")
+                    try:
+                        # DataFrame의 모든 데이터를 메모리로 강제 로드
+                        _ = self.item_pdf_all.values  # 모든 데이터 접근하여 LOB 로드 유도
+                        logger.info("DataFrame 데이터 강제 로드 완료")
+                        
+                        # 주요 컬럼들의 샘플 데이터 확인
+                        if 'item_nm' in self.item_pdf_all.columns:
+                            sample_items = self.item_pdf_all['item_nm'].dropna().head(5).tolist()
+                            logger.info(f"상품명 샘플: {sample_items}")
+                        
+                        if 'item_id' in self.item_pdf_all.columns:
+                            sample_ids = self.item_pdf_all['item_id'].dropna().head(5).tolist()
+                            logger.info(f"상품ID 샘플: {sample_ids}")
+                            
+                        logger.info(f"최종 상품 정보 로드 완료: {len(self.item_pdf_all)}개 상품")
+                    except Exception as load_error:
+                        logger.error(f"데이터 강제 로드 중 오류: {load_error}")
+                        raise
+                else:
+                    logger.warning("로드된 상품 데이터가 비어있습니다!")
             
         except Exception as e:
             logger.error(f"상품 정보 데이터베이스 로드 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
             raise
 
     def _load_program_from_database(self):
         """데이터베이스에서 프로그램 분류 정보 로드"""
         try:
-            conn = self._get_database_connection()
+            logger.info("=== 데이터베이스에서 프로그램 분류 정보 로드 시작 ===")
             
-            # 프로그램 분류 정보 쿼리
-            sql = """SELECT CMPGN_PGM_NUM pgm_id, CMPGN_PGM_NM pgm_nm, RMK clue_tag 
-                     FROM TCAM_CMPGN_PGM_INFO
-                     WHERE DEL_YN = 'N' 
-                     AND APRV_OP_RSLT_CD = 'APPR'
-                     AND EXPS_YN = 'Y'
-                     AND CMPGN_PGM_NUM like '2025%' 
-                     AND RMK is not null"""
-            
-            self.pgm_pdf = pd.read_sql(sql, conn)
-            self.pgm_pdf = self.pgm_pdf.rename(columns={c:c.lower() for c in self.pgm_pdf.columns})
-            conn.close()
-            
-            logger.info(f"데이터베이스에서 프로그램 분류 정보 로드 완료: {len(self.pgm_pdf)}개")
+            with self._database_connection() as conn:
+                # 프로그램 분류 정보 쿼리
+                sql = """SELECT CMPGN_PGM_NUM pgm_id, CMPGN_PGM_NM pgm_nm, RMK clue_tag 
+                         FROM TCAM_CMPGN_PGM_INFO
+                         WHERE DEL_YN = 'N' 
+                         AND APRV_OP_RSLT_CD = 'APPR'
+                         AND EXPS_YN = 'Y'
+                         AND CMPGN_PGM_NUM like '2025%' 
+                         AND RMK is not null"""
+                
+                logger.info(f"실행할 SQL: {sql}")
+                
+                self.pgm_pdf = pd.read_sql(sql, conn)
+                logger.info(f"DB에서 로드된 프로그램 데이터 크기: {self.pgm_pdf.shape}")
+                logger.info(f"DB에서 로드된 프로그램 컬럼들: {list(self.pgm_pdf.columns)}")
+                
+                # 컬럼명 소문자 변환
+                original_columns = list(self.pgm_pdf.columns)
+                self.pgm_pdf = self.pgm_pdf.rename(columns={c:c.lower() for c in self.pgm_pdf.columns})
+                logger.info(f"프로그램 컬럼명 변환: {dict(zip(original_columns, self.pgm_pdf.columns))}")
+                
+                # LOB 데이터가 있는 경우를 대비해 데이터 강제 로드
+                if not self.pgm_pdf.empty:
+                    try:
+                        # DataFrame의 모든 데이터를 메모리로 강제 로드
+                        _ = self.pgm_pdf.values  # 모든 데이터 접근하여 LOB 로드 유도
+                        
+                        # 프로그램 데이터 샘플 확인
+                        if 'pgm_nm' in self.pgm_pdf.columns:
+                            sample_pgms = self.pgm_pdf['pgm_nm'].dropna().head(3).tolist()
+                            logger.info(f"프로그램명 샘플: {sample_pgms}")
+                        
+                        if 'clue_tag' in self.pgm_pdf.columns:
+                            sample_clues = self.pgm_pdf['clue_tag'].dropna().head(3).tolist()
+                            logger.info(f"클루 태그 샘플: {sample_clues}")
+                            
+                        logger.info(f"데이터베이스에서 프로그램 분류 정보 로드 완료: {len(self.pgm_pdf)}개")
+                    except Exception as load_error:
+                        logger.error(f"프로그램 데이터 강제 로드 중 오류: {load_error}")
+                        raise
+                else:
+                    logger.warning("로드된 프로그램 데이터가 비어있습니다!")
             
         except Exception as e:
             logger.error(f"프로그램 분류 정보 데이터베이스 로드 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
             # 빈 데이터로 fallback
             self.pgm_pdf = pd.DataFrame(columns=['pgm_nm', 'clue_tag', 'pgm_id'])
             raise
@@ -804,10 +963,17 @@ class MMSExtractor:
     def _apply_alias_rules(self):
         """별칭 규칙 적용"""
         try:
+            logger.info("=== 별칭 규칙 적용 시작 ===")
+            logger.info(f"별칭 규칙 적용 전 상품 데이터 크기: {self.item_pdf_all.shape}")
+            
             alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
             alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2']))
+            logger.info(f"로드된 별칭 규칙 수: {len(alias_rule_set)}개")
 
             def apply_alias_rule(item_nm):
+                if pd.isna(item_nm) or not isinstance(item_nm, str):
+                    return [item_nm] if not pd.isna(item_nm) else []
+                    
                 item_nm_list = [item_nm]
                 for r in alias_rule_set:
                     if r[0] in item_nm:
@@ -816,15 +982,39 @@ class MMSExtractor:
                         item_nm_list.append(item_nm.replace(r[1], r[0]))
                 return item_nm_list
 
+            # 별칭 규칙 적용 전 데이터 상태 확인
+            if 'item_nm' in self.item_pdf_all.columns:
+                non_null_items = self.item_pdf_all['item_nm'].dropna()
+                logger.info(f"null이 아닌 상품명 수: {len(non_null_items)}개")
+                if len(non_null_items) > 0:
+                    sample_before = non_null_items.head(3).tolist()
+                    logger.info(f"별칭 적용 전 상품명 샘플: {sample_before}")
+            
             self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
+            
+            # explode 전후 크기 비교
+            before_explode_size = len(self.item_pdf_all)
             self.item_pdf_all = self.item_pdf_all.explode('item_nm_alias')
+            after_explode_size = len(self.item_pdf_all)
+            
+            logger.info(f"별칭 규칙 적용 후 데이터 크기: {before_explode_size} -> {after_explode_size}")
+            
+            # 별칭 적용 후 샘플 확인
+            if 'item_nm_alias' in self.item_pdf_all.columns:
+                non_null_aliases = self.item_pdf_all['item_nm_alias'].dropna()
+                if len(non_null_aliases) > 0:
+                    sample_after = non_null_aliases.head(5).tolist()
+                    logger.info(f"별칭 적용 후 샘플: {sample_after}")
             
             logger.info(f"별칭 규칙 적용 완료: {len(alias_rule_set)}개 규칙")
             
         except Exception as e:
             logger.warning(f"별칭 규칙 적용 실패: {e}")
+            logger.warning(f"오류 상세: {traceback.format_exc()}")
             # 원본 이름을 별칭으로 사용
-            self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
+            if 'item_nm' in self.item_pdf_all.columns:
+                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
+                logger.info("원본 상품명을 별칭으로 사용합니다")
 
     def _load_stop_words(self):
         """정지어 목록 로드"""
@@ -838,16 +1028,41 @@ class MMSExtractor:
     def _register_items_to_kiwi(self):
         """Kiwi에 상품명들을 고유명사로 등록"""
         try:
+            logger.info("=== Kiwi에 상품명 등록 시작 ===")
+            
+            # 상품명 별칭 데이터 확인
+            if 'item_nm_alias' not in self.item_pdf_all.columns:
+                logger.error("item_nm_alias 컬럼이 존재하지 않습니다!")
+                return
+            
+            unique_aliases = self.item_pdf_all['item_nm_alias'].unique()
+            logger.info(f"등록할 고유 별칭 수: {len(unique_aliases)}개")
+            
+            # null이 아닌 유효한 별칭들만 필터링
+            valid_aliases = [w for w in unique_aliases if isinstance(w, str) and len(w.strip()) > 0]
+            logger.info(f"유효한 별칭 수: {len(valid_aliases)}개")
+            
+            if len(valid_aliases) > 0:
+                sample_aliases = valid_aliases[:5]
+                logger.info(f"등록할 별칭 샘플: {sample_aliases}")
+            
             registered_count = 0
-            for w in self.item_pdf_all['item_nm_alias'].unique():
-                if isinstance(w, str) and len(w.strip()) > 0:
+            failed_count = 0
+            
+            for w in valid_aliases:
+                try:
                     self.kiwi.add_user_word(w, "NNP")
                     registered_count += 1
+                except Exception as reg_error:
+                    failed_count += 1
+                    if failed_count <= 5:  # 처음 5개 실패만 로깅
+                        logger.warning(f"Kiwi 등록 실패 - '{w}': {reg_error}")
             
-            logger.info(f"Kiwi에 상품명 등록 완료: {registered_count}개")
+            logger.info(f"Kiwi에 상품명 등록 완료: {registered_count}개 성공, {failed_count}개 실패")
             
         except Exception as e:
             logger.error(f"Kiwi 상품명 등록 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
 
     def _load_program_data(self):
         """프로그램 분류 정보 로드 및 임베딩 생성"""
@@ -899,8 +1114,24 @@ class MMSExtractor:
         """안전한 LLM 호출 메소드"""
         for attempt in range(max_retries):
             try:
+                # LLM 호출
                 response = self.llm_model.invoke(prompt)
-                return response.content if hasattr(response, 'content') else str(response)
+                result_text = response.content if hasattr(response, 'content') else str(response)
+                
+                # 스키마 응답 감지
+                json_objects_list = extract_json_objects(result_text)
+                if json_objects_list:
+                    json_objects = json_objects_list[-1]
+                    if self._detect_schema_response(json_objects):
+                        logger.warning(f"시도 {attempt + 1}: LLM이 스키마를 반환했습니다. 재시도합니다.")
+                        
+                        # 스키마 응답인 경우 더 강한 지시사항으로 재시도
+                        if attempt < max_retries - 1:
+                            enhanced_prompt = self._enhance_prompt_for_retry(prompt)
+                            response = self.llm_model.invoke(enhanced_prompt)
+                            result_text = response.content if hasattr(response, 'content') else str(response)
+                
+                return result_text
                 
             except Exception as e:
                 if attempt == max_retries - 1:
@@ -911,6 +1142,32 @@ class MMSExtractor:
                     time.sleep(2 ** attempt)  # 지수 백오프
         
         return ""
+
+    def _enhance_prompt_for_retry(self, original_prompt: str) -> str:
+        """스키마 응답 방지를 위한 프롬프트 강화"""
+        enhanced_instruction = """
+🚨 CRITICAL INSTRUCTION 🚨
+You MUST return actual extracted data, NOT the schema definition.
+
+DO NOT return:
+- Schema structures like {"type": "array", "items": {...}}
+- Template definitions
+- Example formats
+
+DO return:
+- Real extracted values from the advertisement
+- Actual product names, purposes, channels found in the text
+- Concrete data only
+
+For example:
+WRONG: {"purpose": {"type": "array", "items": {"type": "string"}}}
+CORRECT: {"purpose": ["상품 가입 유도", "혜택 안내"]}
+
+WRONG: {"product": {"type": "array", "items": {"type": "object"}}}
+CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
+
+"""
+        return enhanced_instruction + "\n" + original_prompt
 
     def _fallback_extraction(self, prompt: str) -> str:
         """LLM 실패 시 fallback 추출 로직"""
@@ -931,7 +1188,21 @@ class MMSExtractor:
     def extract_entities_from_kiwi(self, mms_msg: str) -> Tuple[List[str], pd.DataFrame]:
         """Kiwi 형태소 분석기를 사용한 엔티티 추출"""
         try:
+            logger.info("=== Kiwi 기반 엔티티 추출 시작 ===")
             mms_msg = validate_text_input(mms_msg)
+            logger.info(f"처리할 메시지 길이: {len(mms_msg)} 문자")
+            
+            # 상품 데이터 상태 확인
+            if self.item_pdf_all.empty:
+                logger.error("상품 데이터가 비어있습니다! 엔티티 추출 불가")
+                return [], pd.DataFrame()
+            
+            if 'item_nm_alias' not in self.item_pdf_all.columns:
+                logger.error("item_nm_alias 컬럼이 없습니다! 엔티티 추출 불가")
+                return [], pd.DataFrame()
+            
+            unique_aliases = self.item_pdf_all['item_nm_alias'].unique()
+            logger.info(f"매칭할 상품 별칭 수: {len(unique_aliases)}개")
             
             # 문장 분할 및 하위 문장 처리
             sentences = sum(self.kiwi.split_into_sents(
@@ -945,14 +1216,25 @@ class MMSExtractor:
                 else:
                     sentences_all.append(sent)
             
+            logger.info(f"분할된 문장 수: {len(sentences_all)}개")
+            
             # 제외 패턴을 적용하여 문장 필터링
             sentence_list = [
                 filter_text_by_exc_patterns(sent, self.exc_tag_patterns) 
                 for sent in sentences_all
             ]
+            
+            logger.info(f"필터링된 문장들: {sentence_list[:3]}...")  # 처음 3개만 로깅
 
             # 형태소 분석을 통한 고유명사 추출
             result_msg = self.kiwi.tokenize(mms_msg, normalize_coda=True, z_coda=False, split_complex=False)
+            all_tokens = [(token.form, token.tag) for token in result_msg]
+            logger.info(f"전체 토큰 수: {len(all_tokens)}개")
+            
+            # NNP 태그 토큰들만 추출
+            nnp_tokens = [token.form for token in result_msg if token.tag == 'NNP']
+            logger.info(f"NNP 태그 토큰들: {nnp_tokens}")
+            
             entities_from_kiwi = [
                 token.form for token in result_msg 
                 if token.tag == 'NNP' and 
@@ -962,13 +1244,14 @@ class MMSExtractor:
             ]
             entities_from_kiwi = filter_specific_terms(entities_from_kiwi)
             
-            logger.info(f"Kiwi 추출 엔티티: {list(set(entities_from_kiwi))}")
+            logger.info(f"필터링 후 Kiwi 추출 엔티티: {list(set(entities_from_kiwi))}")
 
             # 퍼지 매칭을 통한 유사 상품명 찾기
+            logger.info("퍼지 매칭 시작...")
             similarities_fuzzy = safe_execute(
                 parallel_fuzzy_similarity,
                 sentence_list, 
-                self.item_pdf_all['item_nm_alias'].unique(),
+                unique_aliases,
                 threshold=getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.5),
                 text_col_nm='sent', 
                 item_col_nm='item_nm_alias',
@@ -977,15 +1260,32 @@ class MMSExtractor:
                 default_return=pd.DataFrame()
             )
             
+            logger.info(f"퍼지 매칭 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
+            
             if similarities_fuzzy.empty:
+                logger.warning("퍼지 매칭 결과가 비어있습니다. Kiwi 결과만 사용합니다.")
                 # 퍼지 매칭 결과가 없으면 Kiwi 결과만 사용
                 cand_item_list = entities_from_kiwi
-                extra_item_pdf = self.item_pdf_all.query("item_nm_alias in @cand_item_list")[
-                    ['item_nm','item_nm_alias','item_id']
-                ].groupby(["item_nm"])['item_id'].apply(list).reset_index()
+                logger.info(f"Kiwi 기반 후보 아이템: {cand_item_list}")
+                
+                if cand_item_list:
+                    extra_item_pdf = self.item_pdf_all.query("item_nm_alias in @cand_item_list")[
+                        ['item_nm','item_nm_alias','item_id']
+                    ].groupby(["item_nm"])['item_id'].apply(list).reset_index()
+                    logger.info(f"매칭된 상품 정보: {extra_item_pdf.shape}")
+                else:
+                    extra_item_pdf = pd.DataFrame()
+                    logger.warning("후보 아이템이 없습니다!")
+                
                 return cand_item_list, extra_item_pdf
+            else:
+                logger.info(f"퍼지 매칭 성공: {len(similarities_fuzzy)}개 결과")
+                if not similarities_fuzzy.empty:
+                    sample_fuzzy = similarities_fuzzy.head(3)[['sent', 'item_nm_alias', 'sim']].to_dict('records')
+                    logger.info(f"퍼지 매칭 샘플: {sample_fuzzy}")
 
             # 시퀀스 유사도를 통한 정밀 매칭
+            logger.info("시퀀스 유사도 계산 시작...")
             similarities_seq = safe_execute(
                 parallel_seq_similarity,
                 sent_item_pdf=similarities_fuzzy,
@@ -996,31 +1296,54 @@ class MMSExtractor:
                 default_return=pd.DataFrame()
             )
             
+            logger.info(f"시퀀스 유사도 결과 크기: {similarities_seq.shape if not similarities_seq.empty else '비어있음'}")
+            if not similarities_seq.empty:
+                sample_seq = similarities_seq.head(3)[['sent', 'item_nm_alias', 'sim']].to_dict('records')
+                logger.info(f"시퀀스 유사도 샘플: {sample_seq}")
+            
             # 임계값 이상의 후보 아이템들 필터링
             similarity_threshold = getattr(PROCESSING_CONFIG, 'similarity_threshold', 0.2)
+            logger.info(f"사용할 유사도 임계값: {similarity_threshold}")
+            
             cand_items = similarities_seq.query(
                 "sim >= @similarity_threshold and "
                 "item_nm_alias.str.contains('', case=False) and "
                 "item_nm_alias not in @self.stop_item_names"
             )
+            logger.info(f"임계값 필터링 후 후보 아이템 수: {len(cand_items)}개")
             
             # Kiwi에서 추출한 엔티티들 추가
             entities_from_kiwi_pdf = self.item_pdf_all.query("item_nm_alias in @entities_from_kiwi")[
                 ['item_nm','item_nm_alias']
             ]
             entities_from_kiwi_pdf['sim'] = 1.0
+            logger.info(f"Kiwi 엔티티 매칭 결과: {len(entities_from_kiwi_pdf)}개")
 
             # 결과 통합 및 최종 후보 리스트 생성
             cand_item_pdf = pd.concat([cand_items, entities_from_kiwi_pdf])
-            cand_item_list = cand_item_pdf.sort_values('sim', ascending=False).groupby([
-                "item_nm_alias"
-            ])['sim'].max().reset_index(name='final_sim').sort_values(
-                'final_sim', ascending=False
-            ).query("final_sim >= 0.2")['item_nm_alias'].unique()
+            logger.info(f"통합된 후보 아이템 수: {len(cand_item_pdf)}개")
             
-            extra_item_pdf = self.item_pdf_all.query("item_nm_alias in @cand_item_list")[
-                ['item_nm','item_nm_alias','item_id']
-            ].groupby(["item_nm"])['item_id'].apply(list).reset_index()
+            if not cand_item_pdf.empty:
+                cand_item_list = cand_item_pdf.sort_values('sim', ascending=False).groupby([
+                    "item_nm_alias"
+                ])['sim'].max().reset_index(name='final_sim').sort_values(
+                    'final_sim', ascending=False
+                ).query("final_sim >= 0.2")['item_nm_alias'].unique()
+                
+                logger.info(f"최종 후보 아이템 리스트: {list(cand_item_list)}")
+                
+                extra_item_pdf = self.item_pdf_all.query("item_nm_alias in @cand_item_list")[
+                    ['item_nm','item_nm_alias','item_id']
+                ].groupby(["item_nm"])['item_id'].apply(list).reset_index()
+                
+                logger.info(f"최종 상품 정보 DataFrame 크기: {extra_item_pdf.shape}")
+                if not extra_item_pdf.empty:
+                    sample_final = extra_item_pdf.head(3).to_dict('records')
+                    logger.info(f"최종 상품 정보 샘플: {sample_final}")
+            else:
+                logger.warning("통합된 후보 아이템이 없습니다!")
+                cand_item_list = []
+                extra_item_pdf = pd.DataFrame()
 
             return cand_item_list, extra_item_pdf
             
@@ -1339,11 +1662,33 @@ class MMSExtractor:
 * If multiple similar products exist, choose the most specific and relevant one to reduce variability.
 """
 
-        # 프롬프트 구성
+        # 프롬프트 구성 - 스키마를 더 명확하게 설명
         schema_prompt = f"""
-Provide the results in the following schema:
+Return your response as a JSON object that follows this exact structure:
 
 {json.dumps(schema_prd, indent=4, ensure_ascii=False)}
+
+IMPORTANT: 
+- Do NOT return the schema definition itself
+- Return actual extracted data in the specified format
+- For "purpose": return an array of strings from the enum values
+- For "product": return an array of objects with "name" and "action" fields
+- For "channel": return an array of objects with "type", "value", and "action" fields
+- For "pgm": return an array of strings
+
+Example response format:
+{{
+    "title": "실제 광고 제목",
+    "purpose": ["상품 가입 유도", "혜택 안내"],
+    "product": [
+        {{"name": "실제 상품명", "action": "가입"}},
+        {{"name": "다른 상품명", "action": "구매"}}
+    ],
+    "channel": [
+        {{"type": "URL", "value": "실제 URL", "action": "가입"}}
+    ],
+    "pgm": ["실제 프로그램명"]
+}}
 """
 
         # LLM 모드에서 일관성 강화를 위한 추가 지시사항
@@ -1371,7 +1716,15 @@ Extract the advertisement purpose and product names from the provided advertisem
 
 {schema_prompt}
 
+### OUTPUT FORMAT REQUIREMENT ###
+You MUST respond with a valid JSON object containing actual extracted data.
+Do NOT include schema definitions, type specifications, or template structures.
+Return only the concrete extracted information in the specified JSON format.
+
 {rag_context}
+
+### FINAL REMINDER ###
+Return a JSON object with actual data, not schema definitions!
 """
 
         # 디버깅을 위한 프롬프트 로깅 (LLM 모드에서만)
@@ -1500,64 +1853,190 @@ Extract the advertisement purpose and product names from the provided advertisem
             dict: 추출된 정보가 담긴 JSON 구조
         """
         try:
-            logger.info(f"메시지 처리 시작: {mms_msg[:100]}...")
+            logger.info("=" * 60)
+            logger.info("🚀 MMS 메시지 처리 시작")
+            logger.info("=" * 60)
+            logger.info(f"메시지 내용: {mms_msg[:200]}...")
+            logger.info(f"메시지 길이: {len(mms_msg)} 문자")
+            
+            # 현재 설정 상태 로깅
+            logger.info("=== 현재 추출기 설정 ===")
+            logger.info(f"데이터 소스: {self.offer_info_data_src}")
+            logger.info(f"상품 정보 추출 모드: {self.product_info_extraction_mode}")
+            logger.info(f"엔티티 추출 모드: {self.entity_extraction_mode}")
+            logger.info(f"LLM 모델: {self.llm_model_name}")
+            logger.info(f"상품 데이터 크기: {self.item_pdf_all.shape}")
+            logger.info(f"프로그램 데이터 크기: {self.pgm_pdf.shape}")
             
             # 입력 검증
             msg = validate_text_input(mms_msg)
             
             # 1단계: 엔티티 추출
+            logger.info("=" * 30 + " 1단계: 엔티티 추출 " + "=" * 30)
+            
+            # DB 모드 특별 진단
+            if self.offer_info_data_src == "db":
+                logger.info("🔍 DB 모드 특별 진단 시작")
+                logger.info(f"상품 데이터 상태: {self.item_pdf_all.shape}")
+                
+                # 필수 컬럼 존재 여부 확인
+                required_columns = ['item_nm', 'item_id', 'item_nm_alias']
+                missing_columns = [col for col in required_columns if col not in self.item_pdf_all.columns]
+                if missing_columns:
+                    logger.error(f"🚨 DB 모드에서 필수 컬럼 누락: {missing_columns}")
+                
+                # 데이터 품질 확인
+                if 'item_nm_alias' in self.item_pdf_all.columns:
+                    null_aliases = self.item_pdf_all['item_nm_alias'].isnull().sum()
+                    total_aliases = len(self.item_pdf_all)
+                    logger.info(f"DB 모드 별칭 데이터 품질: {total_aliases - null_aliases}/{total_aliases} 유효")
+            
             cand_item_list, extra_item_pdf = self._extract_entities(msg)
+            logger.info(f"추출된 후보 엔티티: {cand_item_list}")
+            logger.info(f"매칭된 상품 정보: {extra_item_pdf.shape}")
+            
+            # DB 모드에서 엔티티 추출 결과 특별 분석
+            if self.offer_info_data_src == "db":
+                logger.info("🔍 DB 모드 엔티티 추출 결과 분석")
+                if not cand_item_list:
+                    logger.error("🚨 DB 모드에서 후보 엔티티가 전혀 추출되지 않았습니다!")
+                    logger.error("가능한 원인:")
+                    logger.error("1. 상품 데이터베이스에 해당 상품이 없음")
+                    logger.error("2. 별칭 규칙 적용 실패")
+                    logger.error("3. 유사도 임계값이 너무 높음")
+                    logger.error("4. Kiwi 형태소 분석 실패")
             
             # 2단계: 프로그램 분류
+            logger.info("=" * 30 + " 2단계: 프로그램 분류 " + "=" * 30)
             pgm_info = self._classify_programs(msg)
+            logger.info(f"프로그램 분류 결과 키: {list(pgm_info.keys())}")
             
             # 3단계: RAG 컨텍스트 구성
+            logger.info("=" * 30 + " 3단계: RAG 컨텍스트 구성 " + "=" * 30)
             rag_context = f"\n### 광고 분류 기준 정보 ###\n\t{pgm_info['pgm_cand_info']}" if self.num_cand_pgms > 0 else ""
+            logger.info(f"프로그램 분류 컨텍스트 길이: {len(rag_context)} 문자")
             
             # 4단계: 제품 정보 준비 (모드별 처리)
+            logger.info("=" * 30 + " 4단계: 제품 정보 준비 " + "=" * 30)
             product_element = None
             if len(cand_item_list) > 0:
+                logger.info(f"후보 아이템 리스트 크기: {len(cand_item_list)}개")
+                logger.info(f"후보 아이템 리스트: {cand_item_list}")
+                
+                # extra_item_pdf 상태 확인
+                logger.info(f"extra_item_pdf 크기: {extra_item_pdf.shape}")
+                if not extra_item_pdf.empty:
+                    logger.info(f"extra_item_pdf 컬럼들: {list(extra_item_pdf.columns)}")
+                    logger.info(f"extra_item_pdf 샘플: {extra_item_pdf.head(2).to_dict('records')}")
+                
                 if self.product_info_extraction_mode == 'rag':
                     rag_context += f"\n\n### 후보 상품 이름 목록 ###\n\t{cand_item_list}"
+                    logger.info("RAG 모드: 후보 상품 목록을 RAG 컨텍스트에 추가")
                 elif self.product_info_extraction_mode == 'llm':
                     # LLM 모드에도 후보 목록 제공하여 일관성 향상
                     rag_context += f"\n\n### 참고용 후보 상품 이름 목록 ###\n\t{cand_item_list}"
+                    logger.info("LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가")
                 elif self.product_info_extraction_mode == 'nlp':
-                    product_df = extra_item_pdf.rename(columns={'item_nm': 'name'}).query(
-                        "not name in @self.stop_item_names"
-                    )[['name']]
-                    product_df['action'] = '고객에게 기대하는 행동: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타] 중에서 선택'
-                    product_element = product_df.to_dict(orient='records') if product_df.shape[0] > 0 else None
+                    if not extra_item_pdf.empty and 'item_nm' in extra_item_pdf.columns:
+                        product_df = extra_item_pdf.rename(columns={'item_nm': 'name'}).query(
+                            "not name in @self.stop_item_names"
+                        )[['name']]
+                        product_df['action'] = '고객에게 기대하는 행동: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타] 중에서 선택'
+                        product_element = product_df.to_dict(orient='records') if product_df.shape[0] > 0 else None
+                        logger.info(f"NLP 모드: 제품 요소 준비 완료 - {len(product_element) if product_element else 0}개")
+                        if product_element:
+                            logger.info(f"NLP 모드 제품 요소 샘플: {product_element[:2]}")
+                    else:
+                        logger.warning("NLP 모드: extra_item_pdf가 비어있거나 item_nm 컬럼이 없습니다!")
+            else:
+                logger.warning("후보 아이템이 없습니다!")
+                logger.warning("이는 다음 중 하나의 문제일 수 있습니다:")
+                logger.warning("1. 상품 데이터 로딩 실패")
+                logger.warning("2. 엔티티 추출 실패") 
+                logger.warning("3. 유사도 매칭 임계값 문제")
 
             # 5단계: LLM 프롬프트 구성 및 실행
+            logger.info("=" * 30 + " 5단계: LLM 호출 " + "=" * 30)
             prompt = self._build_extraction_prompt(msg, rag_context, product_element)
+            logger.info(f"구성된 프롬프트 길이: {len(prompt)} 문자")
+            logger.info(f"RAG 컨텍스트 포함 여부: {'후보 상품' in rag_context}")
+            
             result_json_text = self._safe_llm_invoke(prompt)
-
-            # print(result_json_text)
+            logger.info(f"LLM 응답 길이: {len(result_json_text)} 문자")
+            logger.info(f"LLM 응답 내용 (처음 500자): {result_json_text[:500]}...")
             
             # 6단계: JSON 파싱
+            logger.info("=" * 30 + " 6단계: JSON 파싱 " + "=" * 30)
             json_objects_list = extract_json_objects(result_json_text)
+            logger.info(f"추출된 JSON 객체 수: {len(json_objects_list)}개")
+            
             if not json_objects_list:
                 logger.warning("LLM이 유효한 JSON 객체를 반환하지 않았습니다")
+                logger.warning(f"LLM 원본 응답: {result_json_text}")
                 return self._create_fallback_result(msg)
             
             json_objects = json_objects_list[-1]
-
-            # print(json_objects)
+            logger.info(f"파싱된 JSON 객체 키: {list(json_objects.keys())}")
+            logger.info(f"파싱된 JSON 내용: {json_objects}")
+            
+            # 스키마 응답 감지 및 처리
+            is_schema_response = self._detect_schema_response(json_objects)
+            if is_schema_response:
+                logger.error("🚨 LLM이 스키마 정의를 반환했습니다! 실제 데이터가 아닙니다.")
+                logger.error("재시도 또는 fallback 결과를 사용합니다.")
+                return self._create_fallback_result(msg)
             
             # 7단계: 엔티티 매칭 및 최종 결과 구성
+            logger.info("=" * 30 + " 7단계: 최종 결과 구성 " + "=" * 30)
             final_result = self._build_final_result(json_objects, msg, pgm_info)
             
             # 8단계: 결과 검증
+            logger.info("=" * 30 + " 8단계: 결과 검증 " + "=" * 30)
             final_result = self._validate_extraction_result(final_result)
             
-            logger.info("메시지 처리 완료")
+            # 최종 결과 요약 로깅
+            logger.info("=" * 60)
+            logger.info("✅ 메시지 처리 완료 - 최종 결과 요약")
+            logger.info("=" * 60)
+            logger.info(f"제목: {final_result.get('title', 'N/A')}")
+            logger.info(f"목적: {final_result.get('purpose', [])}")
+            logger.info(f"상품 수: {len(final_result.get('product', []))}개")
+            logger.info(f"채널 수: {len(final_result.get('channel', []))}개")
+            logger.info(f"프로그램 수: {len(final_result.get('pgm', []))}개")
+            
             return final_result
             
         except Exception as e:
             logger.error(f"메시지 처리 실패: {e}")
             logger.error(traceback.format_exc())
             return self._create_fallback_result(mms_msg)
+
+    def _detect_schema_response(self, json_objects: Dict) -> bool:
+        """LLM이 스키마 정의를 반환했는지 감지"""
+        try:
+            # purpose 필드가 스키마 구조인지 확인
+            purpose = json_objects.get('purpose', {})
+            if isinstance(purpose, dict) and 'type' in purpose and purpose.get('type') == 'array':
+                logger.warning("purpose 필드가 스키마 구조로 감지됨")
+                return True
+            
+            # product 필드가 스키마 구조인지 확인  
+            product = json_objects.get('product', {})
+            if isinstance(product, dict) and 'type' in product and product.get('type') == 'array':
+                logger.warning("product 필드가 스키마 구조로 감지됨")
+                return True
+            
+            # channel 필드가 스키마 구조인지 확인
+            channel = json_objects.get('channel', {})
+            if isinstance(channel, dict) and 'type' in channel and channel.get('type') == 'array':
+                logger.warning("channel 필드가 스키마 구조로 감지됨")
+                return True
+                
+            return False
+            
+        except Exception as e:
+            logger.error(f"스키마 응답 감지 중 오류: {e}")
+            return False
 
     def _create_fallback_result(self, msg: str) -> Dict[str, Any]:
         """처리 실패 시 기본 결과 생성"""
