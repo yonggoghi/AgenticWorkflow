@@ -1678,9 +1678,31 @@ if len(cand_item_list) > 0:
         """
 
 schema_prompt = f"""
-Provide the results in the following schema:
+Return your response as a JSON object that follows this exact structure:
 
-{schema_prd}
+{json.dumps(schema_prd, indent=4, ensure_ascii=False)}
+
+IMPORTANT: 
+- Do NOT return the schema definition itself
+- Return actual extracted data in the specified format
+- For "purpose": return an array of strings from the enum values
+- For "product": return an array of objects with "name" and "action" fields
+- For "channel": return an array of objects with "type", "value", and "action" fields
+- For "pgm": return an array of strings
+
+Example response format:
+{{
+    "title": "실제 광고 제목",
+    "purpose": ["상품 가입 유도", "혜택 안내"],
+    "product": [
+        {{"name": "실제 상품명", "action": "가입"}},
+        {{"name": "다른 상품명", "action": "구매"}}
+    ],
+    "channel": [
+        {{"type": "URL", "value": "실제 URL", "action": "가입"}}
+    ],
+    "pgm": ["실제 프로그램명"]
+}}
 """
 
 # LLM 모드에서 일관성 강화를 위한 추가 지시사항
@@ -1708,7 +1730,15 @@ Extract the advertisement purpose and product names from the provided advertisem
 
 {schema_prompt}
 
+### OUTPUT FORMAT REQUIREMENT ###
+You MUST respond with a valid JSON object containing actual extracted data.
+Do NOT include schema definitions, type specifications, or template structures.
+Return only the concrete extracted information in the specified JSON format.
+
 {rag_context}
+
+### FINAL REMINDER ###
+Return a JSON object with actual data, not schema definitions!
 """
 
 # 디버깅을 위한 프롬프트 로깅 (LLM 모드에서만)
@@ -1721,13 +1751,67 @@ print()
 # result_json_text = llm_cld40.invoke(prompt).content
 result_json_text = llm_model.invoke(prompt).content
 
-json_objects = extract_json_objects(result_json_text)[-1]
+json_objects_list = extract_json_objects(result_json_text)
+if not json_objects_list:
+    print("⚠️ LLM이 유효한 JSON 객체를 반환하지 않았습니다")
+    print(f"LLM 응답: {result_json_text}")
+    json_objects = {
+        "title": "광고 메시지",
+        "purpose": ["정보 제공"],
+        "product": [],
+        "channel": [],
+        "pgm": []
+    }
+else:
+    json_objects = json_objects_list[-1]
+    
+    # 스키마 응답 감지
+    def is_schema_response(obj):
+        """LLM이 스키마 정의를 반환했는지 감지"""
+        for field in ['purpose', 'product', 'channel']:
+            field_value = obj.get(field, {})
+            if isinstance(field_value, dict) and 'type' in field_value and field_value.get('type') == 'array':
+                return True
+        return False
+    
+    if is_schema_response(json_objects):
+        print("🚨 LLM이 스키마 정의를 반환했습니다! 재시도가 필요합니다.")
+        print("현재 응답:", json_objects)
+        
+        # 강화된 프롬프트로 재시도
+        enhanced_prompt = """
+🚨 CRITICAL: Return actual extracted data, NOT schema definitions!
+
+DO NOT return: {"purpose": {"type": "array", ...}}
+DO return: {"purpose": ["상품 가입 유도"]}
+
+""" + prompt
+        
+        result_json_text = llm_model.invoke(enhanced_prompt).content
+        json_objects_retry = extract_json_objects(result_json_text)
+        if json_objects_retry and not is_schema_response(json_objects_retry[-1]):
+            json_objects = json_objects_retry[-1]
+            print("✅ 재시도 성공: 올바른 데이터 형식 반환")
+        else:
+            print("❌ 재시도 실패: fallback 결과 사용")
 
 # print(json.dumps(json_objects, indent=4, ensure_ascii=False))
 
 
 if entity_matching_mode == 'logic':
-    cand_entities = [item['name'] for item in json_objects['product']['items']] if isinstance(json_objects['product'], dict) else [item['name'] for item in json_objects['product']]
+    # 제품 정보 추출 시 스키마 응답 처리
+    product_data = json_objects.get('product', [])
+    if isinstance(product_data, dict) and 'items' in product_data:
+        # 스키마 구조인 경우 빈 리스트 사용
+        cand_entities = []
+        print("⚠️ product 필드가 스키마 구조입니다. 빈 엔티티 리스트 사용")
+    elif isinstance(product_data, list):
+        # 올바른 배열 구조
+        cand_entities = [item.get('name', '') for item in product_data if isinstance(item, dict) and item.get('name')]
+    else:
+        cand_entities = []
+        print(f"⚠️ 예상하지 못한 product 구조: {type(product_data)}")
+    
     similarities_fuzzy = extract_entities_by_logic(cand_entities)
 elif entity_matching_mode == 'llm':
     similarities_fuzzy = extract_entities_by_llm(llm_model, msg)
@@ -1742,7 +1826,21 @@ if num_cand_pgms>0:
 # print(json.dumps(final_result, indent=4, ensure_ascii=False))
 
 print("Entity from extractor:", list(set(cand_item_list)))
-print("Entity from LLM:", [x['name'] for x in ([item for item in json_objects['product']['items']] if isinstance(json_objects['product'], dict) else json_objects['product']) ])
+
+# LLM에서 추출된 엔티티 안전하게 처리
+product_data = json_objects.get('product', [])
+if isinstance(product_data, dict) and 'items' in product_data:
+    # 스키마 구조인 경우
+    llm_entities = []
+    print("⚠️ LLM product 필드가 스키마 구조입니다")
+elif isinstance(product_data, list):
+    # 올바른 배열 구조
+    llm_entities = [x.get('name', '') for x in product_data if isinstance(x, dict) and x.get('name')]
+else:
+    llm_entities = []
+    print(f"⚠️ 예상하지 못한 LLM product 구조: {type(product_data)}")
+
+print("Entity from LLM:", llm_entities)
 
 if similarities_fuzzy.shape[0]>0:
         # Break down the complex query into simpler steps to avoid pandas/numexpr evaluation error
