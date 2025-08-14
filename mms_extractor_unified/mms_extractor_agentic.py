@@ -75,7 +75,8 @@ llm_gpt = ChatOpenAI(
         openai_api_key=llm_api_key,
         openai_api_base=llm_api_url,
         model=MODEL_CONFIG.gpt_model,
-        max_tokens=MODEL_CONFIG.llm_max_tokens
+        max_tokens=MODEL_CONFIG.llm_max_tokens,
+        seed=42  # 고정 시드로 일관성 보장
         )
 
 llm_model = llm_ax
@@ -408,7 +409,7 @@ class CustomOpenAI:
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.1
+            temperature=0.0  # 완전 결정적 출력을 위해 0.0 고정
         )
         return response.choices[0].message.content
 
@@ -1554,7 +1555,7 @@ cand_item_list, extra_item_pdf = extract_entities_from_kiwi(msg, item_pdf_all, s
 product_df = extra_item_pdf.rename(columns={'item_nm':'name'}).query("not name in @stop_item_names")[['name']]
 product_df['action'] = '고객에게 기대하는 행동: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타] 중에서 선택'
 # product_df['position'] = '광고 상품의 분류. [main, sub, etc] 중에서 선택'
-product_element = product_df.to_dict(orient='records') if product_df.shape[0]>0 else schema_prd['product']
+product_element = product_df.to_dict(orient='records') if product_df.shape[0]>0 else None
 
 # print(cand_item_list)
 
@@ -1574,7 +1575,17 @@ pgm_pdf_tmp = pgm_pdf_tmp.sort_values('sim', ascending=False)
 pgm_cand_info = "\n\t".join(pgm_pdf_tmp.iloc[:num_cand_pgms][['pgm_nm','clue_tag']].apply(lambda x: re.sub(r'\[.*?\]', '', x['pgm_nm'])+" : "+x['clue_tag'], axis=1).to_list())
 rag_context = f"\n### 광고 분류 기준 정보 ###\n\t{pgm_cand_info}" if num_cand_pgms > 0 else ""
 
-chain_of_thought = """
+# 기본 chain of thought (LLM 모드 일관성 강화)
+if product_info_extraction_mode == 'llm':
+    chain_of_thought = """
+1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
+2. Extract ONLY explicitly mentioned product/service names from the text, using exact original expressions.
+3. For each product, assign a standardized action from: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타].
+4. Avoid inferring or adding products not directly mentioned in the text.
+5. Provide channel information considering the extracted product information, preserving original text expressions.
+"""
+else:
+    chain_of_thought = """
 1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
 2. Extract product names based on the identified purpose, ensuring only distinct offerings are included and using original text expressions.
 3. Provide channel information considering the extracted product information, preserving original text expressions.
@@ -1646,6 +1657,14 @@ if len(cand_item_list) > 0:
         prd_ext_guide += f"""
 * Use the provided candidate product names as a reference to guide product extraction, ensuring alignment with the advertisement content and using exact expressions from the original text.
         """
+    elif product_info_extraction_mode == 'llm':
+        # LLM 모드에도 후보 목록 제공하여 일관성 향상
+        rag_context += f"\n\n### 참고용 후보 상품 이름 목록 ###\n\t{cand_item_list}"
+        prd_ext_guide += f"""
+* Refer to the candidate product names list as guidance, but extract products based on your understanding of the advertisement content.
+* Maintain consistency by using standardized product naming conventions.
+* If multiple similar products exist, choose the most specific and relevant one to reduce variability.
+        """
     elif product_info_extraction_mode == 'nlp':
         schema_prd['product'] = product_element  # Assuming product_element is defined elsewhere
         chain_of_thought = """
@@ -1664,6 +1683,17 @@ Provide the results in the following schema:
 {schema_prd}
 """
 
+# LLM 모드에서 일관성 강화를 위한 추가 지시사항
+consistency_note = ""
+if product_info_extraction_mode == 'llm':
+    consistency_note = """
+
+### 일관성 유지 지침 ###
+* 동일한 광고 메시지에 대해서는 항상 동일한 결과를 생성해야 합니다.
+* 애매한 표현이 있을 때는 가장 명확하고 구체적인 해석을 선택하세요.
+* 상품명은 원문에서 정확히 언급된 표현만 사용하세요.
+"""
+
 prompt = f"""
 Extract the advertisement purpose and product names from the provided advertisement text.
 
@@ -1674,15 +1704,19 @@ Extract the advertisement purpose and product names from the provided advertisem
 {chain_of_thought}
 
 ### Extraction Guidelines ###
-{prd_ext_guide}
+{prd_ext_guide}{consistency_note}
 
 {schema_prompt}
 
 {rag_context}
 """
 
-print()
+# 디버깅을 위한 프롬프트 로깅 (LLM 모드에서만)
+if product_info_extraction_mode == 'llm':
+    print(f"🔍 LLM 모드 프롬프트 길이: {len(prompt)} 문자")
+    print(f"🔍 후보 상품 목록 포함 여부: {'참고용 후보 상품 이름 목록' in rag_context}")
 
+print()
 
 # result_json_text = llm_cld40.invoke(prompt).content
 result_json_text = llm_model.invoke(prompt).content
