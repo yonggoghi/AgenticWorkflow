@@ -629,13 +629,20 @@ class MMSExtractor:
             
             model_name = model_mapping.get(self.llm_model_name, getattr(MODEL_CONFIG, 'llm_model', 'gpt-4'))
             
-            self.llm_model = ChatOpenAI(
-                temperature=getattr(MODEL_CONFIG, 'temperature', 0.1),
-                openai_api_key=getattr(API_CONFIG, 'llm_api_key', os.getenv('OPENAI_API_KEY')),
-                openai_api_base=getattr(API_CONFIG, 'llm_api_url', None),
-                model=model_name,
-                max_tokens=getattr(MODEL_CONFIG, 'llm_max_tokens', 4000)
-            )
+            # LLM 모델별 일관성 설정
+            model_kwargs = {
+                "temperature": 0.0,  # 완전 결정적 출력을 위해 0.0 고정
+                "openai_api_key": getattr(API_CONFIG, 'llm_api_key', os.getenv('OPENAI_API_KEY')),
+                "openai_api_base": getattr(API_CONFIG, 'llm_api_url', None),
+                "model": model_name,
+                "max_tokens": getattr(MODEL_CONFIG, 'llm_max_tokens', 4000)
+            }
+            
+            # GPT 모델의 경우 시드 설정으로 일관성 강화
+            if 'gpt' in model_name.lower():
+                model_kwargs["seed"] = 42  # 고정 시드로 일관성 보장
+                
+            self.llm_model = ChatOpenAI(**model_kwargs)
             
             logger.info(f"LLM 초기화 완료: {self.llm_model_name} ({model_name})")
             
@@ -1228,8 +1235,17 @@ class MMSExtractor:
     def _build_extraction_prompt(self, msg: str, rag_context: str, product_element: Optional[List[Dict]]) -> str:
         """추출용 프롬프트 구성"""
         
-        # 사고 과정 정의
-        chain_of_thought = """
+        # 사고 과정 정의 (모드별 최적화)
+        if self.product_info_extraction_mode == 'llm':
+            chain_of_thought = """
+1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
+2. Extract ONLY explicitly mentioned product/service names from the text, using exact original expressions.
+3. For each product, assign a standardized action from: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타].
+4. Avoid inferring or adding products not directly mentioned in the text.
+5. Provide channel information considering the extracted product information, preserving original text expressions.
+"""
+        else:
+            chain_of_thought = """
 1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
 2. Extract product names based on the identified purpose, ensuring only distinct offerings are included and using original text expressions.
 3. Provide channel information considering the extracted product information, preserving original text expressions.
@@ -1291,8 +1307,8 @@ class MMSExtractor:
 
         # 추출 가이드라인 설정
         prd_ext_guide = """
-* Prioritize recall over precision to ensure all relevant products are captured.
-* Extract all information using the exact expressions as they appear in the original text.
+* Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering.
+* Extract all information (title, purpose, product, channel, pgm) using the exact expressions as they appear in the original text without translation, as specified in the schema.
 * If the advertisement purpose includes encouraging agency/store visits, provide agency channel information.
 """
 
@@ -1306,7 +1322,21 @@ class MMSExtractor:
 4. Provide channel information considering the extracted product information.
 """
             prd_ext_guide += """
-* Extract the action field for each product based on the identified product names.
+* Extract the action field for each product based on the identified product names, using the original text context.
+"""
+        
+        # 모드별 가이드라인 추가
+        if "### 후보 상품 이름 목록 ###" in rag_context:
+            # RAG 모드: 후보 목록을 강제 참조
+            prd_ext_guide += """
+* Use the provided candidate product names as a reference to guide product extraction, ensuring alignment with the advertisement content and using exact expressions from the original text.
+"""
+        elif "### 참고용 후보 상품 이름 목록 ###" in rag_context:
+            # LLM 모드: 후보 목록을 참고하되 일관성 강화
+            prd_ext_guide += """
+* Refer to the candidate product names list as guidance, but extract products based on your understanding of the advertisement content.
+* Maintain consistency by using standardized product naming conventions.
+* If multiple similar products exist, choose the most specific and relevant one to reduce variability.
 """
 
         # 프롬프트 구성
@@ -1314,6 +1344,17 @@ class MMSExtractor:
 Provide the results in the following schema:
 
 {json.dumps(schema_prd, indent=4, ensure_ascii=False)}
+"""
+
+        # LLM 모드에서 일관성 강화를 위한 추가 지시사항
+        consistency_note = ""
+        if self.product_info_extraction_mode == 'llm':
+            consistency_note = """
+
+### 일관성 유지 지침 ###
+* 동일한 광고 메시지에 대해서는 항상 동일한 결과를 생성해야 합니다.
+* 애매한 표현이 있을 때는 가장 명확하고 구체적인 해석을 선택하세요.
+* 상품명은 원문에서 정확히 언급된 표현만 사용하세요.
 """
 
         prompt = f"""
@@ -1326,13 +1367,18 @@ Extract the advertisement purpose and product names from the provided advertisem
 {chain_of_thought}
 
 ### Extraction Guidelines ###
-{prd_ext_guide}
+{prd_ext_guide}{consistency_note}
 
 {schema_prompt}
 
 {rag_context}
 """
 
+        # 디버깅을 위한 프롬프트 로깅 (LLM 모드에서만)
+        if self.product_info_extraction_mode == 'llm':
+            logger.debug(f"LLM 모드 프롬프트 길이: {len(prompt)} 문자")
+            logger.debug(f"후보 상품 목록 포함 여부: {'참고용 후보 상품 이름 목록' in rag_context}")
+            
         return prompt
 
     def _extract_channels(self, json_objects: Dict, msg: str) -> List[Dict]:
@@ -1468,11 +1514,14 @@ Extract the advertisement purpose and product names from the provided advertisem
             # 3단계: RAG 컨텍스트 구성
             rag_context = f"\n### 광고 분류 기준 정보 ###\n\t{pgm_info['pgm_cand_info']}" if self.num_cand_pgms > 0 else ""
             
-            # 4단계: 제품 정보 준비 (NLP 모드용)
+            # 4단계: 제품 정보 준비 (모드별 처리)
             product_element = None
             if len(cand_item_list) > 0:
                 if self.product_info_extraction_mode == 'rag':
                     rag_context += f"\n\n### 후보 상품 이름 목록 ###\n\t{cand_item_list}"
+                elif self.product_info_extraction_mode == 'llm':
+                    # LLM 모드에도 후보 목록 제공하여 일관성 향상
+                    rag_context += f"\n\n### 참고용 후보 상품 이름 목록 ###\n\t{cand_item_list}"
                 elif self.product_info_extraction_mode == 'nlp':
                     product_df = extra_item_pdf.rename(columns={'item_nm': 'name'}).query(
                         "not name in @self.stop_item_names"
