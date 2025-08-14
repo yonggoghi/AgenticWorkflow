@@ -5,24 +5,19 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 import json
 import re
-# from pygments import highlight
-# from pygments.lexers import JsonLexer
-# from pygments.formatters import HtmlFormatter
-# from IPython.display import HTML
 import pandas as pd
-# from langchain.chat_models import ChatOpenAI
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from openai import OpenAI
-from typing import List, Tuple, Union, Dict, Any
+from typing import List, Tuple, Union, Dict, Any, Optional, Set
 import ast
 from rapidfuzz import fuzz, process
-import re
-import json
 import glob
 import os
 from config import settings
+import networkx as nx
+import random
 
 pd.set_option('display.max_colwidth', 500)
 
@@ -32,11 +27,8 @@ client = OpenAI(
     api_key = llm_api_key,
     base_url = llm_api_url
 )
-# from langchain.chat_models import ChatOpenAI
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
 
+# LLM 모델 설정
 llm_gem = ChatOpenAI(
         temperature=0,
         openai_api_key=llm_api_key,
@@ -81,18 +73,11 @@ stop_item_names = pd.read_csv(settings.METADATA_CONFIG.stop_items_path)['stop_wo
 mms_pdf = pd.read_csv(settings.METADATA_CONFIG.mms_msg_path)
 mms_pdf = mms_pdf.astype('str')
 
-import re, networkx as nx
-from typing import List, Tuple, Set, Dict
-
 ###############################################################################
-# 1) 정규식 : ( node ) -[ relation ]-> ( node )
+# 1) 기존 정규식 및 파서 (하위 호환성 유지)
 ###############################################################################
 PAT = re.compile(r"\((.*?)\)\s*-\[(.*?)\]->\s*\((.*?)\)")
 NODE_ONLY = re.compile(r"\((.*?)\)\s*$")
-
-###############################################################################
-# 2) 파서
-###############################################################################
 
 def parse_block(text: str):
     nodes: Set[str] = set()
@@ -114,7 +99,7 @@ def parse_block(text: str):
     return list(nodes), edges
 
 ###############################################################################
-# 3) 노드 스플리터 – 3칸·2칸·1칸 허용
+# 2) 개선된 노드 스플리터 – 유연한 파트 처리
 ###############################################################################
 def split_node(raw: str) -> Dict[str,str]:
     parts = [p.strip() for p in raw.split(":")]
@@ -142,9 +127,8 @@ def split_node(raw: str) -> Dict[str,str]:
     
     return {"entity": ent, "action": act, "metric": kpi}
 
-
 ###############################################################################
-# 4) DAG 빌더
+# 3) 기존 DAG 빌더 (하위 호환성 유지)
 ###############################################################################
 def build_dag(nodes: List[str], edges: List[Tuple[str,str,str]]) -> nx.DiGraph:
     g = nx.DiGraph()
@@ -163,15 +147,10 @@ def build_dag(nodes: List[str], edges: List[Tuple[str,str,str]]) -> nx.DiGraph:
     for src, dst, rel in edges:
         g.add_edge(src, dst, relation=rel)
     
-    # Optional: Check if it's a DAG
-    # if not nx.is_directed_acyclic_graph(g):
-    #     raise nx.NetworkXUnfeasible("사이클이 있습니다 ― DAG 아님!")
-    
     return g
 
-
 ###############################################################################
-# 5) Path Finder
+# 4) 기존 Path Finder (하위 호환성 유지)
 ###############################################################################
 def get_root_to_leaf_paths(dag):
     """Generate all paths from root nodes (no predecessors) to leaf nodes (no successors)"""
@@ -192,9 +171,317 @@ def get_root_to_leaf_paths(dag):
     
     return all_paths, root_nodes, leaf_nodes
 
-import random
+###############################################################################
+# 5) 새로운 개선된 DAGParser 클래스
+###############################################################################
+class DAGParser:
+    """통신사 광고 메시지에서 추출된 DAG를 NetworkX 그래프로 변환하는 파서"""
+    
+    def __init__(self):
+        # 개선된 정규표현식 패턴 - 관계 부분에 쉼표와 공백 허용
+        # 관계 부분([...])에 모든 문자 허용 (]를 제외하고)
+        self.edge_pattern = r'\(([^:)]+):([^)]+)\)\s*-\[([^\]]+)\]->\s*\(([^:)]+):([^)]+)\)'
+        # 섹션 패턴 수정: ## 또는 ###로 시작하는 2. 추출된 DAG 섹션
+        self.section_pattern = r'#{2,3}\s*2\.\s*추출된\s*DAG'
+        
+    def parse_dag_line(self, line: str) -> Optional[Tuple[str, str, str, str, str]]:
+        """단일 DAG 라인을 파싱하여 구성 요소 반환"""
+        match = re.match(self.edge_pattern, line)
+        if match:
+            return (
+                match.group(1).strip(),  # src_entity
+                match.group(2).strip(),  # src_action
+                match.group(3).strip(),  # relation (쉼표, 조건 포함 가능)
+                match.group(4).strip(),  # dst_entity
+                match.group(5).strip()   # dst_action
+            )
+        return None
+        
+    def extract_dag_section(self, full_text: str) -> str:
+        """전체 텍스트에서 DAG 섹션만 추출"""
+        lines = full_text.split('\n')
+        
+        # 더 유연한 DAG 섹션 찾기
+        dag_section_patterns = [
+            r'#{2,3}\s*2\.\s*추출된\s*DAG',
+            r'#{2,3}\s*DAG',
+            r'추출된\s*DAG',
+            r'2\.\s*추출된\s*DAG'
+        ]
+        
+        # DAG 섹션 찾기
+        start_idx = -1
+        end_idx = len(lines)
+        in_dag_section = False
+        in_code_block = False
+        
+        # 패턴들을 순차적으로 시도
+        for pattern in dag_section_patterns:
+            for i, line in enumerate(lines):
+                if re.search(pattern, line, re.IGNORECASE):
+                    in_dag_section = True
+                    # 다음 라인이 ```인지 확인
+                    if i + 1 < len(lines) and lines[i + 1].strip() == '```':
+                        start_idx = i + 2
+                        in_code_block = True
+                    else:
+                        start_idx = i + 1
+                    break
+            if start_idx != -1:
+                break
+        
+        # DAG 섹션 종료 조건 찾기
+        if start_idx != -1:
+            for i in range(start_idx, len(lines)):
+                line = lines[i]
+                if in_code_block and line.strip() == '```':
+                    end_idx = i
+                    break
+                elif not in_code_block and re.match(r'#{2,3}\s*3\.', line):
+                    end_idx = i
+                    break
+        
+        if start_idx == -1:
+            # 섹션 헤더가 없는 경우, DAG 패턴을 직접 찾기
+            dag_lines = []
+            for line in lines:
+                if re.match(self.edge_pattern, line) or line.strip().startswith('#'):
+                    dag_lines.append(line)
+            
+            if dag_lines:
+                result = '\n'.join(dag_lines)
+                return result
+            else:
+                raise ValueError("DAG 섹션을 찾을 수 없습니다.")
+        
+        result = '\n'.join(lines[start_idx:end_idx])
+        return result
+    
+    def parse_dag(self, dag_text: str) -> nx.DiGraph:
+        """DAG 텍스트를 NetworkX DiGraph로 변환"""
+        G = nx.DiGraph()
+        
+        # 통계 정보 저장
+        stats = {
+            'total_edges': 0,
+            'comment_lines': 0,
+            'empty_lines': 0,
+            'paths': [],
+            'parse_errors': [],
+            'parsed_lines': []
+        }
+        
+        current_path = None
+        
+        for line_num, line in enumerate(dag_text.strip().split('\n'), 1):
+            line = line.strip()
+            
+            # 빈 라인 처리
+            if not line:
+                stats['empty_lines'] += 1
+                continue
+            
+            # 주석 라인 처리 (경로 정보 추출)
+            if line.startswith('#'):
+                stats['comment_lines'] += 1
+                current_path = line[1:].strip()
+                if current_path:
+                    stats['paths'].append(current_path)
+                continue
+            
+            # DAG 엣지 파싱
+            parsed = self.parse_dag_line(line)
+            if parsed:
+                try:
+                    src_entity, src_action, relation, dst_entity, dst_action = parsed
+                    
+                    # 노드 ID 생성
+                    src_node = f"{src_entity}:{src_action}"
+                    dst_node = f"{dst_entity}:{dst_action}"
+                    
+                    # 노드 추가 (속성 포함)
+                    G.add_node(src_node, 
+                              entity=src_entity, 
+                              action=src_action,
+                              path=current_path)
+                    G.add_node(dst_node, 
+                              entity=dst_entity, 
+                              action=dst_action,
+                              path=current_path)
+                    
+                    # 엣지 추가 (관계에 쉼표나 조건이 포함될 수 있음)
+                    G.add_edge(src_node, dst_node, 
+                              relation=relation,
+                              path=current_path)
+                    
+                    stats['total_edges'] += 1
+                    stats['parsed_lines'].append(f"Line {line_num}: {src_node} -[{relation}]-> {dst_node}")
+                    
+                except Exception as e:
+                    stats['parse_errors'].append(f"Line {line_num}: {str(e)}")
+            else:
+                # 파싱 실패한 라인 기록 (주석이 아닌 경우만)
+                if not line.startswith('#') and line.strip():
+                    stats['parse_errors'].append(f"Line {line_num}: 패턴 매칭 실패 - {line[:80]}...")
+        
+        # 그래프에 통계 정보 저장
+        G.graph['stats'] = stats
+        
+        return G
+    
+    def get_root_nodes(self, G: nx.DiGraph) -> List[str]:
+        """Root 노드(들어오는 엣지가 없는 노드) 찾기"""
+        return [node for node in G.nodes() if G.in_degree(node) == 0]
+    
+    def get_leaf_nodes(self, G: nx.DiGraph) -> List[str]:
+        """Leaf 노드(나가는 엣지가 없는 노드) 찾기"""
+        return [node for node in G.nodes() if G.out_degree(node) == 0]
+    
+    def get_paths_from_root_to_leaf(self, G: nx.DiGraph) -> List[List[str]]:
+        """Root에서 Leaf까지의 모든 경로 찾기"""
+        roots = self.get_root_nodes(G)
+        leaves = self.get_leaf_nodes(G)
+        
+        all_paths = []
+        for root in roots:
+            for leaf in leaves:
+                try:
+                    paths = list(nx.all_simple_paths(G, root, leaf))
+                    all_paths.extend(paths)
+                except nx.NetworkXNoPath:
+                    continue
+        
+        return all_paths
+    
+    def analyze_graph(self, G: nx.DiGraph) -> Dict:
+        """그래프 분석 정보 생성"""
+        analysis = {
+            'num_nodes': G.number_of_nodes(),
+            'num_edges': G.number_of_edges(),
+            'root_nodes': self.get_root_nodes(G),
+            'leaf_nodes': self.get_leaf_nodes(G),
+            'is_dag': nx.is_directed_acyclic_graph(G),
+            'num_components': nx.number_weakly_connected_components(G),
+            'paths_info': G.graph.get('stats', {}).get('paths', []),
+            'longest_path_length': 0
+        }
+        
+        # 최장 경로 찾기
+        if analysis['is_dag'] and G.number_of_nodes() > 0:
+            try:
+                longest = nx.dag_longest_path(G)
+                analysis['longest_path_length'] = len(longest) - 1 if longest else 0
+            except:
+                analysis['longest_path_length'] = 0
+        
+        return analysis
+    
+    def to_json(self, G: nx.DiGraph) -> str:
+        """그래프를 JSON 형식으로 변환"""
+        data = {
+            'nodes': [
+                {
+                    'id': node,
+                    'entity': G.nodes[node].get('entity', ''),
+                    'action': G.nodes[node].get('action', ''),
+                    'path': G.nodes[node].get('path', '')
+                }
+                for node in G.nodes()
+            ],
+            'edges': [
+                {
+                    'source': edge[0],
+                    'target': edge[1],
+                    'relation': G.edges[edge].get('relation', ''),
+                    'path': G.edges[edge].get('path', '')
+                }
+                for edge in G.edges()
+            ],
+            'analysis': self.analyze_graph(G)
+        }
+        return json.dumps(data, ensure_ascii=False, indent=2)
+    
+    def visualize_paths(self, G: nx.DiGraph) -> str:
+        """경로별로 구조화된 텍스트 출력"""
+        output = []
+        paths_dict = {}
+        
+        # 경로별로 엣지 그룹화
+        for edge in G.edges():
+            path = G.edges[edge].get('path', 'Unknown')
+            if path not in paths_dict:
+                paths_dict[path] = []
+            paths_dict[path].append(edge)
+        
+        # 경로별 출력
+        for path, edges in paths_dict.items():
+            if path and path != 'Unknown':
+                output.append(f"\n[{path}]")
+            for edge in edges:
+                relation = G.edges[edge].get('relation', '')
+                output.append(f"  {edge[0]} -{relation}-> {edge[1]}")
+        
+        return '\n'.join(output)
 
-def extract_dag(num_msgs=50, llm_model_nm='ax'):
+###############################################################################
+# 6) 개선된 DAG 추출 함수
+###############################################################################
+def extract_dag_enhanced(parser, sample_text, i=3):
+    """개선된 DAG 추출 함수"""
+    try:
+        # DAG 섹션 추출
+        dag_section = parser.extract_dag_section(sample_text)
+        G = parser.parse_dag(dag_section)
+
+        print("추출된 DAG 섹션 (처음 200자):")
+        print(dag_section[:200] + "..." if len(dag_section) > 200 else dag_section)
+        print("\n" + "-"*50 + "\n")
+                
+        # 파싱 성공 라인 출력 (디버깅용)
+        if G.graph['stats'].get('parsed_lines') and i == 3:  # 예시 3만 상세 출력
+            print("파싱 성공한 라인:")
+            for parsed_line in G.graph['stats']['parsed_lines'][:3]:
+                print(f"  ✓ {parsed_line}")
+            if len(G.graph['stats']['parsed_lines']) > 3:
+                print(f"  ... 외 {len(G.graph['stats']['parsed_lines']) - 3}개")
+            print()
+        
+        # 파싱 에러 확인
+        if G.graph['stats'].get('parse_errors'):
+            print("파싱 에러:")
+            for error in G.graph['stats']['parse_errors']:
+                print(f"  ✗ {error}")
+            print()
+        
+        # 분석 결과 출력
+        analysis = parser.analyze_graph(G)
+        print("그래프 분석:")
+        print(f"- 노드 수: {analysis['num_nodes']}")
+        print(f"- 엣지 수: {analysis['num_edges']}")
+        print(f"- Root 노드: {analysis['root_nodes'][:3]}{'...' if len(analysis['root_nodes']) > 3 else ''}")
+        print(f"- Leaf 노드: {analysis['leaf_nodes'][:3]}{'...' if len(analysis['leaf_nodes']) > 3 else ''}")
+        print(f"- DAG 여부: {analysis['is_dag']}")
+        print(f"- 최장 경로 길이: {analysis['longest_path_length']}")
+        
+        if G.number_of_nodes() > 0 and i == 3:  # 예시 3의 특수 관계 확인
+            print("\n" + "-"*50 + "\n")
+            print("특수 관계가 포함된 엣지 (쉼표 포함):")
+            for edge in G.edges(data=True):
+                if ',' in edge[2]['relation']:
+                    print(f"  - {edge[0]} --[{edge[2]['relation']}]--> {edge[1]}")
+        
+        return G
+        
+    except Exception as e:
+        print(f"오류 발생: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+###############################################################################
+# 7) 메인 추출 함수 (기존 인터페이스 유지 + 개선 기능 추가)
+###############################################################################
+def extract_dag(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
 
     if llm_model_nm == 'ax':
         llm_model = llm_ax
@@ -212,153 +499,171 @@ def extract_dag(num_msgs=50, llm_model_nm='ax'):
 
     line_break_patterns = {"__":"\n", "■":"\n■", "▶":"\n▶", "_":"\n"}
     
+    # 개선된 파서 초기화
+    parser = DAGParser() if use_enhanced_parser else None
+    
     with open(output_file, 'a', encoding='utf-8') as f:
         # 실행 시작 시점 기록
         from datetime import datetime
         start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write(f"\n{'='*80}\n")
         f.write(f"DAG 추출 실행 시작: {start_time}\n")
+        f.write(f"Enhanced Parser 사용: {use_enhanced_parser}\n")
         f.write(f"{'='*80}\n\n")
         
         for msg in random.sample(mms_pdf.query("msg.str.contains('')")['msg'].unique().tolist(), num_msgs):
             try:
-    #             msg = """
-    # [SK텔레콤] 강남터미널대리점 본점 갤럭시 S25 사전예약 안내드립니다.
-    # (광고)[SKT] 강남터미널대리점 본점 갤럭시 S25 사전예약 안내__고객님, 안녕하세요. _새로운 시작, 설레이는 1월! SK텔레콤 강남터미널 대리점이 고객님의 특별한 새해를 응원합니다._곧 출시하는 삼성의 최신 플래그십 스마트폰 갤럭시 S25 사전예약 혜택 받아 가세요.__■ 새 학기 맞이 키즈폰 특별 행사_- 월정액 요금 및 기기 할인 최대 설계_- 12개월 약정__■ 갤럭시 S25 사전예약 중!_- 개통일 : 2월4일_- 더블 스토리지, 워치7 등 푸짐한 사은 혜택은 아래 매장 연락처로 문의주세요._- 예약 선물도 챙기시고, 좋은 조건으로 구매 상담도 받아 보세요.__■ 갤럭시 S24 마지막 찬스_- 요금 및 기기 할인 최대 설계_- 워치7 무료 증정 (※프라임 요금제 사용 기준)__■ 인터넷+TV결합 혜택_- 60만 원 상당의 최대 사은품 증정_- 월 최저 요금 설계__■ 강남터미널대리점 본점_- 주소 : 서울시 서초구 신반포로 176, 1층 130호 (신세계백화점 옆, 센트럴시티내 호남선 하차장 아웃백 아래 1층)_- 연락처 : 02-6282-1011_▶ 매장 홈페이지/예약/상담 : http://t-mms.kr/t.do?m=#61&s=30251&a=&u=http://tworldfriends.co.kr/D145410000__■ 문의: SKT 고객센터(1558, 무료)_SKT와 함께 해주셔서 감사합니다.__무료 수신거부 1504
-    #             """
-
                 for pattern, replacement in line_break_patterns.items():
                     msg = msg.replace(pattern, replacement)
 
                 prompt = f"""
-## 작업
-통신사 광고 메시지에서 개체명과 기대 행동을 추출하고 DAG 형식으로 출력하세요.
+## 작업 목표
+통신사 광고 메시지에서 **핵심 행동 흐름**을 추출하여 간결한 DAG 형식으로 표현
+
+## 핵심 원칙
+1. **최소 경로 원칙**: 동일한 결과를 얻는 가장 짧은 경로만 표현
+2. **핵심 흐름 우선**: 부가적 설명보다 주요 행동 연쇄에 집중
+3. **중복 제거**: 의미가 겹치는 노드는 하나로 통합
 
 ## 출력 형식
-- **독립 노드**: `(개체명:기대행동)`
-- **관계 노드**: `(개체명:기대행동) -[관계동사]-> (개체명:기대행동)`
-
-## 개체명 유형 및 예시
-### 📱 제품/단말기
-- 스마트폰: 갤럭시S24, 아이폰15, 갤럭시폴더블6, 갤럭시워치, 갤럭시버즈
-- 기타 기기: ZEM꾸러미폰, 키즈폰, 실버폰, 태블릿
-
-### 📞 서비스/요금제
-- 요금제: 5G요금제, 프라임요금제, T플랜, ZEM요금제
-- 통신서비스: 인터넷, IPTV, ADT캡스, 우주패스, 에이닷
-- 부가서비스: V컬러링, 콜키퍼, 통화가능통보플러스
-
-### 🎁 혜택/할인
-- 할인: 50%할인, 10만원할인, 요금할인, 기기값할인
-- 혜택: 사은품, 쿠폰, 포인트적립, 무료체험
-- 구체적 혜택: 갤럭시워치증정, 에어팟증정, 충전기세트
-
-### 🏢 장소/매장
-- 온라인: T다이렉트샵, 온라인몰, 홈페이지, 앱
-- 오프라인: SKT대리점, T월드매장, 구체적매장명(예: 강남점)
-
-### 🎉 이벤트/프로모션
-- 기간 이벤트: 봄맞이행사, 신규가입이벤트, 사전예약이벤트
-- 멤버십: T멤버십, 단골등록, 친구추가
-
-### 주의 사항
-- 광고 타겟 (대상자)은 개체명으로 추출하지 마세요.
-- 일정/기간은 개체명으로 추출하지 마세요.
-
-## 기대 행동 (표준화된 10개 동사)
-**[구매, 가입, 사용, 방문, 참여, 등록, 다운로드, 확인, 수령, 적립]**
-
-## 관계 동사 가이드라인
-
-### 🔥 조건부 관계 (최우선 사용)
-**조건 충족 시 혜택 제공을 명확히 표현**
-- `가입하면`, `구매하면`, `방문하면`, `신청하면`, `등록하면`
-- `가입시`, `구매시`, `등록시`, `사용시`, `방문시`
-- `가입후`, `구매후`, `완료후`, `설치후`
-
-### 💎 혜택 제공 관계
-**혜택/보상 수령을 표현**
-- `증정받다`, `할인받다`, `제공받다`, `지원받다`
-- `수령하다`, `적립하다`, `받다`
-
-### 🔗 연결/경로 관계
-**서비스 간 연결이나 경로를 표현**
-- `통해`, `통하여`, `이용하여`, `활용하여`
-- `함께`, `결합하여`, `연결하여`, `동시가입`
-
-### ⚡ 행동 유도 관계
-**특정 행동을 유도하는 관계**
-- `참여하여`, `체험하여`, `신청하여`
-- `문의하여`, `확인하여`, `안내받아`
-
-### 📱 플랫폼/채널 관계
-**특정 플랫폼이나 채널을 통한 접근**
-- `접속하여`, `다운로드하여`, `설치하여`
-- `로그인하여`, `인증하여`
-
-## 고급 추출 규칙
-
-### ✅ 반드시 포함해야 할 요소
-1. **Root Node**: 사용자가 시작할 수 있는 행동 (방문, 가입, 다운로드 등)
-2. **조건부 혜택**: "~하면 ~받을 수 있다" 구조
-3. **연쇄 혜택**: A → B → C 형태의 다단계 혜택
-4. **선택적 옵션**: 여러 옵션 중 택1 상황
-
-### ❌ 제외해야 할 요소
-1. 일반적인 정보성 멘트 ("안녕하세요", "감사합니다")
-2. 연락처, 주소 등 메타정보
-3. 법적 고지사항 ("수신거부", "유의사항")
-4. 중복되는 유사한 혜택
-
-### 🎯 개체명 정규화 규칙
-1. **구체적 명칭 사용**: "스마트폰" → "갤럭시S24"
-2. **일관된 표기**: "갤럭시 S24" → "갤럭시S24" (띄어쓰기 제거)
-3. **의미 단위 유지**: "5만원할인쿠폰" (분리하지 않음)
-4. **브랜드명 포함**: "삼성케어플러스", "T멤버십"
-
-### 🔄 관계 방향성 원칙
-1. **시간 순서**: 먼저 일어나는 행동 → 나중 행동
-2. **조건과 결과**: 조건 행동 → 결과 혜택
-3. **의존성**: 전제 조건 → 수행 가능한 행동
-
-## 출력 예시
-
-### 단순한 조건부 혜택
 ```
-(갤럭시S24:구매) -[구매시]-> (50%할인:수령)
-(T멤버십:가입) -[가입하면]-> (매월할인:수령)
+(개체명:기대행동) -[관계동사]-> (개체명:기대행동)
 ```
 
-### 복합적 연쇄 관계
+## 개체명 카테고리
+### 필수 추출 대상
+- **제품/서비스**: 구체적 제품명, 서비스명, 요금제명
+- **핵심 혜택**: 금전적 혜택, 사은품, 할인
+- **행동 장소**: 온/오프라인 채널 (필요시만)
+
+### 추출 제외 대상
+- 광고 대상자 (예: "아이폰 고객님")
+- 일정/기간 정보
+- 부가 설명 기능 (핵심 흐름과 무관한 경우)
+- 법적 고지사항
+
+## 기대 행동 (10개 표준 동사)
+`구매, 가입, 사용, 방문, 참여, 등록, 다운로드, 확인, 수령, 적립`
+
+## 관계 동사 우선순위
+
+### 1순위: 조건부 관계
+- `가입하면`, `구매하면`, `사용하면`
+- `가입후`, `구매후`, `사용후`
+
+### 2순위: 결과 관계
+- `받다`, `수령하다`, `적립하다`
+
+### 3순위: 경로 관계 (필요시만)
+- `통해`, `이용하여`
+
+## DAG 구성 전략
+
+### Step 1: 모든 가치 제안 식별
+광고에서 제시하는 **모든 독립적 가치**를 파악
+- **즉각적 혜택**: 금전적 보상, 사은품 등
+- **서비스 가치**: 제품/서비스 자체의 기능과 혜택
+예: "네이버페이 5000원" + "AI 통화 기능 무료 이용"
+
+### Step 2: 독립 경로 구성
+각 가치 제안별로 별도 경로 생성:
+1. **혜택 획득 경로**: 가입 → 사용 → 보상
+2. **서비스 체험 경로**: 가입 → 경험 → 기능 활용
+
+### Step 3: 세부 기능 표현
+주요 기능들이 명시된 경우 분기 구조로 표현:
+- 통합 가능한 기능은 하나로 (예: AI통화녹음/요약)
+- 독립적 기능은 별도로 (예: AI스팸필터링)
+
+## 체크리스트
+□ **Root Node가 명확히 식별되었는가?** (방문/접속/다운로드 등)
+□ 모든 독립적 가치 제안이 포함되었는가?
+□ 즉각적 혜택과 서비스 가치가 모두 표현되었는가?
+□ 주요 기능들이 적절히 그룹화되었는가?
+□ 각 경로가 명확한 가치를 전달하는가?
+□ 전체 구조가 이해하기 쉬운가?
+
+## 예시 분석
+
+### 잘못된 예시 (핵심 흐름만 추출)
 ```
-(SKT대리점:방문) -[방문하여]-> (상담:확인)
-(상담:확인) -[완료후]-> (갤럭시S24:구매)
-(갤럭시S24:구매) -[구매시]-> (갤럭시워치:수령)
+(에이닷:가입) -[가입후]-> (AI전화서비스:사용)
+(AI전화서비스:사용) -[사용하면]-> (네이버페이5000원:수령)
+```
+→ 문제: 서비스 자체의 가치(AI 기능들)가 누락됨
+
+### 올바른 예시 (완전한 가치 표현 - Root Node 포함)
+```
+# 매장 방문부터 시작하는 경로
+(제이스대리점:방문) -[방문하여]-> (갤럭시S21:구매)
+(갤럭시S21:구매) -[구매시]-> (5GX프라임요금제:가입)
+(5GX프라임요금제:가입) -[가입하면]-> (지원금45만원+15%:수령)
+
+# 온라인 시작 경로 예시
+(T다이렉트샵:접속) -[접속하여]-> (갤럭시S24:구매)
+(갤럭시S24:구매) -[구매시]-> (사은품:수령)
+```
+→ 장점: 사용자의 첫 행동(Root Node)부터 명확히 표현
+
+## 분석 프로세스 (필수 단계)
+
+### Step 1: 메시지 이해
+- 전체 메시지를 한 문단으로 요약
+- 광고주의 의도 파악
+- **암시된 행동 식별**: 명시되지 않았지만 필수적인 행동 (예: 매장 방문)
+
+### Step 2: 가치 제안 식별
+- 즉각적 혜택 (금전, 사은품 등)
+- 서비스 가치 (기능, 편의성 등)
+- 부가 혜택 (있다면)
+
+### Step 3: Root Node 결정
+- **사용자의 첫 번째 행동은 무엇인가?**
+- 매장 주소/연락처가 있다면 → 방문이 시작점
+- 온라인 링크가 있다면 → 접속이 시작점
+- 앱 관련 내용이라면 → 다운로드가 시작점
+
+### Step 4: 관계 분석
+- Root Node부터 시작하는 전체 흐름
+- 각 행동 간 인과관계 검증
+- 조건부 관계 명확화
+- 시간적 순서 확인
+
+### Step 5: DAG 구성
+- 위 분석을 바탕으로 노드와 엣지 결정
+- 중복 제거 및 통합
+
+### Step 6: 자기 검증
+- Root Node가 명확한가?
+- 누락된 핵심 요소 확인
+- 논리적 일관성 점검
+
+## 출력 형식 (반드시 모든 섹션 포함)
+
+### 1. 메시지 분석
+```
+[메시지 요약 및 핵심 의도]
+[식별된 가치 제안 목록]
 ```
 
-### 다중 선택 관계
+### 2. 추출된 DAG
 ```
-(우주패스:가입) -[가입시]-> (Netflix:사용)
-(우주패스:가입) -[가입시]-> (Wavve:사용)
-(우주패스:가입) -[가입시]-> (YouTube Premium:사용)
+[완전한 DAG 구조]
 ```
 
-### 플랫폼 연계
+### 3. 추출 근거
 ```
-(T월드앱:다운로드) -[다운로드하여]-> (쿠폰:수령)
-(쿠폰:수령) -[사용하여]-> (30%할인:수령)
+[각 경로가 필요한 이유]
+[노드/엣지 선택의 논리적 근거]
 ```
 
-## 분석 시 체크리스트
-■ Root Node 식별: 사용자가 시작할 수 있는 행동이 있는가?
-■ 조건부 관계: "~하면", "~시" 구조가 명확한가?
-■ 혜택 연쇄: 여러 단계의 혜택이 연결되어 있는가?
-■ 개체명 구체성: 모호한 표현 대신 구체적 명칭을 사용했는가?
-■ 관계 방향성: 시간순서와 의존성이 올바른가?
-■ 중복 제거: 같은 의미의 노드가 중복되지 않았는가?
+## 실행 지침
+1. 위 5단계 분석 프로세스를 **순서대로** 수행
+2. 각 단계에서 발견한 내용을 **명시적으로** 기록
+3. DAG 추출 전 **충분한 분석** 수행
+4. 최종 출력에 **모든 섹션** 포함
 
-**메시지를 분석하여 위 형식으로 DAG만을 출력하세요. mermaid 형식을 사용하지 마세요.**
-
+**중요: 분석 과정을 생략하지 말고, 사고 과정을 투명하게 보여주세요.**
 ## message:
 {msg}
 """
@@ -378,8 +683,49 @@ def extract_dag(num_msgs=50, llm_model_nm='ax'):
                 print(dag_raw)
                 f.write(dag_raw + "\n")
 
-                nodes, edges = parse_block(re.sub(r'^```|```$', '', dag_raw.strip()))
-                dag = build_dag(nodes, edges)
+                # 파서 선택 및 처리
+                if use_enhanced_parser and parser:
+                    try:
+                        # 개선된 파서 사용
+                        dag_section = parser.extract_dag_section(dag_raw)
+                        dag = parser.parse_dag(dag_section)
+                        
+                        # 분석 정보 출력
+                        analysis = parser.analyze_graph(dag)
+                        analysis_header = "==="*15+" Enhanced Analysis "+"==="*15
+                        print(analysis_header)
+                        f.write(analysis_header + "\n")
+                        
+                        analysis_info = f"""그래프 분석:
+- 노드 수: {analysis['num_nodes']}
+- 엣지 수: {analysis['num_edges']}  
+- Root 노드: {analysis['root_nodes']}
+- Leaf 노드: {analysis['leaf_nodes']}
+- DAG 여부: {analysis['is_dag']}
+- 최장 경로 길이: {analysis['longest_path_length']}"""
+                        print(analysis_info)
+                        f.write(analysis_info + "\n")
+                        
+                        # 파싱 에러가 있다면 출력
+                        if dag.graph['stats'].get('parse_errors'):
+                            error_info = "\n파싱 에러:"
+                            print(error_info)
+                            f.write(error_info + "\n")
+                            for error in dag.graph['stats']['parse_errors'][:3]:  # 처음 3개만
+                                error_line = f"  ✗ {error}"
+                                print(error_line)
+                                f.write(error_line + "\n")
+                                
+                    except Exception as e:
+                        print(f"Enhanced parser 실패, 기본 파서로 전환: {e}")
+                        f.write(f"Enhanced parser 실패, 기본 파서로 전환: {e}\n")
+                        # 기본 파서로 폴백
+                        nodes, edges = parse_block(re.sub(r'^```|```$', '', dag_raw.strip()))
+                        dag = build_dag(nodes, edges)
+                else:
+                    # 기본 파서 사용
+                    nodes, edges = parse_block(re.sub(r'^```|```$', '', dag_raw.strip()))
+                    dag = build_dag(nodes, edges)
 
                 # Root Nodes 출력
                 root_header = "==="*15+" Root Nodes "+"==="*15
@@ -431,8 +777,9 @@ def extract_dag(num_msgs=50, llm_model_nm='ax'):
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description='DAG 추출기')
-    parser.add_argument('--num_msgs', type=int, default=50, help='추출할 메시지 수')
-    parser.add_argument('--llm_model', type=str, default='ax', help='사용할 LLM 모델')
-    args = parser.parse_args()
-    extract_dag(num_msgs=args.num_msgs, llm_model_nm=args.llm_model)
+    parser_arg = argparse.ArgumentParser(description='DAG 추출기')
+    parser_arg.add_argument('--num_msgs', type=int, default=50, help='추출할 메시지 수')
+    parser_arg.add_argument('--llm_model', type=str, default='ax', help='사용할 LLM 모델')
+    parser_arg.add_argument('--use_enhanced_parser', action='store_true', default=True, help='개선된 파서 사용')
+    args = parser_arg.parse_args()
+    extract_dag(num_msgs=args.num_msgs, llm_model_nm=args.llm_model, use_enhanced_parser=args.use_enhanced_parser)
