@@ -1941,7 +1941,7 @@ Return a JSON object with actual data, not schema definitions!
                         product_df = extra_item_pdf.rename(columns={'item_nm': 'name'}).query(
                             "not name in @self.stop_item_names"
                         )[['name']]
-                        product_df['action'] = '고객에게 기대하는 행동: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타] 중에서 선택'
+                        product_df['action'] = '기타'
                         product_element = product_df.to_dict(orient='records') if product_df.shape[0] > 0 else None
                         logger.info(f"NLP 모드: 제품 요소 준비 완료 - {len(product_element) if product_element else 0}개")
                         if product_element:
@@ -2071,12 +2071,13 @@ Return a JSON object with actual data, not schema definitions!
 
             # 상품 정보 매핑
             if not similarities_fuzzy.empty:
-                final_result['product'] = self._map_products_with_similarity(similarities_fuzzy)
+                final_result['product'] = self._map_products_with_similarity(similarities_fuzzy, json_objects)
             else:
                 # 유사도 결과가 없으면 LLM 결과 그대로 사용
                 final_result['product'] = [
                     {
                         'item_name_in_msg': d.get('name', ''), 
+                        'expected_action': d.get('action', '기타'),
                         'item_in_voca': [{'item_name_in_voca': d.get('name', ''), 'item_id': ['#']}]
                     } 
                     for d in product_items 
@@ -2095,7 +2096,7 @@ Return a JSON object with actual data, not schema definitions!
             logger.error(f"최종 결과 구성 실패: {e}")
             return json_objects
 
-    def _map_products_with_similarity(self, similarities_fuzzy: pd.DataFrame) -> List[Dict]:
+    def _map_products_with_similarity(self, similarities_fuzzy: pd.DataFrame, json_objects: Dict = None) -> List[Dict]:
         """유사도를 기반으로 상품 정보 매핑"""
         try:
             # 높은 유사도 아이템들 필터링
@@ -2111,11 +2112,52 @@ Return a JSON object with actual data, not schema definitions!
                 self.item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
             )
             
+            # Add action information from original json_objects
+            if json_objects:
+                action_mapping = self._create_action_mapping(json_objects)
+                for product in product_tag:
+                    item_name = product.get('item_name_in_msg', '')
+                    product['expected_action'] = action_mapping.get(item_name, '기타')
+            
             return product_tag
             
         except Exception as e:
             logger.error(f"상품 정보 매핑 실패: {e}")
             return []
+
+    def _create_action_mapping(self, json_objects: Dict) -> Dict[str, str]:
+        """LLM 응답에서 상품명-액션 매핑 생성"""
+        try:
+            action_mapping = {}
+            product_data = json_objects.get('product', [])
+            
+            if isinstance(product_data, list):
+                # 정상적인 배열 구조
+                for item in product_data:
+                    if isinstance(item, dict) and 'name' in item and 'action' in item:
+                        action_mapping[item['name']] = item['action']
+            elif isinstance(product_data, dict):
+                # 스키마 구조 또는 기타 딕셔너리 구조 처리
+                if 'items' in product_data:
+                    # 스키마 구조: {"items": [...]}
+                    items = product_data.get('items', [])
+                    for item in items:
+                        if isinstance(item, dict) and 'name' in item and 'action' in item:
+                            action_mapping[item['name']] = item['action']
+                elif 'type' in product_data and product_data.get('type') == 'array':
+                    # 스키마 정의 구조는 건너뛰기
+                    logger.debug("스키마 정의 구조 감지됨, 액션 매핑 건너뛰기")
+                else:
+                    # 기타 딕셔너리 구조 처리
+                    if 'name' in product_data and 'action' in product_data:
+                        action_mapping[product_data['name']] = product_data['action']
+            
+            logger.debug(f"생성된 액션 매핑: {action_mapping}")
+            return action_mapping
+            
+        except Exception as e:
+            logger.error(f"액션 매핑 생성 실패: {e}")
+            return {}
 
     def _map_program_classification(self, json_objects: Dict, pgm_info: Dict) -> List[Dict]:
         """프로그램 분류 정보 매핑"""
