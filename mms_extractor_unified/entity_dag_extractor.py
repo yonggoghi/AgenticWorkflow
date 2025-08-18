@@ -181,20 +181,32 @@ class DAGParser:
         # 개선된 정규표현식 패턴 - 관계 부분에 쉼표와 공백 허용
         # 관계 부분([...])에 모든 문자 허용 (]를 제외하고)
         self.edge_pattern = r'\(([^:)]+):([^)]+)\)\s*-\[([^\]]+)\]->\s*\(([^:)]+):([^)]+)\)'
+        # 독립형 노드 패턴 추가
+        self.standalone_node_pattern = r'\(([^:)]+):([^)]+)\)\s*$'
         # 섹션 패턴 수정: ## 또는 ###로 시작하는 2. 추출된 DAG 섹션
         self.section_pattern = r'#{2,3}\s*2\.\s*추출된\s*DAG'
         
-    def parse_dag_line(self, line: str) -> Optional[Tuple[str, str, str, str, str]]:
+    def parse_dag_line(self, line: str) -> Optional[Union[Tuple[str, str, str, str, str], Tuple[str, str]]]:
         """단일 DAG 라인을 파싱하여 구성 요소 반환"""
-        match = re.match(self.edge_pattern, line)
-        if match:
+        # 먼저 엣지 패턴 확인
+        edge_match = re.match(self.edge_pattern, line)
+        if edge_match:
             return (
-                match.group(1).strip(),  # src_entity
-                match.group(2).strip(),  # src_action
-                match.group(3).strip(),  # relation (쉼표, 조건 포함 가능)
-                match.group(4).strip(),  # dst_entity
-                match.group(5).strip()   # dst_action
+                edge_match.group(1).strip(),  # src_entity
+                edge_match.group(2).strip(),  # src_action
+                edge_match.group(3).strip(),  # relation (쉼표, 조건 포함 가능)
+                edge_match.group(4).strip(),  # dst_entity
+                edge_match.group(5).strip()   # dst_action
             )
+        
+        # 독립형 노드 패턴 확인
+        standalone_match = re.match(self.standalone_node_pattern, line)
+        if standalone_match:
+            return (
+                standalone_match.group(1).strip(),  # entity
+                standalone_match.group(2).strip()   # action
+            )
+        
         return None
         
     def extract_dag_section(self, full_text: str) -> str:
@@ -203,7 +215,10 @@ class DAGParser:
         
         # 더 유연한 DAG 섹션 찾기
         dag_section_patterns = [
-            r'#{2,3}\s*2\.\s*추출된\s*DAG',
+            r'#{2,3}\s*최종\s*DAG',            # 최종 DAG
+            r'#{2,3}\s*4\.\s*수정된\s*DAG',    # 4. 수정된 DAG 최우선
+            r'#{2,3}\s*수정된\s*DAG',          # 수정된 DAG
+            r'#{2,3}\s*2\.\s*추출된\s*DAG',    # 2. 추출된 DAG (기본)
             r'#{2,3}\s*DAG',
             r'추출된\s*DAG',
             r'2\.\s*추출된\s*DAG'
@@ -245,7 +260,9 @@ class DAGParser:
             # 섹션 헤더가 없는 경우, DAG 패턴을 직접 찾기
             dag_lines = []
             for line in lines:
-                if re.match(self.edge_pattern, line) or line.strip().startswith('#'):
+                if (re.match(self.edge_pattern, line) or 
+                    re.match(self.standalone_node_pattern, line) or 
+                    line.strip().startswith('#')):
                     dag_lines.append(line)
             
             if dag_lines:
@@ -289,33 +306,48 @@ class DAGParser:
                     stats['paths'].append(current_path)
                 continue
             
-            # DAG 엣지 파싱
+            # DAG 엣지 또는 독립형 노드 파싱
             parsed = self.parse_dag_line(line)
             if parsed:
                 try:
-                    src_entity, src_action, relation, dst_entity, dst_action = parsed
-                    
-                    # 노드 ID 생성
-                    src_node = f"{src_entity}:{src_action}"
-                    dst_node = f"{dst_entity}:{dst_action}"
-                    
-                    # 노드 추가 (속성 포함)
-                    G.add_node(src_node, 
-                              entity=src_entity, 
-                              action=src_action,
-                              path=current_path)
-                    G.add_node(dst_node, 
-                              entity=dst_entity, 
-                              action=dst_action,
-                              path=current_path)
-                    
-                    # 엣지 추가 (관계에 쉼표나 조건이 포함될 수 있음)
-                    G.add_edge(src_node, dst_node, 
-                              relation=relation,
-                              path=current_path)
-                    
-                    stats['total_edges'] += 1
-                    stats['parsed_lines'].append(f"Line {line_num}: {src_node} -[{relation}]-> {dst_node}")
+                    if len(parsed) == 5:  # 엣지 (src_entity, src_action, relation, dst_entity, dst_action)
+                        src_entity, src_action, relation, dst_entity, dst_action = parsed
+                        
+                        # 노드 ID 생성
+                        src_node = f"{src_entity}:{src_action}"
+                        dst_node = f"{dst_entity}:{dst_action}"
+                        
+                        # 노드 추가 (속성 포함)
+                        G.add_node(src_node, 
+                                  entity=src_entity, 
+                                  action=src_action,
+                                  path=current_path)
+                        G.add_node(dst_node, 
+                                  entity=dst_entity, 
+                                  action=dst_action,
+                                  path=current_path)
+                        
+                        # 엣지 추가 (관계에 쉼표나 조건이 포함될 수 있음)
+                        G.add_edge(src_node, dst_node, 
+                                  relation=relation,
+                                  path=current_path)
+                        
+                        stats['total_edges'] += 1
+                        stats['parsed_lines'].append(f"Line {line_num}: {src_node} -[{relation}]-> {dst_node}")
+                        
+                    elif len(parsed) == 2:  # 독립형 노드 (entity, action)
+                        entity, action = parsed
+                        
+                        # 노드 ID 생성
+                        node_id = f"{entity}:{action}"
+                        
+                        # 독립형 노드 추가
+                        G.add_node(node_id, 
+                                  entity=entity, 
+                                  action=action,
+                                  path=current_path)
+                        
+                        stats['parsed_lines'].append(f"Line {line_num}: Standalone node {node_id}")
                     
                 except Exception as e:
                     stats['parse_errors'].append(f"Line {line_num}: {str(e)}")
@@ -426,7 +458,7 @@ class DAGParser:
 ###############################################################################
 # 6) 개선된 DAG 추출 함수
 ###############################################################################
-def extract_dag_enhanced(parser, sample_text, i=3):
+def extract_dag(parser, sample_text, i=3):
     """개선된 DAG 추출 함수"""
     try:
         # DAG 섹션 추출
@@ -481,7 +513,7 @@ def extract_dag_enhanced(parser, sample_text, i=3):
 ###############################################################################
 # 7) 메인 추출 함수 (기존 인터페이스 유지 + 개선 기능 추가)
 ###############################################################################
-def extract_dag(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
+def dag_finder(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
 
     if llm_model_nm == 'ax':
         llm_model = llm_ax
@@ -528,6 +560,8 @@ def extract_dag(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
 ## 출력 형식
 ```
 (개체명:기대행동) -[관계동사]-> (개체명:기대행동)
+또는
+(개체명:기대행동)
 ```
 
 ## 개체명 카테고리
@@ -699,6 +733,46 @@ def extract_dag(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
                         dag_section = parser.extract_dag_section(dag_raw)
                         dag = parser.parse_dag(dag_section)
                         
+                        # 디버깅을 위해 dag_section 내용 확인
+                        print("=== DAG Section Debug ===")
+                        print(f"DAG Section Length: {len(dag_section)}")
+                        print("DAG Section Content:")
+                        print(dag_section)
+                        print("=" * 50)
+
+                        # 라인별로 확인
+                        lines = dag_section.strip().split('\n')
+                        print(f"Total lines: {len(lines)}")
+                        for i, line in enumerate(lines, 1):
+                            line = line.strip()
+                            if line:
+                                print(f"Line {i}: '{line}'")
+                        print("=" * 50)
+
+                        # 파싱 과정 디버깅
+                        dag = parser.parse_dag(dag_section)
+
+                        # 파싱 결과 확인
+                        print("=== Parse Results ===")
+                        print(f"Nodes: {dag.number_of_nodes()}")
+                        print(f"Edges: {dag.number_of_edges()}")
+
+                        # 파싱 통계 확인
+                        if dag.graph.get('stats'):
+                            stats = dag.graph['stats']
+                            print(f"Parsed lines: {len(stats['parsed_lines'])}")
+                            print(f"Parse errors: {len(stats['parse_errors'])}")
+                            
+                            if stats['parse_errors']:
+                                print("Parse Errors:")
+                                for error in stats['parse_errors']:
+                                    print(f"  - {error}")
+                                    
+                            if stats['parsed_lines']:
+                                print("Successfully parsed lines:")
+                                for parsed in stats['parsed_lines']:
+                                    print(f"  + {parsed}")
+                        
                         # 분석 정보 출력
                         analysis = parser.analyze_graph(dag)
                         analysis_header = "==="*15+" Enhanced Analysis "+"==="*15
@@ -791,4 +865,4 @@ if __name__ == "__main__":
     parser_arg.add_argument('--llm_model', type=str, default='ax', help='사용할 LLM 모델')
     parser_arg.add_argument('--use_enhanced_parser', action='store_true', default=True, help='개선된 파서 사용')
     args = parser_arg.parse_args()
-    extract_dag(num_msgs=args.num_msgs, llm_model_nm=args.llm_model, use_enhanced_parser=args.use_enhanced_parser)
+    dag_finder(num_msgs=args.num_msgs, llm_model_nm=args.llm_model, use_enhanced_parser=args.use_enhanced_parser)
