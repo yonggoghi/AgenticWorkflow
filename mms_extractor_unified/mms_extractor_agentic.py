@@ -1858,6 +1858,20 @@ if similarities_fuzzy.shape[0]>0:
     product_tag = convert_df_to_json_list(
         item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
     )
+    
+    # Add action information from original json_objects
+    # Create a mapping from item_name_in_msg to action
+    action_mapping = {}
+    product_data = json_objects.get('product', [])
+    if isinstance(product_data, list):
+        for item in product_data:
+            if isinstance(item, dict) and 'name' in item and 'action' in item:
+                action_mapping[item['name']] = item['action']
+    
+    # Add action to product_tag
+    for product in product_tag:
+        item_name = product.get('item_name_in_msg', '')
+        product['expected_action'] = action_mapping.get(item_name, '기타')
 
     final_result = {
         "title":json_objects['title'],
@@ -1870,8 +1884,8 @@ if similarities_fuzzy.shape[0]>0:
 else:
     final_result = json_objects.copy()
     product_tag = [item for item in json_objects['product']['items']] if isinstance(json_objects['product'], dict) else json_objects['product']
-    final_result['product'] = [{'item_name_in_msg':d['name'], 'item_in_voca':[{'item_name_in_voca':d['name'], 'item_id': ['#']}]} for d in product_tag if d['name'] not in stop_item_names]
-
+    final_result['product'] = [{'item_name_in_msg':d['name'], 'expected_action':d['action'], 'item_in_voca':[{'item_name_in_voca':d['name'], 'item_id': ['#']}]} for d in product_tag if d['name'] not in stop_item_names]
+    
 if num_cand_pgms>0:
     pgm_json = pgm_pdf[pgm_pdf['pgm_nm'].apply(lambda x: re.sub(r'\[.*?\]', '', x) in ' '.join(json_objects['pgm']))][['pgm_nm','pgm_id']].to_dict('records')
     final_result['pgm'] = pgm_json
