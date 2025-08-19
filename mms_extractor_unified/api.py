@@ -126,14 +126,15 @@ def initialize_global_extractor(offer_info_data_src='local'):
             offer_info_data_src=offer_info_data_src, # 상품 정보 소스
             llm_model='ax',                       # 기본 LLM (요청별 변경 가능)
             product_info_extraction_mode='nlp',     # 기본 상품 추출 모드
-            entity_extraction_mode='logic'          # 기본 엔티티 매칭 모드
+            entity_extraction_mode='logic',          # 기본 엔티티 매칭 모드
+            extract_entity_dag=False
         )
         
         logger.info("전역 추출기 초기화 완료")
     
     return global_extractor
 
-def get_configured_extractor(llm_model='ax', product_info_extraction_mode='nlp', entity_matching_mode='logic'):
+def get_configured_extractor(llm_model='ax', product_info_extraction_mode='nlp', entity_matching_mode='logic', extract_entity_dag=False):
     """
     런타임 설정으로 전역 추출기 구성
     
@@ -162,7 +163,7 @@ def get_configured_extractor(llm_model='ax', product_info_extraction_mode='nlp',
     global_extractor.llm_model_name = llm_model
     global_extractor.product_info_extraction_mode = product_info_extraction_mode
     global_extractor.entity_extraction_mode = entity_matching_mode
-    
+    global_extractor.extract_entity_dag = extract_entity_dag
     # LLM 모델이 실제로 변경된 경우에만 재초기화
     if llm_model_changed:
         logger.info(f"LLM 모델이 {current_llm_model} -> {llm_model}로 변경됨. 재초기화 중...")
@@ -241,6 +242,7 @@ def extract_message():
         - offer_info_data_src (optional): 데이터 소스 (기본값: CLI 설정값)
         - product_info_extraction_mode (optional): 상품 추출 모드 (기본값: 'nlp')
         - entity_matching_mode (optional): 엔티티 매칭 모드 (기본값: 'logic')
+        - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: False)
     
     Returns:
         JSON: 추출 결과
@@ -278,6 +280,7 @@ def extract_message():
         llm_model = data.get('llm_model', settings.ModelConfig.llm_model)
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
+        extract_entity_dag = data.get('extract_entity_dag', False)
         
         # 파라미터 유효성 검증
         valid_sources = ['local', 'db']
@@ -296,9 +299,11 @@ def extract_message():
         if entity_matching_mode not in valid_entity_modes:
             return jsonify({"error": f"잘못된 entity_matching_mode입니다. 사용 가능: {valid_entity_modes}"}), 400
         
+        # extract_entity_dag 기능은 정상적으로 지원됨
+        
         # 구성된 추출기로 메시지 처리
         start_time = time.time()
-        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode)
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, extract_entity_dag)
         
         logger.info(f"데이터 소스로 메시지 처리 중: {offer_info_data_src}")
         result = extractor.process_message(message)
@@ -557,6 +562,7 @@ def main():
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
+    parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
     
     args = parser.parse_args()
     
@@ -582,7 +588,7 @@ def main():
         
         try:
             logger.info(f"추출기 설정: llm_model={args.llm_model}, product_mode={args.product_info_extraction_mode}, entity_mode={args.entity_matching_mode}")
-            extractor = get_configured_extractor(args.llm_model, args.product_info_extraction_mode, args.entity_matching_mode)
+            extractor = get_configured_extractor(args.llm_model, args.product_info_extraction_mode, args.entity_matching_mode, args.extract_entity_dag)
             
             if not message.strip():
                 logger.info("텍스트가 제공되지 않아 샘플 메시지를 사용합니다...")
