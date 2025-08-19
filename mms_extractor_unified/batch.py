@@ -347,7 +347,8 @@ def main():
                        help='Entity extraction mode (default: llm)')
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='LLM model to use (default: ax)')
-    
+    parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
+
     args = parser.parse_args()
     
     # Prepare extractor arguments
@@ -355,7 +356,8 @@ def main():
         'offer_info_data_src': args.offer_data_source,
         'product_info_extraction_mode': args.product_info_extraction_mode,
         'entity_extraction_mode': args.entity_extraction_mode,
-        'llm_model': args.llm_model
+        'llm_model': args.llm_model,
+        'extract_entity_dag': args.extract_entity_dag
     }
     
     logger.info("="*50)

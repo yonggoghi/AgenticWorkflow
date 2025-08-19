@@ -44,6 +44,7 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from rapidfuzz import fuzz, process
 from kiwipiepy import Kiwi
 from joblib import Parallel, delayed
+from entity_dag_extractor import DAGParser, extract_dag, create_dag_diagram, sha256_hash
 
 # 설정 및 의존성 임포트 (원본 코드에서 가져옴)
 try:
@@ -567,14 +568,14 @@ class MMSExtractor:
     """
     
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, 
-                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='gemma'):
+                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='gemma', extract_entity_dag=False):
         """MMSExtractor 초기화"""
         logger.info("MMSExtractor 초기화 시작")
         
         try:
             # 기본 설정 적용
             self._set_default_config(model_path, data_dir, product_info_extraction_mode, 
-                                   entity_extraction_mode, offer_info_data_src, llm_model)
+                                   entity_extraction_mode, offer_info_data_src, llm_model, extract_entity_dag)
             
             # 환경변수 로드
             load_dotenv()
@@ -594,7 +595,7 @@ class MMSExtractor:
             raise
 
     def _set_default_config(self, model_path, data_dir, product_info_extraction_mode, 
-                          entity_extraction_mode, offer_info_data_src, llm_model):
+                          entity_extraction_mode, offer_info_data_src, llm_model, extract_entity_dag):
         """기본 설정값 적용"""
         self.data_dir = data_dir if data_dir is not None else './data/'
         self.model_path = model_path if model_path is not None else getattr(EMBEDDING_CONFIG, 'ko_sbert_model_path', 'jhgan/ko-sroberta-multitask')
@@ -603,6 +604,7 @@ class MMSExtractor:
         self.entity_extraction_mode = entity_extraction_mode if entity_extraction_mode is not None else getattr(PROCESSING_CONFIG, 'entity_extraction_mode', 'llm')
         self.llm_model_name = llm_model
         self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 5)
+        self.extract_entity_dag = extract_entity_dag
 
     @log_performance
     def _initialize_device(self):
@@ -1993,6 +1995,17 @@ Return a JSON object with actual data, not schema definitions!
             # 8단계: 결과 검증
             logger.info("=" * 30 + " 8단계: 결과 검증 " + "=" * 30)
             final_result = self._validate_extraction_result(final_result)
+
+            dag_section = ""
+            if self.extract_entity_dag:
+                extract_dag_result = extract_dag(DAGParser(), msg, self.llm_model)
+                dag_raw = extract_dag_result['dag_raw']
+                dag_section = extract_dag_result['dag_section']
+                dag = extract_dag_result['dag']
+                create_dag_diagram(dag, filename=f'dag_{sha256_hash(msg)}')
+                print(f"DAG 추출 완료: dag_{sha256_hash(msg)}")
+
+            final_result['entity_dag'] = dag_section
             
             # 최종 결과 요약 로깅
             logger.info("=" * 60)
@@ -2201,7 +2214,8 @@ def main():
                        help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
-    
+    parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
+
     args = parser.parse_args()
     
     # 로그 레벨 설정
@@ -2214,7 +2228,8 @@ def main():
             offer_info_data_src=args.offer_data_source,
             product_info_extraction_mode=args.product_info_extraction_mode,
             entity_extraction_mode=args.entity_matching_mode,
-            llm_model=args.llm_model
+            llm_model=args.llm_model,
+            extract_entity_dag=args.extract_entity_dag
         )
         
         # 테스트 메시지 설정
@@ -2240,7 +2255,7 @@ def main():
         # 메시지 처리 및 결과 출력
         logger.info("메시지 처리 시작")
         result = extractor.process_message(test_message)
-        
+            
         print("\n" + "="*50)
         print("🎯 최종 추출된 정보")
         print("="*50)
