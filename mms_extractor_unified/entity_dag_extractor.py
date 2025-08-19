@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 import time
+import logging
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
@@ -8,6 +9,9 @@ import re
 import pandas as pd
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
+
+# 로거 설정
+logger = logging.getLogger(__name__)
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from openai import OpenAI
 from typing import List, Tuple, Union, Dict, Any, Optional, Set
@@ -174,7 +178,20 @@ def get_root_to_leaf_paths(dag):
 # 5) 새로운 개선된 DAGParser 클래스
 ###############################################################################
 class DAGParser:
-    """통신사 광고 메시지에서 추출된 DAG를 NetworkX 그래프로 변환하는 파서"""
+    """
+    DAG 파싱 클래스
+    
+    LLM이 생성한 DAG 텍스트를 NetworkX 그래프 객체로 변환합니다.
+    
+    주요 기능:
+    - LLM 응답에서 DAG 섹션 추출
+    - DAG 텍스트를 NetworkX DiGraph로 파싱
+    - 노드와 엣지 관계 분석
+    
+    지원하는 DAG 형식:
+    - 엣지: (엔티티:행동) -[관계]-> (엔티티:행동)
+    - 독립 노드: (엔티티:행동)
+    """
     
     def __init__(self):
         # 개선된 정규표현식 패턴 - 관계 부분에 쉼표와 공백 허용
@@ -456,7 +473,34 @@ class DAGParser:
 
 
 def extract_dag(parser:DAGParser, msg: str, llm_model):
-
+    """
+    DAG 추출 메인 함수
+    
+    메시지에서 엔티티 간의 관계를 DAG(Directed Acyclic Graph) 형태로 추출합니다.
+    
+    Args:
+        parser (DAGParser): DAG 파싱을 위한 파서 객체
+        msg (str): 분석할 MMS 메시지 텍스트
+        llm_model: 사용할 LLM 모델 (Langchain 호환)
+        
+    Returns:
+        dict: {
+            'dag_section': str,     # 파싱된 DAG 텍스트 표현
+            'dag': nx.DiGraph,      # NetworkX 그래프 객체  
+            'dag_raw': str          # LLM 원본 응답
+        }
+        
+    Process:
+        1. LLM을 통해 엔티티 관계 추출
+        2. DAG 섹션 파싱
+        3. NetworkX 그래프 구조 생성
+        4. 결과 반환
+    """
+    
+    logger.info("🚀 DAG 추출 프로세스 시작")
+    logger.info(f"📝 입력 메시지 길이: {len(msg)}자")
+    logger.info(f"🤖 사용 LLM 모델: {llm_model}")
+    
     prompt = f"""
 ## 작업 목표
 통신사 광고 메시지에서 **핵심 행동 흐름**을 추출하여 간결한 DAG(Directed Acyclic Graph) 형식으로 표현
@@ -621,13 +665,45 @@ def extract_dag(parser:DAGParser, msg: str, llm_model):
 {msg}
 """
     
-    dag_raw = llm_model.invoke(prompt).content
+    logger.info("🤖 LLM에 DAG 추출 요청 중...")
+    logger.info(f"📏 프롬프트 길이: {len(prompt)}자")
+    
+    # Step 1: LLM을 통한 엔티티 관계 추출
+    try:
+        dag_raw = llm_model.invoke(prompt).content
+        logger.info(f"📝 LLM 응답 길이: {len(dag_raw)}자")
+        logger.info(f"📄 LLM 응답 미리보기: {dag_raw[:200]}...")
+    except Exception as e:
+        logger.error(f"❌ LLM 호출 중 오류 발생: {e}")
+        raise
 
-    # NetworkX 그래프로 활용
+    # Step 2: DAG 섹션 추출 및 정리
+    # LLM 응답에서 실제 DAG 구조 부분만 추출
+    logger.info("🔍 DAG 섹션 추출 중...")
     dag_section = parser.extract_dag_section(dag_raw)
+    logger.info(f"📄 추출된 DAG 섹션 길이: {len(dag_section)}자")
+    
+    # Step 3: NetworkX 그래프 구조 생성
+    # 텍스트 DAG를 실제 그래프 객체로 변환
+    logger.info("🔗 DAG 파싱 중...")
     dag = parser.parse_dag(dag_section)
+    logger.info(f"📊 파싱된 DAG - 노드 수: {dag.number_of_nodes()}, 엣지 수: {dag.number_of_edges()}")
+    
+    # Step 4: 결과 검증 및 로깅
+    if dag.number_of_nodes() > 0:
+        logger.info(f"🎯 DAG 노드 목록: {list(dag.nodes())}")
+        logger.info(f"🔗 DAG 엣지 목록: {list(dag.edges())}")
+    else:
+        logger.warning("⚠️ DAG에 노드가 없습니다")
 
-    return {'dag_section': dag_section, 'dag': dag, 'dag_raw': dag_raw}
+    logger.info("✅ DAG 추출 프로세스 완료")
+    
+    # 결과 딕셔너리 반환
+    return {
+        'dag_section': dag_section,  # 텍스트 형태의 DAG 표현
+        'dag': dag,                  # NetworkX DiGraph 객체
+        'dag_raw': dag_raw           # LLM 원본 응답 (디버깅용)
+    }
 
     # root_nodes = [node for node in dag.nodes() if dag.in_degree(node) == 0]
     # for root in root_nodes:
