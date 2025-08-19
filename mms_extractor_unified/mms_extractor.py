@@ -605,6 +605,15 @@ class MMSExtractor:
         self.llm_model_name = llm_model
         self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 5)
         self.extract_entity_dag = extract_entity_dag
+        
+        # DAG 추출 설정 로깅
+        # extract_entity_dag: 엔티티 간 관계를 DAG(Directed Acyclic Graph)로 추출
+        # True인 경우 추가적으로 LLM을 사용하여 엔티티 관계를 분석하고
+        # NetworkX + Graphviz를 통해 시각적 다이어그램을 생성
+        if self.extract_entity_dag:
+            logger.info("🎯 DAG 추출 모드 활성화됨")
+        else:
+            logger.info("📋 표준 추출 모드 (DAG 비활성화)")
 
     @log_performance
     def _initialize_device(self):
@@ -1996,15 +2005,38 @@ Return a JSON object with actual data, not schema definitions!
             logger.info("=" * 30 + " 8단계: 결과 검증 " + "=" * 30)
             final_result = self._validate_extraction_result(final_result)
 
+            # DAG 추출 프로세스 (선택적)
+            # 메시지에서 엔티티 간의 관계를 방향성 있는 그래프로 추출
+            # 예: (고객:가입) -[하면]-> (혜택:수령) -[통해]-> (만족도:향상)
             dag_section = ""
             if self.extract_entity_dag:
-                extract_dag_result = extract_dag(DAGParser(), msg, self.llm_model)
-                dag_raw = extract_dag_result['dag_raw']
-                dag_section = extract_dag_result['dag_section']
-                dag = extract_dag_result['dag']
-                create_dag_diagram(dag, filename=f'dag_{sha256_hash(msg)}')
-                print(f"DAG 추출 완료: dag_{sha256_hash(msg)}")
+                logger.info("=" * 30 + " DAG 추출 시작 " + "=" * 30)
+                try:
+                    dag_start_time = time.time()
+                    # DAG 추출 함수 호출 (entity_dag_extractor.py)
+                    extract_dag_result = extract_dag(DAGParser(), msg, self.llm_model)
+                    dag_raw = extract_dag_result['dag_raw']      # LLM 원본 응답
+                    dag_section = extract_dag_result['dag_section']  # 파싱된 DAG 텍스트
+                    dag = extract_dag_result['dag']             # NetworkX 그래프 객체
+                    
+                    # 시각적 다이어그램 생성 (utils.py)
+                    dag_filename = f'dag_{sha256_hash(msg)}'
+                    create_dag_diagram(dag, filename=dag_filename)
+                    dag_processing_time = time.time() - dag_start_time
+                    
+                    logger.info(f"✅ DAG 추출 완료: {dag_filename}")
+                    logger.info(f"🕒 DAG 처리 시간: {dag_processing_time:.3f}초")
+                    logger.info(f"📏 DAG 섹션 길이: {len(dag_section)}자")
+                    if dag_section:
+                        logger.info(f"📄 DAG 내용 미리보기: {dag_section[:200]}...")
+                    else:
+                        logger.warning("⚠️ DAG 섹션이 비어있습니다")
+                        
+                except Exception as e:
+                    logger.error(f"❌ DAG 추출 중 오류 발생: {e}")
+                    dag_section = ""
 
+            # 최종 결과에 DAG 정보 추가 (비어있을 수도 있음)
             final_result['entity_dag'] = dag_section
             
             # 최종 결과 요약 로깅

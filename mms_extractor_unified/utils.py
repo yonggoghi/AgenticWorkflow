@@ -3,36 +3,60 @@ import graphviz
 from graphviz import Digraph
 import textwrap
 import hashlib
+import logging
+
+# 로거 설정
+logger = logging.getLogger(__name__)
 
 def create_dag_diagram(G, filename='dag_diagram', wrap_method='record', **kwargs):
     """
-    Create diagram with automatic text wrapping based on node size
+    DAG 시각화 다이어그램 생성 함수
+    
+    NetworkX 그래프를 Graphviz를 사용하여 시각적 다이어그램으로 변환합니다.
+    생성된 이미지는 ./dag_images/ 디렉토리에 PNG 형태로 저장됩니다.
     
     Parameters:
     -----------
     G : networkx.DiGraph
-        The graph object to visualize
+        시각화할 NetworkX 방향 그래프 객체
     filename : str
-        Base filename (without extension)
+        저장할 파일명 (확장자 제외, 기본값: 'dag_diagram')
     wrap_method : str
-        Text wrapping method: 'html_table', 'record', 'manual_wrap', 'fixedsize_false'
+        텍스트 래핑 방법 ('html_table', 'record', 'manual_wrap', 'fixedsize_false')
     **kwargs : dict
-        Graphviz styling parameters
+        Graphviz 스타일링 파라미터 (색상, 폰트, 레이아웃 등)
+        
+    Returns:
+    --------
+    str or None : 생성된 이미지 파일 경로 (실패 시 None)
+    
+    Features:
+    ---------
+    - 연결된 노드만 표시 (고립된 노드 제외)
+    - 자동 텍스트 래핑으로 가독성 향상
+    - 노드와 엣지의 시각적 구분
+    - PNG 형식으로 고품질 이미지 생성
     """
     
-    # Filter connected nodes
+    logger.info(f"🎨 DAG 다이어그램 생성 시작 - 파일명: {filename}")
+    logger.info(f"📊 입력 그래프 - 노드 수: {G.number_of_nodes()}, 엣지 수: {G.number_of_edges()}")
+    
+    # Step 1: 연결된 노드만 필터링
+    # 고립된 노드(엣지가 없는 노드)는 시각화에서 제외
     connected_nodes = set()
     for edge in G.edges():
-        connected_nodes.add(edge[0])
-        connected_nodes.add(edge[1])
+        connected_nodes.add(edge[0])  # 소스 노드
+        connected_nodes.add(edge[1])  # 타겟 노드
     
     if not connected_nodes:
+        logger.warning("❌ 그래프에서 연결된 경로를 찾을 수 없습니다")
         print("❌ No connected paths found in the graph")
         return None
     
+    # 연결된 노드만으로 서브그래프 생성
     G_connected = G.subgraph(connected_nodes).copy()
     
-    # Default parameters
+    # Step 2: Graphviz 기본 파라미터 설정
     default_params = {
         'engine': 'dot',
         'format': 'png',
@@ -125,9 +149,12 @@ def create_dag_diagram(G, filename='dag_diagram', wrap_method='record', **kwargs
     
     # Render
     try:
+        logger.info("🖼️ DAG 이미지 렌더링 중...")
         output_path = dot.render(filename, directory='./dag_images', cleanup=True)
+        logger.info(f"✅ DAG 다이어그램 생성 완료: {output_path}")
         return output_path
     except Exception as e:
+        logger.error(f"❌ DAG 렌더링 중 오류 발생: {e}")
         print(f"❌ Error rendering: {e}")
         return None
 
@@ -222,5 +249,16 @@ def format_node_label(text, wrap_method):
     return label, node_attrs
 
 def sha256_hash(text):
-    """SHA-256 해시 생성 (안전하고 널리 사용됨)"""
+    """
+    텍스트의 SHA256 해시값 생성
+    
+    DAG 이미지 파일명 생성에 사용되며, 동일한 메시지는 
+    항상 같은 파일명을 가지도록 보장합니다.
+    
+    Args:
+        text (str): 해시할 텍스트 (일반적으로 MMS 메시지)
+        
+    Returns:
+        str: 64자리 16진수 해시값 (안전하고 널리 사용됨)
+    """
     return hashlib.sha256(text.encode('utf-8')).hexdigest()

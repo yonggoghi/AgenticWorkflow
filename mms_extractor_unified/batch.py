@@ -212,6 +212,17 @@ class BatchProcessor:
                 }
                 
                 results.append(result_record)
+                
+                # DAG 추출 결과 검증 및 로깅
+                # DAG가 활성화된 경우 결과에 entity_dag 필드가 포함되어야 함
+                # 동시에 ./dag_images/ 디렉토리에 시각화 이미지도 생성됨
+                if self.extract_entity_dag and 'entity_dag' in result:
+                    dag_length = len(result['entity_dag']) if result['entity_dag'] else 0
+                    if dag_length > 0:
+                        logger.info(f"✅ 메시지 {msg_id} DAG 추출 성공 - 길이: {dag_length}자")
+                    else:
+                        logger.warning(f"⚠️ 메시지 {msg_id} DAG 추출 요청되었으나 결과가 비어있음")
+                
                 logger.info(f"Successfully processed message {msg_id}")
                 
             except Exception as e:
@@ -347,17 +358,19 @@ def main():
                        help='Entity extraction mode (default: llm)')
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='LLM model to use (default: ax)')
-    parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
+    parser.add_argument('--extract-entity-dag', action='store_true', default=False, 
+                       help='엔티티 DAG 추출 활성화 - 메시지에서 엔티티 간 관계를 그래프로 추출하고 시각화 (default: False)')
 
     args = parser.parse_args()
     
-    # Prepare extractor arguments
+    # 추출기 설정 준비
+    # extract_entity_dag: True인 경우 각 메시지마다 DAG 추출 및 이미지 생성 수행
     extractor_kwargs = {
         'offer_info_data_src': args.offer_data_source,
         'product_info_extraction_mode': args.product_info_extraction_mode,
         'entity_extraction_mode': args.entity_extraction_mode,
         'llm_model': args.llm_model,
-        'extract_entity_dag': args.extract_entity_dag
+        'extract_entity_dag': args.extract_entity_dag  # DAG 추출 여부
     }
     
     logger.info("="*50)
@@ -366,6 +379,8 @@ def main():
     logger.info(f"Batch size: {args.batch_size}")
     logger.info(f"Output file: {args.output_file}")
     logger.info(f"Extractor config: {extractor_kwargs}")
+    if args.extract_entity_dag:
+        logger.info("🎯 DAG 추출 모드 활성화됨")
     logger.info("="*50)
     
     # Run batch processing

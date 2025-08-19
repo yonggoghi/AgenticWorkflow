@@ -243,12 +243,15 @@ def extract_message():
         - product_info_extraction_mode (optional): 상품 추출 모드 (기본값: 'nlp')
         - entity_matching_mode (optional): 엔티티 매칭 모드 (기본값: 'logic')
         - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: False)
+                                         True일 경우 메시지에서 엔티티 간 관계를 DAG 형태로 추출하고
+                                         시각적 다이어그램도 함께 생성합니다.
     
     Returns:
         JSON: 추출 결과
             - success: 처리 성공 여부
             - result: 추출된 정보 (title, purpose, product, channel, pgm)
-            - metadata: 처리 메타데이터 (처리 시간, 사용된 설정 등)
+                     extract_entity_dag=True인 경우 entity_dag 필드도 포함
+            - metadata: 처리 메타데이터 (처리 시간, 사용된 설정, DAG 추출 여부 등)
     
     HTTP Status Codes:
         - 200: 성공
@@ -282,6 +285,10 @@ def extract_message():
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', False)
         
+        # DAG 추출 요청 로깅
+        if extract_entity_dag:
+            logger.info(f"🎯 DAG 추출 요청됨 - LLM: {llm_model}, 메시지 길이: {len(message)}자")
+        
         # 파라미터 유효성 검증
         valid_sources = ['local', 'db']
         if offer_info_data_src not in valid_sources:
@@ -299,7 +306,12 @@ def extract_message():
         if entity_matching_mode not in valid_entity_modes:
             return jsonify({"error": f"잘못된 entity_matching_mode입니다. 사용 가능: {valid_entity_modes}"}), 400
         
-        # extract_entity_dag 기능은 정상적으로 지원됨
+        # DAG 추출 기능 활성화
+        # extract_entity_dag=True인 경우:
+        # 1. 메시지에서 엔티티 간 관계를 DAG(Directed Acyclic Graph) 형태로 추출
+        # 2. NetworkX를 사용하여 그래프 구조 생성
+        # 3. Graphviz를 통해 시각적 다이어그램 생성 (./dag_images/ 디렉토리에 저장)
+        # 4. 결과의 entity_dag 필드에 DAG 텍스트 표현 포함
         
         # 구성된 추출기로 메시지 처리
         start_time = time.time()
@@ -309,15 +321,27 @@ def extract_message():
         result = extractor.process_message(message)
         processing_time = time.time() - start_time
         
+        # DAG 추출 결과 검증 및 로깅
+        # entity_dag 필드는 추출된 엔티티 간의 관계를 텍스트로 표현한 것
+        # 예: "(고객:가입) -[하면]-> (혜택:수령)"
+        if extract_entity_dag and 'entity_dag' in result:
+            dag_length = len(result['entity_dag']) if result['entity_dag'] else 0
+            if dag_length > 0:
+                logger.info(f"✅ DAG 추출 성공 - 길이: {dag_length}자")
+                logger.info(f"DAG 내용 미리보기: {result['entity_dag'][:100]}...")
+            else:
+                logger.warning("⚠️ DAG 추출 요청되었으나 결과가 비어있음")
+        
         # 성공 응답 반환
         response = {
             "success": True,
             "result": result,
-            "metadata": {
+                            "metadata": {
                 "llm_model": llm_model,
                 "offer_info_data_src": offer_info_data_src,
                 "product_info_extraction_mode": product_info_extraction_mode,
                 "entity_matching_mode": entity_matching_mode,
+                "extract_entity_dag": extract_entity_dag,
                 "processing_time_seconds": round(processing_time, 3),
                 "timestamp": time.time(),
                 "message_length": len(message)
