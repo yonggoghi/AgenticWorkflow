@@ -665,7 +665,7 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True):
         llm_model = llm_gpt
 
     # 출력을 파일에 저장하기 위한 설정
-    output_file = "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/dag_extraction_output.txt"
+    output_file = "./logs/dag_extraction_output.txt"
 
     line_break_patterns = {"__":"\n", "■":"\n■", "▶":"\n▶", "_":"\n"}
     
