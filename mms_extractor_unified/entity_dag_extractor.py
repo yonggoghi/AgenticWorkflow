@@ -18,8 +18,7 @@ import os
 from config import settings
 import networkx as nx
 import random
-
-pd.set_option('display.max_colwidth', 500)
+from utils import create_dag_diagram, sha256_hash
 
 llm_api_key = settings.API_CONFIG.llm_api_key
 llm_api_url = settings.API_CONFIG.llm_api_url
@@ -455,100 +454,10 @@ class DAGParser:
         
         return '\n'.join(output)
 
-###############################################################################
-# 6) 개선된 DAG 추출 함수
-###############################################################################
-def extract_dag(parser, sample_text, i=3):
-    """개선된 DAG 추출 함수"""
-    try:
-        # DAG 섹션 추출
-        dag_section = parser.extract_dag_section(sample_text)
-        G = parser.parse_dag(dag_section)
 
-        print("추출된 DAG 섹션 (처음 200자):")
-        print(dag_section[:200] + "..." if len(dag_section) > 200 else dag_section)
-        print("\n" + "-"*50 + "\n")
-                
-        # 파싱 성공 라인 출력 (디버깅용)
-        if G.graph['stats'].get('parsed_lines') and i == 3:  # 예시 3만 상세 출력
-            print("파싱 성공한 라인:")
-            for parsed_line in G.graph['stats']['parsed_lines'][:3]:
-                print(f"  ✓ {parsed_line}")
-            if len(G.graph['stats']['parsed_lines']) > 3:
-                print(f"  ... 외 {len(G.graph['stats']['parsed_lines']) - 3}개")
-            print()
-        
-        # 파싱 에러 확인
-        if G.graph['stats'].get('parse_errors'):
-            print("파싱 에러:")
-            for error in G.graph['stats']['parse_errors']:
-                print(f"  ✗ {error}")
-            print()
-        
-        # 분석 결과 출력
-        analysis = parser.analyze_graph(G)
-        print("그래프 분석:")
-        print(f"- 노드 수: {analysis['num_nodes']}")
-        print(f"- 엣지 수: {analysis['num_edges']}")
-        print(f"- Root 노드: {analysis['root_nodes'][:3]}{'...' if len(analysis['root_nodes']) > 3 else ''}")
-        print(f"- Leaf 노드: {analysis['leaf_nodes'][:3]}{'...' if len(analysis['leaf_nodes']) > 3 else ''}")
-        print(f"- DAG 여부: {analysis['is_dag']}")
-        print(f"- 최장 경로 길이: {analysis['longest_path_length']}")
-        
-        if G.number_of_nodes() > 0 and i == 3:  # 예시 3의 특수 관계 확인
-            print("\n" + "-"*50 + "\n")
-            print("특수 관계가 포함된 엣지 (쉼표 포함):")
-            for edge in G.edges(data=True):
-                if ',' in edge[2]['relation']:
-                    print(f"  - {edge[0]} --[{edge[2]['relation']}]--> {edge[1]}")
-        
-        return G
-        
-    except Exception as e:
-        print(f"오류 발생: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+def extract_dag(parser:DAGParser, msg: str, llm_model):
 
-###############################################################################
-# 7) 메인 추출 함수 (기존 인터페이스 유지 + 개선 기능 추가)
-###############################################################################
-def dag_finder(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
-
-    if llm_model_nm == 'ax':
-        llm_model = llm_ax
-    elif llm_model_nm == 'gem':
-        llm_model = llm_gem
-    elif llm_model_nm == 'cld':
-        llm_model = llm_cld
-    elif llm_model_nm == 'gen':
-        llm_model = llm_gen
-    elif llm_model_nm == 'gpt':
-        llm_model = llm_gpt
-
-    # 출력을 파일에 저장하기 위한 설정
-    output_file = "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/dag_extraction_output.txt"
-
-    line_break_patterns = {"__":"\n", "■":"\n■", "▶":"\n▶", "_":"\n"}
-    
-    # 개선된 파서 초기화
-    parser = DAGParser() if use_enhanced_parser else None
-    
-    with open(output_file, 'a', encoding='utf-8') as f:
-        # 실행 시작 시점 기록
-        from datetime import datetime
-        start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        f.write(f"\n{'='*80}\n")
-        f.write(f"DAG 추출 실행 시작: {start_time}\n")
-        f.write(f"Enhanced Parser 사용: {use_enhanced_parser}\n")
-        f.write(f"{'='*80}\n\n")
-        
-        for msg in random.sample(mms_pdf.query("msg.str.contains('')")['msg'].unique().tolist(), num_msgs):
-            try:
-                for pattern, replacement in line_break_patterns.items():
-                    msg = msg.replace(pattern, replacement)
-
-                prompt = f"""
+    prompt = f"""
 ## 작업 목표
 통신사 광고 메시지에서 **핵심 행동 흐름**을 추출하여 간결한 DAG(Directed Acyclic Graph) 형식으로 표현
 
@@ -711,6 +620,70 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
 ## message:
 {msg}
 """
+    
+    dag_raw = llm_model.invoke(prompt).content
+
+    # NetworkX 그래프로 활용
+    dag_section = parser.extract_dag_section(dag_raw)
+    dag = parser.parse_dag(dag_section)
+
+    return {'dag_section': dag_section, 'dag': dag, 'dag_raw': dag_raw}
+
+    # root_nodes = [node for node in dag.nodes() if dag.in_degree(node) == 0]
+    # for root in root_nodes:
+    #     node_data = dag.nodes[root]
+    #     print(f"  {root} | {node_data}")
+
+    # paths, roots, leaves = get_root_to_leaf_paths(dag)
+
+    # for i, path in enumerate(paths):
+    #     print(f"\nPath {i+1}:")
+    #     for j, node in enumerate(path):
+    #         if j < len(path) - 1:
+    #             edge_data = dag.get_edge_data(node, path[j+1])
+    #             relation = edge_data['relation'] if edge_data else ''
+    #             print(f"  {node}")
+    #             print(f"    --[{relation}]-->")
+    #         else:
+    #             print(f"  {node}")
+                
+
+###############################################################################
+# 7) 메인 추출 함수 (기존 인터페이스 유지 + 개선 기능 추가)
+###############################################################################
+def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True):
+
+    if llm_model_nm == 'ax':
+        llm_model = llm_ax
+    elif llm_model_nm == 'gem':
+        llm_model = llm_gem
+    elif llm_model_nm == 'cld':
+        llm_model = llm_cld
+    elif llm_model_nm == 'gen':
+        llm_model = llm_gen
+    elif llm_model_nm == 'gpt':
+        llm_model = llm_gpt
+
+    # 출력을 파일에 저장하기 위한 설정
+    output_file = "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/dag_extraction_output.txt"
+
+    line_break_patterns = {"__":"\n", "■":"\n■", "▶":"\n▶", "_":"\n"}
+    
+    # 개선된 파서 초기화
+    parser = DAGParser() 
+    with open(output_file, 'a', encoding='utf-8') as f:
+        # 실행 시작 시점 기록
+        from datetime import datetime
+        start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        f.write(f"\n{'='*80}\n")
+        f.write(f"DAG 추출 실행 시작: {start_time}\n")
+        f.write(f"{'='*80}\n\n")
+        
+        for msg in random.sample(mms_pdf.query("msg.str.contains('')")['msg'].unique().tolist(), num_msgs):
+            try:
+                for pattern, replacement in line_break_patterns.items():
+                    msg = msg.replace(pattern, replacement)
+                
                 # 메시지 출력
                 msg_header = "==="*15+" Message "+"==="*15
                 print(msg_header)
@@ -722,17 +695,18 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
                 dag_header = "==="*15+f" DAG ({llm_model_nm.upper()}) "+"==="*15
                 print(dag_header)
                 f.write(dag_header + "\n")
-                dag_raw = llm_model.invoke(prompt).content
+                extract_dag_result = extract_dag(parser, msg, llm_model)
+
+                dag_raw = extract_dag_result['dag_raw']
+                dag_section = extract_dag_result['dag_section']
+                dag = extract_dag_result['dag']
+
                 print(dag_raw)
                 f.write(dag_raw + "\n")
 
                 # 파서 선택 및 처리
-                if use_enhanced_parser and parser:
-                    try:
-                        # 개선된 파서 사용
-                        dag_section = parser.extract_dag_section(dag_raw)
-                        dag = parser.parse_dag(dag_section)
-                        
+                if parser:
+                    try:                    
                         # 디버깅을 위해 dag_section 내용 확인
                         print("=== DAG Section Debug ===")
                         print(f"DAG Section Length: {len(dag_section)}")
@@ -857,12 +831,16 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', use_enhanced_parser=True):
     
     print(f"출력이 파일에 저장되었습니다: {output_file}")
 
+    if save_dag_image:
+        create_dag_diagram(dag, filename=f'dag_{sha256_hash(msg)}')
+        print(f"DAG 이미지가 저장되었습니다: {f'dag_{sha256_hash(msg)}.png'}")
+
 if __name__ == "__main__":
     import argparse
     
     parser_arg = argparse.ArgumentParser(description='DAG 추출기')
     parser_arg.add_argument('--num_msgs', type=int, default=50, help='추출할 메시지 수')
     parser_arg.add_argument('--llm_model', type=str, default='ax', help='사용할 LLM 모델')
-    parser_arg.add_argument('--use_enhanced_parser', action='store_true', default=True, help='개선된 파서 사용')
+    parser_arg.add_argument('--save_dag_image', type=bool, default=True, help='DAG 이미지 저장 여부')
     args = parser_arg.parse_args()
-    dag_finder(num_msgs=args.num_msgs, llm_model_nm=args.llm_model, use_enhanced_parser=args.use_enhanced_parser)
+    dag_finder(num_msgs=args.num_msgs, llm_model_nm=args.llm_model, save_dag_image=args.save_dag_image)
