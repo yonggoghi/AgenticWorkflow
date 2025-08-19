@@ -304,3 +304,784 @@
 2025-08-13 18:23:33,176 - mms_extractor - INFO - process_message 실행완료: 15.45초
 2025-08-13 18:23:33,176 - __main__ - INFO - 추출 완료: 15.451초
 2025-08-13 18:23:33,177 - werkzeug - INFO - 127.0.0.1 - - [13/Aug/2025 18:23:33] "POST /extract HTTP/1.1" 200 -
+2025-08-14 09:33:00,531 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-08-14 09:33:00,531 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-08-14 09:33:00,531 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-08-14 09:33:00,531 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-08-14 09:33:00,573 - mms_extractor - INFO - Using device: mps
+2025-08-14 09:33:00,573 - mms_extractor - INFO - _initialize_device 실행완료: 0.04초
+2025-08-14 09:33:01,699 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-14 09:33:01,699 - mms_extractor - INFO - _initialize_llm 실행완료: 1.13초
+2025-08-14 09:33:01,699 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-14 09:33:01,700 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-14 09:33:01,700 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-14 09:33:07,798 - mms_extractor - INFO - Model loaded on mps
+2025-08-14 09:33:07,798 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 6.10초
+2025-08-14 09:33:08,415 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-14 09:33:08,415 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.62초
+2025-08-14 09:33:08,415 - mms_extractor - INFO - 데이터 로딩 시작
+2025-08-14 09:33:08,548 - mms_extractor - INFO - 상품 정보 로드 완료: 44275개 상품
+2025-08-14 09:33:08,883 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-14 09:33:08,889 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-08-14 09:33:08,949 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개
+2025-08-14 09:33:08,949 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-14 09:33:08,950 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-14 09:33:08,950 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-14 09:33:09,128 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-14 09:33:09,610 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-14 09:33:09,611 - mms_extractor - INFO - 데이터 로딩 완료
+2025-08-14 09:33:09,611 - mms_extractor - INFO - _load_data 실행완료: 1.20초
+2025-08-14 09:33:09,611 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-08-14 09:33:09,611 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-08-14 09:33:09,611 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8080, debug=False
+2025-08-14 09:33:09,611 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-08-14 09:33:09,611 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8080에서 시작합니다
+2025-08-14 09:33:09,611 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-08-14 09:33:09,611 - __main__ - INFO -   GET  /health - 헬스체크
+2025-08-14 09:33:09,611 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-08-14 09:33:09,611 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-08-14 09:33:09,611 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-08-14 09:33:09,611 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-08-14 09:33:09,637 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.0.0.2:8080
+2025-08-14 09:33:09,637 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-14 09:33:33,908 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-14 09:33:33,908 - mms_extractor - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-14 09:33:34,495 - mms_extractor - INFO - Kiwi 추출 엔티티: ['뚜레쥬르', '시크릿', '데일리', '에이닷이빵쏜닷', '베어유', '0 day']
+2025-08-14 09:33:41,233 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 7.32초
+2025-08-14 09:33:48,194 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-14 09:33:48,200 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-14 09:33:49,071 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-14 09:33:49,284 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.08초
+2025-08-14 09:33:49,292 - mms_extractor - INFO - 메시지 처리 완료
+2025-08-14 09:33:49,292 - mms_extractor - INFO - process_message 실행완료: 15.38초
+2025-08-14 09:33:49,292 - __main__ - INFO - 추출 완료: 15.384초
+2025-08-14 09:33:49,293 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 09:33:49] "POST /extract HTTP/1.1" 200 -
+2025-08-14 09:33:57,860 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-14 09:33:57,860 - mms_extractor - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-14 09:33:57,863 - mms_extractor - INFO - Kiwi 추출 엔티티: ['뚜레쥬르', '시크릿', '데일리', '에이닷이빵쏜닷', '베어유', '0 day']
+2025-08-14 09:33:59,211 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.35초
+2025-08-14 09:34:06,499 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-14 09:34:06,500 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-14 09:34:07,730 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-14 09:34:07,951 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.45초
+2025-08-14 09:34:07,959 - mms_extractor - INFO - 메시지 처리 완료
+2025-08-14 09:34:07,959 - mms_extractor - INFO - process_message 실행완료: 10.10초
+2025-08-14 09:34:07,959 - __main__ - INFO - 추출 완료: 10.099초
+2025-08-14 09:34:07,959 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 09:34:07] "POST /extract HTTP/1.1" 200 -
+2025-08-14 09:34:15,828 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-14 09:34:15,828 - mms_extractor - INFO - 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의...
+2025-08-14 09:34:15,831 - mms_extractor - INFO - Kiwi 추출 엔티티: ['뚜레쥬르', '시크릿', '데일리', '에이닷이빵쏜닷', '베어유', '0 day']
+2025-08-14 09:34:17,140 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.31초
+2025-08-14 09:34:23,786 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-14 09:34:23,787 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-14 09:34:24,844 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-14 09:34:25,067 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.28초
+2025-08-14 09:34:25,074 - mms_extractor - INFO - 메시지 처리 완료
+2025-08-14 09:34:25,074 - mms_extractor - INFO - process_message 실행완료: 9.25초
+2025-08-14 09:34:25,074 - __main__ - INFO - 추출 완료: 9.246초
+2025-08-14 09:34:25,075 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 09:34:25] "POST /extract HTTP/1.1" 200 -
+2025-08-18 11:27:27,118 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-08-18 11:27:27,118 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-08-18 11:27:27,118 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-08-18 11:27:27,118 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-08-18 11:27:27,194 - mms_extractor - INFO - Using device: mps
+2025-08-18 11:27:27,195 - mms_extractor - INFO - _initialize_device 실행완료: 0.08초
+2025-08-18 11:27:28,588 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-08-18 11:27:28,588 - mms_extractor - INFO - _initialize_llm 실행완료: 1.39초
+2025-08-18 11:27:28,588 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-08-18 11:27:28,589 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-08-18 11:27:28,589 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-08-18 11:27:34,198 - mms_extractor - INFO - Model loaded on mps
+2025-08-18 11:27:34,198 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 5.61초
+2025-08-18 11:27:34,707 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-08-18 11:27:34,707 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.51초
+2025-08-18 11:27:34,707 - mms_extractor - INFO - ============================================================
+2025-08-18 11:27:34,707 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-08-18 11:27:34,707 - mms_extractor - INFO - ============================================================
+2025-08-18 11:27:34,707 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-08-18 11:27:34,707 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-08-18 11:27:34,707 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-08-18 11:27:34,707 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-08-18 11:27:34,707 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-08-18 11:27:34,823 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-08-18 11:27:34,823 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-08-18 11:27:34,832 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-08-18 11:27:34,836 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-08-18 11:27:34,837 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-08-18 11:27:34,840 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-08-18 11:27:34,841 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-08-18 11:27:34,841 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-08-18 11:27:34,841 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-08-18 11:27:34,841 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-08-18 11:27:34,841 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-08-18 11:27:34,841 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-08-18 11:27:34,850 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-08-18 11:27:34,851 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-08-18 11:27:34,851 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-08-18 11:27:35,157 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-08-18 11:27:35,159 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-08-18 11:27:35,159 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-08-18 11:27:35,159 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-08-18 11:27:35,159 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-08-18 11:27:35,167 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-08-18 11:27:35,167 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-08-18 11:27:35,167 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-08-18 11:27:35,167 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-08-18 11:27:35,174 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-08-18 11:27:35,176 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-08-18 11:27:35,176 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-08-18 11:27:35,232 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-08-18 11:27:35,232 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-08-18 11:27:35,232 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-08-18 11:27:35,246 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-08-18 11:27:35,246 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-08-18 11:27:35,509 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-08-18 11:27:35,509 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-08-18 11:27:35,509 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-08-18 11:27:36,006 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-08-18 11:27:36,006 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-08-18 11:27:36,006 - mms_extractor - INFO - ============================================================
+2025-08-18 11:27:36,006 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-08-18 11:27:36,006 - mms_extractor - INFO - ============================================================
+2025-08-18 11:27:36,006 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-08-18 11:27:36,006 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-08-18 11:27:36,006 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-08-18 11:27:36,006 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-08-18 11:27:36,006 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-08-18 11:27:36,011 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-08-18 11:27:36,018 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-08-18 11:27:36,022 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-08-18 11:27:36,022 - mms_extractor - INFO - _load_data 실행완료: 1.31초
+2025-08-18 11:27:36,022 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-08-18 11:27:36,022 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-08-18 11:27:36,022 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8080, debug=False
+2025-08-18 11:27:36,022 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-08-18 11:27:36,022 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8080에서 시작합니다
+2025-08-18 11:27:36,022 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-08-18 11:27:36,022 - __main__ - INFO -   GET  /health - 헬스체크
+2025-08-18 11:27:36,022 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-08-18 11:27:36,022 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-08-18 11:27:36,022 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-08-18 11:27:36,022 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-08-18 11:27:36,047 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://172.23.24.218:8080
+2025-08-18 11:27:36,047 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-18 11:28:04,336 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-18 11:28:04,337 - mms_extractor - INFO - ============================================================
+2025-08-18 11:28:04,337 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-08-18 11:28:04,337 - mms_extractor - INFO - ============================================================
+2025-08-18 11:28:04,337 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-08-18 11:28:04,337 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-08-18 11:28:04,338 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-08-18 11:28:04,338 - mms_extractor - INFO - 데이터 소스: local
+2025-08-18 11:28:04,338 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-08-18 11:28:04,338 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-08-18 11:28:04,338 - mms_extractor - INFO - LLM 모델: ax
+2025-08-18 11:28:04,338 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-08-18 11:28:04,338 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-08-18 11:28:04,338 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-08-18 11:28:04,338 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-08-18 11:28:04,338 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-08-18 11:28:04,348 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-08-18 11:28:04,942 - mms_extractor - INFO - 분할된 문장 수: 14개
+2025-08-18 11:28:04,943 - mms_extractor - INFO - 필터링된 문장들: ['광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', ' 토 혜택 ', '만 13 고객이라면']...
+2025-08-18 11:28:04,945 - mms_extractor - INFO - 전체 토큰 수: 134개
+2025-08-18 11:28:04,945 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '0 day', '광고', '0 day', '베어유', '에이닷', '시크릿', '이벤트', '에이닷', '쿠폰', '에이닷이빵쏜닷', '뚜레쥬르', '데일리', '쿠폰', '시크릿', '수신거부']
+2025-08-18 11:28:04,945 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['0 day', '시크릿', '뚜레쥬르', '데일리', '에이닷이빵쏜닷', '베어유']
+2025-08-18 11:28:04,945 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-08-18 11:28:12,874 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (14323, 3)
+2025-08-18 11:28:12,874 - mms_extractor - INFO - 퍼지 매칭 성공: 14323개 결과
+2025-08-18 11:28:12,882 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.4}]
+2025-08-18 11:28:12,882 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-08-18 11:28:13,012 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (14323, 3)
+2025-08-18 11:28:13,012 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.24}]
+2025-08-18 11:28:13,012 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-08-18 11:28:13,017 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 11개
+2025-08-18 11:28:13,023 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 4개
+2025-08-18 11:28:13,023 - mms_extractor - INFO - 통합된 후보 아이템 수: 15개
+2025-08-18 11:28:13,025 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-08-18 11:28:13,030 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (10, 2)
+2025-08-18 11:28:13,030 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}, {'item_nm': 'LTE 혜택 안내', 'item_id': ['NA00004316']}]
+2025-08-18 11:28:13,031 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 8.69초
+2025-08-18 11:28:13,031 - mms_extractor - INFO - 추출된 후보 엔티티: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:28:13,031 - mms_extractor - INFO - 매칭된 상품 정보: (10, 2)
+2025-08-18 11:28:13,031 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-08-18 11:28:13,231 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-08-18 11:28:13,231 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-08-18 11:28:13,231 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-08-18 11:28:13,231 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-08-18 11:28:13,231 - mms_extractor - INFO - 후보 아이템 리스트 크기: 10개
+2025-08-18 11:28:13,231 - mms_extractor - INFO - 후보 아이템 리스트: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:28:13,231 - mms_extractor - INFO - extra_item_pdf 크기: (10, 2)
+2025-08-18 11:28:13,231 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-08-18 11:28:13,231 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}]
+2025-08-18 11:28:13,231 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-08-18 11:28:13,231 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-08-18 11:28:13,231 - mms_extractor - INFO - 구성된 프롬프트 길이: 6209 문자
+2025-08-18 11:28:13,231 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-08-18 11:28:20,130 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 11:28:20,137 - mms_extractor - INFO - LLM 응답 길이: 921 문자
+2025-08-18 11:28:20,137 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "사용"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc",
+            "action": "추가 정보"
+        },
+...
+2025-08-18 11:28:20,137 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-08-18 11:28:20,138 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-08-18 11:28:20,138 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-08-18 11:28:20,138 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '사용'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-08-18 11:28:20,138 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-08-18 11:28:20,138 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-18 11:28:21,279 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 11:28:21,530 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.39초
+2025-08-18 11:28:21,539 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-08-18 11:28:21,539 - mms_extractor - INFO - ============================================================
+2025-08-18 11:28:21,539 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-08-18 11:28:21,539 - mms_extractor - INFO - ============================================================
+2025-08-18 11:28:21,539 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-08-18 11:28:21,539 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도']
+2025-08-18 11:28:21,539 - mms_extractor - INFO - 상품 수: 3개
+2025-08-18 11:28:21,539 - mms_extractor - INFO - 채널 수: 4개
+2025-08-18 11:28:21,539 - mms_extractor - INFO - 프로그램 수: 2개
+2025-08-18 11:28:21,539 - mms_extractor - INFO - process_message 실행완료: 17.20초
+2025-08-18 11:28:21,539 - __main__ - INFO - 추출 완료: 17.203초
+2025-08-18 11:28:21,540 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 11:28:21] "POST /extract HTTP/1.1" 200 -
+2025-08-18 11:28:58,009 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-18 11:28:58,009 - mms_extractor - INFO - ============================================================
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-08-18 11:28:58,009 - mms_extractor - INFO - ============================================================
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-08-18 11:28:58,009 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 데이터 소스: local
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 엔티티 추출 모드: logic
+2025-08-18 11:28:58,009 - mms_extractor - INFO - LLM 모델: ax
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-08-18 11:28:58,009 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-08-18 11:28:58,009 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-08-18 11:28:58,009 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-08-18 11:28:58,016 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-08-18 11:28:58,018 - mms_extractor - INFO - 분할된 문장 수: 14개
+2025-08-18 11:28:58,018 - mms_extractor - INFO - 필터링된 문장들: ['광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', ' 토 혜택 ', '만 13 고객이라면']...
+2025-08-18 11:28:58,020 - mms_extractor - INFO - 전체 토큰 수: 134개
+2025-08-18 11:28:58,020 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '0 day', '광고', '0 day', '베어유', '에이닷', '시크릿', '이벤트', '에이닷', '쿠폰', '에이닷이빵쏜닷', '뚜레쥬르', '데일리', '쿠폰', '시크릿', '수신거부']
+2025-08-18 11:28:58,020 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['0 day', '시크릿', '뚜레쥬르', '데일리', '에이닷이빵쏜닷', '베어유']
+2025-08-18 11:28:58,020 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-08-18 11:28:59,377 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (14323, 3)
+2025-08-18 11:28:59,377 - mms_extractor - INFO - 퍼지 매칭 성공: 14323개 결과
+2025-08-18 11:28:59,378 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.4}]
+2025-08-18 11:28:59,378 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-08-18 11:28:59,493 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (14323, 3)
+2025-08-18 11:28:59,494 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.24}]
+2025-08-18 11:28:59,494 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-08-18 11:28:59,499 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 11개
+2025-08-18 11:28:59,503 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 4개
+2025-08-18 11:28:59,504 - mms_extractor - INFO - 통합된 후보 아이템 수: 15개
+2025-08-18 11:28:59,505 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-08-18 11:28:59,509 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (10, 2)
+2025-08-18 11:28:59,509 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}, {'item_nm': 'LTE 혜택 안내', 'item_id': ['NA00004316']}]
+2025-08-18 11:28:59,510 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.50초
+2025-08-18 11:28:59,510 - mms_extractor - INFO - 추출된 후보 엔티티: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:28:59,510 - mms_extractor - INFO - 매칭된 상품 정보: (10, 2)
+2025-08-18 11:28:59,510 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-08-18 11:28:59,617 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-08-18 11:28:59,617 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-08-18 11:28:59,617 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-08-18 11:28:59,617 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-08-18 11:28:59,617 - mms_extractor - INFO - 후보 아이템 리스트 크기: 10개
+2025-08-18 11:28:59,617 - mms_extractor - INFO - 후보 아이템 리스트: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:28:59,618 - mms_extractor - INFO - extra_item_pdf 크기: (10, 2)
+2025-08-18 11:28:59,618 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-08-18 11:28:59,618 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}]
+2025-08-18 11:28:59,618 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-08-18 11:28:59,618 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-08-18 11:28:59,618 - mms_extractor - INFO - 구성된 프롬프트 길이: 6209 문자
+2025-08-18 11:28:59,618 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-08-18 11:29:06,202 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 11:29:06,204 - mms_extractor - INFO - LLM 응답 길이: 921 문자
+2025-08-18 11:29:06,204 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "사용"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc",
+            "action": "추가 정보"
+        },
+...
+2025-08-18 11:29:06,204 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-08-18 11:29:06,204 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-08-18 11:29:06,205 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-08-18 11:29:06,205 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '사용'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-08-18 11:29:06,205 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-08-18 11:29:06,205 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-18 11:29:06,377 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-08-18 11:29:06,377 - mms_extractor - INFO - ============================================================
+2025-08-18 11:29:06,377 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-08-18 11:29:06,377 - mms_extractor - INFO - ============================================================
+2025-08-18 11:29:06,377 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-08-18 11:29:06,377 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도']
+2025-08-18 11:29:06,377 - mms_extractor - INFO - 상품 수: 2개
+2025-08-18 11:29:06,377 - mms_extractor - INFO - 채널 수: 4개
+2025-08-18 11:29:06,377 - mms_extractor - INFO - 프로그램 수: 2개
+2025-08-18 11:29:06,377 - mms_extractor - INFO - process_message 실행완료: 8.37초
+2025-08-18 11:29:06,377 - __main__ - INFO - 추출 완료: 8.368초
+2025-08-18 11:29:06,377 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 11:29:06] "POST /extract HTTP/1.1" 200 -
+2025-08-18 11:29:22,084 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-18 11:29:22,084 - mms_extractor - INFO - ============================================================
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-08-18 11:29:22,084 - mms_extractor - INFO - ============================================================
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-08-18 11:29:22,084 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 데이터 소스: local
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 상품 정보 추출 모드: nlp
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 엔티티 추출 모드: logic
+2025-08-18 11:29:22,084 - mms_extractor - INFO - LLM 모델: ax
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-08-18 11:29:22,084 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-08-18 11:29:22,084 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-08-18 11:29:22,084 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-08-18 11:29:22,090 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-08-18 11:29:22,091 - mms_extractor - INFO - 분할된 문장 수: 14개
+2025-08-18 11:29:22,092 - mms_extractor - INFO - 필터링된 문장들: ['광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', ' 토 혜택 ', '만 13 고객이라면']...
+2025-08-18 11:29:22,093 - mms_extractor - INFO - 전체 토큰 수: 134개
+2025-08-18 11:29:22,093 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '0 day', '광고', '0 day', '베어유', '에이닷', '시크릿', '이벤트', '에이닷', '쿠폰', '에이닷이빵쏜닷', '뚜레쥬르', '데일리', '쿠폰', '시크릿', '수신거부']
+2025-08-18 11:29:22,093 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['0 day', '시크릿', '뚜레쥬르', '데일리', '에이닷이빵쏜닷', '베어유']
+2025-08-18 11:29:22,093 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-08-18 11:29:23,336 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (14323, 3)
+2025-08-18 11:29:23,336 - mms_extractor - INFO - 퍼지 매칭 성공: 14323개 결과
+2025-08-18 11:29:23,337 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.4}]
+2025-08-18 11:29:23,337 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-08-18 11:29:23,468 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (14323, 3)
+2025-08-18 11:29:23,468 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.24}]
+2025-08-18 11:29:23,468 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-08-18 11:29:23,472 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 11개
+2025-08-18 11:29:23,477 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 4개
+2025-08-18 11:29:23,477 - mms_extractor - INFO - 통합된 후보 아이템 수: 15개
+2025-08-18 11:29:23,478 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-08-18 11:29:23,482 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (10, 2)
+2025-08-18 11:29:23,482 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}, {'item_nm': 'LTE 혜택 안내', 'item_id': ['NA00004316']}]
+2025-08-18 11:29:23,483 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.40초
+2025-08-18 11:29:23,483 - mms_extractor - INFO - 추출된 후보 엔티티: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:29:23,483 - mms_extractor - INFO - 매칭된 상품 정보: (10, 2)
+2025-08-18 11:29:23,483 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-08-18 11:29:23,547 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-08-18 11:29:23,547 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-08-18 11:29:23,547 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-08-18 11:29:23,547 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-08-18 11:29:23,547 - mms_extractor - INFO - 후보 아이템 리스트 크기: 10개
+2025-08-18 11:29:23,547 - mms_extractor - INFO - 후보 아이템 리스트: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:29:23,547 - mms_extractor - INFO - extra_item_pdf 크기: (10, 2)
+2025-08-18 11:29:23,547 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-08-18 11:29:23,548 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}]
+2025-08-18 11:29:23,549 - mms_extractor - INFO - NLP 모드: 제품 요소 준비 완료 - 9개
+2025-08-18 11:29:23,549 - mms_extractor - INFO - NLP 모드 제품 요소 샘플: [{'name': '0 day', 'action': '기타'}, {'name': 'CU(0 day)', 'action': '기타'}]
+2025-08-18 11:29:23,549 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-08-18 11:29:23,549 - mms_extractor - INFO - 구성된 프롬프트 길이: 5520 문자
+2025-08-18 11:29:23,549 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: False
+2025-08-18 11:29:30,490 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 11:29:30,492 - mms_extractor - INFO - LLM 응답 길이: 951 문자
+2025-08-18 11:29:30,492 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도",
+        "웹/앱 접속 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "무료 수강"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "무료 제공"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc",
+            "a...
+2025-08-18 11:29:30,492 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-08-18 11:29:30,492 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-08-18 11:29:30,492 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-08-18 11:29:30,492 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '무료 수강'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '무료 제공'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-08-18 11:29:30,493 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-08-18 11:29:30,493 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-18 11:29:30,668 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-08-18 11:29:30,668 - mms_extractor - INFO - ============================================================
+2025-08-18 11:29:30,668 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-08-18 11:29:30,668 - mms_extractor - INFO - ============================================================
+2025-08-18 11:29:30,668 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-08-18 11:29:30,668 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도']
+2025-08-18 11:29:30,668 - mms_extractor - INFO - 상품 수: 2개
+2025-08-18 11:29:30,668 - mms_extractor - INFO - 채널 수: 4개
+2025-08-18 11:29:30,668 - mms_extractor - INFO - 프로그램 수: 2개
+2025-08-18 11:29:30,668 - mms_extractor - INFO - process_message 실행완료: 8.58초
+2025-08-18 11:29:30,668 - __main__ - INFO - 추출 완료: 8.584초
+2025-08-18 11:29:30,669 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 11:29:30] "POST /extract HTTP/1.1" 200 -
+2025-08-18 11:30:01,810 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-18 11:30:01,810 - mms_extractor - INFO - ============================================================
+2025-08-18 11:30:01,810 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-08-18 11:30:01,810 - mms_extractor - INFO - ============================================================
+2025-08-18 11:30:01,810 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-08-18 11:30:01,810 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-08-18 11:30:01,810 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-08-18 11:30:01,810 - mms_extractor - INFO - 데이터 소스: local
+2025-08-18 11:30:01,810 - mms_extractor - INFO - 상품 정보 추출 모드: rag
+2025-08-18 11:30:01,810 - mms_extractor - INFO - 엔티티 추출 모드: logic
+2025-08-18 11:30:01,811 - mms_extractor - INFO - LLM 모델: ax
+2025-08-18 11:30:01,811 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-08-18 11:30:01,811 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-08-18 11:30:01,811 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-08-18 11:30:01,811 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-08-18 11:30:01,811 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-08-18 11:30:01,816 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-08-18 11:30:01,817 - mms_extractor - INFO - 분할된 문장 수: 14개
+2025-08-18 11:30:01,818 - mms_extractor - INFO - 필터링된 문장들: ['광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', ' 토 혜택 ', '만 13 고객이라면']...
+2025-08-18 11:30:01,819 - mms_extractor - INFO - 전체 토큰 수: 134개
+2025-08-18 11:30:01,819 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '0 day', '광고', '0 day', '베어유', '에이닷', '시크릿', '이벤트', '에이닷', '쿠폰', '에이닷이빵쏜닷', '뚜레쥬르', '데일리', '쿠폰', '시크릿', '수신거부']
+2025-08-18 11:30:01,819 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['0 day', '시크릿', '뚜레쥬르', '데일리', '에이닷이빵쏜닷', '베어유']
+2025-08-18 11:30:01,819 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-08-18 11:30:03,185 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (14323, 3)
+2025-08-18 11:30:03,185 - mms_extractor - INFO - 퍼지 매칭 성공: 14323개 결과
+2025-08-18 11:30:03,186 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.4}]
+2025-08-18 11:30:03,186 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-08-18 11:30:03,313 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (14323, 3)
+2025-08-18 11:30:03,313 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.24}]
+2025-08-18 11:30:03,313 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-08-18 11:30:03,318 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 11개
+2025-08-18 11:30:03,322 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 4개
+2025-08-18 11:30:03,323 - mms_extractor - INFO - 통합된 후보 아이템 수: 15개
+2025-08-18 11:30:03,324 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-08-18 11:30:03,328 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (10, 2)
+2025-08-18 11:30:03,328 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}, {'item_nm': 'LTE 혜택 안내', 'item_id': ['NA00004316']}]
+2025-08-18 11:30:03,329 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.52초
+2025-08-18 11:30:03,329 - mms_extractor - INFO - 추출된 후보 엔티티: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:30:03,329 - mms_extractor - INFO - 매칭된 상품 정보: (10, 2)
+2025-08-18 11:30:03,329 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-08-18 11:30:03,432 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-08-18 11:30:03,433 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-08-18 11:30:03,433 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-08-18 11:30:03,433 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-08-18 11:30:03,433 - mms_extractor - INFO - 후보 아이템 리스트 크기: 10개
+2025-08-18 11:30:03,433 - mms_extractor - INFO - 후보 아이템 리스트: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:30:03,433 - mms_extractor - INFO - extra_item_pdf 크기: (10, 2)
+2025-08-18 11:30:03,433 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-08-18 11:30:03,433 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}]
+2025-08-18 11:30:03,433 - mms_extractor - INFO - RAG 모드: 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-08-18 11:30:03,433 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-08-18 11:30:03,433 - mms_extractor - INFO - 구성된 프롬프트 길이: 5814 문자
+2025-08-18 11:30:03,433 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-08-18 11:30:11,166 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 11:30:11,170 - mms_extractor - INFO - LLM 응답 길이: 1094 문자
+2025-08-18 11:30:11,171 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도",
+        "웹/앱 접속 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "사용"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "구매"
+        },
+        {
+            "name": "T 멤버십",
+            "action": "가입"
+        },
+        {
+            "name": "에이닷",
+            "action": "사용"
+        }
+    ],
+    "chan...
+2025-08-18 11:30:11,171 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-08-18 11:30:11,171 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-08-18 11:30:11,172 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-08-18 11:30:11,172 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '사용'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '구매'}, {'name': 'T 멤버십', 'action': '가입'}, {'name': '에이닷', 'action': '사용'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-08-18 11:30:11,172 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-08-18 11:30:11,172 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵', 'T 멤버십', '에이닷']
+2025-08-18 11:30:11,432 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-08-18 11:30:11,432 - mms_extractor - INFO - ============================================================
+2025-08-18 11:30:11,432 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-08-18 11:30:11,432 - mms_extractor - INFO - ============================================================
+2025-08-18 11:30:11,432 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-08-18 11:30:11,432 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도']
+2025-08-18 11:30:11,432 - mms_extractor - INFO - 상품 수: 3개
+2025-08-18 11:30:11,432 - mms_extractor - INFO - 채널 수: 4개
+2025-08-18 11:30:11,433 - mms_extractor - INFO - 프로그램 수: 2개
+2025-08-18 11:30:11,433 - mms_extractor - INFO - process_message 실행완료: 9.62초
+2025-08-18 11:30:11,433 - __main__ - INFO - 추출 완료: 9.623초
+2025-08-18 11:30:11,433 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 11:30:11] "POST /extract HTTP/1.1" 200 -
+2025-08-18 11:33:11,528 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-18 11:33:11,529 - mms_extractor - INFO - ============================================================
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-08-18 11:33:11,529 - mms_extractor - INFO - ============================================================
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-08-18 11:33:11,529 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 데이터 소스: local
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 엔티티 추출 모드: logic
+2025-08-18 11:33:11,529 - mms_extractor - INFO - LLM 모델: ax
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-08-18 11:33:11,529 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-08-18 11:33:11,529 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-08-18 11:33:11,529 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-08-18 11:33:11,535 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-08-18 11:33:11,536 - mms_extractor - INFO - 분할된 문장 수: 14개
+2025-08-18 11:33:11,536 - mms_extractor - INFO - 필터링된 문장들: ['광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', ' 토 혜택 ', '만 13 고객이라면']...
+2025-08-18 11:33:11,538 - mms_extractor - INFO - 전체 토큰 수: 134개
+2025-08-18 11:33:11,538 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '0 day', '광고', '0 day', '베어유', '에이닷', '시크릿', '이벤트', '에이닷', '쿠폰', '에이닷이빵쏜닷', '뚜레쥬르', '데일리', '쿠폰', '시크릿', '수신거부']
+2025-08-18 11:33:11,538 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['0 day', '시크릿', '뚜레쥬르', '데일리', '에이닷이빵쏜닷', '베어유']
+2025-08-18 11:33:11,538 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-08-18 11:33:12,876 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (14323, 3)
+2025-08-18 11:33:12,876 - mms_extractor - INFO - 퍼지 매칭 성공: 14323개 결과
+2025-08-18 11:33:12,877 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.4}]
+2025-08-18 11:33:12,877 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-08-18 11:33:13,007 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (14323, 3)
+2025-08-18 11:33:13,008 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.24}]
+2025-08-18 11:33:13,008 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-08-18 11:33:13,012 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 11개
+2025-08-18 11:33:13,016 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 4개
+2025-08-18 11:33:13,016 - mms_extractor - INFO - 통합된 후보 아이템 수: 15개
+2025-08-18 11:33:13,017 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-08-18 11:33:13,021 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (10, 2)
+2025-08-18 11:33:13,022 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}, {'item_nm': 'LTE 혜택 안내', 'item_id': ['NA00004316']}]
+2025-08-18 11:33:13,022 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.49초
+2025-08-18 11:33:13,022 - mms_extractor - INFO - 추출된 후보 엔티티: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:33:13,022 - mms_extractor - INFO - 매칭된 상품 정보: (10, 2)
+2025-08-18 11:33:13,022 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-08-18 11:33:13,103 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-08-18 11:33:13,104 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-08-18 11:33:13,104 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-08-18 11:33:13,104 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-08-18 11:33:13,104 - mms_extractor - INFO - 후보 아이템 리스트 크기: 10개
+2025-08-18 11:33:13,105 - mms_extractor - INFO - 후보 아이템 리스트: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:33:13,105 - mms_extractor - INFO - extra_item_pdf 크기: (10, 2)
+2025-08-18 11:33:13,105 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-08-18 11:33:13,105 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}]
+2025-08-18 11:33:13,106 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-08-18 11:33:13,106 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-08-18 11:33:13,106 - mms_extractor - INFO - 구성된 프롬프트 길이: 6209 문자
+2025-08-18 11:33:13,106 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-08-18 11:33:20,032 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 11:33:20,035 - mms_extractor - INFO - LLM 응답 길이: 942 문자
+2025-08-18 11:33:20,035 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도",
+        "웹/앱 접속 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "사용"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc",
+            "action"...
+2025-08-18 11:33:20,035 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-08-18 11:33:20,036 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-08-18 11:33:20,036 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-08-18 11:33:20,036 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '사용'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-08-18 11:33:20,036 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-08-18 11:33:20,036 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-18 11:33:20,211 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-08-18 11:33:20,211 - mms_extractor - INFO - ============================================================
+2025-08-18 11:33:20,211 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-08-18 11:33:20,211 - mms_extractor - INFO - ============================================================
+2025-08-18 11:33:20,211 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-08-18 11:33:20,211 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도']
+2025-08-18 11:33:20,211 - mms_extractor - INFO - 상품 수: 2개
+2025-08-18 11:33:20,211 - mms_extractor - INFO - 채널 수: 4개
+2025-08-18 11:33:20,211 - mms_extractor - INFO - 프로그램 수: 2개
+2025-08-18 11:33:20,211 - mms_extractor - INFO - process_message 실행완료: 8.68초
+2025-08-18 11:33:20,211 - __main__ - INFO - 추출 완료: 8.683초
+2025-08-18 11:33:20,211 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 11:33:20] "POST /extract HTTP/1.1" 200 -
+2025-08-18 11:33:45,155 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-08-18 11:33:45,156 - mms_extractor - INFO - ============================================================
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-08-18 11:33:45,156 - mms_extractor - INFO - ============================================================
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-08-18 11:33:45,156 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 데이터 소스: local
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-08-18 11:33:45,156 - mms_extractor - INFO - LLM 모델: ax
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-08-18 11:33:45,156 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-08-18 11:33:45,156 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-08-18 11:33:45,156 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-08-18 11:33:45,162 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-08-18 11:33:45,163 - mms_extractor - INFO - 분할된 문장 수: 14개
+2025-08-18 11:33:45,163 - mms_extractor - INFO - 필터링된 문장들: ['광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', ' 토 혜택 ', '만 13 고객이라면']...
+2025-08-18 11:33:45,165 - mms_extractor - INFO - 전체 토큰 수: 134개
+2025-08-18 11:33:45,165 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '0 day', '광고', '0 day', '베어유', '에이닷', '시크릿', '이벤트', '에이닷', '쿠폰', '에이닷이빵쏜닷', '뚜레쥬르', '데일리', '쿠폰', '시크릿', '수신거부']
+2025-08-18 11:33:45,165 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['0 day', '시크릿', '뚜레쥬르', '데일리', '에이닷이빵쏜닷', '베어유']
+2025-08-18 11:33:45,165 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-08-18 11:33:46,440 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (14323, 3)
+2025-08-18 11:33:46,440 - mms_extractor - INFO - 퍼지 매칭 성공: 14323개 결과
+2025-08-18 11:33:46,441 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.4}]
+2025-08-18 11:33:46,441 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-08-18 11:33:46,567 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (14323, 3)
+2025-08-18 11:33:46,568 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.24}]
+2025-08-18 11:33:46,568 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-08-18 11:33:46,572 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 11개
+2025-08-18 11:33:46,576 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 4개
+2025-08-18 11:33:46,577 - mms_extractor - INFO - 통합된 후보 아이템 수: 15개
+2025-08-18 11:33:46,578 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-08-18 11:33:46,582 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (10, 2)
+2025-08-18 11:33:46,582 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}, {'item_nm': 'LTE 혜택 안내', 'item_id': ['NA00004316']}]
+2025-08-18 11:33:46,582 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.43초
+2025-08-18 11:33:46,582 - mms_extractor - INFO - 추출된 후보 엔티티: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:33:46,582 - mms_extractor - INFO - 매칭된 상품 정보: (10, 2)
+2025-08-18 11:33:46,582 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-08-18 11:33:46,627 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-08-18 11:33:46,628 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-08-18 11:33:46,628 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-08-18 11:33:46,628 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-08-18 11:33:46,628 - mms_extractor - INFO - 후보 아이템 리스트 크기: 10개
+2025-08-18 11:33:46,628 - mms_extractor - INFO - 후보 아이템 리스트: ['0 day' '뚜레쥬르' '베어유' '시크릿' 'T쿠폰' 'data' '우드' 'T 에이스' 'CU(0 day)'
+ 'LTE 혜택 안내']
+2025-08-18 11:33:46,628 - mms_extractor - INFO - extra_item_pdf 크기: (10, 2)
+2025-08-18 11:33:46,628 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-08-18 11:33:46,628 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}]
+2025-08-18 11:33:46,628 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-08-18 11:33:46,628 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-08-18 11:33:46,628 - mms_extractor - INFO - 구성된 프롬프트 길이: 6209 문자
+2025-08-18 11:33:46,628 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-08-18 11:33:53,542 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 11:33:53,544 - mms_extractor - INFO - LLM 응답 길이: 942 문자
+2025-08-18 11:33:53,545 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도",
+        "웹/앱 접속 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "사용"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc",
+            "action"...
+2025-08-18 11:33:53,545 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-08-18 11:33:53,545 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-08-18 11:33:53,546 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-08-18 11:33:53,546 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '사용'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-08-18 11:33:53,546 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-08-18 11:33:53,546 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-08-18 11:33:54,566 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-08-18 11:33:54,827 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.28초
+2025-08-18 11:33:54,836 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-08-18 11:33:54,836 - mms_extractor - INFO - ============================================================
+2025-08-18 11:33:54,836 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-08-18 11:33:54,836 - mms_extractor - INFO - ============================================================
+2025-08-18 11:33:54,836 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-08-18 11:33:54,836 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도']
+2025-08-18 11:33:54,836 - mms_extractor - INFO - 상품 수: 3개
+2025-08-18 11:33:54,836 - mms_extractor - INFO - 채널 수: 4개
+2025-08-18 11:33:54,836 - mms_extractor - INFO - 프로그램 수: 2개
+2025-08-18 11:33:54,836 - mms_extractor - INFO - process_message 실행완료: 9.68초
+2025-08-18 11:33:54,836 - __main__ - INFO - 추출 완료: 9.681초
+2025-08-18 11:33:54,837 - werkzeug - INFO - 127.0.0.1 - - [18/Aug/2025 11:33:54] "POST /extract HTTP/1.1" 200 -
