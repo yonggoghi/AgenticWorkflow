@@ -527,10 +527,10 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="entityMode">엔티티 매칭 모드</label>
+                            <label class="form-label" for="entityMode">개체명 추출 모드</label>
                             <select id="entityMode" class="form-input form-select">
-                                <option value="logic">Logic 기반</option>
-                                <option value="llm">LLM 기반</option>
+                                <option value="logic">통합 LLM 기반</option>
+                                <option value="llm">별도 LLM 기반</option>
                             </select>
                         </div>
                     </div>
@@ -821,7 +821,7 @@ T world 앱에서 간편 예약
                     <span>${data.metadata.product_info_extraction_mode}</span>
                 </div>
                 <div class="metadata-item">
-                    <span>엔티티 매칭 모드:</span>
+                    <span>개체명 추출 모드:</span>
                     <span>${data.metadata.entity_matching_mode}</span>
                 </div>
                 <div class="metadata-item">
