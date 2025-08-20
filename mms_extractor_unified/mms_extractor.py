@@ -2037,7 +2037,7 @@ Return a JSON object with actual data, not schema definitions!
                     dag_section = ""
 
             # 최종 결과에 DAG 정보 추가 (비어있을 수도 있음)
-            final_result['entity_dag'] = dag_section
+            final_result['entity_dag'] = dag_section.split('\n')
             
             # 최종 결과 요약 로깅
             logger.info("=" * 60)
