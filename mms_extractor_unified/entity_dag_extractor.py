@@ -189,7 +189,7 @@ class DAGParser:
     - 노드와 엣지 관계 분석
     
     지원하는 DAG 형식:
-    - 엣지: (엔티티:행동) -[관계]-> (엔티티:행동)
+    - 엣지: (엔티티:행동) -[관계동사]-> (엔티티:행동)
     - 독립 노드: (엔티티:행동)
     """
     
@@ -251,12 +251,32 @@ class DAGParser:
             for i, line in enumerate(lines):
                 if re.search(pattern, line, re.IGNORECASE):
                     in_dag_section = True
-                    # 다음 라인이 ```인지 확인
-                    if i + 1 < len(lines) and lines[i + 1].strip() == '```':
-                        start_idx = i + 2
-                        in_code_block = True
-                    else:
+                    
+                    # DAG 헤더 다음에서 ``` 찾기 (빈 줄이 있어도 괜찮음)
+                    code_block_found = False
+                    for j in range(i + 1, min(i + 4, len(lines))):  # 최대 3줄까지 확인
+                        next_line = lines[j].strip()
+                        if next_line == '```':
+                            start_idx = j + 1
+                            in_code_block = True
+                            code_block_found = True
+                            break
+                        elif next_line and not next_line == '':  # 빈 줄이 아닌 다른 내용이 나오면 중단
+                            # DAG 패턴으로 시작하는 줄이면 코드블록 없이 시작
+                            if (re.match(self.edge_pattern, next_line) or 
+                                re.match(self.standalone_node_pattern, next_line)):
+                                start_idx = j
+                                in_code_block = False
+                                code_block_found = True
+                                break
+                            else:
+                                break
+                    
+                    # 코드블록을 찾지 못했다면 헤더 다음 줄부터 시작
+                    if not code_block_found:
                         start_idx = i + 1
+                        in_code_block = False
+                    
                     break
             if start_idx != -1:
                 break
@@ -268,7 +288,7 @@ class DAGParser:
                 if in_code_block and line.strip() == '```':
                     end_idx = i
                     break
-                elif not in_code_block and re.match(r'#{2,3}\s*3\.', line):
+                elif not in_code_block and re.match(r'#{2,3}\s*[3-9]\.', line):  # 3번 이상 섹션에서 종료
                     end_idx = i
                     break
         
