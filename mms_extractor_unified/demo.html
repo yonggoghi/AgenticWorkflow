@@ -222,6 +222,95 @@
             white-space: pre-wrap;
         }
 
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-table th {
+            background: #f8fafc;
+            color: #374151;
+            font-weight: 600;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 2px solid #e5e7eb;
+            font-size: 0.9rem;
+        }
+
+        .result-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+            font-size: 0.9rem;
+            vertical-align: top;
+        }
+
+        .result-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .result-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .category-header {
+            background: #4f46e5;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 16px;
+            margin: 20px 0 10px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-header:first-child {
+            margin-top: 0;
+        }
+
+        .result-value {
+            font-weight: 500;
+        }
+
+        .result-value.empty {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .result-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .result-list li {
+            padding: 4px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .result-list li:last-child {
+            border-bottom: none;
+        }
+
+        .entity-dag-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #374151;
+            white-space: pre-wrap;
+        }
+
         .dag-image-container {
             text-align: center;
             padding: 20px;
@@ -448,7 +537,7 @@
 
                     <div class="checkbox-group">
                         <input type="checkbox" id="extractDag" class="checkbox-input">
-                        <label for="extractDag" class="form-label">엔티티 DAG 추출 (관계 그래프 생성)</label>
+                        <label for="extractDag" class="form-label">오퍼 관계 DAG 추출</label>
                     </div>
 
                     <button type="submit" class="submit-btn" id="submitBtn">
@@ -463,13 +552,13 @@
             <div class="output-section">
                 <h2 class="section-title">
                     <i class="fas fa-chart-bar"></i>
-                    추출 결과
+                    작업 결과
                 </h2>
 
                 <div id="resultsContainer" style="display: none;">
                     <div class="result-tabs">
                         <button class="tab-button active" onclick="switchTab('extracted')">
-                            <i class="fas fa-code"></i> 추출 결과
+                            <i class="fas fa-code"></i> 추출 정보
                         </button>
                         <button class="tab-button" onclick="switchTab('dag')" id="dagTabButton">
                             <i class="fas fa-project-diagram"></i> DAG 이미지
@@ -481,7 +570,7 @@
 
                     <div id="extractedTab" class="tab-content active">
                         <div class="result-container">
-                            <pre id="extractedResult" class="json-viewer"></pre>
+                            <div id="extractedResult" style="background: #f8fafc; padding: 20px; border-radius: 8px;"></div>
                         </div>
                     </div>
 
@@ -701,7 +790,7 @@ T world 앱에서 간편 예약
 
             // 추출 결과 표시
             const extractedResult = document.getElementById('extractedResult');
-            extractedResult.textContent = JSON.stringify(data.result, null, 2);
+            extractedResult.innerHTML = formatExtractedResults(data.result);
 
             // 메타데이터 표시
             const metadataContent = document.getElementById('metadataContent');
@@ -781,7 +870,7 @@ T world 앱에서 간편 예약
                     dagContainer.innerHTML = `
                         <div style="text-align: center; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
                             <h4 style="color: #4f46e5; margin-bottom: 15px;">
-                                <i class="fas fa-project-diagram"></i> 엔티티 관계 그래프 (DAG)
+                                <i class="fas fa-project-diagram"></i> 오퍼 관계 그래프 (DAG)
                             </h4>
 
                             <img src="${DEMO_API_BASE_URL}${hashData.url}" 
@@ -792,7 +881,7 @@ T world 앱에서 간편 예약
                             <div style="margin-top: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px;">
                                 <p style="color: #0369a1; font-size: 0.9rem; margin: 0;">
                                     <i class="fas fa-lightbulb"></i>
-                                    이 그래프는 메시지에서 추출된 엔티티들 간의 관계를 시각화한 것입니다.
+                                    이 그래프는 메시지에서 추출된 오퍼 상품들 간의 관계를 시각화한 것입니다.
                                 </p>
                             </div>
                         </div>
@@ -852,7 +941,7 @@ T world 앱에서 간편 예약
                     dagContainer.innerHTML = `
                         <div style="margin-bottom: 15px;">
                             <h4 style="color: #4f46e5; margin-bottom: 10px;">
-                                <i class="fas fa-project-diagram"></i> 엔티티 관계 그래프 (DAG)
+                                <i class="fas fa-project-diagram"></i> 오퍼 관계 그래프 (DAG)
                             </h4>
                         </div>
                         <img src="${DEMO_API_BASE_URL}${imageUrl}" alt="DAG 이미지" class="dag-image" 
@@ -873,7 +962,7 @@ T world 앱에서 간편 예약
                             <i class="fas fa-image" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px;"></i>
                             <h4 style="color: #64748b; margin-bottom: 10px;">DAG 이미지 생성 중</h4>
                             <p style="color: #94a3b8; margin-bottom: 15px;">
-                                엔티티 관계 그래프가 생성되면 여기에 표시됩니다.
+                                오퍼 관계 그래프가 생성되면 여기에 표시됩니다.
                             </p>
                             <button onclick="loadDagImage()" style="background: #4f46e5; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
                                 <i class="fas fa-refresh"></i> 새로고침
@@ -1036,6 +1125,251 @@ T world 앱에서 간편 예약
 
         // 주기적으로 API 상태 확인 (30초마다)
         setInterval(checkApiStatus, 30000);
+
+        // JSON을 동적으로 테이블 형태로 포맷팅
+        function formatExtractedResults(result) {
+            if (!result || typeof result !== 'object') {
+                return '<div class="result-value empty">추출된 결과가 없습니다.</div>';
+            }
+
+            return generateTableFromObject(result);
+        }
+
+        // 키들을 원하는 순서로 정렬하는 함수
+        function getOrderedKeys(keys) {
+            // 원하는 표시 순서 정의
+            const preferredOrder = [
+                'title',
+                'purpose', 
+                'product',  // 'produdt' 오타 대비해서 'product'도 포함
+                'produdt',  // 원본 오타 버전
+                'channel',
+                'pgm',
+                'entity_dag'
+            ];
+            
+            const orderedKeys = [];
+            const remainingKeys = [...keys];
+            
+            // 1. 선호하는 순서대로 키들을 먼저 추가
+            preferredOrder.forEach(preferredKey => {
+                const index = remainingKeys.indexOf(preferredKey);
+                if (index !== -1) {
+                    orderedKeys.push(preferredKey);
+                    remainingKeys.splice(index, 1);  // 처리된 키는 제거
+                }
+            });
+            
+            // 2. 남은 키들을 알파벳 순서로 뒤에 추가 (새로운 키들 대응)
+            remainingKeys.sort().forEach(key => {
+                orderedKeys.push(key);
+            });
+            
+            return orderedKeys;
+        }
+
+        // 객체를 재귀적으로 테이블로 변환
+        function generateTableFromObject(obj, depth = 0) {
+            if (!obj || typeof obj !== 'object') {
+                return formatValue(obj);
+            }
+
+            let html = '';
+            const keys = Object.keys(obj);
+            
+            // 원하는 순서로 키 정렬
+            const orderedKeys = getOrderedKeys(keys);
+            
+            if (orderedKeys.length === 0) {
+                return '<div class="result-value empty">데이터가 없습니다.</div>';
+            }
+
+            orderedKeys.forEach((key, index) => {
+                const value = obj[key];
+                const categoryIcon = getCategoryIcon(key);
+                
+                // 카테고리 헤더 (최상위 레벨만)
+                if (depth === 0) {
+                    html += `
+                        <div class="category-header">
+                            <i class="fas ${categoryIcon}"></i> ${key}
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    <table class="result-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%;">NO</th>
+                                <th>내용</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                const isEntityDag = key === 'entity_dag';
+                
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    // 중첩 객체인 경우 - 하위 키들을 행으로 표시
+                    Object.keys(value).forEach((subKey, index) => {
+                        html += addTableRowWithNumber(index + 1, `<strong>${subKey}:</strong> ${formatValue(value[subKey])}`, isEntityDag);
+                    });
+                } else if (Array.isArray(value)) {
+                    // 배열인 경우 - 각 항목에 순번 표시
+                    value.forEach((item, index) => {
+                        html += addTableRowWithNumber(index + 1, formatValue(item), isEntityDag);
+                    });
+                } else {
+                    // 단순 값인 경우
+                    html += addTableRowWithNumber(1, formatValue(value), isEntityDag);
+                }
+                
+                html += '</tbody></table>';
+            });
+
+            return html;
+        }
+
+        // 카테고리별 아이콘 매핑
+        function getCategoryIcon(key) {
+            const iconMap = {
+                // 기존 한국어 키
+                '광고_정보': 'fa-bullhorn',
+                '광고정보': 'fa-bullhorn',
+                '혜택': 'fa-gift',
+                '타겟_정보': 'fa-users',
+                '타겟정보': 'fa-users',
+                '채널_정보': 'fa-phone',
+                '채널정보': 'fa-phone',
+                '연락처': 'fa-phone',
+                '웹사이트': 'fa-globe',
+                '매장': 'fa-store',
+                '상품': 'fa-box',
+                '가격': 'fa-won-sign',
+                '할인': 'fa-percentage',
+                '이벤트': 'fa-calendar-alt',
+                '기간': 'fa-clock',
+                'entity_dag': 'fa-project-diagram',
+                'dag': 'fa-project-diagram',
+                '엔티티': 'fa-project-diagram',
+                
+                // 새로운 영어 키들
+                'title': 'fa-heading',
+                'purpose': 'fa-bullseye',
+                'product': 'fa-box',
+                'produdt': 'fa-box',  // 오타 버전
+                'channel': 'fa-broadcast-tower',
+                'pgm': 'fa-cog'
+            };
+            
+            // 키에 포함된 단어로 아이콘 찾기
+            for (const [keyword, icon] of Object.entries(iconMap)) {
+                if (key.includes(keyword)) {
+                    return icon;
+                }
+            }
+            
+            return 'fa-info-circle'; // 기본 아이콘
+        }
+
+        // 테이블 행 추가 헬퍼 함수 (기존 호환성용)
+        function addTableRow(label, value) {
+            const formattedValue = formatValue(value);
+            const valueClass = (!value || value === '' || (Array.isArray(value) && value.length === 0)) ? 'result-value empty' : 'result-value';
+            
+            return `
+                <tr>
+                    <td><strong>${label}</strong></td>
+                    <td class="${valueClass}">${formattedValue}</td>
+                </tr>
+            `;
+        }
+
+        // NO 컬럼이 있는 테이블 행 추가 헬퍼 함수
+        function addTableRowWithNumber(number, content, isEntityDag = false) {
+            const valueClass = (!content || content === '') ? 'result-value empty' : 'result-value';
+            
+            // entity_dag 값인 경우 특별한 스타일 적용
+            if (isEntityDag && content && content !== '정보 없음') {
+                content = `<div class="entity-dag-content">${content}</div>`;
+            }
+            
+            return `
+                <tr>
+                    <td style="text-align: center; font-weight: 600; color: #6366f1;">${number}</td>
+                    <td class="${valueClass}">${content}</td>
+                </tr>
+            `;
+        }
+
+        // 값 포맷팅 헬퍼 함수
+        function formatValue(value, depth = 0) {
+            // 무한 재귀 방지
+            if (depth > 3) {
+                return typeof value === 'object' ? '[복잡한 객체]' : String(value);
+            }
+            
+            if (!value || value === '') {
+                return '정보 없음';
+            }
+            
+            if (Array.isArray(value)) {
+                return formatArray(value, depth);
+            }
+            
+            if (typeof value === 'object') {
+                return formatObjectAsKeyValue(value, depth);
+            }
+            
+            // 문자열에서 줄바꿈 문자 처리
+            const stringValue = String(value);
+            if (stringValue.includes('\\n') || stringValue.includes('/n')) {
+                return stringValue
+                    .replace(/\\n/g, '<br>')
+                    .replace(/\/n/g, '<br>');
+            }
+            
+            return stringValue;
+        }
+
+        // 객체를 키-값 쌍으로 포맷팅
+        function formatObjectAsKeyValue(obj, depth = 0) {
+            if (!obj || typeof obj !== 'object') {
+                return '정보 없음';
+            }
+            
+            const entries = Object.entries(obj);
+            if (entries.length === 0) {
+                return '정보 없음';
+            }
+            
+            // 단일 키-값 쌍인 경우 간단하게 표시
+            if (entries.length === 1) {
+                const [key, value] = entries[0];
+                return `<strong>${key}:</strong> ${formatValue(value, depth + 1)}`;
+            }
+            
+            // 여러 키-값 쌍인 경우 리스트로 표시
+            return `<ul class="result-list">${
+                entries.map(([key, value]) => 
+                    `<li><strong>${key}:</strong> ${formatValue(value, depth + 1)}</li>`
+                ).join('')
+            }</ul>`;
+        }
+
+        // 배열 포맷팅 헬퍼 함수
+        function formatArray(arr, depth = 0) {
+            if (!arr || !Array.isArray(arr) || arr.length === 0) {
+                return '정보 없음';
+            }
+            
+            if (arr.length === 1) {
+                return formatValue(arr[0], depth + 1);
+            }
+            
+            return `<ul class="result-list">${arr.map(item => `<li>${formatValue(item, depth + 1)}</li>`).join('')}</ul>`;
+        }
 
         // 간단한 DAG 이미지 표시 함수 (디버깅 함수들 제거)
         
