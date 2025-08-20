@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMS Extractor API Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 30px;
+            padding: 30px;
+            min-height: 80vh;
+        }
+
+        .input-section {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .output-section {
+            background: #f1f5f9;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #cbd5e1;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #475569;
+            font-size: 0.95rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 40px;
+            appearance: none;
+        }
+
+        .parameters-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-input {
+            width: 18px;
+            height: 18px;
+            accent-color: #4f46e5;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .result-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .result-tabs {
+            display: flex;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .json-viewer {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .dag-image-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .dag-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #fecaca;
+            margin-bottom: 20px;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #bbf7d0;
+            margin-bottom: 20px;
+        }
+
+        .metadata {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .metadata-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .sample-messages {
+            background: #fef7ff;
+            border: 1px solid #e879f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sample-title {
+            font-weight: 600;
+            color: #a21caf;
+            margin-bottom: 10px;
+        }
+
+        .sample-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #f3e8ff;
+        }
+
+        .sample-item:hover {
+            background: #faf5ff;
+            border-color: #c084fc;
+        }
+
+        .sample-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .parameters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .api-status.online {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .api-status.offline {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> MMS Extractor API Demo</h1>
+            <p>AI 기반 MMS 광고 메시지 정보 추출 서비스</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 입력 섹션 -->
+            <div class="input-section">
+                <h2 class="section-title">
+                    <i class="fas fa-edit"></i>
+                    메시지 입력 및 설정
+                </h2>
+
+                <div id="apiStatus" class="api-status offline">
+                    <div class="status-indicator"></div>
+                    API 서버 상태 확인 중...
+                </div>
+
+                <div class="sample-messages">
+                    <div class="sample-title">
+                        <i class="fas fa-lightbulb"></i> 샘플 메시지 (클릭하여 사용)
+                    </div>
+                    <div class="sample-item" onclick="loadSample(0)">
+                        [SK텔레콤] ZEM폰 포켓몬에디션3 안내 - 우리 아이 첫 번째 스마트폰
+                    </div>
+                    <div class="sample-item" onclick="loadSample(1)">
+                        [T world] 5G 요금제 특가 혜택 - 월 39,000원 할인
+                    </div>
+                    <div class="sample-item" onclick="loadSample(2)">
+                        [SK텔레콤] 갤럭시 S24 사전예약 - 최대 30만원 할인
+                    </div>
+                </div>
+
+                <form id="extractionForm">
+                    <div class="form-group">
+                        <label class="form-label" for="message">MMS 메시지 내용 *</label>
+                        <textarea id="message" class="form-input form-textarea" 
+                                placeholder="추출하고 싶은 MMS 메시지를 입력하세요..." 
+                                required></textarea>
+                    </div>
+
+                    <div class="parameters-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="llmModel">LLM 모델</label>
+                            <select id="llmModel" class="form-input form-select">
+                                <option value="ax">A.X (SKT)</option>
+                                <option value="gemma">Gemma</option>
+                                <option value="claude">Claude</option>
+                                <option value="gemini">Gemini</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="dataSource">데이터 소스</label>
+                            <select id="dataSource" class="form-input form-select">
+                                <option value="local">Local (CSV)</option>
+                                <option value="db">Database</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="productMode">상품 추출 모드</label>
+                            <select id="productMode" class="form-input form-select">
+                                <option value="nlp">NLP (형태소 분석)</option>
+                                <option value="llm">LLM 기반</option>
+                                <option value="rag">RAG (검색증강)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="entityMode">엔티티 매칭 모드</label>
+                            <select id="entityMode" class="form-input form-select">
+                                <option value="logic">Logic 기반</option>
+                                <option value="llm">LLM 기반</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="extractDag" class="checkbox-input">
+                        <label for="extractDag" class="form-label">엔티티 DAG 추출 (관계 그래프 생성)</label>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <i class="fas fa-play"></i>
+                        <span class="btn-text">정보 추출 실행</span>
+                        <div class="spinner loading"></div>
+                    </button>
+                </form>
+            </div>
+
+            <!-- 결과 섹션 -->
+            <div class="output-section">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-bar"></i>
+                    추출 결과
+                </h2>
+
+                <div id="resultsContainer" style="display: none;">
+                    <div class="result-tabs">
+                        <button class="tab-button active" onclick="switchTab('extracted')">
+                            <i class="fas fa-code"></i> 추출 결과
+                        </button>
+                        <button class="tab-button" onclick="switchTab('dag')" id="dagTabButton">
+                            <i class="fas fa-project-diagram"></i> DAG 이미지
+                        </button>
+                        <button class="tab-button" onclick="switchTab('metadata')">
+                            <i class="fas fa-info-circle"></i> 메타데이터
+                        </button>
+                    </div>
+
+                    <div id="extractedTab" class="tab-content active">
+                        <div class="result-container">
+                            <pre id="extractedResult" class="json-viewer"></pre>
+                        </div>
+                    </div>
+
+                    <div id="dagTab" class="tab-content">
+                        <div class="result-container">
+                            <div id="dagImageContainer" class="dag-image-container">
+                                <div style="text-align: center; padding: 40px; color: #64748b;">
+                                    <i class="fas fa-image" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                                    <p>DAG 이미지가 여기에 표시됩니다.</p>
+                                    <p style="font-size: 0.9rem; margin-top: 10px;">메시지를 추출하면 자동으로 이미지가 로드됩니다.</p>
+                                    <button onclick="testExistingImage()" style="margin-top: 15px; background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                                        🧪 기존 이미지로 테스트
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="metadataTab" class="tab-content">
+                        <div class="result-container">
+                            <div id="metadataContent" class="metadata"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="noResults" class="result-container">
+                    <div style="text-align: center; color: #64748b; padding: 40px;">
+                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <p>메시지를 입력하고 '정보 추출 실행' 버튼을 클릭하세요.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 샘플 메시지 데이터
+        const sampleMessages = [
+            `[SK텔레콤] ZEM폰 포켓몬에디션3 안내
+(광고)[SKT] 우리 아이 첫 번째 스마트폰, ZEM 키즈폰__#04 고객님, 안녕하세요!
+우리 아이 스마트폰 고민 중이셨다면, 자녀 스마트폰 관리 앱 ZEM이 설치된 SKT만의 안전한 키즈폰,
+ZEM폰 포켓몬에디션3으로 우리 아이 취향을 저격해 보세요!
+
+✨ 특별 혜택
+- 월 요금 20% 할인 (첫 6개월)
+- 포켓몬 케이스 무료 증정
+- ZEM 프리미엄 서비스 3개월 무료
+
+📞 문의: 1588-0011 (평일 9시-18시)
+🏪 가까운 T world 매장 방문
+🌐 www.tworld.co.kr
+
+수신거부 080-011-0000`,
+
+            `[T world] 5G 요금제 특가 혜택
+(광고) 5G 슈퍼플랜 특가 이벤트 진행 중!
+
+🎯 이달의 특가
+- 5G 슈퍼플랜 (데이터 무제한): 월 79,000원 → 39,000원 (50% 할인)
+- 가족 추가 회선: 월 29,000원
+- YouTube Premium 6개월 무료
+
+📅 이벤트 기간: 2024.01.01 ~ 2024.01.31
+🎁 신규 가입 시 갤럭시 버즈 증정
+
+온라인 가입: m.tworld.co.kr
+매장 방문: 전국 T world 매장
+고객센터: 114
+
+수신거부 080-011-0000`,
+
+            `[SK텔레콤] 갤럭시 S24 사전예약
+(광고) 갤럭시 S24 시리즈 사전예약 시작!
+
+🌟 사전예약 혜택
+- 갤럭시 S24 Ultra: 최대 30만원 할인
+- 갤럭시 S24+: 최대 25만원 할인  
+- 갤럭시 S24: 최대 20만원 할인
+
+🎁 추가 혜택
+- 갤럭시 워치6 50% 할인
+- 무선충전기 무료 증정
+- 케어플러스 6개월 무료
+
+📅 사전예약: 2024.01.10 ~ 2024.01.24
+📱 출시일: 2024.01.31
+
+T world 앱에서 간편 예약
+매장 예약: tworldfriends.co.kr/D123456789
+문의: 1588-0011
+
+수신거부 080-011-0000`
+        ];
+
+        // API 기본 설정
+        const API_BASE_URL = 'http://localhost:8000';  // MMS Extractor API
+        const DEMO_API_BASE_URL = 'http://localhost:8080';  // Demo Server API (for DAG images)
+        let apiOnline = false;
+
+        // 페이지 로드 시 API 상태 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            checkApiStatus();
+            
+            // 폼 제출 이벤트 리스너
+            document.getElementById('extractionForm').addEventListener('submit', handleSubmit);
+            
+            // DAG 탭을 기본으로 표시 (테스트용)
+            showDagTab();
+            console.log('🎯 DAG 탭이 기본으로 표시되었습니다.');
+        });
+
+        // API 상태 확인
+        async function checkApiStatus() {
+            const statusElement = document.getElementById('apiStatus');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`, {
+                    method: 'GET',
+                    timeout: 5000
+                });
+                
+                if (response.ok) {
+                    apiOnline = true;
+                    statusElement.className = 'api-status online';
+                    statusElement.innerHTML = '<div class="status-indicator"></div>API 서버 온라인';
+                } else {
+                    throw new Error('API 응답 오류');
+                }
+            } catch (error) {
+                apiOnline = false;
+                statusElement.className = 'api-status offline';
+                statusElement.innerHTML = '<div class="status-indicator"></div>API 서버 오프라인 (localhost:8000 확인 필요)';
+            }
+        }
+
+        // 샘플 메시지 로드
+        function loadSample(index) {
+            if (index >= 0 && index < sampleMessages.length) {
+                document.getElementById('message').value = sampleMessages[index];
+                
+                // 샘플에 따라 적절한 설정 적용
+                if (index === 0) {
+                    document.getElementById('extractDag').checked = true;
+                } else if (index === 1) {
+                    document.getElementById('llmModel').value = 'claude';
+                    document.getElementById('productMode').value = 'llm';
+                } else if (index === 2) {
+                    document.getElementById('entityMode').value = 'llm';
+                }
+            }
+        }
+
+        // 폼 제출 처리
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            if (!apiOnline) {
+                showError('API 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const spinner = submitBtn.querySelector('.spinner');
+            
+            // 버튼 상태 변경
+            submitBtn.disabled = true;
+            btnText.textContent = '처리 중...';
+            spinner.style.display = 'block';
+
+            // 폼 데이터 수집
+            const formData = {
+                message: document.getElementById('message').value,
+                llm_model: document.getElementById('llmModel').value,
+                offer_info_data_src: document.getElementById('dataSource').value,
+                product_info_extraction_mode: document.getElementById('productMode').value,
+                entity_matching_mode: document.getElementById('entityMode').value,
+                extract_entity_dag: document.getElementById('extractDag').checked
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/extract`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    displayResults(result);
+                    showSuccess('정보 추출이 완료되었습니다!');
+                } else {
+                    showError(result.error || '추출 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('API 호출 오류:', error);
+                showError('API 호출 중 오류가 발생했습니다: ' + error.message);
+            } finally {
+                // 버튼 상태 복원
+                submitBtn.disabled = false;
+                btnText.textContent = '정보 추출 실행';
+                spinner.style.display = 'none';
+            }
+        }
+
+        // 결과 표시
+        function displayResults(data) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            const noResults = document.getElementById('noResults');
+            
+            // 결과 컨테이너 표시
+            resultsContainer.style.display = 'block';
+            noResults.style.display = 'none';
+
+            // 추출 결과 표시
+            const extractedResult = document.getElementById('extractedResult');
+            extractedResult.textContent = JSON.stringify(data.result, null, 2);
+
+            // 메타데이터 표시
+            const metadataContent = document.getElementById('metadataContent');
+            metadataContent.innerHTML = `
+                <div class="metadata-item">
+                    <span>LLM 모델:</span>
+                    <span>${data.metadata.llm_model}</span>
+                </div>
+                <div class="metadata-item">
+                    <span>데이터 소스:</span>
+                    <span>${data.metadata.offer_info_data_src}</span>
+                </div>
+                <div class="metadata-item">
+                    <span>상품 추출 모드:</span>
+                    <span>${data.metadata.product_info_extraction_mode}</span>
+                </div>
+                <div class="metadata-item">
+                    <span>엔티티 매칭 모드:</span>
+                    <span>${data.metadata.entity_matching_mode}</span>
+                </div>
+                <div class="metadata-item">
+                    <span>DAG 추출:</span>
+                    <span>${data.metadata.extract_entity_dag ? 'Yes' : 'No'}</span>
+                </div>
+                <div class="metadata-item">
+                    <span>처리 시간:</span>
+                    <span>${data.metadata.processing_time_seconds}초</span>
+                </div>
+                <div class="metadata-item">
+                    <span>메시지 길이:</span>
+                    <span>${data.metadata.message_length}자</span>
+                </div>
+            `;
+
+            // DAG 이미지 처리
+            if (data.metadata.extract_entity_dag && data.result.entity_dag) {
+                showDagTab();
+                
+                // 현재 메시지의 해시를 계산하여 동적으로 이미지 로드
+                const currentMessage = document.getElementById('message').value;
+                console.log('DAG 이미지 동적 로드 시작...');
+                loadDagImageForMessage(currentMessage);
+            } else {
+                hideDagTab();
+            }
+        }
+
+        // 특정 메시지에 대한 DAG 이미지 로드 (서버의 해시 계산 API 사용)
+        async function loadDagImageForMessage(message) {
+            const dagContainer = document.getElementById('dagImageContainer');
+            
+            try {
+                // 서버에서 해시 계산 및 이미지 존재 여부 확인
+                const response = await fetch(`${DEMO_API_BASE_URL}/api/calculate-hash`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('해시 계산 API 호출 실패');
+                }
+                
+                const hashData = await response.json();
+                console.log('서버 해시 계산 결과:', hashData);
+                console.log('이미지 존재 여부:', hashData.image_exists);
+                console.log('이미지 URL:', hashData.url);
+                
+                if (hashData.image_exists) {
+                    // 이미지가 존재하는 경우
+                    console.log('🎯 이미지 존재 확인됨, URL:', hashData.url);
+                    console.log('🎯 완전한 이미지 URL:', `${DEMO_API_BASE_URL}${hashData.url}`);
+                    
+                    // simple_test.html과 동일한 간단한 방식으로 이미지 표시
+                    dagContainer.innerHTML = `
+                        <div style="text-align: center; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <h4 style="color: #4f46e5; margin-bottom: 15px;">
+                                <i class="fas fa-project-diagram"></i> 엔티티 관계 그래프 (DAG)
+                            </h4>
+
+                            <img src="${DEMO_API_BASE_URL}${hashData.url}" 
+                                 alt="DAG 이미지" 
+                                 style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 5px;"
+                                 onload="console.log('✅ DAG 이미지 로드 성공'); this.style.border='2px solid #10b981';"
+                                 onerror="console.error('❌ DAG 이미지 로드 실패'); this.style.display='none'; this.parentElement.innerHTML += '<p style=color:red;>이미지 로드 실패</p>';">
+                            <div style="margin-top: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px;">
+                                <p style="color: #0369a1; font-size: 0.9rem; margin: 0;">
+                                    <i class="fas fa-lightbulb"></i>
+                                    이 그래프는 메시지에서 추출된 엔티티들 간의 관계를 시각화한 것입니다.
+                                </p>
+                            </div>
+                        </div>
+                    `;
+
+                } else {
+                    // 이미지가 존재하지 않는 경우
+                    console.log('⚠️ 이미지가 존재하지 않음. 대기 메시지 표시');
+                    console.log('⚠️ 예상 파일명:', hashData.expected_filename);
+                    dagContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; background: #fef3c7; border-radius: 10px; border: 2px dashed #f59e0b;">
+                            <i class="fas fa-hourglass-half" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 15px;"></i>
+                            <h4 style="color: #92400e; margin-bottom: 10px;">DAG 이미지 대기 중</h4>
+                            <p style="color: #b45309; margin-bottom: 15px;">
+                                해당 메시지의 DAG 이미지가 아직 생성되지 않았습니다.<br>
+                                예상 파일명: ${hashData.expected_filename}
+                            </p>
+                            <button onclick="loadDagImageForMessage(document.getElementById('message').value)" 
+                                    style="background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-refresh"></i> 다시 확인
+                            </button>
+                            <p style="color: #a16207; font-size: 0.8rem; margin-top: 10px;">
+                                DAG 추출이 완료되면 이미지가 자동으로 생성됩니다.
+                            </p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('메시지별 DAG 이미지 로드 오류:', error);
+                // 오류 발생 시 일반적인 최신 이미지 로드로 폴백
+                dagContainer.innerHTML = `
+                    <div style="text-align: center; padding: 30px; background: #fef2f2; border-radius: 10px; border: 1px solid #fecaca;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #dc2626; margin-bottom: 10px;"></i>
+                        <p style="color: #dc2626; margin-bottom: 10px;">특정 DAG 이미지를 찾을 수 없습니다.</p>
+                        <button onclick="loadDagImage()" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-images"></i> 최신 이미지 보기
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // 일반적인 최신 DAG 이미지 로드
+        async function loadDagImage() {
+            const dagContainer = document.getElementById('dagImageContainer');
+            
+            try {
+                // 최신 DAG 이미지 요청
+                const response = await fetch(`${DEMO_API_BASE_URL}/api/latest-dag-image`);
+                
+                if (response.ok) {
+                    const imageData = await response.json();
+                    const imageUrl = imageData.url;
+                    const filename = imageData.filename;
+                    
+                    dagContainer.innerHTML = `
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="color: #4f46e5; margin-bottom: 10px;">
+                                <i class="fas fa-project-diagram"></i> 엔티티 관계 그래프 (DAG)
+                            </h4>
+                        </div>
+                        <img src="${DEMO_API_BASE_URL}${imageUrl}" alt="DAG 이미지" class="dag-image" 
+                             onload="this.style.opacity=1" 
+                             onerror="this.parentElement.innerHTML='<p style=color:#dc2626;><i class=fas fa-exclamation-triangle></i> 이미지를 로드할 수 없습니다.</p>'"
+                             style="opacity: 0; transition: opacity 0.3s ease;">
+                        <div style="margin-top: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+                            <p style="color: #0369a1; font-size: 0.9rem; margin: 0;">
+                                <i class="fas fa-info-circle"></i>
+                                이 그래프는 메시지에서 추출된 엔티티들 간의 관계를 시각화한 것입니다.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    // 이미지가 없는 경우
+                    dagContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px; background: #f8fafc; border-radius: 10px; border: 2px dashed #cbd5e1;">
+                            <i class="fas fa-image" style="font-size: 2.5rem; color: #94a3b8; margin-bottom: 15px;"></i>
+                            <h4 style="color: #64748b; margin-bottom: 10px;">DAG 이미지 생성 중</h4>
+                            <p style="color: #94a3b8; margin-bottom: 15px;">
+                                엔티티 관계 그래프가 생성되면 여기에 표시됩니다.
+                            </p>
+                            <button onclick="loadDagImage()" style="background: #4f46e5; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-refresh"></i> 새로고침
+                            </button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('DAG 이미지 로드 오류:', error);
+                dagContainer.innerHTML = `
+                    <div style="text-align: center; padding: 30px; background: #fef2f2; border-radius: 10px; border: 1px solid #fecaca;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #dc2626; margin-bottom: 10px;"></i>
+                        <p style="color: #dc2626;">DAG 이미지를 로드할 수 없습니다.</p>
+                        <p style="color: #991b1b; font-size: 0.9rem;">서버 연결을 확인해주세요.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // DAG 탭 표시
+        function showDagTab() {
+            console.log('🔄 DAG 탭 표시 중...');
+            const dagTab = document.getElementById('dagTabButton');
+            if (dagTab) {
+                dagTab.style.display = 'block';
+                console.log('✅ DAG 탭 버튼 표시됨');
+            } else {
+                console.error('❌ DAG 탭 버튼을 찾을 수 없음');
+            }
+        }
+
+        // DAG 탭 숨김
+        function hideDagTab() {
+            console.log('🔄 DAG 탭 숨김 중...');
+            const dagTab = document.getElementById('dagTabButton');
+            if (dagTab) {
+                dagTab.style.display = 'none';
+                console.log('✅ DAG 탭 버튼 숨김됨');
+            }
+        }
+
+        // 강제로 DAG 탭 표시 및 활성화 (디버깅용)
+        function forceShowDagTab() {
+            console.log('🔧 강제로 DAG 탭 표시 및 활성화...');
+            
+            // 1. DAG 탭 버튼 표시
+            showDagTab();
+            
+            // 2. DAG 탭으로 전환
+            switchTab('dag');
+            
+            // 3. DAG 탭이 제대로 활성화되었는지 확인
+            const dagTabContent = document.getElementById('dagTab');
+            if (dagTabContent) {
+                console.log('✅ DAG 탭 내용 활성화됨');
+                dagTabContent.style.display = 'block';  // 강제로 표시
+                dagTabContent.classList.add('active');   // active 클래스 추가
+            } else {
+                console.error('❌ DAG 탭 내용을 찾을 수 없음');
+            }
+            
+            // 4. DAG 탭 버튼도 active로 설정
+            const dagTabButton = document.getElementById('dagTabButton');
+            if (dagTabButton) {
+                dagTabButton.classList.add('active');
+                console.log('✅ DAG 탭 버튼 활성화됨');
+            }
+        }
+
+        // 탭 전환
+        function switchTab(tabName) {
+            console.log('탭 전환 시작:', tabName);
+            
+            // 모든 탭 버튼의 active 클래스 제거
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 모든 탭 내용 숨김
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 선택된 탭 버튼 활성화 (event 객체가 있을 때만)
+            if (typeof event !== 'undefined' && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // event가 없을 때는 해당 탭 버튼을 직접 찾아서 활성화
+                const targetButton = document.querySelector(`[onclick="switchTab('${tabName}')"]`);
+                if (targetButton) {
+                    targetButton.classList.add('active');
+                }
+            }
+            
+            // 선택된 탭 내용 표시
+            const targetTab = document.getElementById(tabName + 'Tab');
+            if (targetTab) {
+                targetTab.classList.add('active');
+                console.log('✅ 탭 활성화 완료:', tabName);
+                
+                // DAG 탭이 활성화되면 자동으로 이미지 로드
+                if (tabName === 'dag') {
+                    console.log('🔄 DAG 탭 활성화됨, 자동 이미지 로드 시작...');
+                    const messageInput = document.getElementById('message');
+                    if (messageInput && messageInput.value.trim()) {
+                        loadDagImageForMessage(messageInput.value);
+                    } else {
+                        console.log('⚠️ 메시지가 없어서 이미지 로드를 건너뜁니다.');
+                    }
+                }
+            } else {
+                console.error('❌ 탭을 찾을 수 없음:', tabName + 'Tab');
+            }
+        }
+
+        // 성공 메시지 표시
+        function showSuccess(message) {
+            const existingMessage = document.querySelector('.success-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.insertBefore(successDiv, resultsContainer.firstChild);
+
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                if (successDiv.parentNode) {
+                    successDiv.remove();
+                }
+            }, 3000);
+        }
+
+        // 오류 메시지 표시
+        function showError(message) {
+            const existingMessage = document.querySelector('.error-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+            
+            const outputSection = document.querySelector('.output-section');
+            const sectionTitle = outputSection.querySelector('.section-title');
+            outputSection.insertBefore(errorDiv, sectionTitle.nextSibling);
+
+            // 5초 후 자동 제거
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // 주기적으로 API 상태 확인 (30초마다)
+        setInterval(checkApiStatus, 30000);
+
+        // 간단한 DAG 이미지 표시 함수 (디버깅 함수들 제거)
+        
+        // 테스트용: 기존 이미지로 강제 테스트
+        function testExistingImage() {
+            console.log('🧪 기존 이미지로 테스트 시작...');
+            const dagContainer = document.getElementById('dagImageContainer');
+            const testImageUrl = '/dag_images/dag_14f66ce15b2741f2d08ec8a8ce6d23a8438671c6020c6b0badc25d9a6401af7a.png';
+            const fullUrl = `${DEMO_API_BASE_URL}${testImageUrl}`;
+            console.log('🧪 테스트 이미지 URL:', fullUrl);
+            
+            dagContainer.innerHTML = `
+                <div style="text-align: center; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <h4 style="color: #4f46e5; margin-bottom: 15px;">
+                        <i class="fas fa-project-diagram"></i> 테스트 DAG 이미지
+                    </h4>
+                    <img src="${fullUrl}" 
+                         alt="테스트 DAG 이미지" 
+                         style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 5px;"
+                         onload="console.log('✅ 테스트 이미지 로드 성공!'); this.style.border='2px solid #10b981';"
+                         onerror="console.error('❌ 테스트 이미지 로드 실패!'); this.style.display='none'; this.parentElement.innerHTML += '<p style=color:red;>테스트 이미지 로드 실패</p>';">
+                    <button onclick="testExistingImage()" style="margin-top: 10px; background: #4f46e5; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                        🧪 다시 테스트
+                    </button>
+                </div>
+            `;
+        }
+        
+        // DAG 탭 클릭시 자동 이미지 로딩 완료
+    </script>
+</body>
+</html>
