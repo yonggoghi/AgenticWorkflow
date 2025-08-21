@@ -125,6 +125,24 @@ def validate_text_input(text: str) -> str:
     
     return text
 
+def safe_check_empty(obj) -> bool:
+    """다양한 타입의 객체가 비어있는지 안전하게 확인"""
+    try:
+        if hasattr(obj, '__len__'):
+            return len(obj) == 0
+        elif hasattr(obj, 'size'):  # numpy 배열
+            return obj.size == 0
+        elif hasattr(obj, 'empty'):  # pandas DataFrame/Series
+            return obj.empty
+        else:
+            return not bool(obj)
+    except (ValueError, TypeError):
+        # numpy 배열의 truth value 에러 등을 처리
+        try:
+            return getattr(obj, 'size', 1) == 0
+        except:
+            return True  # 안전을 위해 비어있다고 가정
+
 # ===== 원본 유틸리티 함수들 (유지) =====
 
 def dataframe_to_markdown_prompt(df, max_rows=None):
@@ -1276,7 +1294,7 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
             if similarities_fuzzy.empty:
                 logger.warning("퍼지 매칭 결과가 비어있습니다. Kiwi 결과만 사용합니다.")
                 # 퍼지 매칭 결과가 없으면 Kiwi 결과만 사용
-                cand_item_list = entities_from_kiwi
+                cand_item_list = list(entities_from_kiwi) if entities_from_kiwi else []
                 logger.info(f"Kiwi 기반 후보 아이템: {cand_item_list}")
                 
                 if cand_item_list:
@@ -1335,17 +1353,23 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
             logger.info(f"통합된 후보 아이템 수: {len(cand_item_pdf)}개")
             
             if not cand_item_pdf.empty:
-                cand_item_list = cand_item_pdf.sort_values('sim', ascending=False).groupby([
+                cand_item_array = cand_item_pdf.sort_values('sim', ascending=False).groupby([
                     "item_nm_alias"
                 ])['sim'].max().reset_index(name='final_sim').sort_values(
                     'final_sim', ascending=False
                 ).query("final_sim >= 0.2")['item_nm_alias'].unique()
                 
-                logger.info(f"최종 후보 아이템 리스트: {list(cand_item_list)}")
+                # numpy 배열을 리스트로 변환하여 안전성 보장
+                cand_item_list = list(cand_item_array) if hasattr(cand_item_array, '__iter__') else []
                 
-                extra_item_pdf = self.item_pdf_all.query("item_nm_alias in @cand_item_list")[
-                    ['item_nm','item_nm_alias','item_id']
-                ].groupby(["item_nm"])['item_id'].apply(list).reset_index()
+                logger.info(f"최종 후보 아이템 리스트: {cand_item_list}")
+                
+                if cand_item_list:  # 리스트가 비어있지 않은 경우에만 쿼리 실행
+                    extra_item_pdf = self.item_pdf_all.query("item_nm_alias in @cand_item_list")[
+                        ['item_nm','item_nm_alias','item_id']
+                    ].groupby(["item_nm"])['item_id'].apply(list).reset_index()
+                else:
+                    extra_item_pdf = pd.DataFrame()
                 
                 logger.info(f"최종 상품 정보 DataFrame 크기: {extra_item_pdf.shape}")
                 if not extra_item_pdf.empty:
@@ -1360,6 +1384,8 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
             
         except Exception as e:
             logger.error(f"Kiwi 엔티티 추출 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
+            # 안전한 기본값 반환 - 빈 리스트와 빈 DataFrame
             return [], pd.DataFrame()
 
     def extract_entities_by_logic(self, cand_entities: List[str], threshold_for_fuzzy: float = 0.8) -> pd.DataFrame:
@@ -1533,6 +1559,8 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
                 
         except Exception as e:
             logger.error(f"엔티티 추출 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
+            # 안전한 기본값 반환
             return [], pd.DataFrame()
 
     def _classify_programs(self, mms_msg: str) -> Dict[str, Any]:
@@ -1909,7 +1937,8 @@ Return a JSON object with actual data, not schema definitions!
             # DB 모드에서 엔티티 추출 결과 특별 분석
             if self.offer_info_data_src == "db":
                 logger.info("🔍 DB 모드 엔티티 추출 결과 분석")
-                if not cand_item_list:
+                # cand_item_list가 numpy 배열일 수 있으므로 안전한 검사 사용
+                if safe_check_empty(cand_item_list):
                     logger.error("🚨 DB 모드에서 후보 엔티티가 전혀 추출되지 않았습니다!")
                     logger.error("가능한 원인:")
                     logger.error("1. 상품 데이터베이스에 해당 상품이 없음")
@@ -1930,7 +1959,9 @@ Return a JSON object with actual data, not schema definitions!
             # 4단계: 제품 정보 준비 (모드별 처리)
             logger.info("=" * 30 + " 4단계: 제품 정보 준비 " + "=" * 30)
             product_element = None
-            if len(cand_item_list) > 0:
+            
+            # cand_item_list가 비어있지 않은지 안전하게 검사
+            if not safe_check_empty(cand_item_list):
                 logger.info(f"후보 아이템 리스트 크기: {len(cand_item_list)}개")
                 logger.info(f"후보 아이템 리스트: {cand_item_list}")
                 
