@@ -2036,39 +2036,39 @@ Return a JSON object with actual data, not schema definitions!
             logger.info("=" * 30 + " 8단계: 결과 검증 " + "=" * 30)
             final_result = self._validate_extraction_result(final_result)
 
-            # DAG 추출 프로세스 (선택적)
-            # 메시지에서 엔티티 간의 관계를 방향성 있는 그래프로 추출
-            # 예: (고객:가입) -[하면]-> (혜택:수령) -[통해]-> (만족도:향상)
-            dag_section = ""
-            if self.extract_entity_dag:
-                logger.info("=" * 30 + " DAG 추출 시작 " + "=" * 30)
-                try:
-                    dag_start_time = time.time()
-                    # DAG 추출 함수 호출 (entity_dag_extractor.py)
-                    extract_dag_result = extract_dag(DAGParser(), msg, self.llm_model)
-                    dag_raw = extract_dag_result['dag_raw']      # LLM 원본 응답
-                    dag_section = extract_dag_result['dag_section']  # 파싱된 DAG 텍스트
-                    dag = extract_dag_result['dag']             # NetworkX 그래프 객체
+            # # DAG 추출 프로세스 (선택적)
+            # # 메시지에서 엔티티 간의 관계를 방향성 있는 그래프로 추출
+            # # 예: (고객:가입) -[하면]-> (혜택:수령) -[통해]-> (만족도:향상)
+            # dag_section = ""
+            # if self.extract_entity_dag:
+            #     logger.info("=" * 30 + " DAG 추출 시작 " + "=" * 30)
+            #     try:
+            #         dag_start_time = time.time()
+            #         # DAG 추출 함수 호출 (entity_dag_extractor.py)
+            #         extract_dag_result = extract_dag(DAGParser(), msg, self.llm_model)
+            #         dag_raw = extract_dag_result['dag_raw']      # LLM 원본 응답
+            #         dag_section = extract_dag_result['dag_section']  # 파싱된 DAG 텍스트
+            #         dag = extract_dag_result['dag']             # NetworkX 그래프 객체
                     
-                    # 시각적 다이어그램 생성 (utils.py)
-                    dag_filename = f'dag_{sha256_hash(msg)}'
-                    create_dag_diagram(dag, filename=dag_filename)
-                    dag_processing_time = time.time() - dag_start_time
+            #         # 시각적 다이어그램 생성 (utils.py)
+            #         dag_filename = f'dag_{sha256_hash(msg)}'
+            #         create_dag_diagram(dag, filename=dag_filename)
+            #         dag_processing_time = time.time() - dag_start_time
                     
-                    logger.info(f"✅ DAG 추출 완료: {dag_filename}")
-                    logger.info(f"🕒 DAG 처리 시간: {dag_processing_time:.3f}초")
-                    logger.info(f"📏 DAG 섹션 길이: {len(dag_section)}자")
-                    if dag_section:
-                        logger.info(f"📄 DAG 내용 미리보기: {dag_section[:200]}...")
-                    else:
-                        logger.warning("⚠️ DAG 섹션이 비어있습니다")
+            #         logger.info(f"✅ DAG 추출 완료: {dag_filename}")
+            #         logger.info(f"🕒 DAG 처리 시간: {dag_processing_time:.3f}초")
+            #         logger.info(f"📏 DAG 섹션 길이: {len(dag_section)}자")
+            #         if dag_section:
+            #             logger.info(f"📄 DAG 내용 미리보기: {dag_section[:200]}...")
+            #         else:
+            #             logger.warning("⚠️ DAG 섹션이 비어있습니다")
                         
-                except Exception as e:
-                    logger.error(f"❌ DAG 추출 중 오류 발생: {e}")
-                    dag_section = ""
+            #     except Exception as e:
+            #         logger.error(f"❌ DAG 추출 중 오류 발생: {e}")
+            #         dag_section = ""
 
-            # 최종 결과에 DAG 정보 추가 (비어있을 수도 있음)
-            final_result['entity_dag'] = sorted([d for d in dag_section.split('\n') if d!=''])
+            # # 최종 결과에 DAG 정보 추가 (비어있을 수도 있음)
+            # final_result['entity_dag'] = sorted([d for d in dag_section.split('\n') if d!=''])
             
             # 최종 결과 요약 로깅
             logger.info("=" * 60)
@@ -2257,16 +2257,161 @@ Return a JSON object with actual data, not schema definitions!
             logger.error(f"프로그램 분류 매핑 실패: {e}")
             return []
 
+def process_message_with_dag(extractor, message: str, extract_dag: bool = False) -> Dict[str, Any]:
+    """
+    단일 메시지를 처리하는 워커 함수 (멀티프로세스용)
+    
+    Args:
+        extractor: MMSExtractor 인스턴스
+        message: 처리할 메시지
+        extract_dag: DAG 추출 여부
+    
+    Returns:
+        dict: 처리 결과
+    """
+    try:
+        logger.info(f"워커 프로세스에서 메시지 처리 시작: {message[:50]}...")
+        
+        if extract_dag:
+            # 멀티스레드로 병렬 처리
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                future_main = executor.submit(extractor.process_message, message)
+                future_dag = executor.submit(make_entity_dag, message, extractor.llm_model)
+                
+                result = future_main.result()
+                dag_result = future_dag.result()
+                result['entity_dag'] = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
+        else:
+            result = extractor.process_message(message)
+            result['entity_dag'] = []
+        
+        logger.info(f"워커 프로세스에서 메시지 처리 완료")
+        return result
+        
+    except Exception as e:
+        logger.error(f"워커 프로세스에서 메시지 처리 실패: {e}")
+        return {
+            "title": "처리 실패",
+            "purpose": ["오류"],
+            "product": [],
+            "channel": [],
+            "pgm": [],
+            "entity_dag": [],
+            "error": str(e)
+        }
+
+def process_messages_batch(extractor, messages: List[str], extract_dag: bool = False, max_workers: int = None) -> List[Dict[str, Any]]:
+    """
+    여러 메시지를 배치로 처리하는 함수
+    
+    Args:
+        extractor: MMSExtractor 인스턴스
+        messages: 처리할 메시지 리스트
+        extract_dag: DAG 추출 여부
+        max_workers: 최대 워커 수 (None이면 CPU 코어 수)
+    
+    Returns:
+        list: 처리 결과 리스트
+    """
+    if max_workers is None:
+        max_workers = min(len(messages), os.cpu_count())
+    
+    logger.info(f"배치 처리 시작: {len(messages)}개 메시지, {max_workers}개 워커")
+    
+    start_time = time.time()
+    results = []
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # 모든 메시지에 대해 작업 제출
+        future_to_message = {
+            executor.submit(process_message_with_dag, extractor, msg, extract_dag): msg 
+            for msg in messages
+        }
+        
+        # 완료된 작업들 수집
+        for i, future in enumerate(future_to_message):
+            try:
+                result = future.result()
+                results.append(result)
+                logger.info(f"배치 처리 진행률: {i+1}/{len(messages)} ({((i+1)/len(messages)*100):.1f}%)")
+            except Exception as e:
+                logger.error(f"배치 처리 중 오류 발생: {e}")
+                results.append({
+                    "title": "처리 실패",
+                    "purpose": ["오류"],
+                    "product": [],
+                    "channel": [],
+                    "pgm": [],
+                    "entity_dag": [],
+                    "error": str(e)
+                })
+    
+    elapsed_time = time.time() - start_time
+    logger.info(f"배치 처리 완료: {len(messages)}개 메시지, {elapsed_time:.2f}초")
+    logger.info(f"평균 처리 시간: {elapsed_time/len(messages):.2f}초/메시지")
+    
+    return results
+
+def make_entity_dag(msg: str, llm_model, save_dag_image=True):
+
+    # 메시지에서 엔티티 간의 관계를 방향성 있는 그래프로 추출
+    # 예: (고객:가입) -[하면]-> (혜택:수령) -[통해]-> (만족도:향상)
+    extract_dag_result = {}
+    logger.info("=" * 30 + " DAG 추출 시작 " + "=" * 30)
+    try:
+        dag_start_time = time.time()
+        # DAG 추출 함수 호출 (entity_dag_extractor.py)
+        extract_dag_result = extract_dag(DAGParser(), msg, llm_model)
+        dag_raw = extract_dag_result['dag_raw']      # LLM 원본 응답
+        dag_section = extract_dag_result['dag_section']  # 파싱된 DAG 텍스트
+        dag = extract_dag_result['dag']             # NetworkX 그래프 객체
+        
+        # 시각적 다이어그램 생성 (utils.py)
+        dag_filename = ""
+        if save_dag_image:
+            dag_filename = f'dag_{sha256_hash(msg)}'
+            create_dag_diagram(dag, filename=dag_filename)
+            logger.info(f"✅ DAG 추출 완료: {dag_filename}")
+
+        extract_dag_result['dag_filename'] = dag_filename
+        
+        dag_processing_time = time.time() - dag_start_time
+        
+        logger.info(f"🕒 DAG 처리 시간: {dag_processing_time:.3f}초")
+        logger.info(f"📏 DAG 섹션 길이: {len(dag_section)}자")
+        if dag_section:
+            logger.info(f"📄 DAG 내용 미리보기: {dag_section[:200]}...")
+        else:
+            logger.warning("⚠️ DAG 섹션이 비어있습니다")
+            
+    except Exception as e:
+        logger.error(f"❌ DAG 추출 중 오류 발생: {e}")
+        dag_section = ""
+
+    return extract_dag_result
+
 
 def main():
     """
     커맨드라인에서 실행할 때의 메인 함수
     다양한 옵션을 통해 추출기 설정을 변경할 수 있습니다.
+    
+    사용법:
+    # 단일 메시지 처리 (멀티스레드)
+    python mms_extractor.py --message "광고 메시지" --extract-entity-dag
+    
+    # 배치 처리 (멀티프로세스)
+    python mms_extractor.py --batch-file messages.txt --max-workers 4 --extract-entity-dag
+    
+    # 데이터베이스 모드로 배치 처리
+    python mms_extractor.py --batch-file messages.txt --offer-data-source db --max-workers 8
     """
     import argparse
     
     parser = argparse.ArgumentParser(description='MMS 광고 텍스트 추출기 - 개선된 버전')
     parser.add_argument('--message', type=str, help='테스트할 메시지')
+    parser.add_argument('--batch-file', type=str, help='배치 처리할 메시지가 담긴 파일 경로 (한 줄에 하나씩)')
+    parser.add_argument('--max-workers', type=int, help='배치 처리 시 최대 워커 수 (기본값: CPU 코어 수)')
     parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
                        help='데이터 소스 (local: CSV 파일, db: 데이터베이스)')
     parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm', 'rag'], default='nlp',
@@ -2285,7 +2430,7 @@ def main():
     logging.getLogger().setLevel(getattr(logging, args.log_level))
     
     try:
-        # 추출기 초기화
+                # 추출기 초기화
         logger.info("MMS 추출기 초기화 중...")
         extractor = MMSExtractor(
             offer_info_data_src=args.offer_data_source,
@@ -2295,44 +2440,98 @@ def main():
             extract_entity_dag=args.extract_entity_dag
         )
         
-        # 테스트 메시지 설정
-        test_message = args.message if args.message else """
-        [SKT] ZEM폰 포켓몬에디션3 안내
-        (광고)[SKT] 우리 아이 첫 번째 스마트폰, ZEM 키즈폰__#04 고객님, 안녕하세요!
-        우리 아이 스마트폰 고민 중이셨다면, 자녀 스마트폰 관리 앱 ZEM이 설치된 SKT만의 안전한 키즈폰,
-        ZEM폰 포켓몬에디션3으로 우리 아이 취향을 저격해 보세요!
-        신학기를 맞이하여 SK텔레콤 공식 인증 대리점에서 풍성한 혜택을 제공해 드리고 있습니다!
-        ▶ 주요 기능
-        1. 실시간 위치 조회
-        2. 모르는 회선 자동 차단
-        3. 스마트폰 사용 시간 제한
-        4. IP68 방수 방진
-        5. 수업 시간 자동 무음모드
-        6. 유해 콘텐츠 차단
-        ▶ 가까운 SK텔레콤 공식 인증 대리점 찾기
-        http://t-mms.kr/t.do?m=#61&s=30684&a=&u=https://bit.ly/3yQF2hx
-        ▶ 문의 : SKT 고객센터(1558, 무료)
-        무료 수신거부 1504
-        """
+        # 배치 처리 또는 단일 메시지 처리
+        if args.batch_file:
+            # 배치 파일에서 메시지들 로드
+            logger.info(f"배치 파일에서 메시지 로드: {args.batch_file}")
+            try:
+                with open(args.batch_file, 'r', encoding='utf-8') as f:
+                    messages = [line.strip() for line in f if line.strip()]
+                
+                logger.info(f"로드된 메시지 수: {len(messages)}개")
+                
+                # 배치 처리 실행
+                results = process_messages_batch(
+                    extractor, 
+                    messages, 
+                    extract_dag=args.extract_entity_dag,
+                    max_workers=args.max_workers
+                )
+                
+                # 배치 결과 출력
+                print("\n" + "="*50)
+                print("🎯 배치 처리 결과")
+                print("="*50)
+                
+                for i, result in enumerate(results):
+                    print(f"\n--- 메시지 {i+1} ---")
+                    print(f"제목: {result.get('title', 'N/A')}")
+                    print(f"상품: {len(result.get('product', []))}개")
+                    if result.get('error'):
+                        print(f"오류: {result['error']}")
+                
+                # 전체 배치 통계
+                successful = len([r for r in results if not r.get('error')])
+                failed = len(results) - successful
+                print(f"\n📊 배치 처리 통계")
+                print(f"✅ 성공: {successful}개")
+                print(f"❌ 실패: {failed}개")
+                print(f"📈 성공률: {(successful/len(results)*100):.1f}%")
+                
+                # 결과를 JSON 파일로 저장
+                output_file = f"batch_results_{int(time.time())}.json"
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    json.dump(results, f, indent=4, ensure_ascii=False)
+                print(f"💾 결과 저장: {output_file}")
+                
+            except FileNotFoundError:
+                logger.error(f"배치 파일을 찾을 수 없습니다: {args.batch_file}")
+                exit(1)
+            except Exception as e:
+                logger.error(f"배치 파일 처리 실패: {e}")
+                exit(1)
         
-        # 메시지 처리 및 결과 출력
-        logger.info("메시지 처리 시작")
-        result = extractor.process_message(test_message)
+        else:
+            # 단일 메시지 처리
+            test_message = args.message if args.message else """
+            [SKT] ZEM폰 포켓몬에디션3 안내
+            (광고)[SKT] 우리 아이 첫 번째 스마트폰, ZEM 키즈폰__#04 고객님, 안녕하세요!
+            우리 아이 스마트폰 고민 중이셨다면, 자녀 스마트폰 관리 앱 ZEM이 설치된 SKT만의 안전한 키즈폰,
+            ZEM폰 포켓몬에디션3으로 우리 아이 취향을 저격해 보세요!
+            신학기를 맞이하여 SK텔레콤 공식 인증 대리점에서 풍성한 혜택을 제공해 드리고 있습니다!
+            ▶ 주요 기능
+            1. 실시간 위치 조회
+            2. 모르는 회선 자동 차단
+            3. 스마트폰 사용 시간 제한
+            4. IP68 방수 방진
+            5. 수업 시간 자동 무음모드
+            6. 유해 콘텐츠 차단
+            ▶ 가까운 SK텔레콤 공식 인증 대리점 찾기
+            http://t-mms.kr/t.do?m=#61&s=30684&a=&u=https://bit.ly/3yQF2hx
+            ▶ 문의 : SKT 고객센터(1558, 무료)
+            무료 수신거부 1504
+            """
             
-        print("\n" + "="*50)
-        print("🎯 최종 추출된 정보")
-        print("="*50)
-        print(json.dumps(result, indent=4, ensure_ascii=False))
+            # 단일 메시지 처리 (멀티스레드)
+            logger.info("단일 메시지 처리 시작 (멀티스레드)")
+            result = process_message_with_dag(extractor, test_message, args.extract_entity_dag)
         
-        # 성능 요약 정보 출력
-        print("\n" + "="*50)
-        print("📊 처리 완료")
-        print("="*50)
-        print(f"✅ 제목: {result.get('title', 'N/A')}")
-        print(f"✅ 목적: {len(result.get('purpose', []))}개")
-        print(f"✅ 상품: {len(result.get('product', []))}개")
-        print(f"✅ 채널: {len(result.get('channel', []))}개")
-        print(f"✅ 프로그램: {len(result.get('pgm', []))}개")
+            print("\n" + "="*50)
+            print("🎯 최종 추출된 정보")
+            print("="*50)
+            print(json.dumps(result, indent=4, ensure_ascii=False))
+            
+            # 성능 요약 정보 출력
+            print("\n" + "="*50)
+            print("📊 처리 완료")
+            print("="*50)
+            print(f"✅ 제목: {result.get('title', 'N/A')}")
+            print(f"✅ 목적: {len(result.get('purpose', []))}개")
+            print(f"✅ 상품: {len(result.get('product', []))}개")
+            print(f"✅ 채널: {len(result.get('channel', []))}개")
+            print(f"✅ 프로그램: {len(result.get('pgm', []))}개")
+            if result.get('error'):
+                print(f"❌ 오류: {result['error']}")
         
     except Exception as e:
         logger.error(f"실행 실패: {e}")
