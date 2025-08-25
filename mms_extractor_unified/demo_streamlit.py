@@ -56,15 +56,55 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 커맨드라인 인자 파싱
+# 커맨드라인 인자 파싱 (Streamlit 호환)
 def parse_args():
-    parser = argparse.ArgumentParser(description='MMS Extractor Streamlit Demo')
-    parser.add_argument('--api-port', type=int, default=8000, help='API 서버 포트 (기본값: 8000)')
-    parser.add_argument('--demo-port', type=int, default=8082, help='Demo 서버 포트 (기본값: 8082)')
+    import sys
     
-    # Streamlit이 실행될 때 추가되는 인자들을 무시
-    known_args, unknown_args = parser.parse_known_args()
-    return known_args
+    # 기본값 설정
+    api_port = 8000
+    demo_port = 8082
+    
+    # sys.argv에서 우리가 원하는 인수만 찾기
+    args_list = sys.argv[1:]  # 스크립트 이름 제외
+    
+    i = 0
+    while i < len(args_list):
+        arg = args_list[i]
+        
+        if arg == '--api-port':
+            if i + 1 < len(args_list):
+                try:
+                    api_port = int(args_list[i + 1])
+                    i += 1  # 값도 건너뛰기
+                except ValueError:
+                    pass
+        elif arg == '--demo-port':
+            if i + 1 < len(args_list):
+                try:
+                    demo_port = int(args_list[i + 1])
+                    i += 1  # 값도 건너뛰기
+                except ValueError:
+                    pass
+        elif arg.startswith('--api-port='):
+            try:
+                api_port = int(arg.split('=', 1)[1])
+            except ValueError:
+                pass
+        elif arg.startswith('--demo-port='):
+            try:
+                demo_port = int(arg.split('=', 1)[1])
+            except ValueError:
+                pass
+        
+        i += 1
+    
+    # 간단한 객체로 반환 (argparse.Namespace와 유사)
+    class Args:
+        def __init__(self, api_port, demo_port):
+            self.api_port = api_port
+            self.demo_port = demo_port
+    
+    return Args(api_port, demo_port)
 
 # 인자 파싱
 args = parse_args()
