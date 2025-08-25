@@ -1,19 +1,37 @@
 #!/usr/bin/env python3
 """
-Batch Processing Script for MMS Message Extraction
-=================================================
+Batch Processing Script for MMS Message Extraction with Parallel Processing
+==========================================================================
 
-This script performs batch processing of MMS messages using the MMSExtractor.
-It reads messages from a CSV file, processes them in batches, and saves results.
+This script performs batch processing of MMS messages using the MMSExtractor with
+support for parallel processing to improve performance. It reads messages from a CSV file,
+processes them in batches using multiprocessing, and saves results.
 
 Features:
 - Batch processing with MMSExtractor
+- Parallel processing support (multiprocessing)
+- DAG extraction with parallel processing
+- Performance monitoring and metrics
 - Result storage with timestamps
 - Automatic update of processing status
+- Configurable worker count
 
 Usage:
+    # Basic batch processing (parallel)
     python batch.py --batch-size 10
-    python batch.py --batch-size 50 --output-file results_batch.csv
+    
+    # Custom worker count
+    python batch.py --batch-size 50 --max-workers 8 --output-file results_batch.csv
+    
+    # With DAG extraction (parallel processing of main + DAG)
+    python batch.py --batch-size 20 --extract-entity-dag --max-workers 4
+    
+    # Sequential processing (disable multiprocessing)
+    python batch.py --batch-size 10 --disable-multiprocessing
+    
+    # Full configuration
+    python batch.py --batch-size 100 --max-workers 16 --extract-entity-dag \
+                     --llm-model ax --entity-extraction-mode llm
 """
 
 import os
@@ -29,7 +47,10 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config.settings import METADATA_CONFIG
-from mms_extractor import MMSExtractor
+from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+import multiprocessing
+import time
 
 # Configure logging - 통합 로그 파일 사용
 from pathlib import Path
@@ -69,16 +90,21 @@ class BatchProcessor:
     Batch processor for MMS message extraction
     """
     
-    def __init__(self, result_file_path="./data/batch_results.csv"):
+    def __init__(self, result_file_path="./data/batch_results.csv", max_workers=None, enable_multiprocessing=True):
         """
         Initialize batch processor
         
         Args:
             result_file_path: Path to store batch processing results
+            max_workers: Maximum number of worker processes/threads (default: CPU count)
+            enable_multiprocessing: Whether to use multiprocessing for batch processing
         """
         self.result_file_path = result_file_path
         self.extractor = None
         self.mms_pdf = None
+        self.max_workers = max_workers or multiprocessing.cpu_count()
+        self.enable_multiprocessing = enable_multiprocessing
+        self.extract_entity_dag = False
         
     def initialize_extractor(self, **extractor_kwargs):
         """
@@ -89,8 +115,9 @@ class BatchProcessor:
         """
         logger.info("Initializing MMS Extractor...")
         try:
+            self.extract_entity_dag = extractor_kwargs.get('extract_entity_dag', False)
             self.extractor = MMSExtractor(**extractor_kwargs)
-            logger.info("MMS Extractor initialized successfully")
+            logger.info(f"MMS Extractor initialized successfully (DAG 추출: {'ON' if self.extract_entity_dag else 'OFF'})")
         except Exception as e:
             logger.error(f"Failed to initialize MMS Extractor: {str(e)}")
             raise
@@ -172,7 +199,7 @@ class BatchProcessor:
     
     def process_messages(self, sampled_messages):
         """
-        Process sampled messages using MMSExtractor
+        Process sampled messages using MMSExtractor with parallel processing support
         
         Args:
             sampled_messages: DataFrame with messages to process
@@ -183,20 +210,134 @@ class BatchProcessor:
         if self.extractor is None:
             raise ValueError("Extractor not initialized. Call initialize_extractor() first.")
         
-        results = []
         processing_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        messages_list = []
         
-        logger.info(f"Processing {len(sampled_messages)} messages...")
-        
+        # Convert DataFrame to list of messages
         for idx, row in sampled_messages.iterrows():
+            msg = row.get('msg', '')
+            msg_id = row.get('msg_id', str(idx))
+            messages_list.append({'msg': msg, 'msg_id': msg_id})
+        
+        if self.enable_multiprocessing and len(messages_list) > 1:
+            logger.info(f"🚀 병렬 처리 모드로 {len(messages_list)}개 메시지 처리 시작 (워커: {self.max_workers}개)")
+            results = self._process_messages_parallel(messages_list, processing_time)
+        else:
+            logger.info(f"⚡ 순차 처리 모드로 {len(messages_list)}개 메시지 처리 시작")
+            results = self._process_messages_sequential(messages_list, processing_time)
+        
+        return results
+    
+    def _process_messages_parallel(self, messages_list, processing_time):
+        """
+        Process messages in parallel using multiprocessing
+        
+        Args:
+            messages_list: List of message dictionaries
+            processing_time: Processing timestamp
+            
+        Returns:
+            list: List of processing results
+        """
+        start_time = time.time()
+        
+        # 메시지 문자열만 추출
+        message_texts = [msg['msg'] for msg in messages_list]
+        
+        try:
+            # process_messages_batch 함수를 사용하여 병렬 처리
+            batch_result = process_messages_batch(
+                self.extractor,
+                message_texts,
+                extract_dag=self.extract_entity_dag,
+                max_workers=self.max_workers
+            )
+            
+            results = []
+            for i, msg_info in enumerate(messages_list):
+                msg_id = msg_info['msg_id']
+                msg = msg_info['msg']
+                
+                if i < len(batch_result):
+                    extraction_result = batch_result[i]
+                    
+                    # Create result record
+                    result_record = {
+                        'msg_id': msg_id,
+                        'msg': msg,
+                        'extraction_result': json.dumps(extraction_result, ensure_ascii=False),
+                        'processed_at': processing_time,
+                        'title': extraction_result.get('title', ''),
+                        'purpose': json.dumps(extraction_result.get('purpose', []), ensure_ascii=False),
+                        'product_count': len(extraction_result.get('product', [])),
+                        'channel_count': len(extraction_result.get('channel', [])),
+                        'pgm': json.dumps(extraction_result.get('pgm', []), ensure_ascii=False)
+                    }
+                    
+                    # DAG 추출 결과 검증 및 로깅
+                    if self.extract_entity_dag and 'entity_dag' in extraction_result:
+                        dag_items = extraction_result['entity_dag']
+                        if dag_items and len(dag_items) > 0:
+                            logger.info(f"✅ 메시지 {msg_id} DAG 추출 성공 - {len(dag_items)}개 관계")
+                        else:
+                            logger.warning(f"⚠️ 메시지 {msg_id} DAG 추출 요청되었으나 결과가 비어있음")
+                    
+                    results.append(result_record)
+                    logger.info(f"✅ 메시지 {msg_id} 병렬 처리 완료")
+                else:
+                    # 처리 실패한 경우
+                    error_record = {
+                        'msg_id': msg_id,
+                        'msg': msg,
+                        'extraction_result': json.dumps({'error': 'Processing failed'}, ensure_ascii=False),
+                        'processed_at': processing_time,
+                        'title': '',
+                        'purpose': '[]',
+                        'product_count': 0,
+                        'channel_count': 0,
+                        'pgm': '[]'
+                    }
+                    results.append(error_record)
+                    logger.error(f"❌ 메시지 {msg_id} 병렬 처리 실패")
+            
+            elapsed_time = time.time() - start_time
+            logger.info(f"🎯 병렬 처리 완료: {len(results)}개 메시지, {elapsed_time:.2f}초 소요")
+            return results
+            
+        except Exception as e:
+            logger.error(f"병렬 처리 실패, 순차 처리로 전환: {str(e)}")
+            return self._process_messages_sequential(messages_list, processing_time)
+    
+    def _process_messages_sequential(self, messages_list, processing_time):
+        """
+        Process messages sequentially (fallback method)
+        
+        Args:
+            messages_list: List of message dictionaries
+            processing_time: Processing timestamp
+            
+        Returns:
+            list: List of processing results
+        """
+        results = []
+        start_time = time.time()
+        
+        for i, msg_info in enumerate(messages_list, 1):
+            msg = msg_info['msg']
+            msg_id = msg_info['msg_id']
+            
             try:
-                msg = row.get('msg', '')
-                msg_id = row.get('msg_id', str(idx))
+                logger.info(f"처리 중 ({i}/{len(messages_list)}): {msg_id} - {msg[:50]}...")
                 
-                logger.info(f"Processing message {msg_id}: {msg[:50]}...")
-                
-                # Process the message using MMSExtractor
-                extraction_result = self.extractor.process_message(msg)
+                # DAG 추출이 활성화된 경우 병렬로 처리
+                if self.extract_entity_dag:
+                    extraction_result = process_message_with_dag(
+                        self.extractor, 
+                        msg, 
+                        extract_dag=True
+                    )
+                else:
+                    extraction_result = self.extractor.process_message(msg)
                 
                 # Create result record
                 result_record = {
@@ -214,19 +355,17 @@ class BatchProcessor:
                 results.append(result_record)
                 
                 # DAG 추출 결과 검증 및 로깅
-                # DAG가 활성화된 경우 결과에 entity_dag 필드가 포함되어야 함
-                # 동시에 ./dag_images/ 디렉토리에 시각화 이미지도 생성됨
-                if self.extract_entity_dag and 'entity_dag' in result:
-                    dag_length = len(result['entity_dag']) if result['entity_dag'] else 0
-                    if dag_length > 0:
-                        logger.info(f"✅ 메시지 {msg_id} DAG 추출 성공 - 길이: {dag_length}자")
+                if self.extract_entity_dag and 'entity_dag' in extraction_result:
+                    dag_items = extraction_result['entity_dag']
+                    if dag_items and len(dag_items) > 0:
+                        logger.info(f"✅ 메시지 {msg_id} DAG 추출 성공 - {len(dag_items)}개 관계")
                     else:
                         logger.warning(f"⚠️ 메시지 {msg_id} DAG 추출 요청되었으나 결과가 비어있음")
                 
-                logger.info(f"Successfully processed message {msg_id}")
+                logger.info(f"✅ 메시지 {msg_id} 순차 처리 완료")
                 
             except Exception as e:
-                logger.error(f"Failed to process message {msg_id}: {str(e)}")
+                logger.error(f"❌ 메시지 {msg_id} 처리 실패: {str(e)}")
                 # Add error record
                 error_record = {
                     'msg_id': msg_id,
@@ -241,7 +380,8 @@ class BatchProcessor:
                 }
                 results.append(error_record)
         
-        logger.info(f"Completed processing {len(results)} messages")
+        elapsed_time = time.time() - start_time
+        logger.info(f"⚡ 순차 처리 완료: {len(results)}개 메시지, {elapsed_time:.2f}초 소요")
         return results
     
     def save_results(self, results):
@@ -289,15 +429,17 @@ class BatchProcessor:
     
     def run_batch(self, batch_size, **extractor_kwargs):
         """
-        Run complete batch processing pipeline
+        Run complete batch processing pipeline with performance monitoring
         
         Args:
             batch_size: Number of messages to process
             **extractor_kwargs: Keyword arguments for MMSExtractor
             
         Returns:
-            dict: Processing summary
+            dict: Processing summary with performance metrics
         """
+        overall_start_time = time.time()
+        
         try:
             # Initialize components
             self.load_mms_data()
@@ -310,22 +452,54 @@ class BatchProcessor:
                 return {
                     'status': 'completed',
                     'processed_count': 0,
-                    'message': 'No unprocessed messages found'
+                    'message': 'No unprocessed messages found',
+                    'processing_mode': 'N/A',
+                    'max_workers': self.max_workers,
+                    'dag_extraction': self.extract_entity_dag
                 }
             
+            # Process messages with timing
+            processing_start_time = time.time()
             results = self.process_messages(sampled_messages)
+            processing_time = time.time() - processing_start_time
             
             # Save results and log summary
             self.save_results(results)
             processed_msg_ids = [r['msg_id'] for r in results if 'error' not in r.get('extraction_result', '')]
             self.log_processing_summary(processed_msg_ids)
             
+            total_time = time.time() - overall_start_time
+            processing_mode = "병렬 처리" if (self.enable_multiprocessing and len(results) > 1) else "순차 처리"
+            
+            # Performance metrics
+            avg_time_per_message = processing_time / len(results) if results else 0
+            throughput = len(results) / processing_time if processing_time > 0 else 0
+            
+            logger.info("="*50)
+            logger.info("🎯 배치 처리 성능 요약")
+            logger.info("="*50)
+            logger.info(f"처리 모드: {processing_mode}")
+            logger.info(f"워커 수: {self.max_workers}")
+            logger.info(f"DAG 추출: {'ON' if self.extract_entity_dag else 'OFF'}")
+            logger.info(f"총 처리 시간: {total_time:.2f}초")
+            logger.info(f"메시지 처리 시간: {processing_time:.2f}초")
+            logger.info(f"메시지당 평균 시간: {avg_time_per_message:.2f}초")
+            logger.info(f"처리량: {throughput:.2f} 메시지/초")
+            logger.info("="*50)
+            
             return {
                 'status': 'completed',
                 'processed_count': len(results),
                 'successful_count': len(processed_msg_ids),
                 'failed_count': len(results) - len(processed_msg_ids),
-                'results_file': self.result_file_path
+                'results_file': self.result_file_path,
+                'processing_mode': processing_mode,
+                'max_workers': self.max_workers,
+                'dag_extraction': self.extract_entity_dag,
+                'total_time_seconds': round(total_time, 2),
+                'processing_time_seconds': round(processing_time, 2),
+                'avg_time_per_message': round(avg_time_per_message, 2),
+                'throughput_messages_per_second': round(throughput, 2)
             }
             
         except Exception as e:
@@ -333,7 +507,10 @@ class BatchProcessor:
             return {
                 'status': 'failed',
                 'error': str(e),
-                'processed_count': 0
+                'processed_count': 0,
+                'processing_mode': 'N/A',
+                'max_workers': self.max_workers,
+                'dag_extraction': self.extract_entity_dag
             }
 
 
@@ -349,11 +526,17 @@ def main():
     parser.add_argument('--output-file', '-o', type=str, default='./data/batch_results.csv',
                        help='Output CSV file for results (default: batch_results.csv)')
     
+    # Parallel processing arguments
+    parser.add_argument('--max-workers', '-w', type=int, default=None,
+                       help='Maximum number of worker processes (default: CPU count)')
+    parser.add_argument('--disable-multiprocessing', action='store_true', default=False,
+                       help='Disable multiprocessing and use sequential processing')
+    
     # MMSExtractor arguments
     parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
                        help='Data source for offer information (default: local)')
     parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm', 'rag'], default='llm',
-                       help='Product information extraction mode (default: nlp)')
+                       help='Product information extraction mode (default: llm)')
     parser.add_argument('--entity-extraction-mode', choices=['logic', 'llm'], default='llm',
                        help='Entity extraction mode (default: llm)')
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
@@ -373,18 +556,28 @@ def main():
         'extract_entity_dag': args.extract_entity_dag  # DAG 추출 여부
     }
     
+    # 병렬 처리 설정
+    max_workers = args.max_workers or multiprocessing.cpu_count()
+    enable_multiprocessing = not args.disable_multiprocessing
+    
     logger.info("="*50)
-    logger.info("Starting Batch MMS Processing")
+    logger.info("🚀 Starting Batch MMS Processing")
     logger.info("="*50)
-    logger.info(f"Batch size: {args.batch_size}")
-    logger.info(f"Output file: {args.output_file}")
-    logger.info(f"Extractor config: {extractor_kwargs}")
+    logger.info(f"배치 크기: {args.batch_size}")
+    logger.info(f"출력 파일: {args.output_file}")
+    logger.info(f"병렬 처리: {'ON' if enable_multiprocessing else 'OFF'}")
+    logger.info(f"최대 워커 수: {max_workers}")
+    logger.info(f"추출기 설정: {extractor_kwargs}")
     if args.extract_entity_dag:
         logger.info("🎯 DAG 추출 모드 활성화됨")
     logger.info("="*50)
     
     # Run batch processing
-    processor = BatchProcessor(result_file_path=args.output_file)
+    processor = BatchProcessor(
+        result_file_path=args.output_file,
+        max_workers=max_workers,
+        enable_multiprocessing=enable_multiprocessing
+    )
     summary = processor.run_batch(args.batch_size, **extractor_kwargs)
     
     # Print summary
