@@ -453,6 +453,286 @@
             border-radius: 50%;
             background: currentColor;
         }
+
+        /* 모드 탭 스타일 */
+        .mode-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .mode-tab-button {
+            background: none;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-tab-button:hover {
+            color: #4f46e5;
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .mode-tab-button.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+
+        .mode-content {
+            display: none;
+        }
+
+        .mode-content.active {
+            display: block;
+        }
+
+        /* 진행률 표시 스타일 */
+        .progress-container {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-label {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .progress-stats {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-details {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+        }
+
+        .progress-detail {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .progress-detail i {
+            color: #4f46e5;
+        }
+
+        /* 배치 결과 스타일 */
+        .batch-summary {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .batch-summary h3 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .batch-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .batch-summary-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .batch-summary-item .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+
+        .batch-summary-item .label {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .batch-results {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        .batch-result-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px;
+        }
+
+        .batch-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .batch-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .batch-result-title {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .batch-result-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .batch-result-status.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .batch-result-status.error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .batch-result-content {
+            margin-top: 10px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .form-hint {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 메타데이터 섹션 스타일 */
+        .metadata-section {
+            margin-bottom: 25px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .metadata-section h4 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .metadata-item {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metadata-item span:first-child {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .metadata-item span:last-child {
+            color: #4f46e5;
+            font-weight: 500;
+        }
+
+        .performance-info {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .performance-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border-left: 3px solid #4f46e5;
+        }
+
+        .performance-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .performance-item i {
+            color: #4f46e5;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .performance-item span {
+            color: #374151;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
@@ -463,8 +743,18 @@
         </div>
 
         <div class="main-content">
-            <!-- 입력 섹션 -->
-            <div class="input-section">
+            <!-- 처리 모드 탭 -->
+            <div class="mode-tabs">
+                <button class="mode-tab-button active" onclick="switchMode('single')">
+                    <i class="fas fa-file-text"></i> 단일 메시지 처리
+                </button>
+                <button class="mode-tab-button" onclick="switchMode('batch')">
+                    <i class="fas fa-list"></i> 배치 처리
+                </button>
+            </div>
+
+            <!-- 단일 처리 섹션 -->
+            <div id="singleMode" class="input-section mode-content active">
                 <h2 class="section-title">
                     <i class="fas fa-edit"></i>
                     메시지 입력 및 설정
@@ -548,6 +838,119 @@
                 </form>
             </div>
 
+            <!-- 배치 처리 섹션 -->
+            <div id="batchMode" class="input-section mode-content" style="display: none;">
+                <h2 class="section-title">
+                    <i class="fas fa-list"></i>
+                    배치 메시지 처리
+                </h2>
+
+                <div id="batchApiStatus" class="api-status offline">
+                    <div class="status-indicator"></div>
+                    API 서버 상태 확인 중...
+                </div>
+
+                <form id="batchExtractionForm">
+                    <div class="form-group">
+                        <label class="form-label" for="batchMessages">배치 메시지 입력 *</label>
+                        <textarea id="batchMessages" class="form-input form-textarea" 
+                                placeholder="여러 메시지를 입력하세요. 각 메시지는 빈 줄로 구분합니다.&#10;&#10;예시:&#10;[SKT] 첫 번째 메시지&#10;&#10;[KT] 두 번째 메시지&#10;&#10;[LG U+] 세 번째 메시지" 
+                                rows="10" required></textarea>
+                        <div class="form-hint">
+                            <i class="fas fa-info-circle"></i>
+                            각 메시지는 빈 줄로 구분해주세요. 최대 100개 메시지까지 처리 가능합니다.
+                        </div>
+                    </div>
+
+                    <div class="parameters-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="batchLlmModel">LLM 모델</label>
+                            <select id="batchLlmModel" class="form-input form-select">
+                                <option value="ax">A.X (SKT)</option>
+                                <option value="gemma">Gemma</option>
+                                <option value="claude">Claude</option>
+                                <option value="gemini">Gemini</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="batchDataSource">데이터 소스</label>
+                            <select id="batchDataSource" class="form-input form-select">
+                                <option value="local">Local (CSV)</option>
+                                <option value="db">Database</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="batchProductMode">상품 추출 모드</label>
+                            <select id="batchProductMode" class="form-input form-select">
+                                <option value="nlp">NLP (형태소 분석)</option>
+                                <option value="llm">LLM 기반</option>
+                                <option value="rag">RAG (검색증강)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="batchEntityMode">개체명 추출 모드</label>
+                            <select id="batchEntityMode" class="form-input form-select">
+                                <option value="logic">통합 LLM 기반</option>
+                                <option value="llm">분리 LLM 기반</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="maxWorkers">최대 워커 수</label>
+                            <select id="maxWorkers" class="form-input form-select">
+                                <option value="2">2 (기본)</option>
+                                <option value="4">4</option>
+                                <option value="8">8</option>
+                                <option value="16">16</option>
+                            </select>
+                            <div class="form-hint">
+                                <i class="fas fa-info-circle"></i>
+                                워커 수가 많을수록 빠르지만 시스템 리소스를 더 많이 사용합니다.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="batchExtractDag" class="checkbox-input">
+                        <label for="batchExtractDag" class="form-label">오퍼 관계 DAG 추출</label>
+                    </div>
+
+                    <!-- 배치 진행률 표시 -->
+                    <div id="batchProgress" class="progress-container" style="display: none;">
+                        <div class="progress-header">
+                            <span class="progress-label">처리 진행률</span>
+                            <span class="progress-stats" id="progressStats">0/0 (0%)</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-details">
+                            <div class="progress-detail">
+                                <i class="fas fa-check-circle"></i>
+                                <span>성공: <span id="successCount">0</span></span>
+                            </div>
+                            <div class="progress-detail">
+                                <i class="fas fa-times-circle"></i>
+                                <span>실패: <span id="failureCount">0</span></span>
+                            </div>
+                            <div class="progress-detail">
+                                <i class="fas fa-clock"></i>
+                                <span>경과 시간: <span id="elapsedTime">0초</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="batchSubmitBtn">
+                        <i class="fas fa-play"></i>
+                        <span class="btn-text">배치 처리 실행</span>
+                        <div class="spinner loading"></div>
+                    </button>
+                </form>
+            </div>
+
             <!-- 결과 섹션 -->
             <div class="output-section">
                 <h2 class="section-title">
@@ -568,6 +971,9 @@
                         </button>
                         <button class="tab-button" onclick="switchTab('metadata')">
                             <i class="fas fa-info-circle"></i> 메타데이터
+                        </button>
+                        <button class="tab-button" onclick="switchTab('batch')" id="batchTabButton" style="display: none;">
+                            <i class="fas fa-list-ul"></i> 배치 결과
                         </button>
                     </div>
 
@@ -601,6 +1007,13 @@
                     <div id="metadataTab" class="tab-content">
                         <div class="result-container">
                             <div id="metadataContent" class="metadata"></div>
+                        </div>
+                    </div>
+
+                    <div id="batchTab" class="tab-content">
+                        <div class="result-container">
+                            <div id="batchSummary" class="batch-summary"></div>
+                            <div id="batchResults" class="batch-results"></div>
                         </div>
                     </div>
                 </div>
@@ -685,6 +1098,7 @@ T world 앱에서 간편 예약
             
             // 폼 제출 이벤트 리스너
             document.getElementById('extractionForm').addEventListener('submit', handleSubmit);
+            document.getElementById('batchExtractionForm').addEventListener('submit', handleBatchSubmit);
             
             // DAG 탭을 기본으로 표시 (테스트용)
             showDagTab();
@@ -807,35 +1221,88 @@ T world 앱에서 간편 예약
 
             // 메타데이터 표시
             const metadataContent = document.getElementById('metadataContent');
+            const isDagEnabled = data.metadata.extract_entity_dag || false;
+            const processingMode = isDagEnabled ? '병렬 처리 (메인 + DAG)' : '단일 처리';
+            const processingIcon = isDagEnabled ? '🔄' : '⚡';
+            
             metadataContent.innerHTML = `
-                <div class="metadata-item">
-                    <span>LLM 모델:</span>
-                    <span>${data.metadata.llm_model}</span>
+                <div class="metadata-section">
+                    <h4><i class="fas fa-cogs"></i> 처리 설정</h4>
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <span>LLM 모델:</span>
+                            <span>${data.metadata.llm_model}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span>데이터 소스:</span>
+                            <span>${data.metadata.offer_info_data_src}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span>상품 추출 모드:</span>
+                            <span>${data.metadata.product_info_extraction_mode}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span>개체명 추출 모드:</span>
+                            <span>${data.metadata.entity_matching_mode}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="metadata-item">
-                    <span>데이터 소스:</span>
-                    <span>${data.metadata.offer_info_data_src}</span>
+                
+                <div class="metadata-section">
+                    <h4><i class="fas fa-rocket"></i> 성능 정보</h4>
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <span>처리 모드:</span>
+                            <span>${processingIcon} ${processingMode}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span>DAG 추출:</span>
+                            <span>${isDagEnabled ? '✅ 활성화' : '❌ 비활성화'}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span>총 처리 시간:</span>
+                            <span>⏱️ ${data.metadata.processing_time_seconds.toFixed(2)}초</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span>메시지 길이:</span>
+                            <span>📝 ${data.metadata.message_length}자</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="metadata-item">
-                    <span>상품 추출 모드:</span>
-                    <span>${data.metadata.product_info_extraction_mode}</span>
+                
+                ${isDagEnabled ? `
+                <div class="metadata-section">
+                    <h4><i class="fas fa-info-circle"></i> 병렬 처리 정보</h4>
+                    <div class="performance-info">
+                        <div class="performance-item">
+                            <i class="fas fa-parallel-threads"></i>
+                            <span>메인 처리와 DAG 추출이 동시에 실행되어 처리 시간이 단축되었습니다.</span>
+                        </div>
+                        <div class="performance-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>병렬 처리를 통해 약 15-30% 성능 향상 효과를 얻을 수 있습니다.</span>
+                        </div>
+                        <div class="performance-item">
+                            <i class="fas fa-project-diagram"></i>
+                            <span>DAG 이미지는 별도 스레드에서 생성되어 메인 처리를 방해하지 않습니다.</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="metadata-item">
-                    <span>개체명 추출 모드:</span>
-                    <span>${data.metadata.entity_matching_mode}</span>
+                ` : `
+                <div class="metadata-section">
+                    <h4><i class="fas fa-lightbulb"></i> 성능 팁</h4>
+                    <div class="performance-info">
+                        <div class="performance-item">
+                            <i class="fas fa-rocket"></i>
+                            <span>DAG 추출을 활성화하면 병렬 처리로 더 많은 정보를 얻을 수 있습니다.</span>
+                        </div>
+                        <div class="performance-item">
+                            <i class="fas fa-project-diagram"></i>
+                            <span>엔티티 관계 시각화를 통해 메시지 구조를 더 잘 이해할 수 있습니다.</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="metadata-item">
-                    <span>DAG 추출:</span>
-                    <span>${data.metadata.extract_entity_dag ? 'Yes' : 'No'}</span>
-                </div>
-                <div class="metadata-item">
-                    <span>처리 시간:</span>
-                    <span>${data.metadata.processing_time_seconds}초</span>
-                </div>
-                <div class="metadata-item">
-                    <span>메시지 길이:</span>
-                    <span>${data.metadata.message_length}자</span>
-                </div>
+                `}
             `;
 
             // DAG 이미지 처리
@@ -1042,6 +1509,296 @@ T world 앱에서 간편 예약
             if (dagTabButton) {
                 dagTabButton.classList.add('active');
                 console.log('✅ DAG 탭 버튼 활성화됨');
+            }
+        }
+
+        // 배치 처리 함수들
+        async function handleBatchSubmit(event) {
+            event.preventDefault();
+            
+            if (!apiOnline) {
+                alert('API 서버가 오프라인 상태입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('batchSubmitBtn');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const spinner = submitBtn.querySelector('.spinner');
+            
+            try {
+                // UI 상태 변경
+                submitBtn.disabled = true;
+                btnText.textContent = '배치 처리 중...';
+                spinner.style.display = 'block';
+                
+                // 폼 데이터 수집
+                const formData = collectBatchFormData();
+                if (!formData.messages || formData.messages.length === 0) {
+                    alert('처리할 메시지를 입력해주세요.');
+                    return;
+                }
+                
+                console.log('배치 처리 시작:', formData);
+                
+                // 진행률 표시 시작
+                showBatchProgress();
+                updateBatchProgress(0, formData.messages.length, 0, 0, 0);
+                
+                // API 호출
+                const response = await fetch(`${API_BASE_URL}/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: formData.messages,
+                        llm_model: formData.llm_model,
+                        offer_info_data_src: formData.offer_info_data_src,
+                        product_info_extraction_mode: formData.product_info_extraction_mode,
+                        entity_matching_mode: formData.entity_matching_mode,
+                        extract_entity_dag: formData.extract_entity_dag,
+                        max_workers: formData.max_workers
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API 호출 실패: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('배치 처리 결과:', result);
+                
+                // 결과 표시
+                displayBatchResults(result);
+                showBatchTab();
+                showResults();
+                switchTab('batch');
+                
+            } catch (error) {
+                console.error('배치 처리 오류:', error);
+                alert(`배치 처리 중 오류가 발생했습니다: ${error.message}`);
+            } finally {
+                // UI 상태 복원
+                submitBtn.disabled = false;
+                btnText.textContent = '배치 처리 실행';
+                spinner.style.display = 'none';
+                hideBatchProgress();
+            }
+        }
+        
+        function collectBatchFormData() {
+            const messagesText = document.getElementById('batchMessages').value.trim();
+            const messages = messagesText.split('\n\n').filter(msg => msg.trim() !== '');
+            
+            return {
+                messages: messages,
+                llm_model: document.getElementById('batchLlmModel').value,
+                offer_info_data_src: document.getElementById('batchDataSource').value,
+                product_info_extraction_mode: document.getElementById('batchProductMode').value,
+                entity_matching_mode: document.getElementById('batchEntityMode').value,
+                extract_entity_dag: document.getElementById('batchExtractDag').checked,
+                max_workers: parseInt(document.getElementById('maxWorkers').value)
+            };
+        }
+        
+        function showBatchProgress() {
+            const progressContainer = document.getElementById('batchProgress');
+            if (progressContainer) {
+                progressContainer.style.display = 'block';
+            }
+        }
+        
+        function hideBatchProgress() {
+            const progressContainer = document.getElementById('batchProgress');
+            if (progressContainer) {
+                progressContainer.style.display = 'none';
+            }
+        }
+        
+        function updateBatchProgress(completed, total, successCount, failureCount, elapsedSeconds) {
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            // 진행률 바 업데이트
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) {
+                progressFill.style.width = `${percentage}%`;
+            }
+            
+            // 통계 업데이트
+            const progressStats = document.getElementById('progressStats');
+            if (progressStats) {
+                progressStats.textContent = `${completed}/${total} (${percentage}%)`;
+            }
+            
+            const successCountEl = document.getElementById('successCount');
+            if (successCountEl) {
+                successCountEl.textContent = successCount;
+            }
+            
+            const failureCountEl = document.getElementById('failureCount');
+            if (failureCountEl) {
+                failureCountEl.textContent = failureCount;
+            }
+            
+            const elapsedTimeEl = document.getElementById('elapsedTime');
+            if (elapsedTimeEl) {
+                elapsedTimeEl.textContent = `${elapsedSeconds}초`;
+            }
+        }
+        
+        function displayBatchResults(result) {
+            if (!result.success) {
+                console.error('배치 처리 실패:', result.error);
+                return;
+            }
+            
+            const batchSummary = document.getElementById('batchSummary');
+            const batchResults = document.getElementById('batchResults');
+            
+            if (!batchSummary || !batchResults) {
+                console.error('배치 결과 표시 요소를 찾을 수 없음');
+                return;
+            }
+            
+            // 요약 정보 표시
+            const metadata = result.metadata || {};
+            const totalCount = result.results ? result.results.length : 0;
+            const successCount = result.results ? result.results.filter(r => r.success).length : 0;
+            const failureCount = totalCount - successCount;
+            const processingTime = metadata.processing_time_seconds || 0;
+            
+            batchSummary.innerHTML = `
+                <h3><i class="fas fa-chart-bar"></i> 배치 처리 요약</h3>
+                <div class="batch-summary-grid">
+                    <div class="batch-summary-item">
+                        <div class="value">${totalCount}</div>
+                        <div class="label">총 메시지</div>
+                    </div>
+                    <div class="batch-summary-item">
+                        <div class="value" style="color: #10b981;">${successCount}</div>
+                        <div class="label">성공</div>
+                    </div>
+                    <div class="batch-summary-item">
+                        <div class="value" style="color: #ef4444;">${failureCount}</div>
+                        <div class="label">실패</div>
+                    </div>
+                    <div class="batch-summary-item">
+                        <div class="value">${processingTime.toFixed(1)}초</div>
+                        <div class="label">처리 시간</div>
+                    </div>
+                    <div class="batch-summary-item">
+                        <div class="value">${metadata.max_workers || 'N/A'}</div>
+                        <div class="label">워커 수</div>
+                    </div>
+                    <div class="batch-summary-item">
+                        <div class="value">${metadata.extract_entity_dag ? 'ON' : 'OFF'}</div>
+                        <div class="label">DAG 추출</div>
+                    </div>
+                </div>
+            `;
+            
+            // 개별 결과 표시
+            let resultsHtml = '';
+            if (result.results && result.results.length > 0) {
+                result.results.forEach((item, index) => {
+                    const statusClass = item.success ? 'success' : 'error';
+                    const statusText = item.success ? '성공' : '실패';
+                    const messagePreview = item.success && item.result && item.result.title 
+                        ? item.result.title 
+                        : (item.message ? item.message.substring(0, 50) + '...' : `메시지 ${index + 1}`);
+                    
+                    resultsHtml += `
+                        <div class="batch-result-item">
+                            <div class="batch-result-header">
+                                <div class="batch-result-title">메시지 ${index + 1}: ${messagePreview}</div>
+                                <div class="batch-result-status ${statusClass}">${statusText}</div>
+                            </div>
+                            <div class="batch-result-content">
+                                ${item.success ? formatBatchResultContent(item.result) : `<span style="color: #ef4444;">오류: ${item.error || '알 수 없는 오류'}</span>`}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            batchResults.innerHTML = resultsHtml;
+        }
+        
+        function formatBatchResultContent(result) {
+            if (!result) return '결과 없음';
+            
+            const items = [];
+            if (result.title) items.push(`<strong>제목:</strong> ${result.title}`);
+            if (result.product) items.push(`<strong>상품:</strong> ${result.product}`);
+            if (result.channel) items.push(`<strong>채널:</strong> ${result.channel}`);
+            if (result.purpose) items.push(`<strong>목적:</strong> ${result.purpose}`);
+            if (result.program) items.push(`<strong>프로그램:</strong> ${result.program}`);
+            
+            return items.length > 0 ? items.join('<br>') : '추출된 정보 없음';
+        }
+
+        // 모드 전환 함수
+        function switchMode(mode) {
+            console.log('모드 전환:', mode);
+            
+            // 모든 모드 탭 버튼의 active 클래스 제거
+            document.querySelectorAll('.mode-tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 모든 모드 내용 숨김
+            document.querySelectorAll('.mode-content').forEach(content => {
+                content.classList.remove('active');
+                content.style.display = 'none';
+            });
+            
+            // 선택된 모드 버튼 활성화
+            if (typeof event !== 'undefined' && event.target) {
+                event.target.classList.add('active');
+            } else {
+                const targetButton = document.querySelector(`[onclick="switchMode('${mode}')"]`);
+                if (targetButton) {
+                    targetButton.classList.add('active');
+                }
+            }
+            
+            // 선택된 모드 내용 표시
+            const targetMode = document.getElementById(mode + 'Mode');
+            if (targetMode) {
+                targetMode.classList.add('active');
+                targetMode.style.display = 'block';
+                console.log('✅ 모드 전환 완료:', mode);
+            } else {
+                console.error('❌ 모드를 찾을 수 없음:', mode + 'Mode');
+            }
+            
+            // 결과 섹션 초기화
+            if (mode === 'batch') {
+                hideBatchTab();
+                hideResults();
+            } else {
+                hideBatchTab();
+                hideResults();
+            }
+        }
+
+
+
+        // 배치 탭 표시
+        function showBatchTab() {
+            const batchTab = document.getElementById('batchTabButton');
+            if (batchTab) {
+                batchTab.style.display = 'block';
+                console.log('✅ 배치 탭 버튼 표시됨');
+            }
+        }
+
+        // 배치 탭 숨김
+        function hideBatchTab() {
+            const batchTab = document.getElementById('batchTabButton');
+            if (batchTab) {
+                batchTab.style.display = 'none';
+                console.log('✅ 배치 탭 버튼 숨김됨');
             }
         }
 

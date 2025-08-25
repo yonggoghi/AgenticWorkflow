@@ -34,7 +34,7 @@ sys.path.insert(0, str(current_dir))
 
 # MMSExtractor 및 설정 모듈 임포트
 try:
-    from mms_extractor import MMSExtractor
+    from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
 except ImportError as e:
     print(f"MMSExtractor 임포트 오류: {e}")
@@ -313,12 +313,20 @@ def extract_message():
         # 3. Graphviz를 통해 시각적 다이어그램 생성 (./dag_images/ 디렉토리에 저장)
         # 4. 결과의 entity_dag 필드에 DAG 텍스트 표현 포함
         
-        # 구성된 추출기로 메시지 처리
+        # 구성된 추출기로 메시지 처리 (멀티스레드)
         start_time = time.time()
         extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, extract_entity_dag)
         
         logger.info(f"데이터 소스로 메시지 처리 중: {offer_info_data_src}")
-        result = extractor.process_message(message)
+        
+        # DAG 추출 여부에 따라 병렬 처리 또는 단일 처리
+        if extract_entity_dag:
+            logger.info("DAG 추출과 함께 병렬 처리 시작")
+            result = process_message_with_dag(extractor, message, extract_dag=True)
+        else:
+            result = extractor.process_message(message)
+            result['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
+            
         processing_time = time.time() - start_time
         
         # DAG 추출 결과 검증 및 로깅
@@ -373,6 +381,8 @@ def extract_batch():
         - offer_info_data_src (optional): 데이터 소스
         - product_info_extraction_mode (optional): 상품 추출 모드
         - entity_matching_mode (optional): 엔티티 매칭 모드
+        - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: False)
+        - max_workers (optional): 병렬 처리 워커 수 (기본값: CPU 코어 수)
     
     Returns:
         JSON: 배치 처리 결과
@@ -412,6 +422,8 @@ def extract_batch():
         llm_model = data.get('llm_model', settings.ModelConfig.llm_model)
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
+        extract_entity_dag = data.get('extract_entity_dag', False)
+        max_workers = data.get('max_workers', None)
         
         # 파라미터 유효성 검증
         valid_sources = ['local', 'db']
@@ -431,34 +443,77 @@ def extract_batch():
             return jsonify({"error": f"잘못된 entity_matching_mode입니다. 사용 가능: {valid_entity_modes}"}), 400
         
         # 구성된 추출기 가져오기
-        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode)
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, extract_entity_dag)
         
-        # 모든 메시지 순차 처리
+        # DAG 추출 요청 로깅
+        if extract_entity_dag:
+            logger.info(f"🎯 배치 DAG 추출 요청됨 - {len(messages)}개 메시지, 워커: {max_workers}")
+        
+        # 멀티프로세스 배치 처리
         start_time = time.time()
-        results = []
         
+        # 빈 메시지 필터링
+        valid_messages = []
+        message_indices = []
         for i, message in enumerate(messages):
-            if not message or not message.strip():
-                results.append({
-                    "index": i,
-                    "success": False,
-                    "error": "빈 메시지입니다"
-                })
-                continue
+            if message and message.strip():
+                valid_messages.append(message)
+                message_indices.append(i)
+        
+        logger.info(f"배치 처리 시작: {len(valid_messages)}/{len(messages)}개 유효한 메시지")
+        
+        try:
+            # 멀티프로세스 배치 처리 실행
+            batch_results = process_messages_batch(
+                extractor, 
+                valid_messages, 
+                extract_dag=extract_entity_dag,
+                max_workers=max_workers
+            )
             
-            try:
-                result = extractor.process_message(message)
-                results.append({
-                    "index": i,
-                    "success": True,
-                    "result": result
-                })
-            except Exception as e:
-                logger.error(f"메시지 {i} 처리 중 오류: {e}")
+            # 결과를 원래 인덱스와 매핑
+            results = []
+            valid_result_idx = 0
+            
+            for i, message in enumerate(messages):
+                if not message or not message.strip():
+                    results.append({
+                        "index": i,
+                        "success": False,
+                        "error": "빈 메시지입니다"
+                    })
+                else:
+                    if valid_result_idx < len(batch_results):
+                        batch_result = batch_results[valid_result_idx]
+                        if batch_result.get('error'):
+                            results.append({
+                                "index": i,
+                                "success": False,
+                                "error": batch_result['error']
+                            })
+                        else:
+                            results.append({
+                                "index": i,
+                                "success": True,
+                                "result": batch_result
+                            })
+                        valid_result_idx += 1
+                    else:
+                        results.append({
+                            "index": i,
+                            "success": False,
+                            "error": "배치 처리 결과 부족"
+                        })
+        
+        except Exception as e:
+            logger.error(f"배치 처리 중 오류: {e}")
+            # 배치 처리 실패 시 모든 메시지를 실패로 처리
+            results = []
+            for i, message in enumerate(messages):
                 results.append({
                     "index": i,
                     "success": False,
-                    "error": str(e)
+                    "error": f"배치 처리 실패: {str(e)}"
                 })
         
         processing_time = time.time() - start_time
@@ -480,6 +535,8 @@ def extract_batch():
                 "offer_info_data_src": offer_info_data_src,
                 "product_info_extraction_mode": product_info_extraction_mode,
                 "entity_matching_mode": entity_matching_mode,
+                "extract_entity_dag": extract_entity_dag,
+                "max_workers": max_workers,
                 "processing_time_seconds": round(processing_time, 3),
                 "timestamp": time.time()
             }
@@ -611,14 +668,21 @@ def main():
         """
         
         try:
-            logger.info(f"추출기 설정: llm_model={args.llm_model}, product_mode={args.product_info_extraction_mode}, entity_mode={args.entity_matching_mode}")
+            logger.info(f"추출기 설정: llm_model={args.llm_model}, product_mode={args.product_info_extraction_mode}, entity_mode={args.entity_matching_mode}, dag_extract={args.extract_entity_dag}")
             extractor = get_configured_extractor(args.llm_model, args.product_info_extraction_mode, args.entity_matching_mode, args.extract_entity_dag)
             
             if not message.strip():
                 logger.info("텍스트가 제공되지 않아 샘플 메시지를 사용합니다...")
             
             logger.info("메시지 처리 중...")
-            result = extractor.process_message(message)
+            
+            # DAG 추출 여부에 따라 병렬 처리 또는 단일 처리
+            if args.extract_entity_dag:
+                logger.info("DAG 추출과 함께 병렬 처리 시작")
+                result = process_message_with_dag(extractor, message, extract_dag=True)
+            else:
+                result = extractor.process_message(message)
+                result['entity_dag'] = []
             
             print("\n" + "="*60)
             print("추출 결과:")

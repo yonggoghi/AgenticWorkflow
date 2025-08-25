@@ -688,9 +688,22 @@ def main():
     # 현재 포트 설정 표시
     st.info(f"📡 **현재 설정**: API 서버 포트 {args.api_port}, Demo 서버 포트 {args.demo_port}")
     
+    # 메인 탭 생성 (단일 처리 vs 배치 처리)
+    main_tab1, main_tab2 = st.tabs(["📄 단일 메시지 처리", "📋 배치 처리"])
+    
+    with main_tab1:
+        # 단일 처리 UI
+        display_single_processing_ui(api_status, args)
+    
+    with main_tab2:
+        # 배치 처리 UI
+        display_batch_processing_ui(api_status, args)
+
+def display_single_processing_ui(api_status: bool, args):
+    """단일 메시지 처리 UI"""
     # 사이드바 설정
     with st.sidebar:
-        st.header("⚙️ 메시지 입력 및 설정")
+        st.header("⚙️ 단일 메시지 설정")
         
         # LLM 모델 선택
         llm_model = st.selectbox(
@@ -819,6 +832,282 @@ def main():
             display_results(st.session_state['extraction_result'])
         else:
             st.info("메시지를 입력하고 '정보 추출 실행' 버튼을 클릭하세요.")
+
+def display_batch_processing_ui(api_status: bool, args):
+    """배치 메시지 처리 UI"""
+    st.header("📋 배치 메시지 처리")
+    st.info("여러 메시지를 한 번에 처리할 수 있습니다. 각 메시지는 빈 줄로 구분해주세요.")
+    
+    # 사이드바 설정
+    with st.sidebar:
+        st.header("⚙️ 배치 처리 설정")
+        
+        # LLM 모델 선택
+        batch_llm_model = st.selectbox(
+            "LLM 모델 (배치)",
+            ["ax", "gemma", "claude", "gemini"],
+            format_func=lambda x: {
+                "ax": "A.X (SKT)",
+                "gemma": "Gemma",
+                "claude": "Claude", 
+                "gemini": "Gemini"
+            }[x],
+            key="batch_llm_model"
+        )
+        
+        # 데이터 소스
+        batch_data_source = st.selectbox(
+            "데이터 소스 (배치)",
+            ["local", "db"],
+            format_func=lambda x: "Local (CSV)" if x == "local" else "Database",
+            key="batch_data_source"
+        )
+        
+        # 상품 추출 모드
+        batch_product_mode = st.selectbox(
+            "상품 추출 모드 (배치)",
+            ["nlp", "llm", "rag"],
+            format_func=lambda x: {
+                "nlp": "NLP (형태소 분석)",
+                "llm": "LLM 기반",
+                "rag": "RAG (검색증강)"
+            }[x],
+            key="batch_product_mode"
+        )
+        
+        # 엔티티 매칭 모드
+        batch_entity_mode = st.selectbox(
+            "엔티티 매칭 모드 (배치)",
+            ["logic", "llm"],
+            format_func=lambda x: "통합 LLM 기반" if x == "logic" else "분리 LLM 기반",
+            key="batch_entity_mode"
+        )
+        
+        # 최대 워커 수
+        max_workers = st.selectbox(
+            "최대 워커 수",
+            [2, 4, 8, 16],
+            index=0,
+            help="워커 수가 많을수록 빠르지만 시스템 리소스를 더 많이 사용합니다."
+        )
+        
+        # DAG 추출 옵션
+        batch_extract_dag = st.checkbox(
+            "🔗 오퍼 관계 DAG 추출 (배치)",
+            help="엔티티 간 관계를 DAG 형태로 추출하여 시각화합니다.",
+            key="batch_extract_dag"
+        )
+    
+    # 메인 컨텐츠
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.subheader("📝 배치 메시지 입력")
+        
+        # 샘플 메시지 로드 버튼
+        if st.button("📋 샘플 메시지 로드", key="load_batch_samples"):
+            sample_text = "\n\n".join([msg["content"] for msg in SAMPLE_MESSAGES])
+            st.session_state['batch_messages'] = sample_text
+        
+        # 배치 메시지 입력
+        batch_messages = st.text_area(
+            "배치 메시지 입력 *",
+            value=st.session_state.get('batch_messages', ''),
+            height=300,
+            placeholder="여러 메시지를 입력하세요. 각 메시지는 빈 줄로 구분합니다.\n\n예시:\n[SKT] 첫 번째 메시지\n\n[KT] 두 번째 메시지\n\n[LG U+] 세 번째 메시지",
+            help="각 메시지는 빈 줄로 구분해주세요. 최대 100개 메시지까지 처리 가능합니다.",
+            key="batch_messages_input"
+        )
+        
+        # 메시지 개수 표시
+        if batch_messages:
+            messages_list = [msg.strip() for msg in batch_messages.split('\n\n') if msg.strip()]
+            st.info(f"📊 입력된 메시지 개수: {len(messages_list)}개")
+            
+            if len(messages_list) > 100:
+                st.warning("⚠️ 메시지가 100개를 초과합니다. 처리 시간이 매우 오래 걸릴 수 있습니다.")
+        
+        # 배치 처리 실행 버튼
+        if st.button("🚀 배치 처리 실행", type="primary", disabled=not api_status, key="batch_submit"):
+            if not batch_messages:
+                st.error("처리할 메시지를 입력해주세요.")
+            else:
+                messages_list = [msg.strip() for msg in batch_messages.split('\n\n') if msg.strip()]
+                
+                with st.spinner(f"배치 처리 중... ({len(messages_list)}개 메시지)"):
+                    # 진행률 표시
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    # API 호출
+                    result = call_batch_api(
+                        messages_list,
+                        batch_llm_model,
+                        batch_data_source,
+                        batch_product_mode,
+                        batch_entity_mode,
+                        batch_extract_dag,
+                        max_workers
+                    )
+                    
+                    progress_bar.progress(100)
+                    status_text.text("✅ 배치 처리 완료!")
+                    
+                    if result:
+                        st.session_state['batch_result'] = result
+                        st.session_state['batch_messages_processed'] = messages_list
+                        st.success(f"✅ {len(messages_list)}개 메시지 처리가 완료되었습니다!")
+                        st.rerun()
+                    else:
+                        st.error("❌ 배치 처리 중 오류가 발생했습니다.")
+    
+    with col2:
+        st.subheader("📊 배치 처리 결과")
+        
+        # 배치 결과 표시
+        if 'batch_result' in st.session_state:
+            display_batch_results(st.session_state['batch_result'])
+        else:
+            st.info("배치 메시지를 입력하고 '배치 처리 실행' 버튼을 클릭하세요.")
+
+def call_batch_api(messages: list, llm_model: str, data_source: str, product_mode: str, 
+                   entity_mode: str, extract_dag: bool, max_workers: int) -> Optional[Dict[str, Any]]:
+    """배치 API 호출"""
+    try:
+        response = requests.post(
+            f"{API_BASE_URL}/batch",
+            json={
+                "messages": messages,
+                "llm_model": llm_model,
+                "offer_info_data_src": data_source,
+                "product_info_extraction_mode": product_mode,
+                "entity_matching_mode": entity_mode,
+                "extract_entity_dag": extract_dag,
+                "max_workers": max_workers
+            },
+            timeout=300  # 5분 타임아웃
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            st.error(f"API 호출 실패: {response.status_code}")
+            st.error(f"오류 메시지: {response.text}")
+            return None
+            
+    except Exception as e:
+        st.error(f"API 호출 오류: {str(e)}")
+        import traceback
+        st.error(f"상세 오류: {traceback.format_exc()}")
+        return None
+
+def display_batch_results(result: Dict[str, Any]):
+    """배치 결과 표시"""
+    if not result:
+        st.error("배치 처리 결과가 없습니다.")
+        return
+    
+    if not result.get('success', True):
+        st.error(f"배치 처리 실패: {result.get('error', '알 수 없는 오류')}")
+        return
+    
+    # 요약 정보
+    metadata = result.get('metadata', {})
+    results_list = result.get('results', [])
+    
+    total_count = len(results_list)
+    success_count = sum(1 for r in results_list if r.get('success', False))
+    failure_count = total_count - success_count
+    processing_time = metadata.get('processing_time_seconds', 0)
+    
+    # 요약 메트릭 표시
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("총 메시지", total_count)
+    
+    with col2:
+        st.metric("성공", success_count, delta=None, delta_color="normal")
+    
+    with col3:
+        st.metric("실패", failure_count, delta=None, delta_color="inverse")
+    
+    with col4:
+        st.metric("처리 시간", f"{processing_time:.1f}초")
+    
+    # 추가 메타데이터
+    st.subheader("📋 처리 설정")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.info(f"**LLM 모델**: {metadata.get('llm_model', 'N/A')}")
+        st.info(f"**워커 수**: {metadata.get('max_workers', 'N/A')}")
+    
+    with col2:
+        st.info(f"**데이터 소스**: {metadata.get('offer_info_data_src', 'N/A')}")
+        st.info(f"**DAG 추출**: {'ON' if metadata.get('extract_entity_dag', False) else 'OFF'}")
+    
+    with col3:
+        st.info(f"**상품 추출**: {metadata.get('product_info_extraction_mode', 'N/A')}")
+        st.info(f"**엔티티 매칭**: {metadata.get('entity_matching_mode', 'N/A')}")
+    
+    # 개별 결과 표시
+    st.subheader("📄 개별 처리 결과")
+    
+    # 필터링 옵션
+    filter_option = st.selectbox(
+        "결과 필터",
+        ["전체", "성공만", "실패만"],
+        key="batch_filter"
+    )
+    
+    filtered_results = results_list
+    if filter_option == "성공만":
+        filtered_results = [r for r in results_list if r.get('success', False)]
+    elif filter_option == "실패만":
+        filtered_results = [r for r in results_list if not r.get('success', False)]
+    
+    # 결과 표시
+    for i, item in enumerate(filtered_results):
+        with st.expander(f"메시지 {item.get('index', i) + 1}: {'✅ 성공' if item.get('success', False) else '❌ 실패'}"):
+            if item.get('success', False):
+                # 성공한 경우 - 추출된 정보 표시
+                result_data = item.get('result', {})
+                
+                if result_data:
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if result_data.get('title'):
+                            st.write(f"**제목**: {result_data['title']}")
+                        if result_data.get('purpose'):
+                            st.write(f"**목적**: {result_data['purpose']}")
+                        if result_data.get('product'):
+                            st.write(f"**상품**: {result_data['product']}")
+                    
+                    with col2:
+                        if result_data.get('channel'):
+                            st.write(f"**채널**: {result_data['channel']}")
+                        if result_data.get('program'):
+                            st.write(f"**프로그램**: {result_data['program']}")
+                    
+                    # DAG 정보가 있으면 표시
+                    if result_data.get('entity_dag'):
+                        st.write("**엔티티 관계 (DAG):**")
+                        dag_items = result_data['entity_dag']
+                        if isinstance(dag_items, list):
+                            for dag_item in dag_items[:5]:  # 처음 5개만 표시
+                                st.write(f"- {dag_item}")
+                            if len(dag_items) > 5:
+                                st.write(f"... 및 {len(dag_items) - 5}개 더")
+                
+                # JSON 데이터 표시 (접을 수 있는 형태)
+                with st.expander("🔍 상세 JSON 데이터"):
+                    st.json(result_data)
+            
+            else:
+                # 실패한 경우 - 오류 정보 표시
+                st.error(f"오류: {item.get('error', '알 수 없는 오류')}")
 
 if __name__ == "__main__":
     main()
