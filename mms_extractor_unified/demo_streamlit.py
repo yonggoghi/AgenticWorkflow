@@ -215,7 +215,7 @@ def call_extraction_api(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
                 st.write(f"처리 성공: {result.get('success')}")
             if 'metadata' in result:
                 metadata = result['metadata']
-                st.write(f"처리 시간: {metadata.get('processing_time', 'N/A')}초")
+                st.write(f"처리 시간: {metadata.get('processing_time_seconds', 'N/A')}초")
                 
             # extracted_data가 있는지 확인
             if 'extracted_data' in result:
@@ -285,18 +285,41 @@ def display_prompts(prompts_data: Dict[str, Any]):
             st.write(f"**엔티티 매칭 모드**: {settings.get('entity_matching_mode', 'N/A')}")
             st.write(f"**DAG 추출**: {'활성화' if settings.get('extract_entity_dag', False) else '비활성화'}")
     
-    # 각 프롬프트 표시
+    # 프롬프트 표시 순서 정의
+    prompt_order = [
+        'main_extraction_prompt',  # 메인 정보 추출
+        'entity_extraction_prompt',  # 엔티티 추출
+        'dag_extraction_prompt'  # DAG 관계 추출
+    ]
+    
+    # 정의된 순서대로 프롬프트 표시
+    for prompt_key in prompt_order:
+        if prompt_key in prompts:
+            prompt_info = prompts[prompt_key]
+            with st.expander(f"📝 {prompt_info.get('title', prompt_key)}"):
+                st.write(f"**설명**: {prompt_info.get('description', '설명 없음')}")
+                st.write(f"**길이**: {prompt_info.get('length', 0):,} 문자")
+                
+                # 프롬프트 내용을 코드 블록으로 표시
+                prompt_content = prompt_info.get('content', '')
+                if prompt_content and not prompt_content.startswith('오류:'):
+                    st.code(prompt_content, language='text')
+                else:
+                    st.error("프롬프트 내용을 표시할 수 없습니다.")
+    
+    # 순서에 정의되지 않은 추가 프롬프트가 있으면 마지막에 표시
     for prompt_key, prompt_info in prompts.items():
-        with st.expander(f"📝 {prompt_info.get('title', prompt_key)}"):
-            st.write(f"**설명**: {prompt_info.get('description', '설명 없음')}")
-            st.write(f"**길이**: {prompt_info.get('length', 0):,} 문자")
-            
-            # 프롬프트 내용을 코드 블록으로 표시
-            prompt_content = prompt_info.get('content', '')
-            if prompt_content and not prompt_content.startswith('오류:'):
-                st.code(prompt_content, language='text')
-            else:
-                st.error("프롬프트 내용을 표시할 수 없습니다.")
+        if prompt_key not in prompt_order:
+            with st.expander(f"📝 {prompt_info.get('title', prompt_key)}"):
+                st.write(f"**설명**: {prompt_info.get('description', '설명 없음')}")
+                st.write(f"**길이**: {prompt_info.get('length', 0):,} 문자")
+                
+                # 프롬프트 내용을 코드 블록으로 표시
+                prompt_content = prompt_info.get('content', '')
+                if prompt_content and not prompt_content.startswith('오류:'):
+                    st.code(prompt_content, language='text')
+                else:
+                    st.error("프롬프트 내용을 표시할 수 없습니다.")
 
 def display_results(result: Dict[str, Any]):
     """결과 표시"""
@@ -751,7 +774,7 @@ def display_results(result: Dict[str, Any]):
             col1, col2 = st.columns(2)
             
             with col1:
-                st.metric("처리 시간", f"{metadata.get('processing_time', 'N/A')}초")
+                st.metric("처리 시간", f"{metadata.get('processing_time_seconds', 'N/A')}초")
                 st.metric("LLM 모델", metadata.get('llm_model', 'N/A'))
                 st.metric("데이터 소스", metadata.get('offer_info_data_src', 'N/A'))
             
