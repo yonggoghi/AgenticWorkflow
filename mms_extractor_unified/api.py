@@ -23,10 +23,18 @@ import json
 import logging
 import time
 import argparse
+import warnings
+import atexit
 from pathlib import Path
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from config import settings
+
+# joblib과 multiprocessing 경고 억제
+warnings.filterwarnings("ignore", category=UserWarning, module="joblib")
+warnings.filterwarnings("ignore", category=UserWarning, module="multiprocessing") 
+warnings.filterwarnings("ignore", message=".*resource_tracker.*")
+warnings.filterwarnings("ignore", message=".*leaked.*")
 
 # 현재 디렉토리를 Python 경로에 추가
 current_dir = Path(__file__).parent.absolute()
@@ -44,6 +52,31 @@ except ImportError as e:
 # Flask 앱 초기화
 app = Flask(__name__)
 CORS(app)  # CORS 활성화 (크로스 오리진 요청 허용)
+
+def cleanup_resources():
+    """리소스 정리 함수 - 프로그램 종료 시 호출"""
+    try:
+        import gc
+        import multiprocessing
+        
+        # 가비지 컬렉션 실행
+        gc.collect()
+        
+        # 멀티프로세싱 리소스 정리
+        if hasattr(multiprocessing, 'active_children'):
+            for child in multiprocessing.active_children():
+                try:
+                    child.terminate()
+                    child.join(timeout=1)
+                except:
+                    pass
+                    
+        print("리소스 정리 완료")
+    except Exception as e:
+        print(f"리소스 정리 중 오류: {e}")
+
+# 프로그램 종료 시 리소스 정리
+atexit.register(cleanup_resources)
 
 # 로깅 설정 - 콘솔과 파일 모두에 출력
 import logging.handlers
@@ -313,21 +346,30 @@ def extract_message():
         # 3. Graphviz를 통해 시각적 다이어그램 생성 (./dag_images/ 디렉토리에 저장)
         # 4. 결과의 entity_dag 필드에 DAG 텍스트 표현 포함
         
-        # 구성된 추출기로 메시지 처리 (멀티스레드)
+        # 구성된 추출기로 메시지 처리 (프롬프트 캡처 포함)
         start_time = time.time()
         extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, extract_entity_dag)
         
         logger.info(f"데이터 소스로 메시지 처리 중: {offer_info_data_src}")
         
+        # 프롬프트 캡처를 위한 스레드 로컬 저장소 초기화
+        import threading
+        current_thread = threading.current_thread()
+        current_thread.stored_prompts = {}
+        
         # DAG 추출 여부에 따라 병렬 처리 또는 단일 처리
         if extract_entity_dag:
-            logger.info("DAG 추출과 함께 병렬 처리 시작")
+            logger.info("DAG 추출과 함께 순차 처리 시작")
             result = process_message_with_dag(extractor, message, extract_dag=True)
         else:
             result = extractor.process_message(message)
             result['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
             
         processing_time = time.time() - start_time
+        
+        # 캡처된 프롬프트들 가져오기
+        captured_prompts = getattr(current_thread, 'stored_prompts', {})
+        logger.info(f"추출 과정에서 캡처된 프롬프트: {len(captured_prompts)}개")
         
         # DAG 추출 결과 검증 및 로깅
         # entity_dag 필드는 추출된 엔티티 간의 관계를 텍스트로 표현한 것
@@ -340,11 +382,11 @@ def extract_message():
             else:
                 logger.warning("⚠️ DAG 추출 요청되었으나 결과가 비어있음")
         
-        # 성공 응답 반환
+        # 성공 응답 반환 (프롬프트 포함)
         response = {
             "success": True,
             "result": result,
-                            "metadata": {
+            "metadata": {
                 "llm_model": llm_model,
                 "offer_info_data_src": offer_info_data_src,
                 "product_info_extraction_mode": product_info_extraction_mode,
@@ -353,6 +395,22 @@ def extract_message():
                 "processing_time_seconds": round(processing_time, 3),
                 "timestamp": time.time(),
                 "message_length": len(message)
+            },
+            "prompts": {
+                "success": True,
+                "prompts": captured_prompts,
+                "settings": {
+                    "llm_model": llm_model,
+                    "offer_info_data_src": offer_info_data_src,
+                    "product_info_extraction_mode": product_info_extraction_mode,
+                    "entity_matching_mode": entity_matching_mode,
+                    "extract_entity_dag": extract_entity_dag
+                },
+                "message_info": {
+                    "length": len(message),
+                    "preview": message[:200] + "..." if len(message) > 200 else message
+                },
+                "timestamp": time.time()
             }
         }
         
@@ -592,10 +650,9 @@ def get_status():
 @app.route('/prompts', methods=['POST'])
 def get_prompts():
     """
-    프롬프트 구성 정보를 반환하는 엔드포인트
+    실제 추출 과정에서 사용된 프롬프트들을 반환하는 엔드포인트
     
-    이 엔드포인트는 주어진 설정으로 실제 LLM에 전송될 프롬프트들을 구성하여 반환합니다.
-    실제 추출은 수행하지 않고 프롬프트만 생성합니다.
+    실제 추출을 수행하고 그 과정에서 LLM에 전송된 프롬프트들을 캡처하여 반환합니다.
     """
     try:
         if not global_extractor:
@@ -627,269 +684,43 @@ def get_prompts():
         extract_entity_dag = data.get('extract_entity_dag', False)
         
         # 추출기 설정 업데이트
-        global_extractor.llm_model_name = llm_model
-        global_extractor.offer_info_data_src = offer_info_data_src
-        global_extractor.product_info_extraction_mode = product_info_extraction_mode
-        global_extractor.entity_extraction_mode = entity_matching_mode
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, extract_entity_dag)
         
-        # 프롬프트 구성을 위한 준비 작업 (실제 추출 과정의 일부를 시뮬레이션)
-        prompts = {}
+        # 실제 추출 수행 (프롬프트 캡처를 위해)
+        import threading
+        current_thread = threading.current_thread()
+        current_thread.stored_prompts = {}  # 프롬프트 저장소 초기화
         
-        # 1. 메인 추출 프롬프트 구성
-        try:
-            # RAG 컨텍스트 및 product_element 준비 (간단한 버전)
-            rag_context = ""
-            product_element = None
-            
-            # 실제 추출기의 로직을 일부 시뮬레이션하여 RAG 컨텍스트 구성
-            if product_info_extraction_mode in ['rag', 'llm']:
-                # 후보 상품 목록 준비 (간단한 버전)
-                if hasattr(global_extractor, 'item_pdf_all') and not global_extractor.item_pdf_all.empty:
-                    sample_items = global_extractor.item_pdf_all['item_nm_alias'].head(10).tolist()
-                    if product_info_extraction_mode == 'rag':
-                        rag_context = f"### 후보 상품 이름 목록 ###\n{', '.join(sample_items)}"
-                    else:  # llm mode
-                        rag_context = f"### 참고용 후보 상품 이름 목록 ###\n{', '.join(sample_items)}"
-            
-            # 메인 추출 프롬프트 구성
-            main_prompt = global_extractor._build_extraction_prompt(message, rag_context, product_element)
-            prompts['main_extraction_prompt'] = {
-                'title': '메인 정보 추출 프롬프트',
-                'description': '광고 메시지에서 제목, 목적, 상품, 채널, 프로그램 정보를 추출하는 프롬프트',
-                'content': main_prompt,
-                'length': len(main_prompt)
-            }
-        except Exception as e:
-            logger.error(f"메인 프롬프트 구성 실패: {e}")
-            prompts['main_extraction_prompt'] = {
-                'title': '메인 정보 추출 프롬프트',
-                'description': '프롬프트 구성 중 오류 발생',
-                'content': f'오류: {str(e)}',
-                'length': 0
-            }
+        logger.info(f"프롬프트 캡처 시작 - 스레드 ID: {current_thread.ident}")
         
-        # 2. 엔티티 추출 프롬프트 구성 (entity_matching_mode가 'llm'인 경우)
-        if entity_matching_mode == 'llm':
-            try:
-                from config.settings import PROCESSING_CONFIG
-                
-                # 후보 엔티티 목록 준비 (간단한 버전)
-                cand_entities_sample = []
-                if hasattr(global_extractor, 'item_pdf_all') and not global_extractor.item_pdf_all.empty:
-                    cand_entities_sample = global_extractor.item_pdf_all['item_nm_alias'].head(20).tolist()
-                
-                entity_prompt = f"""
-            {getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', '다음 메시지에서 상품명을 추출하세요.')}
-
-            ## message:                
-            {message}
-
-            ## Candidate entities:
-            {cand_entities_sample}
-            """
-                
-                prompts['entity_extraction_prompt'] = {
-                    'title': '엔티티 추출 프롬프트',
-                    'description': '메시지에서 상품/서비스 엔티티를 추출하는 프롬프트',
-                    'content': entity_prompt,
-                    'length': len(entity_prompt)
-                }
-            except Exception as e:
-                logger.error(f"엔티티 프롬프트 구성 실패: {e}")
-                prompts['entity_extraction_prompt'] = {
-                    'title': '엔티티 추출 프롬프트',
-                    'description': '프롬프트 구성 중 오류 발생',
-                    'content': f'오류: {str(e)}',
-                    'length': 0
-                }
-        
-        # 3. DAG 추출 프롬프트 구성 (extract_entity_dag가 True인 경우)
+        # 추출 수행
         if extract_entity_dag:
-            try:
-                # 실제 DAG 추출기에서 사용하는 완전한 프롬프트
-                dag_prompt = f"""
-## 작업 목표
-통신사 광고 메시지에서 **핵심 행동 흐름**을 추출하여 간결한 DAG(Directed Acyclic Graph) 형식으로 표현
-
-## 핵심 원칙
-1. **최소 경로 원칙**: 동일한 결과를 얻는 가장 짧은 경로만 표현
-2. **핵심 흐름 우선**: 부가적 설명보다 주요 행동 연쇄에 집중
-3. **중복 제거**: 의미가 겹치는 노드는 하나로 통합
-
-## 출력 형식
-```
-(개체명:기대행동) -[관계동사]-> (개체명:기대행동)
-또는
-(개체명:기대행동)
-```
-
-## 개체명 카테고리
-### 필수 추출 대상
-- **제품/서비스**: 구체적 제품명, 서비스명, 요금제명
-- **핵심 혜택**: 금전적 혜택, 사은품, 할인
-- **행동 장소**: 온/오프라인 채널 (필요 시만)
-
-### 추출 제외 대상
-- 광고 대상자 (예: "아이폰 고객님")
-- 일정/기간 정보
-- 부가 설명 기능 (핵심 흐름과 무관한 경우)
-- 법적 고지사항
-
-## 기대 행동 (10개 표준 동사)
-`구매, 가입, 사용, 방문, 참여, 등록, 다운로드, 확인, 수령, 적립`
-
-## 관계 동사 우선순위
-### 1순위: 조건부 관계
-- `가입하면`, `구매하면`, `사용하면`
-- `가입후`, `구매후`, `사용후`
-
-### 2순위: 결과 관계
-- `받다`, `수령하다`, `적립하다`
-
-### 3순위: 경로 관계 (필요 시만)
-- `통해`, `이용하여`
-
-## DAG 구성 전략
-### Step 1: 모든 가치 제안 식별
-광고에서 제시하는 **모든 독립적 가치**를 파악
-- **즉각적 혜택**: 금전적 보상, 사은품 등
-- **서비스 가치**: 제품/서비스 자체의 기능과 혜택
-예: "네이버페이 5000원" + "AI 통화 기능 무료 이용"
-
-### Step 2: 독립 경로 구성
-각 가치 제안별로 별도 경로 생성:
-1. **혜택 획득 경로**: 가입 → 사용 → 보상
-2. **서비스 체험 경로**: 가입 → 경험 → 기능 활용
-
-### Step 3: 세부 기능 표현
-주요 기능들이 명시된 경우 분기 구조로 표현:
-- 통합 가능한 기능은 하나로 (예: AI통화녹음/요약 → "AI통화기능")
-- 독립적 기능은 별도로 (예: AI스팸필터링)
-
-## 분석 프로세스 (필수 단계)
-### Step 1: 메시지 이해
-- 전체 메시지를 한 문단으로 요약
-- 광고주의 의도 파악
-- **암시된 행동 식별**: 명시되지 않았지만 필수적인 행동 (예: 매장 방문)
-
-### Step 2: 가치 제안 식별
-- 즉각적 혜택 (금전, 사은품 등)
-- 서비스 가치 (기능, 편의성 등)
-- 부가 혜택 (있다면)
-
-### Step 3: Root Node 결정
-- **사용자의 첫 번째 행동은 무엇인가?**
-- 매장 주소/연락처가 있다면 → 방문이 시작점
-- 온라인 링크가 있다면 → 접속이 시작점
-- 앱 관련 내용이라면 → 다운로드가 시작점
-
-### Step 4: 관계 분석
-- Root Node부터 시작하는 전체 흐름
-- 각 행동 간 인과관계 검증
-- 조건부 관계 명확화
-- 시간적 순서 확인
-
-### Step 5: DAG 구성
-- 위 분석을 바탕으로 노드와 엣지 결정
-- 중복 제거 및 통합
-
-### Step 6: 자기 검증 및 수정
-- **평가**: 초기 DAG를 아래 기준에 따라 검토
-  - Root Node가 명확히 식별되었는가? (방문/접속/다운로드 등)
-  - 모든 독립적 가치 제안이 포함되었는가? (즉각적 혜택과 서비스 가치)
-  - 주요 기능들이 적절히 그룹화되었는가? (중복 제거 여부)
-  - 각 경로가 명확한 가치를 전달하는가?
-  - 전체 구조가 간결하고 이해하기 쉬운가?
-  - 관계 동사가 우선순위에 맞게 사용되었는가? (조건부 > 결과 > 경로)
-- **문제 식별**: 위 기준 중 충족되지 않은 항목을 명시하고, 그 이유를 설명
-- **수정**: 식별된 문제를 해결한 수정된 DAG를 생성
-
-### Step 7: 최종 검증
-- 수정된 DAG가 모든 기준을 충족하는지 재확인
-- 만약 문제가 남아있다면, 추가 수정 수행 (최대 2회 반복)
-- 최종적으로 모든 기준이 충족되었음을 확인
-
-## 출력 형식 (반드시 모든 섹션 포함)
-### 1. 메시지 분석
-```
-[메시지 요약 및 핵심 의도]
-[식별된 가치 제안 목록]
-```
-
-### 2. 초기 DAG
-```
-[초기 DAG 구조]
-```
-
-### 3. 자기 검증 결과
-```
-[평가 기준별 검토 결과]
-[식별된 문제점 및 이유]
-```
-
-### 4. 수정된 DAG
-```
-[수정된 DAG 구조]
-```
-
-### 5. 최종 검증 및 추출 근거
-```
-[최종 DAG가 모든 기준을 충족하는 이유]
-[노드/엣지 선택의 논리적 근거]
-```
-
-## 실행 지침
-1. 위 7단계 분석 프로세스를 **순서대로** 수행
-2. 각 단계에서 발견한 내용을 **명시적으로** 기록
-3. DAG 구성 전 **충분한 분석** 수행
-4. 초기 DAG 생성 후 **반드시 자기 검증 및 수정** 수행
-5. 최종 출력에 **모든 섹션** 포함
-6. **중요**: 분석 과정을 생략하지 말고, 사고 과정과 수정 이유를 투명하게 보여주세요
-
-## 예시 분석
-### 잘못된 예시 (핵심 흐름만 추출)
-```
-(에이닷:가입) -[가입후]-> (AI전화서비스:사용)
-(AI전화서비스:사용) -[사용하면]-> (네이버페이5000원:수령)
-```
-→ 문제: 서비스 자체의 가치(AI 기능들)가 누락됨
-
-### 올바른 예시 (완전한 가치 표현 - Root Node 포함)
-```
-# 매장 방문부터 시작하는 경로
-(제이스대리점:방문) -[방문하여]-> (갤럭시S21:구매)
-(갤럭시S21:구매) -[구매시]-> (5GX프라임요금제:가입)
-(5GX프라임요금제:가입) -[가입하면]-> (지원금45만원+15%:수령)
-
-# 온라인 시작 경로 예시
-(T다이렉트샵:접속) -[접속하여]-> (갤럭시S24:구매)
-(갤럭시S24:구매) -[구매시]-> (사은품:수령)
-```
-→ 장점: 사용자의 첫 행동(Root Node)부터 명확히 표현
-
-## message:
-{message}
-"""
-                
-                prompts['dag_extraction_prompt'] = {
-                    'title': 'DAG 관계 추출 프롬프트',
-                    'description': '엔티티 간의 관계를 그래프 형태로 추출하는 프롬프트',
-                    'content': dag_prompt,
-                    'length': len(dag_prompt)
-                }
-            except Exception as e:
-                logger.error(f"DAG 프롬프트 구성 실패: {e}")
-                prompts['dag_extraction_prompt'] = {
-                    'title': 'DAG 관계 추출 프롬프트',
-                    'description': '프롬프트 구성 중 오류 발생',
-                    'content': f'오류: {str(e)}',
-                    'length': 0
-                }
+            result = process_message_with_dag(extractor, message, extract_dag=True)
+        else:
+            result = extractor.process_message(message)
+        
+        # 저장된 프롬프트들 가져오기
+        stored_prompts = getattr(current_thread, 'stored_prompts', {})
+        
+        logger.info(f"프롬프트 캡처 완료 - 스레드 ID: {current_thread.ident}")
+        logger.info(f"실제 stored_prompts 내용: {stored_prompts}")
+        
+        logger.info(f"프롬프트 캡처 상태: {len(stored_prompts)}개 프롬프트")
+        logger.info(f"프롬프트 키들: {list(stored_prompts.keys())}")
+        
+        # 프롬프트가 없어도 성공으로 처리 (일부 모드에서는 특정 프롬프트만 생성됨)
+        # if not stored_prompts:
+        #     return jsonify({
+        #         "success": False,
+        #         "error": "프롬프트가 캡처되지 않았습니다",
+        #         "prompts": {},
+        #         "settings": {...}
+        #     }), 200
         
         # 응답 구성
         response = {
             "success": True,
-            "prompts": prompts,
+            "prompts": stored_prompts,
             "settings": {
                 "llm_model": llm_model,
                 "offer_info_data_src": offer_info_data_src,
@@ -901,14 +732,15 @@ def get_prompts():
                 "length": len(message),
                 "preview": message[:200] + "..." if len(message) > 200 else message
             },
-            "timestamp": time.time()
+            "timestamp": time.time(),
+            "extraction_result": result  # 추출 결과도 함께 반환 (참고용)
         }
         
-        logger.info(f"프롬프트 구성 완료: {len(prompts)}개 프롬프트 생성")
+        logger.info(f"실제 프롬프트 캡처 완료: {len(stored_prompts)}개 프롬프트")
         return jsonify(response)
         
     except Exception as e:
-        logger.error(f"프롬프트 구성 중 오류 발생: {e}")
+        logger.error(f"프롬프트 캡처 중 오류 발생: {e}")
         return jsonify({
             "success": False,
             "error": str(e),

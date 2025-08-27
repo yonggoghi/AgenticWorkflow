@@ -690,6 +690,21 @@ def extract_dag(parser:DAGParser, msg: str, llm_model):
     
     # Step 1: LLM을 통한 엔티티 관계 추출
     try:
+        # 프롬프트 저장 (디버깅/미리보기용)
+        if hasattr(llm_model, '_store_prompt_for_preview'):
+            llm_model._store_prompt_for_preview(prompt, "dag_extraction")
+        else:
+            # 전역 프롬프트 저장소 사용
+            import threading
+            if not hasattr(threading.current_thread(), 'stored_prompts'):
+                threading.current_thread().stored_prompts = {}
+            threading.current_thread().stored_prompts['dag_extraction_prompt'] = {
+                'title': 'DAG 관계 추출 프롬프트',
+                'description': '엔티티 간의 관계를 그래프 형태로 추출하는 프롬프트',
+                'content': prompt,
+                'length': len(prompt)
+            }
+        
         dag_raw = llm_model.invoke(prompt).content
         logger.info(f"📝 LLM 응답 길이: {len(dag_raw)}자")
         logger.info(f"📄 LLM 응답 미리보기: {dag_raw[:200]}...")
