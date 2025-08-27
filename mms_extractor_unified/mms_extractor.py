@@ -17,6 +17,7 @@ MMS 추출기 (MMS Extractor) - 개선된 버전
 from concurrent.futures import ThreadPoolExecutor
 import time
 import logging
+import warnings
 from functools import wraps
 from typing import List, Tuple, Union, Dict, Any, Optional
 from abc import ABC, abstractmethod
@@ -28,6 +29,12 @@ import glob
 import os
 import pandas as pd
 import numpy as np
+
+# joblib과 multiprocessing 경고 억제
+warnings.filterwarnings("ignore", category=UserWarning, module="joblib")
+warnings.filterwarnings("ignore", category=UserWarning, module="multiprocessing")
+warnings.filterwarnings("ignore", message=".*resource_tracker.*")
+warnings.filterwarnings("ignore", message=".*leaked.*")
 import torch
 from sentence_transformers import SentenceTransformer
 from difflib import SequenceMatcher
@@ -1139,6 +1146,46 @@ class MMSExtractor:
             logger.warning(f"조직 정보 로드 실패: {e}")
             self.org_pdf = pd.DataFrame(columns=['org_nm', 'org_cd', 'sub_org_cd', 'org_abbr_nm'])
 
+    def _store_prompt_for_preview(self, prompt: str, prompt_type: str):
+        """프롬프트를 미리보기용으로 저장"""
+        import threading
+        current_thread = threading.current_thread()
+        
+        if not hasattr(current_thread, 'stored_prompts'):
+            current_thread.stored_prompts = {}
+        
+        # 프롬프트 타입별 제목과 설명 매핑
+        prompt_info = {
+            "main_extraction": {
+                'title': '메인 정보 추출 프롬프트',
+                'description': '광고 메시지에서 제목, 목적, 상품, 채널, 프로그램 정보를 추출하는 프롬프트'
+            },
+            "entity_extraction": {
+                'title': '엔티티 추출 프롬프트', 
+                'description': '메시지에서 상품/서비스 엔티티를 추출하는 프롬프트'
+            }
+        }
+        
+        info = prompt_info.get(prompt_type, {
+            'title': f'{prompt_type} 프롬프트',
+            'description': f'{prompt_type} 처리를 위한 프롬프트'
+        })
+        
+        prompt_key = f'{prompt_type}_prompt'
+        prompt_data = {
+            'title': info['title'],
+            'description': info['description'],
+            'content': prompt,
+            'length': len(prompt)
+        }
+        
+        current_thread.stored_prompts[prompt_key] = prompt_data
+        
+        # 디버깅 로그 추가
+        logger.info(f"프롬프트 저장됨: {prompt_key} (길이: {len(prompt)})")
+        logger.info(f"현재 저장된 프롬프트 수: {len(current_thread.stored_prompts)}")
+        logger.info(f"저장된 프롬프트 키들: {list(current_thread.stored_prompts.keys())}")
+
     def _safe_llm_invoke(self, prompt: str, max_retries: int = 3) -> str:
         """안전한 LLM 호출 메소드"""
         for attempt in range(max_retries):
@@ -1483,8 +1530,12 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
             {cand_entities_by_sim}
             """
             
-            # LLM 호출
-            cand_entities = self._safe_llm_invoke(prompt)
+            # 프롬프트 저장 (디버깅/미리보기용)
+            self._store_prompt_for_preview(prompt, "entity_extraction")
+            
+            # LLM 호출 (프롬프트 저장은 이미 위에서 했으므로 직접 호출)
+            response = self.llm_model.invoke(prompt)
+            cand_entities = response.content if hasattr(response, 'content') else str(response)
             
             # LLM 응답 파싱 및 정리
             cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
@@ -2003,6 +2054,9 @@ Return a JSON object with actual data, not schema definitions!
             logger.info(f"구성된 프롬프트 길이: {len(prompt)} 문자")
             logger.info(f"RAG 컨텍스트 포함 여부: {'후보 상품' in rag_context}")
             
+            # 프롬프트 저장 (디버깅/미리보기용)
+            self._store_prompt_for_preview(prompt, "main_extraction")
+            
             result_json_text = self._safe_llm_invoke(prompt)
             logger.info(f"LLM 응답 길이: {len(result_json_text)} 문자")
             logger.info(f"LLM 응답 내용 (처음 500자): {result_json_text[:500]}...")
@@ -2273,14 +2327,16 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
         logger.info(f"워커 프로세스에서 메시지 처리 시작: {message[:50]}...")
         
         if extract_dag:
-            # 멀티스레드로 병렬 처리
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                future_main = executor.submit(extractor.process_message, message)
-                future_dag = executor.submit(make_entity_dag, message, extractor.llm_model)
-                
-                result = future_main.result()
-                dag_result = future_dag.result()
-                result['entity_dag'] = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
+            # 순차적 처리로 변경 (프롬프트 캡처를 위해)
+            # 멀티스레드를 사용하면 스레드 로컬 저장소가 분리되어 프롬프트 캡처가 안됨
+            logger.info("순차적 처리로 메인 추출 및 DAG 추출 수행")
+            
+            # 1. 메인 추출
+            result = extractor.process_message(message)
+            
+            # 2. DAG 추출
+            dag_result = make_entity_dag(message, extractor.llm_model)
+            result['entity_dag'] = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
         else:
             result = extractor.process_message(message)
             result['entity_dag'] = []
@@ -2494,22 +2550,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-            [SKT] ZEM폰 포켓몬에디션3 안내
-            (광고)[SKT] 우리 아이 첫 번째 스마트폰, ZEM 키즈폰__#04 고객님, 안녕하세요!
-            우리 아이 스마트폰 고민 중이셨다면, 자녀 스마트폰 관리 앱 ZEM이 설치된 SKT만의 안전한 키즈폰,
-            ZEM폰 포켓몬에디션3으로 우리 아이 취향을 저격해 보세요!
-            신학기를 맞이하여 SK텔레콤 공식 인증 대리점에서 풍성한 혜택을 제공해 드리고 있습니다!
-            ▶ 주요 기능
-            1. 실시간 위치 조회
-            2. 모르는 회선 자동 차단
-            3. 스마트폰 사용 시간 제한
-            4. IP68 방수 방진
-            5. 수업 시간 자동 무음모드
-            6. 유해 콘텐츠 차단
-            ▶ 가까운 SK텔레콤 공식 인증 대리점 찾기
-            http://t-mms.kr/t.do?m=#61&s=30684&a=&u=https://bit.ly/3yQF2hx
-            ▶ 문의 : SKT 고객센터(1558, 무료)
-            무료 수신거부 1504
+            '[T 우주] 넷플릭스와 웨이브를 월 9,900원에! \n(광고)[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네! __#04 고객님,_넷플릭스와 웨이브 둘 다 보고 싶었지만, 가격 때문에 망설이셨다면 지금이 바로 기회! __오직 T 우주에서만, _2개월 동안 월 9,900원에 넷플릭스와 웨이브를 모두 즐기실 수 있습니다.__8월 31일까지만 드리는 혜택이니, 지금 바로 가입해 보세요! __■ 우주패스 Netflix 런칭 프로모션 _- 기간 : 2024년 8월 31일(토)까지_- 혜택 : 우주패스 Netflix(광고형 스탠다드)를 2개월 동안 월 9,900원에 이용 가능한 쿠폰 제공_▶ 프로모션 자세히 보기: http://t-mms.kr/jAs/#74__■ 우주패스 Netflix(월 12,000원)  _- 기본 혜택 : Netflix 광고형 스탠다드 멤버십_- 추가 혜택 : Wavve 콘텐츠 팩 _* 추가 요금을 내시면 Netflix 스탠다드와 프리미엄 멤버십 상품으로 가입 가능합니다.  __■ 유의 사항_-  프로모션 쿠폰은 1인당 1회 다운로드 가능합니다. _-  쿠폰 할인 기간이 끝나면 정상 이용금액으로 자동 결제 됩니다. __■ 문의: T 우주 고객센터 (1505, 무료)__나만의 구독 유니버스, T 우주 __무료 수신거부 1504'
             """
             
             # 단일 메시지 처리 (멀티스레드)

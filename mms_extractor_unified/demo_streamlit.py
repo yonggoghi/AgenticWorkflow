@@ -246,33 +246,52 @@ def call_extraction_api(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 def call_prompts_api(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """프롬프트 구성 API 호출"""
     try:
+        # 디버깅 정보는 expander 안에 숨김
+        with st.expander("🔍 프롬프트 API 호출 디버깅"):
+            st.write(f"🔍 프롬프트 API 호출 중: {API_BASE_URL}/prompts")
+            st.write(f"📤 전송 데이터: {data}")
+        
         response = requests.post(
             f"{API_BASE_URL}/prompts",
             json=data,
             headers={"Content-Type": "application/json"},
-            timeout=30
+            timeout=60  # 타임아웃 증가 (실제 추출을 수행하므로)
         )
         
+        with st.expander("🔍 프롬프트 API 응답 디버깅"):
+            st.write(f"📥 응답 상태 코드: {response.status_code}")
+        
         if response.status_code == 200:
-            return response.json()
+            result = response.json()
+            with st.expander("🔍 프롬프트 API 응답 디버깅"):
+                st.write(f"✅ 프롬프트 API 응답 성공!")
+                st.write(f"🔍 응답 키들: {list(result.keys())}")
+                st.write(f"📊 성공 여부: {result.get('success', 'N/A')}")
+                if 'prompts' in result:
+                    st.write(f"📝 프롬프트 개수: {len(result['prompts'])}")
+                    st.write(f"📝 프롬프트 키들: {list(result['prompts'].keys())}")
+            return result
         else:
             st.error(f"프롬프트 API 호출 실패: {response.status_code}")
+            st.error(f"응답 내용: {response.text}")
             return None
             
     except Exception as e:
         st.error(f"프롬프트 API 호출 오류: {str(e)}")
+        import traceback
+        st.error(f"상세 오류: {traceback.format_exc()}")
         return None
 
 def display_prompts(prompts_data: Dict[str, Any]):
     """프롬프트 표시"""
     if not prompts_data or not prompts_data.get('success'):
         st.error("프롬프트 데이터를 가져올 수 없습니다.")
+        if prompts_data and 'error' in prompts_data:
+            st.error(f"오류: {prompts_data['error']}")
         return
     
     prompts = prompts_data.get('prompts', {})
     settings = prompts_data.get('settings', {})
-    
-    st.subheader("🔍 LLM 프롬프트 미리보기")
     
     # 설정 정보 표시
     with st.expander("⚙️ 현재 설정 정보"):
@@ -334,7 +353,7 @@ def display_results(result: Dict[str, Any]):
         st.warning("API에서 처리 실패를 보고했지만 결과를 확인해보겠습니다.")
 
     # 탭으로 결과 구분
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 추출 정보", "🔍 추출 JSON", "🔗 DAG 이미지", "📋 메타데이터"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 추출 정보", "🔍 추출 JSON", "🔗 DAG 이미지", "🔍 사용된 프롬프트", "📋 메타데이터"])
     
     with tab1:
         st.subheader("추출 정보")
@@ -766,6 +785,101 @@ def display_results(result: Dict[str, Any]):
                     st.write("DAG/이미지 관련 키가 응답에 없습니다.")
     
     with tab4:
+        st.subheader("실제 사용된 LLM 프롬프트")
+        
+        # 추출 결과에서 프롬프트 정보 가져오기
+        if 'extraction_result' in st.session_state:
+            # 동일한 설정으로 프롬프트 가져오기
+            current_message = st.session_state.get('current_message', '')
+            if current_message:
+                # 현재 결과의 메타데이터에서 설정 정보 가져오기
+                metadata = result.get('metadata', {})
+                
+                prompt_data = {
+                    "message": current_message,
+                    "llm_model": metadata.get('llm_model', 'ax'),
+                    "offer_info_data_src": metadata.get('offer_info_data_src', 'local'),
+                    "product_info_extraction_mode": metadata.get('product_info_extraction_mode', 'llm'),
+                    "entity_matching_mode": metadata.get('entity_matching_mode', 'logic'),
+                    "extract_entity_dag": metadata.get('extract_entity_dag', False)
+                }
+                
+                # 세션에 저장된 프롬프트가 있는지 확인
+                if 'extraction_prompts' in st.session_state and st.session_state['extraction_prompts']:
+                    prompts_result = st.session_state['extraction_prompts']
+                    st.info("위 추출 과정에서 실제로 LLM에 전송된 프롬프트들입니다.")
+                    
+                    # 디버깅 정보 추가
+                    with st.expander("🔧 프롬프트 디버깅 정보"):
+                        st.write(f"prompts_result 타입: {type(prompts_result)}")
+                        st.write(f"prompts_result 키들: {list(prompts_result.keys()) if isinstance(prompts_result, dict) else 'dict가 아님'}")
+                        if isinstance(prompts_result, dict):
+                            st.write(f"success 값: {prompts_result.get('success')}")
+                            st.write(f"prompts 키 존재: {'prompts' in prompts_result}")
+                            if 'prompts' in prompts_result:
+                                st.write(f"prompts 내용: {prompts_result['prompts']}")
+                    
+                    if prompts_result.get('success'):
+                        prompts = prompts_result.get('prompts', {})
+                        settings = prompts_result.get('settings', {})
+                        
+                        # 설정 정보 표시
+                        with st.expander("⚙️ 추출 시 사용된 설정"):
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.write(f"**LLM 모델**: {settings.get('llm_model', 'N/A')}")
+                                st.write(f"**데이터 소스**: {settings.get('offer_info_data_src', 'N/A')}")
+                                st.write(f"**상품 추출 모드**: {settings.get('product_info_extraction_mode', 'N/A')}")
+                            with col2:
+                                st.write(f"**엔티티 매칭 모드**: {settings.get('entity_matching_mode', 'N/A')}")
+                                st.write(f"**DAG 추출**: {'활성화' if settings.get('extract_entity_dag', False) else '비활성화'}")
+                        
+                        # 프롬프트 표시 순서 정의
+                        prompt_order = [
+                            'main_extraction_prompt',  # 메인 정보 추출
+                            'entity_extraction_prompt',  # 엔티티 추출
+                            'dag_extraction_prompt'  # DAG 관계 추출
+                        ]
+                        
+                        # 정의된 순서대로 프롬프트 표시
+                        for prompt_key in prompt_order:
+                            if prompt_key in prompts:
+                                prompt_info = prompts[prompt_key]
+                                with st.expander(f"📝 {prompt_info.get('title', prompt_key)}"):
+                                    st.write(f"**설명**: {prompt_info.get('description', '설명 없음')}")
+                                    st.write(f"**길이**: {prompt_info.get('length', 0):,} 문자")
+                                    
+                                    prompt_content = prompt_info.get('content', '')
+                                    if prompt_content and not prompt_content.startswith('오류:'):
+                                        st.code(prompt_content, language='text')
+                                    else:
+                                        st.error("프롬프트 내용을 표시할 수 없습니다.")
+                        
+                        # 순서에 없는 다른 프롬프트들도 표시
+                        for prompt_key, prompt_info in prompts.items():
+                            if prompt_key not in prompt_order:
+                                with st.expander(f"📝 {prompt_info.get('title', prompt_key)}"):
+                                    st.write(f"**설명**: {prompt_info.get('description', '설명 없음')}")
+                                    st.write(f"**길이**: {prompt_info.get('length', 0):,} 문자")
+                                    
+                                    prompt_content = prompt_info.get('content', '')
+                                    if prompt_content and not prompt_content.startswith('오류:'):
+                                        st.code(prompt_content, language='text')
+                                    else:
+                                        st.error("프롬프트 내용을 표시할 수 없습니다.")
+                    else:
+                        st.error("프롬프트 데이터를 가져올 수 없습니다.")
+                        if 'error' in prompts_result:
+                            st.error(f"오류: {prompts_result['error']}")
+                else:
+                    st.warning("⚠️ 프롬프트 정보를 가져올 수 없었습니다.")
+                    st.info("정보 추출을 다시 실행해보세요.")
+            else:
+                st.warning("메시지 정보가 없습니다.")
+        else:
+            st.info("추출 결과가 없습니다. 먼저 정보 추출을 실행해주세요.")
+
+    with tab5:
         st.subheader("메타데이터")
         
         if 'metadata' in result:
@@ -889,42 +1003,7 @@ def display_single_processing_ui(api_status: bool, args):
             key="message_input"
         )
         
-        # 프롬프트 미리보기 기능 추가
-        if message.strip() and api_status:
-            with st.expander("🔍 프롬프트 미리보기", expanded=False):
-                st.info("현재 설정으로 LLM에 전송될 프롬프트를 미리 확인할 수 있습니다.")
-                
-                # API 호출 데이터 준비
-                prompt_data = {
-                    "message": message,
-                    "llm_model": llm_model,
-                    "offer_info_data_src": data_source,
-                    "product_info_extraction_mode": product_mode,
-                    "entity_matching_mode": entity_mode,
-                    "extract_entity_dag": extract_dag
-                }
-                
-                # 현재 설정의 해시를 생성하여 변경사항 감지
-                import hashlib
-                current_config_hash = hashlib.md5(str(prompt_data).encode()).hexdigest()
-                
-                # 설정이 변경되었거나 프롬프트가 없는 경우 자동으로 생성
-                if ('current_prompts' not in st.session_state or 
-                    st.session_state.get('config_hash') != current_config_hash):
-                    
-                    with st.spinner("프롬프트를 구성하는 중..."):
-                        prompts_result = call_prompts_api(prompt_data)
-                        
-                        if prompts_result:
-                            st.session_state['current_prompts'] = prompts_result
-                            st.session_state['config_hash'] = current_config_hash
-                        else:
-                            st.error("❌ 프롬프트 생성에 실패했습니다.")
-                            return
-                
-                # 생성된 프롬프트 표시
-                if 'current_prompts' in st.session_state:
-                    display_prompts(st.session_state['current_prompts'])
+        # 참고: 프롬프트는 정보 추출 실행 후 결과와 함께 표시됩니다
         
         # 추출 실행 버튼
         st.write(f"🔍 API 상태: {api_status}")
@@ -973,6 +1052,16 @@ def display_single_processing_ui(api_status: bool, args):
                 
                 if result:
                     st.session_state['extraction_result'] = result
+                    # 추출 결과에 프롬프트가 포함되어 있으면 사용, 없으면 별도 API 호출
+                    if 'prompts' in result and result['prompts'].get('success'):
+                        st.session_state['extraction_prompts'] = result['prompts']
+                        st.info("✅ 프롬프트가 추출 결과와 함께 반환되었습니다.")
+                    else:
+                        # 기존 방식: 별도 프롬프트 API 호출
+                        prompts_result = call_prompts_api(api_data)
+                        st.session_state['extraction_prompts'] = prompts_result
+                        st.info("✅ 프롬프트를 별도로 가져왔습니다.")
+                    
                     st.session_state['current_message'] = message  # 현재 메시지 저장
                     st.success("✅ 정보 추출이 완료되었습니다!")
                     st.rerun()  # 페이지 새로고침으로 결과 표시
