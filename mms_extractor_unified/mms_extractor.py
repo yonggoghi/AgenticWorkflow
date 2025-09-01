@@ -1581,7 +1581,8 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
             if cand_entities_sim.empty:
                 return pd.DataFrame()
             
-            cand_entities_sim = cand_entities_sim.query("sim >= 1.5").copy()
+            high_sim_threshold = getattr(PROCESSING_CONFIG, 'high_similarity_threshold', 1.5)
+            cand_entities_sim = cand_entities_sim.query("sim >= @high_sim_threshold").copy()
 
             # 순위 매기기 및 결과 제한
             cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(
@@ -2230,7 +2231,8 @@ Return a JSON object with actual data, not schema definitions!
         """유사도를 기반으로 상품 정보 매핑"""
         try:
             # 높은 유사도 아이템들 필터링
-            high_sim_items = similarities_fuzzy.query('sim >= 1.5')['item_nm_alias'].unique()
+            high_sim_threshold = getattr(PROCESSING_CONFIG, 'high_similarity_threshold', 1.5)
+            high_sim_items = similarities_fuzzy.query('sim >= @high_sim_threshold')['item_nm_alias'].unique()
             filtered_similarities = similarities_fuzzy[
                 (similarities_fuzzy['item_nm_alias'].isin(high_sim_items)) &
                 (~similarities_fuzzy['item_nm_alias'].str.contains('test', case=False)) &
