@@ -2141,6 +2141,86 @@ Return a JSON object with actual data, not schema definitions!
             logger.error(f"메시지 처리 실패: {e}")
             logger.error(traceback.format_exc())
             return self._create_fallback_result(mms_msg)
+    
+    @log_performance
+    def extract_json_objects_only(self, mms_msg: str) -> Dict[str, Any]:
+        """
+        메시지에서 7단계(엔티티 매칭 및 최종 결과 구성) 전의 json_objects만 추출
+        
+        Args:
+            mms_msg: 처리할 MMS 메시지
+            
+        Returns:
+            Dict: LLM이 생성한 json_objects (엔티티 매칭 전)
+        """
+        try:
+            msg = mms_msg.strip()
+            logger.info(f"JSON 객체 추출 시작 - 메시지 길이: {len(msg)}자")
+            
+            # 1-4단계: 기존 프로세스
+            pgm_info = self._prepare_program_classification(msg)
+            
+            # RAG 컨텍스트 준비 (product_info_extraction_mode가 'rag'인 경우)
+            rag_context = ""
+            if self.product_info_extraction_mode == 'rag':
+                rag_context = self._prepare_rag_context(msg)
+            
+            # 5단계: 프롬프트 구성 및 LLM 호출
+            prompt = self._build_extraction_prompt(msg, pgm_info, rag_context)
+            result_json_text = self._safe_llm_invoke(prompt)
+            
+            # 6단계: JSON 파싱
+            json_objects_list = extract_json_objects(result_json_text)
+            
+            if not json_objects_list:
+                logger.warning("LLM이 유효한 JSON 객체를 반환하지 않았습니다")
+                return {}
+            
+            json_objects = json_objects_list[-1]
+            
+            # 스키마 응답 감지
+            is_schema_response = self._detect_schema_response(json_objects)
+            if is_schema_response:
+                logger.warning("LLM이 스키마 정의를 반환했습니다")
+                return {}
+            
+            logger.info(f"JSON 객체 추출 완료 - 키: {list(json_objects.keys())}")
+            return json_objects
+            
+        except Exception as e:
+            logger.error(f"JSON 객체 추출 중 오류 발생: {e}")
+            return {}
+    
+    def _prepare_program_classification(self, mms_msg: str) -> Dict[str, Any]:
+        """프로그램 분류 준비 (_classify_programs 메소드와 동일)"""
+        try:
+            if self.clue_embeddings.numel() == 0:
+                return {"pgm_cand_info": "", "similarities": []}
+            
+            # 메시지 임베딩 및 프로그램 분류 유사도 계산
+            mms_embedding = self.emb_model.encode([mms_msg.lower()], convert_to_tensor=True, show_progress_bar=False)
+            similarities = torch.nn.functional.cosine_similarity(mms_embedding, self.clue_embeddings, dim=1).cpu().numpy()
+            
+            # 상위 후보 프로그램들 선별
+            pgm_pdf_tmp = self.pgm_pdf.copy()
+            pgm_pdf_tmp['sim'] = similarities
+            pgm_pdf_tmp = pgm_pdf_tmp.sort_values('sim', ascending=False)
+            
+            pgm_cand_info = "\n\t".join(
+                pgm_pdf_tmp.iloc[:self.num_cand_pgms][['pgm_nm','clue_tag']].apply(
+                    lambda x: re.sub(r'\[.*?\]', '', x['pgm_nm']) + " : " + x['clue_tag'], axis=1
+                ).to_list()
+            )
+            
+            return {
+                "pgm_cand_info": pgm_cand_info,
+                "similarities": similarities,
+                "pgm_pdf_tmp": pgm_pdf_tmp
+            }
+            
+        except Exception as e:
+            logger.error(f"프로그램 분류 실패: {e}")
+            return {"pgm_cand_info": "", "similarities": [], "pgm_pdf_tmp": pd.DataFrame()}
 
     def _detect_schema_response(self, json_objects: Dict) -> bool:
         """LLM이 스키마 정의를 반환했는지 감지"""

@@ -72,9 +72,23 @@ llm_gpt = ChatOpenAI(
         max_tokens=settings.ModelConfig.llm_max_tokens
         )
 
-stop_item_names = pd.read_csv(settings.METADATA_CONFIG.stop_items_path)['stop_words'].to_list()
-mms_pdf = pd.read_csv(settings.METADATA_CONFIG.mms_msg_path)
-mms_pdf = mms_pdf.astype('str')
+# 데이터 파일들을 조건부로 로드 (파일이 존재할 때만)
+stop_item_names = []
+mms_pdf = None
+
+try:
+    if os.path.exists(settings.METADATA_CONFIG.stop_items_path):
+        stop_item_names = pd.read_csv(settings.METADATA_CONFIG.stop_items_path)['stop_words'].to_list()
+except Exception as e:
+    logger.warning(f"Stop words 파일을 로드할 수 없습니다: {e}")
+
+try:
+    if os.path.exists(settings.METADATA_CONFIG.mms_msg_path):
+        mms_pdf = pd.read_csv(settings.METADATA_CONFIG.mms_msg_path)
+        mms_pdf = mms_pdf.astype('str')
+except Exception as e:
+    logger.warning(f"MMS 데이터 파일을 로드할 수 없습니다: {e}")
+    mms_pdf = pd.DataFrame()  # 빈 DataFrame으로 초기화
 
 ###############################################################################
 # 1) 기존 정규식 및 파서 (하위 호환성 유지)
