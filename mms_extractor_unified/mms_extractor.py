@@ -659,7 +659,7 @@ class MMSExtractor:
             model_mapping = {
                 "gemma": getattr(MODEL_CONFIG, 'gemma_model', 'gemma-7b'),
                 "gem": getattr(MODEL_CONFIG, 'gemma_model', 'gemma-7b'),  # 'gem'은 'gemma'의 줄임말
-                "ax": getattr(MODEL_CONFIG, 'ax_model', 'gpt-4'),
+                "ax": getattr(MODEL_CONFIG, 'ax_model', 'ax-4'),
                 "claude": getattr(MODEL_CONFIG, 'claude_model', 'claude-4'),
                 "cld": getattr(MODEL_CONFIG, 'claude_model', 'claude-4'),  # 'cld'는 'claude'의 줄임말
                 "gemini": getattr(MODEL_CONFIG, 'gemini_model', 'gemini-pro'),
@@ -667,7 +667,7 @@ class MMSExtractor:
                 "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'gpt-4')
             }
             
-            model_name = model_mapping.get(self.llm_model_name, getattr(MODEL_CONFIG, 'llm_model', 'gpt-4'))
+            model_name = model_mapping.get(self.llm_model_name, getattr(MODEL_CONFIG, 'llm_model', 'ax-4'))
             
             # LLM 모델별 일관성 설정
             model_kwargs = {
