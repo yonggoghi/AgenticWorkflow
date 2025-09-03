@@ -658,9 +658,12 @@ class MMSExtractor:
             # 모델 설정 매핑
             model_mapping = {
                 "gemma": getattr(MODEL_CONFIG, 'gemma_model', 'gemma-7b'),
+                "gem": getattr(MODEL_CONFIG, 'gemma_model', 'gemma-7b'),  # 'gem'은 'gemma'의 줄임말
                 "ax": getattr(MODEL_CONFIG, 'ax_model', 'gpt-4'),
-                "claude": getattr(MODEL_CONFIG, 'claude_model', 'claude-3'),
+                "claude": getattr(MODEL_CONFIG, 'claude_model', 'claude-4'),
+                "cld": getattr(MODEL_CONFIG, 'claude_model', 'claude-4'),  # 'cld'는 'claude'의 줄임말
                 "gemini": getattr(MODEL_CONFIG, 'gemini_model', 'gemini-pro'),
+                "gen": getattr(MODEL_CONFIG, 'gemini_model', 'gemini-pro'),  # 'gen'은 'gemini'의 줄임말
                 "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'gpt-4')
             }
             
@@ -690,13 +693,24 @@ class MMSExtractor:
     @log_performance
     def _initialize_embedding_model(self):
         """임베딩 모델 초기화"""
+        # 임베딩 비활성화 옵션 확인
+        if MODEL_CONFIG.disable_embedding:
+            logger.info("임베딩 모델 비활성화 모드 (DISABLE_EMBEDDING=true)")
+            self.emb_model = None
+            return
+            
         try:
             self.emb_model = load_sentence_transformer(self.model_path, self.device)
         except Exception as e:
             logger.error(f"임베딩 모델 초기화 실패: {e}")
             # 기본 모델로 fallback
             logger.info("기본 모델로 fallback 시도")
-            self.emb_model = load_sentence_transformer('jhgan/ko-sroberta-multitask', self.device)
+            try:
+                self.emb_model = load_sentence_transformer('jhgan/ko-sroberta-multitask', self.device)
+            except Exception as e2:
+                logger.error(f"Fallback 모델도 실패: {e2}")
+                logger.warning("임베딩 모델 없이 동작 모드로 전환")
+                self.emb_model = None
 
     @log_performance
     def _initialize_kiwi(self):
@@ -1121,9 +1135,13 @@ class MMSExtractor:
                     lambda x: preprocess_text(x['pgm_nm'].lower()) + " " + x['clue_tag'].lower(), axis=1
                 ).tolist()
                 
-                self.clue_embeddings = self.emb_model.encode(
-                    clue_texts, convert_to_tensor=True, show_progress_bar=False
-                )
+                if self.emb_model is not None:
+                    self.clue_embeddings = self.emb_model.encode(
+                        clue_texts, convert_to_tensor=True, show_progress_bar=False
+                    )
+                else:
+                    logger.warning("임베딩 모델이 없어 빈 tensor 사용")
+                    self.clue_embeddings = torch.empty((0, 768))
                 
                 logger.info(f"프로그램 분류 임베딩 생성 완료: {len(self.pgm_pdf)}개 프로그램")
             else:
@@ -1618,7 +1636,7 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
     def _classify_programs(self, mms_msg: str) -> Dict[str, Any]:
         """프로그램 분류"""
         try:
-            if self.clue_embeddings.numel() == 0:
+            if self.emb_model is None or self.clue_embeddings.numel() == 0:
                 return {"pgm_cand_info": "", "similarities": []}
             
             # 메시지 임베딩 및 프로그램 분류 유사도 계산
@@ -2194,7 +2212,7 @@ Return a JSON object with actual data, not schema definitions!
     def _prepare_program_classification(self, mms_msg: str) -> Dict[str, Any]:
         """프로그램 분류 준비 (_classify_programs 메소드와 동일)"""
         try:
-            if self.clue_embeddings.numel() == 0:
+            if self.emb_model is None or self.clue_embeddings.numel() == 0:
                 return {"pgm_cand_info": "", "similarities": []}
             
             # 메시지 임베딩 및 프로그램 분류 유사도 계산
