@@ -1,0 +1,277 @@
+{
+  "gemma": [
+    {
+      "msg_id": "3707",
+      "msg": "[SK텔레콤] 10월 T day 혜택 안내\n(광고)[SKT] 10월 T day 혜택 안내__SKT [할리스 인기 음료 2종 50% 할인(택1)] 이게 되네!_▶ 자세히 보기 :  http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6__■ 에이닷 X T 멤버십 구독캘린더 이벤트_T day 일정을 에이닷 캘린더에 등록하고 혜택 날짜에 알림을 받아보세요!_알림 설정하면 추첨을 통해 [올리브영 10,000원 기프트카드]를 드립니다._▶ 이벤트 참여하기 : https://bit.ly/47CuIH3__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504",
+      "model": "gemma",
+      "model_id": "skt/gemma3-12b-it",
+      "json_objects": {
+        "title": "10월 T day 혜택 안내",
+        "purpose": [
+          "혜택 안내",
+          "이벤트 응모 유도",
+          "경품 제공 안내"
+        ],
+        "product": [
+          {
+            "name": "할리스 인기 음료 2종",
+            "action": "구매"
+          },
+          {
+            "name": "올리브영 10,000원 기프트카드",
+            "action": "기타"
+          }
+        ],
+        "channel": [
+          {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6",
+            "action": "추가 정보"
+          },
+          {
+            "type": "URL",
+            "value": "https://bit.ly/47CuIH3",
+            "action": "참여"
+          },
+          {
+            "type": "전화번호",
+            "value": "1558",
+            "action": "문의"
+          },
+          {
+            "type": "전화번호",
+            "value": "1504",
+            "action": "수신 거부"
+          }
+        ],
+        "pgm": [
+          "멤버십/포인트",
+          "음료/커피"
+        ]
+      },
+      "extracted_at": "2025-09-03T17:29:47.348372",
+      "success": true,
+      "error": null
+    }
+  ],
+  "gemini": [
+    {
+      "msg_id": "3707",
+      "msg": "[SK텔레콤] 10월 T day 혜택 안내\n(광고)[SKT] 10월 T day 혜택 안내__SKT [할리스 인기 음료 2종 50% 할인(택1)] 이게 되네!_▶ 자세히 보기 :  http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6__■ 에이닷 X T 멤버십 구독캘린더 이벤트_T day 일정을 에이닷 캘린더에 등록하고 혜택 날짜에 알림을 받아보세요!_알림 설정하면 추첨을 통해 [올리브영 10,000원 기프트카드]를 드립니다._▶ 이벤트 참여하기 : https://bit.ly/47CuIH3__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504",
+      "model": "gemini",
+      "model_id": "gcp/gemini-2.5-flash",
+      "json_objects": {
+        "title": "10월 T day 혜택 안내",
+        "purpose": [
+          "혜택 안내",
+          "이벤트 응모 유도",
+          "경품 제공 안내"
+        ],
+        "product": [
+          {
+            "name": "할리스 인기 음료 2종",
+            "action": "구매"
+          },
+          {
+            "name": "올리브영 10,000원 기프트카드",
+            "action": "기타"
+          }
+        ],
+        "channel": [
+          {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6",
+            "action": "추가 정보"
+          },
+          {
+            "type": "URL",
+            "value": "https://bit.ly/47CuIH3",
+            "action": "참여"
+          },
+          {
+            "type": "전화번호",
+            "value": "1558",
+            "action": "문의"
+          },
+          {
+            "type": "전화번호",
+            "value": "1504",
+            "action": "수신 거부"
+          }
+        ],
+        "pgm": [
+          "멤버십/포인트",
+          "음료/커피"
+        ]
+      },
+      "extracted_at": "2025-09-03T17:30:00.666556",
+      "success": true,
+      "error": null
+    }
+  ],
+  "claude": [
+    {
+      "msg_id": "3707",
+      "msg": "[SK텔레콤] 10월 T day 혜택 안내\n(광고)[SKT] 10월 T day 혜택 안내__SKT [할리스 인기 음료 2종 50% 할인(택1)] 이게 되네!_▶ 자세히 보기 :  http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6__■ 에이닷 X T 멤버십 구독캘린더 이벤트_T day 일정을 에이닷 캘린더에 등록하고 혜택 날짜에 알림을 받아보세요!_알림 설정하면 추첨을 통해 [올리브영 10,000원 기프트카드]를 드립니다._▶ 이벤트 참여하기 : https://bit.ly/47CuIH3__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504",
+      "model": "claude",
+      "model_id": "amazon/anthropic/claude-sonnet-4-20250514",
+      "json_objects": {
+        "title": "10월 T day 혜택 안내",
+        "purpose": [
+          "혜택 안내",
+          "이벤트 응모 유도",
+          "경품 제공 안내"
+        ],
+        "product": [
+          {
+            "name": "할리스 인기 음료 2종",
+            "action": "구매"
+          },
+          {
+            "name": "올리브영 10,000원 기프트카드",
+            "action": "기타"
+          }
+        ],
+        "channel": [
+          {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6",
+            "action": "추가 정보"
+          },
+          {
+            "type": "URL",
+            "value": "https://bit.ly/47CuIH3",
+            "action": "참여"
+          },
+          {
+            "type": "전화번호",
+            "value": "1558",
+            "action": "문의"
+          },
+          {
+            "type": "전화번호",
+            "value": "1504",
+            "action": "수신 거부"
+          }
+        ],
+        "pgm": [
+          "멤버십/포인트",
+          "음료/커피"
+        ]
+      },
+      "extracted_at": "2025-09-03T17:30:29.190598",
+      "success": true,
+      "error": null
+    }
+  ],
+  "ax": [
+    {
+      "msg_id": "3707",
+      "msg": "[SK텔레콤] 10월 T day 혜택 안내\n(광고)[SKT] 10월 T day 혜택 안내__SKT [할리스 인기 음료 2종 50% 할인(택1)] 이게 되네!_▶ 자세히 보기 :  http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6__■ 에이닷 X T 멤버십 구독캘린더 이벤트_T day 일정을 에이닷 캘린더에 등록하고 혜택 날짜에 알림을 받아보세요!_알림 설정하면 추첨을 통해 [올리브영 10,000원 기프트카드]를 드립니다._▶ 이벤트 참여하기 : https://bit.ly/47CuIH3__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504",
+      "model": "ax",
+      "model_id": "skt/ax4",
+      "json_objects": {
+        "title": "10월 T day 혜택 안내",
+        "purpose": [
+          "혜택 안내",
+          "이벤트 응모 유도",
+          "경품 제공 안내"
+        ],
+        "product": [
+          {
+            "name": "할리스 인기 음료 2종",
+            "action": "구매"
+          },
+          {
+            "name": "올리브영 10,000원 기프트카드",
+            "action": "기타"
+          }
+        ],
+        "channel": [
+          {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6",
+            "action": "추가 정보"
+          },
+          {
+            "type": "URL",
+            "value": "https://bit.ly/47CuIH3",
+            "action": "참여"
+          },
+          {
+            "type": "전화번호",
+            "value": "1558",
+            "action": "문의"
+          },
+          {
+            "type": "전화번호",
+            "value": "1504",
+            "action": "수신 거부"
+          }
+        ],
+        "pgm": [
+          "멤버십/포인트",
+          "음료/커피"
+        ]
+      },
+      "extracted_at": "2025-09-03T17:30:41.300909",
+      "success": true,
+      "error": null
+    }
+  ],
+  "gpt": [
+    {
+      "msg_id": "3707",
+      "msg": "[SK텔레콤] 10월 T day 혜택 안내\n(광고)[SKT] 10월 T day 혜택 안내__SKT [할리스 인기 음료 2종 50% 할인(택1)] 이게 되네!_▶ 자세히 보기 :  http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6__■ 에이닷 X T 멤버십 구독캘린더 이벤트_T day 일정을 에이닷 캘린더에 등록하고 혜택 날짜에 알림을 받아보세요!_알림 설정하면 추첨을 통해 [올리브영 10,000원 기프트카드]를 드립니다._▶ 이벤트 참여하기 : https://bit.ly/47CuIH3__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504",
+      "model": "gpt",
+      "model_id": "azure/openai/gpt-4o-2024-08-06",
+      "json_objects": {
+        "title": "10월 T day 혜택 안내",
+        "purpose": [
+          "혜택 안내",
+          "이벤트 응모 유도",
+          "경품 제공 안내"
+        ],
+        "product": [
+          {
+            "name": "할리스 인기 음료 2종",
+            "action": "구매"
+          },
+          {
+            "name": "올리브영 10,000원 기프트카드",
+            "action": "기타"
+          }
+        ],
+        "channel": [
+          {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=28776&a=&u=https://bit.ly/3MWRbF6",
+            "action": "추가 정보"
+          },
+          {
+            "type": "URL",
+            "value": "https://bit.ly/47CuIH3",
+            "action": "참여"
+          },
+          {
+            "type": "전화번호",
+            "value": "1558",
+            "action": "문의"
+          },
+          {
+            "type": "전화번호",
+            "value": "1504",
+            "action": "수신 거부"
+          }
+        ],
+        "pgm": [
+          "멤버십/포인트",
+          "음료/커피"
+        ]
+      },
+      "extracted_at": "2025-09-03T17:31:03.709061",
+      "success": true,
+      "error": null
+    }
+  ]
+}
