@@ -59,13 +59,13 @@ class ModelComparisonExperiment:
         self.output_dir.mkdir(exist_ok=True)
         self.min_message_length = min_message_length
         
-        # 모델 설정
+        # 모델 설정 - MMSExtractor가 인식하는 짧은 식별자 사용
         self.models = {
-            'gemma': "skt/gemma3-12b-it",
-            'gemini': "gcp/gemini-2.5-flash",
-            'claude': "amazon/anthropic/claude-sonnet-4-20250514",
-            'ax': "skt/ax4",
-            'gpt': "azure/openai/gpt-4o-2024-08-06"
+            'gemma': "gem",     # skt/gemma3-12b-it
+            'gemini': "gen",    # gcp/gemini-2.5-flash
+            'claude': "cld",    # amazon/anthropic/claude-sonnet-4-20250514
+            'ax': "ax",         # skt/ax4
+            'gpt': "gpt"        # azure/openai/gpt-4o-2024-08-06
         }
         
         # 실험 설정
@@ -144,7 +144,7 @@ class ModelComparisonExperiment:
                 entity_extraction_mode=self.experiment_config['entity_matching_mode']
             )
             
-            logger.info(f"{model_name} 추출기 초기화 완료")
+            logger.info(f"{model_name} {model_id} 추출기 초기화 완료")
             
             # 각 메시지 처리
             for idx, row in messages_df.iterrows():
