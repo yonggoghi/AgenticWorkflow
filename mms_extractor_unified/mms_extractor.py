@@ -593,7 +593,7 @@ class MMSExtractor:
     """
     
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, 
-                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='gemma', extract_entity_dag=False):
+                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='ax', extract_entity_dag=False):
         """MMSExtractor 초기화"""
         logger.info("MMSExtractor 초기화 시작")
         
