@@ -1,0 +1,17 @@
+{
+  "experiment_date": "2025-09-04T09:18:41.907956",
+  "batch_size": 3,
+  "models": {
+    "gemma": "gem",
+    "gemini": "gen",
+    "claude": "cld",
+    "ax": "ax",
+    "gpt": "gpt"
+  },
+  "experiment_config": {
+    "extract_entity_dag": false,
+    "product_info_extraction_mode": "rag",
+    "entity_matching_mode": "llm"
+  },
+  "total_messages": 3
+}
