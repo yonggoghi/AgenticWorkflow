@@ -1,0 +1,21 @@
+[
+    {
+        "title": "테스트 메시지입니다.",
+        "purpose": [
+            "기타 정보 제공"
+        ],
+        "product": [],
+        "channel": [],
+        "pgm": [
+            {
+                "pgm_nm": "[마케팅_Care]TOS운영자_test",
+                "pgm_id": "2021CCEPM01"
+            },
+            {
+                "pgm_nm": "[마케팅_Sales]TOS운영자_test",
+                "pgm_id": "2020SCEET39"
+            }
+        ],
+        "entity_dag": []
+    }
+]
