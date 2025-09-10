@@ -53,6 +53,15 @@ from kiwipiepy import Kiwi
 from joblib import Parallel, delayed
 from entity_dag_extractor import DAGParser, extract_dag, create_dag_diagram, sha256_hash
 
+# 프롬프트 모듈 임포트
+from prompts import (
+    build_extraction_prompt,
+    enhance_prompt_for_retry,
+    get_fallback_result,
+    build_entity_extraction_prompt,
+    DEFAULT_ENTITY_EXTRACTION_PROMPT
+)
+
 # 설정 및 의존성 임포트 (원본 코드에서 가져옴)
 try:
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG, METADATA_CONFIG, EMBEDDING_CONFIG
@@ -1239,42 +1248,14 @@ class MMSExtractor:
 
     def _enhance_prompt_for_retry(self, original_prompt: str) -> str:
         """스키마 응답 방지를 위한 프롬프트 강화"""
-        enhanced_instruction = """
-🚨 CRITICAL INSTRUCTION 🚨
-You MUST return actual extracted data, NOT the schema definition.
-
-DO NOT return:
-- Schema structures like {"type": "array", "items": {...}}
-- Template definitions
-- Example formats
-
-DO return:
-- Real extracted values from the advertisement
-- Actual product names, purposes, channels found in the text
-- Concrete data only
-
-For example:
-WRONG: {"purpose": {"type": "array", "items": {"type": "string"}}}
-CORRECT: {"purpose": ["상품 가입 유도", "혜택 안내"]}
-
-WRONG: {"product": {"type": "array", "items": {"type": "object"}}}
-CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
-
-"""
-        return enhanced_instruction + "\n" + original_prompt
+        return enhance_prompt_for_retry(original_prompt)
 
     def _fallback_extraction(self, prompt: str) -> str:
         """LLM 실패 시 fallback 추출 로직"""
         logger.info("Fallback 추출 로직 실행")
         
-        # 기본적인 패턴 매칭으로 정보 추출 시도
-        fallback_result = {
-            "title": "광고 메시지",
-            "purpose": ["정보 제공"],
-            "product": [],
-            "channel": [],
-            "pgm": []
-        }
+        # 외부 프롬프트 모듈에서 fallback 결과 가져오기
+        fallback_result = get_fallback_result()
         
         return json.dumps(fallback_result, ensure_ascii=False)
 
@@ -1537,12 +1518,12 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
                 if e.strip() not in self.stop_item_names and len(e.strip()) >= 2
             ])
 
-            # LLM 프롬프트 구성
-            prompt = f"""
-            {getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', '다음 메시지에서 상품명을 추출하세요.')}
-
-            ## message:                
-            {msg_text}
+            # LLM 프롬프트 구성 - 외부 프롬프트 모듈 사용
+            base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', DEFAULT_ENTITY_EXTRACTION_PROMPT)
+            prompt = build_entity_extraction_prompt(msg_text, base_prompt)
+            
+            # 후보 엔티티 추가
+            prompt += f"""
 
             ## Candidate entities:
             {cand_entities_by_sim}
@@ -1665,177 +1646,16 @@ CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
             return {"pgm_cand_info": "", "similarities": [], "pgm_pdf_tmp": pd.DataFrame()}
 
     def _build_extraction_prompt(self, msg: str, rag_context: str, product_element: Optional[List[Dict]]) -> str:
-        """추출용 프롬프트 구성"""
+        """추출용 프롬프트 구성 - 외부 프롬프트 모듈 사용"""
         
-        # 사고 과정 정의 (모드별 최적화)
-        if self.product_info_extraction_mode == 'llm':
-            chain_of_thought = """
-1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
-2. Extract ONLY explicitly mentioned product/service names from the text, using exact original expressions.
-3. For each product, assign a standardized action from: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타].
-4. Avoid inferring or adding products not directly mentioned in the text.
-5. Provide channel information considering the extracted product information, preserving original text expressions.
-"""
-        else:
-            chain_of_thought = """
-1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
-2. Extract product names based on the identified purpose, ensuring only distinct offerings are included and using original text expressions.
-3. Provide channel information considering the extracted product information, preserving original text expressions.
-"""
-
-        # JSON 스키마 정의
-        schema_prd = {
-            "title": "Advertisement title, using the exact expressions as they appear in the original text.",
-            "purpose": {
-                "type": "array",
-                "items": {
-                    "type": "string",
-                    "enum": ["상품 가입 유도", "대리점/매장 방문 유도", "웹/앱 접속 유도", "이벤트 응모 유도", 
-                           "혜택 안내", "쿠폰 제공 안내", "경품 제공 안내", "수신 거부 안내", "기타 정보 제공"]
-                },
-                "description": "Primary purpose(s) of the advertisement."
-            },
-            "product": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string", "description": "Name of the advertised product or service."},
-                        "action": {
-                            "type": "string",
-                            "enum": ["구매", "가입", "사용", "방문", "참여", "코드입력", "쿠폰다운로드", "기타"],
-                            "description": "Expected customer action for the product."
-                        }
-                    }
-                },
-                "description": "Extract all product names from the advertisement."
-            },
-            "channel": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "enum": ["URL", "전화번호", "앱", "대리점"],
-                            "description": "Channel type."
-                        },
-                        "value": {"type": "string", "description": "Specific information for the channel."},
-                        "action": {
-                            "type": "string",
-                            "enum": ["가입", "추가 정보", "문의", "수신", "수신 거부"],
-                            "description": "Purpose of the channel."
-                        }
-                    }
-                },
-                "description": "Channels provided in the advertisement."
-            },
-            "pgm": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Select the two most relevant pgm_nm from the advertising classification criteria."
-            }
-        }
-
-        # 추출 가이드라인 설정
-        prd_ext_guide = """
-* Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering.
-* Extract all information (title, purpose, product, channel, pgm) using the exact expressions as they appear in the original text without translation, as specified in the schema.
-* If the advertisement purpose includes encouraging agency/store visits, provide agency channel information.
-"""
-
-        # 제품 정보 모드에 따른 스키마 조정
-        if self.product_info_extraction_mode == 'nlp' and product_element:
-            schema_prd['product'] = product_element
-            chain_of_thought = """
-1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
-2. Extract product information based on the identified purpose, ensuring only distinct offerings are included.
-3. Extract the action field for each product based on the provided name information.
-4. Provide channel information considering the extracted product information.
-"""
-            prd_ext_guide += """
-* Extract the action field for each product based on the identified product names, using the original text context.
-"""
+        # 외부 프롬프트 모듈의 함수 사용
+        prompt = build_extraction_prompt(
+            message=msg,
+            rag_context=rag_context,
+            product_element=product_element,
+            product_info_extraction_mode=self.product_info_extraction_mode
+        )
         
-        # 모드별 가이드라인 추가
-        if "### 후보 상품 이름 목록 ###" in rag_context:
-            # RAG 모드: 후보 목록을 강제 참조
-            prd_ext_guide += """
-* Use the provided candidate product names as a reference to guide product extraction, ensuring alignment with the advertisement content and using exact expressions from the original text.
-"""
-        elif "### 참고용 후보 상품 이름 목록 ###" in rag_context:
-            # LLM 모드: 후보 목록을 참고하되 일관성 강화
-            prd_ext_guide += """
-* Refer to the candidate product names list as guidance, but extract products based on your understanding of the advertisement content.
-* Maintain consistency by using standardized product naming conventions.
-* If multiple similar products exist, choose the most specific and relevant one to reduce variability.
-"""
-
-        # 프롬프트 구성 - 스키마를 더 명확하게 설명
-        schema_prompt = f"""
-Return your response as a JSON object that follows this exact structure:
-
-{json.dumps(schema_prd, indent=4, ensure_ascii=False)}
-
-IMPORTANT: 
-- Do NOT return the schema definition itself
-- Return actual extracted data in the specified format
-- For "purpose": return an array of strings from the enum values
-- For "product": return an array of objects with "name" and "action" fields
-- For "channel": return an array of objects with "type", "value", and "action" fields
-- For "pgm": return an array of strings
-
-Example response format:
-{{
-    "title": "실제 광고 제목",
-    "purpose": ["상품 가입 유도", "혜택 안내"],
-    "product": [
-        {{"name": "실제 상품명", "action": "가입"}},
-        {{"name": "다른 상품명", "action": "구매"}}
-    ],
-    "channel": [
-        {{"type": "URL", "value": "실제 URL", "action": "가입"}}
-    ],
-    "pgm": ["실제 프로그램명"]
-}}
-"""
-
-        # LLM 모드에서 일관성 강화를 위한 추가 지시사항
-        consistency_note = ""
-        if self.product_info_extraction_mode == 'llm':
-            consistency_note = """
-
-### 일관성 유지 지침 ###
-* 동일한 광고 메시지에 대해서는 항상 동일한 결과를 생성해야 합니다.
-* 애매한 표현이 있을 때는 가장 명확하고 구체적인 해석을 선택하세요.
-* 상품명은 원문에서 정확히 언급된 표현만 사용하세요.
-"""
-
-        prompt = f"""
-Extract the advertisement purpose and product names from the provided advertisement text.
-
-### Advertisement Message ###
-{msg}
-
-### Extraction Steps ###
-{chain_of_thought}
-
-### Extraction Guidelines ###
-{prd_ext_guide}{consistency_note}
-
-{schema_prompt}
-
-### OUTPUT FORMAT REQUIREMENT ###
-You MUST respond with a valid JSON object containing actual extracted data.
-Do NOT include schema definitions, type specifications, or template structures.
-Return only the concrete extracted information in the specified JSON format.
-
-{rag_context}
-
-### FINAL REMINDER ###
-Return a JSON object with actual data, not schema definitions!
-"""
-
         # 디버깅을 위한 프롬프트 로깅 (LLM 모드에서만)
         if self.product_info_extraction_mode == 'llm':
             logger.debug(f"LLM 모드 프롬프트 길이: {len(prompt)} 문자")

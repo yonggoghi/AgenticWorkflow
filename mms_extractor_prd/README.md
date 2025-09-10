@@ -16,12 +16,14 @@
 - `data/` - 필수 데이터 파일들 (상품 정보, 별칭 규칙 등)
 - `models/` - 임베딩 모델 파일들
 - `logs/` - 로그 파일 저장 디렉토리
+- `prompts/` - 구조화된 프롬프트 템플릿들
 
 ### 문서
 - `README_DATABASE.md` - 데이터베이스 연동 가이드
 - `USAGE_GUIDE.md` - 상세 사용법 가이드
 - `API_MULTIPROCESS_GUIDE.md` - API 멀티프로세스 처리 가이드
 - `BATCH_PARALLEL_GUIDE.md` - 배치 병렬 처리 가이드
+- `PROMPT_REFACTORING_GUIDE.md` - 프롬프트 리팩토링 가이드
 
 ## 빠른 시작
 
