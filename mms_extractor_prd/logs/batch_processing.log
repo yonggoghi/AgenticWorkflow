@@ -1,0 +1,337 @@
+2025-09-10 10:19:09,952 - __main__ - INFO - ==================================================
+2025-09-10 10:19:09,952 - __main__ - INFO - 🚀 Starting Batch MMS Processing
+2025-09-10 10:19:09,952 - __main__ - INFO - ==================================================
+2025-09-10 10:19:09,952 - __main__ - INFO - 배치 크기: 2
+2025-09-10 10:19:09,952 - __main__ - INFO - 출력 파일: test_prd_batch_results.csv
+2025-09-10 10:19:09,952 - __main__ - INFO - 병렬 처리: ON
+2025-09-10 10:19:09,952 - __main__ - INFO - 최대 워커 수: 2
+2025-09-10 10:19:09,952 - __main__ - INFO - 추출기 설정: {'offer_info_data_src': 'local', 'product_info_extraction_mode': 'llm', 'entity_extraction_mode': 'llm', 'llm_model': 'ax', 'extract_entity_dag': False}
+2025-09-10 10:19:09,952 - __main__ - INFO - ==================================================
+2025-09-10 10:19:09,952 - __main__ - INFO - Loading MMS data from: ./data/mms_data_250806.csv
+2025-09-10 10:19:10,460 - __main__ - INFO - Loaded 23950 messages
+2025-09-10 10:19:10,460 - __main__ - INFO - Initializing MMS Extractor...
+2025-09-10 10:19:10,460 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-10 10:19:10,460 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-10 10:19:10,482 - mms_extractor - INFO - Using device: mps
+2025-09-10 10:19:10,482 - mms_extractor - INFO - _initialize_device 실행완료: 0.02초
+2025-09-10 10:19:10,482 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-09-10 10:19:10,482 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-10 10:19:10,482 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-10 10:19:10,483 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-10 10:19:10,483 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-10 10:19:11,999 - mms_extractor - INFO - Model loaded on mps
+2025-09-10 10:19:11,999 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 1.52초
+2025-09-10 10:19:12,501 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-10 10:19:12,501 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.50초
+2025-09-10 10:19:12,501 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:12,501 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-10 10:19:12,501 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:12,501 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-10 10:19:12,501 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-10 10:19:12,502 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-10 10:19:12,502 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-10 10:19:12,502 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-10 10:19:12,628 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-10 10:19:12,628 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-10 10:19:12,638 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-10 10:19:12,643 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-10 10:19:12,645 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 10:19:12,649 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-10 10:19:12,649 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-10 10:19:12,650 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-10 10:19:12,650 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-10 10:19:12,650 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-10 10:19:12,650 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-10 10:19:12,650 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-10 10:19:12,656 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-10 10:19:12,658 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-10 10:19:12,658 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-10 10:19:12,980 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-10 10:19:12,982 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-10 10:19:12,982 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-10 10:19:12,983 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-10 10:19:12,983 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-10 10:19:12,984 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-10 10:19:12,984 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-10 10:19:12,984 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-10 10:19:12,984 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-10 10:19:12,992 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-10 10:19:12,995 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-10 10:19:12,995 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 10:19:13,054 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-10 10:19:13,054 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-10 10:19:13,054 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-10 10:19:13,066 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-10 10:19:13,067 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-10 10:19:13,316 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-10 10:19:13,316 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-10 10:19:13,316 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-10 10:19:13,884 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-10 10:19:13,884 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-10 10:19:13,884 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:13,884 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-10 10:19:13,884 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:13,884 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-10 10:19:13,884 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-10 10:19:13,884 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-10 10:19:13,884 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-10 10:19:13,884 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-10 10:19:13,889 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-10 10:19:13,898 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-10 10:19:13,903 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-10 10:19:13,903 - mms_extractor - INFO - _load_data 실행완료: 1.40초
+2025-09-10 10:19:13,903 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-10 10:19:13,903 - __main__ - INFO - MMS Extractor initialized successfully (DAG 추출: OFF)
+2025-09-10 10:19:13,903 - __main__ - INFO - No existing results file found - all messages are unprocessed
+2025-09-10 10:19:13,912 - __main__ - INFO - Total messages: 23950
+2025-09-10 10:19:13,912 - __main__ - INFO - Previously processed: 0
+2025-09-10 10:19:13,912 - __main__ - INFO - Unprocessed messages: 23950
+2025-09-10 10:19:13,912 - __main__ - INFO - Sampled 2 messages for processing
+2025-09-10 10:19:13,912 - __main__ - INFO - 🚀 병렬 처리 모드로 2개 메시지 처리 시작 (워커: 2개)
+2025-09-10 10:19:13,912 - mms_extractor - INFO - 배치 처리 시작: 2개 메시지, 2개 워커
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: 2G 고객님, 요금할인 70% 혜택 받으세요
+(광고)[SKT] 2G 사용 고객 대상 행사 ...
+2025-09-10 10:19:13,913 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-10 10:19:13,913 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: [SK텔레콤] iPhone 13 구매 혜택을 안내드립니다.
+(광고)[SKT] iPhone ...
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 메시지 내용: 2G 고객님, 요금할인 70% 혜택 받으세요
+(광고)[SKT] 2G 사용 고객 대상 행사 안내  연일 이어지는 황사에 건강 잘 챙기시고계시죠?   고객님께서 갖고 계신 번호에 대한 자부심이, 저희의 앞서가는 서비스에 대한 자부심으로 이어질 수 있도록 2G 사용 고객님만을 위해 특별한 스마트폰 교체행사를 준비했습니다.  이번 기회에 근처 SK텔레콤 공식인증 ...
+2025-09-10 10:19:13,913 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 메시지 길이: 782 문자
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-10 10:19:13,913 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-10 10:19:13,913 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 데이터 소스: local
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 메시지 내용: [SK텔레콤] iPhone 13 구매 혜택을 안내드립니다.
+(광고)[SKT] iPhone 13 구매 혜택 안내__#04 고객님, 안녕하세요. iPhone 13이 출시 되었습니다. SK텔레콤에서 iPhone 13 구매 하시고 다양한 혜택을 받아 보세요.__▶ 구매 하고 혜택 받기: http://t-mms.kr/t.do?m=#61&s=5617&a=&u=http...
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 메시지 길이: 760 문자
+2025-09-10 10:19:13,913 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-09-10 10:19:13,914 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-10 10:19:13,914 - mms_extractor - INFO - LLM 모델: ax
+2025-09-10 10:19:13,914 - mms_extractor - INFO - 데이터 소스: local
+2025-09-10 10:19:13,914 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-09-10 10:19:13,914 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-09-10 10:19:13,914 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-10 10:19:13,914 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-09-10 10:19:13,914 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-10 10:19:13,914 - mms_extractor - INFO - LLM 모델: ax
+2025-09-10 10:19:13,914 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-10 10:19:13,914 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-09-10 10:19:13,914 - mms_extractor - INFO - 처리할 메시지 길이: 782 문자
+2025-09-10 10:19:13,914 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-10 10:19:13,916 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-10 10:19:13,916 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-10 10:19:13,916 - mms_extractor - INFO - 처리할 메시지 길이: 760 문자
+2025-09-10 10:19:13,921 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-09-10 10:19:14,510 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-09-10 10:19:14,521 - mms_extractor - INFO - 분할된 문장 수: 6개
+2025-09-10 10:19:14,523 - mms_extractor - INFO - 분할된 문장 수: 22개
+2025-09-10 10:19:14,524 - mms_extractor - INFO - 필터링된 문장들: ['2G 고객님 요금할인 70 혜택 받으세요 광고 SKT ', '2G 사용 고객 대상 행사 안내 연일 이어지는 황사에 건강 잘 챙기시고계시죠 ', '고객님께서 계신 번호에 대한 자부심이 저희의 가는 서비스에 대한 자부심으로 이어질 수 있도록 2G 사용 고객님만 특별 스마트폰 교체행사 준비했습니다 ']...
+2025-09-10 10:19:14,524 - mms_extractor - INFO - 필터링된 문장들: [' SK텔레콤 iPhone 13 구매 혜택 안 드립니다 광고 SKT ', 'iPhone 13 구매 혜택 안내', ' 고객님 안녕하세요 ']...
+2025-09-10 10:19:14,534 - mms_extractor - INFO - 전체 토큰 수: 349개
+2025-09-10 10:19:14,541 - mms_extractor - INFO - 전체 토큰 수: 296개
+2025-09-10 10:19:14,541 - mms_extractor - INFO - NNP 태그 토큰들: ['할인', '광고', '스마트폰', 'SK텔레콤', '매장', '스마트폰', '-', '할인', '결합', '할인', '스마트폰', '라지', '스마트폰', '스마트폰', '할인', '할인', '할인', '스마트폰', '-', '-', '-', '보도자료', '수신거부']
+2025-09-10 10:19:14,542 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '광고', 'SK텔레콤', '스펙', '-', '-', '-', '-', 'T 다이렉트샵', '-', '기프트', '-', '할인', '할인', '-', '플래티넘', '요금제', '듀오', '충전기', '할인', '-', '애플', '-', '애플', '할인', '쿠폰', '코로나', '수신거부']
+2025-09-10 10:19:14,542 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['보도자료']
+2025-09-10 10:19:14,542 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['코로나', '스펙', '플래티넘', 'T 다이렉트샵', '충전기', '요금제', '듀오', '애플', '기프트']
+2025-09-10 10:19:14,542 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-09-10 10:19:14,542 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-09-10 10:19:23,539 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (5255, 3)
+2025-09-10 10:19:23,541 - mms_extractor - INFO - 퍼지 매칭 성공: 5255개 결과
+2025-09-10 10:19:23,546 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '2G 고객님 요금할인 70 혜택 받으세요 광고 SKT ', 'item_nm_alias': 'L70', 'sim': 0.6666666666666667}, {'sent': '2G 고객님 요금할인 70 혜택 받으세요 광고 SKT ', 'item_nm_alias': 'test', 'sim': 0.5714285714285714}, {'sent': '2G 고객님 요금할인 70 혜택 받으세요 광고 SKT ', 'item_nm_alias': '시드2', 'sim': 0.5}]
+2025-09-10 10:19:23,546 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-09-10 10:19:25,266 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (20223, 3)
+2025-09-10 10:19:25,266 - mms_extractor - INFO - 퍼지 매칭 성공: 20223개 결과
+2025-09-10 10:19:25,267 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': ' SK텔레콤 iPhone 13 구매 혜택 안 드립니다 광고 SKT ', 'item_nm_alias': 'LGU_iphoneX_256G', 'sim': 0.4285714285714286}, {'sent': ' SK텔레콤 iPhone 13 구매 혜택 안 드립니다 광고 SKT ', 'item_nm_alias': 'KTF iPhone 14 Pro Max 128G', 'sim': 0.45833333333333337}, {'sent': ' SK텔레콤 iPhone 13 구매 혜택 안 드립니다 광고 SKT ', 'item_nm_alias': 'KTF iPhone 14 프로 Max 128G', 'sim': 0.46808510638297873}]
+2025-09-10 10:19:25,267 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-09-10 10:19:25,313 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (5255, 3)
+2025-09-10 10:19:25,314 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '2G 고객님 요금할인 70 혜택 받으세요 광고 SKT ', 'item_nm_alias': 'L70', 'sim': 0.5333333333333333}, {'sent': '2G 고객님 요금할인 70 혜택 받으세요 광고 SKT ', 'item_nm_alias': 'test', 'sim': 0.4}, {'sent': '2G 고객님 요금할인 70 혜택 받으세요 광고 SKT ', 'item_nm_alias': '시드2', 'sim': 0.26666666666666666}]
+2025-09-10 10:19:25,314 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-09-10 10:19:25,317 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 48개
+2025-09-10 10:19:25,322 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 0개
+2025-09-10 10:19:25,322 - mms_extractor - INFO - 통합된 후보 아이템 수: 48개
+2025-09-10 10:19:25,324 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0플랜 라지', '복지210+요금', '스마트로', '마제', '미정', '복지150+요금', '수트', '스마트 사인', '스마트온', '공장', '온가족할인 TW', '우드', '이마트', '이상해', '플로', '한한', '나우', '현대', '결제100', 'TG-1000', '1111', '1121', 'G3', 'ⓜ체스마스터', 'T 적금 12', 'G7', 'T가족할인', '요금제 테스트 03', 'T플랜 에센스', '0틴플랜 라지', '스마트 사인(할인)', 'T1 요금제', '포인트 사용', 'T플랜 맥스', '순액 요금제 적용', '2G전환요금할인(70%)', '테스트 예', '삭제 대상', '할인_7021', '요금제 test2', 'IoT요금제(70)', '스마트60', 'T페이(사용고객)', '요금제 test', '펄 3G', '온가족할인_TW', '1112']
+2025-09-10 10:19:25,331 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (47, 2)
+2025-09-10 10:19:25,332 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0틴플랜 라지', 'item_id': ['NA00007488']}, {'item_nm': '0플랜 라지', 'item_id': ['NA00006157']}, {'item_nm': '1111', 'item_id': ['NA00006328']}]
+2025-09-10 10:19:25,332 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 11.42초
+2025-09-10 10:19:25,333 - mms_extractor - INFO - 추출된 후보 엔티티: ['0플랜 라지', '복지210+요금', '스마트로', '마제', '미정', '복지150+요금', '수트', '스마트 사인', '스마트온', '공장', '온가족할인 TW', '우드', '이마트', '이상해', '플로', '한한', '나우', '현대', '결제100', 'TG-1000', '1111', '1121', 'G3', 'ⓜ체스마스터', 'T 적금 12', 'G7', 'T가족할인', '요금제 테스트 03', 'T플랜 에센스', '0틴플랜 라지', '스마트 사인(할인)', 'T1 요금제', '포인트 사용', 'T플랜 맥스', '순액 요금제 적용', '2G전환요금할인(70%)', '테스트 예', '삭제 대상', '할인_7021', '요금제 test2', 'IoT요금제(70)', '스마트60', 'T페이(사용고객)', '요금제 test', '펄 3G', '온가족할인_TW', '1112']
+2025-09-10 10:19:25,333 - mms_extractor - INFO - 매칭된 상품 정보: (47, 2)
+2025-09-10 10:19:25,333 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-10 10:19:25,507 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-10 10:19:25,507 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-10 10:19:25,507 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 406 문자
+2025-09-10 10:19:25,507 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-10 10:19:25,507 - mms_extractor - INFO - 후보 아이템 리스트 크기: 47개
+2025-09-10 10:19:25,507 - mms_extractor - INFO - 후보 아이템 리스트: ['0플랜 라지', '복지210+요금', '스마트로', '마제', '미정', '복지150+요금', '수트', '스마트 사인', '스마트온', '공장', '온가족할인 TW', '우드', '이마트', '이상해', '플로', '한한', '나우', '현대', '결제100', 'TG-1000', '1111', '1121', 'G3', 'ⓜ체스마스터', 'T 적금 12', 'G7', 'T가족할인', '요금제 테스트 03', 'T플랜 에센스', '0틴플랜 라지', '스마트 사인(할인)', 'T1 요금제', '포인트 사용', 'T플랜 맥스', '순액 요금제 적용', '2G전환요금할인(70%)', '테스트 예', '삭제 대상', '할인_7021', '요금제 test2', 'IoT요금제(70)', '스마트60', 'T페이(사용고객)', '요금제 test', '펄 3G', '온가족할인_TW', '1112']
+2025-09-10 10:19:25,507 - mms_extractor - INFO - extra_item_pdf 크기: (47, 2)
+2025-09-10 10:19:25,507 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-09-10 10:19:25,507 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0틴플랜 라지', 'item_id': ['NA00007488']}, {'item_nm': '0플랜 라지', 'item_id': ['NA00006157']}]
+2025-09-10 10:19:25,507 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-09-10 10:19:25,507 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-10 10:19:25,508 - mms_extractor - INFO - 구성된 프롬프트 길이: 7007 문자
+2025-09-10 10:19:25,508 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-09-10 10:19:25,508 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 7007)
+2025-09-10 10:19:25,508 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-10 10:19:25,508 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-10 10:19:25,648 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (20223, 3)
+2025-09-10 10:19:25,649 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': ' SK텔레콤 iPhone 13 구매 혜택 안 드립니다 광고 SKT ', 'item_nm_alias': 'LGU_iphoneX_256G', 'sim': 0.30000000000000004}, {'sent': ' SK텔레콤 iPhone 13 구매 혜택 안 드립니다 광고 SKT ', 'item_nm_alias': 'KTF iPhone 14 Pro Max 128G', 'sim': 0.43333333333333335}, {'sent': ' SK텔레콤 iPhone 13 구매 혜택 안 드립니다 광고 SKT ', 'item_nm_alias': 'KTF iPhone 14 프로 Max 128G', 'sim': 0.44933333333333336}]
+2025-09-10 10:19:25,650 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-09-10 10:19:25,656 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 158개
+2025-09-10 10:19:25,661 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 1개
+2025-09-10 10:19:25,662 - mms_extractor - INFO - 통합된 후보 아이템 수: 159개
+2025-09-10 10:19:25,663 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['T 다이렉트샵', 'IPHONE 13', 'mini', 'Mini', 'pro', 'pro(P)', 'AIG-100', 'pop 100', 'MacSafe 듀오 충전기', 'LTE 혜택 안내', 'Neo Pro+', '5GX 플래티넘(AI클럽)', 'SpeedM', 'Pro기', 'N10', 'M할인', 'X10', 'IPHONE 13 프로', 'S20', 'IPHONE 13 미니', 'D2', 'pro기', '5GX플래티넘', 'ET100', 'Cast-100', 'A10', '아이패드 RETINA 디스플레이', 'IPAD RETINA 디스플레이', 'DSB-100', 'SK텔레콤(주)', 'SMM-100', 'UPS Pro', 'T플랜 max', 'ESM-100', 'T플랜 Max', '5GX 플래티넘(SMART기기)', '5GX 플래티넘(Smart기기)', '5GX 플래티넘(smart기기)', '레이', '5GX 플래티넘(T 우주)', 'G5 프로모션 할인', '5G 액세서리 할인', 'LGU iPhone 12 Pro Max', 'KTF iPhone 12 Pro Max', 'TiPhone파손 13', 'TiPhone케어 13', 'Tiphone케어 13', 'Tiphone파손 13', 'Mini_M', 'TMS100 할인', 'mini_M', 'D2-pro', 'pro(1년)', 'iPhone 13 pro max 1T', '엘티이 혜택 안내', '요금제 test', 'Data 100', 'iPhone 13 pro 1T', 'LGU iPhone 13', 'IPHONE 13 PRO', 'iPhone 13 자급제', 'NEO pro CM', 'NEO Pro CM', 'TEST iPhone 12/min/Pro/Max', 'iPhone 13 프로 1T', 'RGT100', '5GX 플래티넘(디즈니+)', '0M_IPHONE 13', 'NEOpro', 'LGU iPhone 13 pro max', 'iphone 11 PRO MAX_64G', 'LGU_iPhone 11 Pro Max', 'iPhone 13 pro max 자급제', 'iPhone 11 PRO MAX_64G', 'STA-100', 'iPhone 13 mini 자급제', 'KTF iPhone 12 mini', 'LGU iPhone 12 mini', 'IoTsmart팜(100)', 'KTF iPhone 12 Pro', 'iPhone 13 pro 자급제', 'LGU iPhone 12 Pro', 'bz-iot-100', 'iPhone 13 256G', 'iPhone 13 128G', '5GX 플래티넘(스마트기기)', 'IPHONE 13 DEMO', 'IPHONE 13 MINI', 'iPhone 13 512G', 'iphone 11 PRO MAX_256G', 'iphone 11 PRO MAX_512G', 'iPhone 13 pro max 256G', 'iPhone 13 pro max 128G', 'iPhone 11 PRO MAX_256G', 'iPhone 13 pro max 512G', 'iPhone 11 PRO MAX_512G', 'IBWS-100', '엘티이-M 10', 'LGU iPhone14 Pro Max', 'AIT-100S', 'TIPHONE케어 13', 'iPhone5S', 'iPhone4S', 'TIPHONE파손 13', 'iphone5S', 'iphone4S', 'LGU iPhone 13 미니', 'LoRa 100']
+2025-09-10 10:19:25,668 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (86, 2)
+2025-09-10 10:19:25,668 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0M_IPHONE 13', 'item_id': ['A5E4', 'A5E5']}, {'item_nm': '5G 액세서리 할인', 'item_id': ['NA00007584']}, {'item_nm': '5GX 플래티넘(AI클럽)', 'item_id': ['NA00009155']}]
+2025-09-10 10:19:25,669 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 11.75초
+2025-09-10 10:19:25,669 - mms_extractor - INFO - 추출된 후보 엔티티: ['T 다이렉트샵', 'IPHONE 13', 'mini', 'Mini', 'pro', 'pro(P)', 'AIG-100', 'pop 100', 'MacSafe 듀오 충전기', 'LTE 혜택 안내', 'Neo Pro+', '5GX 플래티넘(AI클럽)', 'SpeedM', 'Pro기', 'N10', 'M할인', 'X10', 'IPHONE 13 프로', 'S20', 'IPHONE 13 미니', 'D2', 'pro기', '5GX플래티넘', 'ET100', 'Cast-100', 'A10', '아이패드 RETINA 디스플레이', 'IPAD RETINA 디스플레이', 'DSB-100', 'SK텔레콤(주)', 'SMM-100', 'UPS Pro', 'T플랜 max', 'ESM-100', 'T플랜 Max', '5GX 플래티넘(SMART기기)', '5GX 플래티넘(Smart기기)', '5GX 플래티넘(smart기기)', '레이', '5GX 플래티넘(T 우주)', 'G5 프로모션 할인', '5G 액세서리 할인', 'LGU iPhone 12 Pro Max', 'KTF iPhone 12 Pro Max', 'TiPhone파손 13', 'TiPhone케어 13', 'Tiphone케어 13', 'Tiphone파손 13', 'Mini_M', 'TMS100 할인', 'mini_M', 'D2-pro', 'pro(1년)', 'iPhone 13 pro max 1T', '엘티이 혜택 안내', '요금제 test', 'Data 100', 'iPhone 13 pro 1T', 'LGU iPhone 13', 'IPHONE 13 PRO', 'iPhone 13 자급제', 'NEO pro CM', 'NEO Pro CM', 'TEST iPhone 12/min/Pro/Max', 'iPhone 13 프로 1T', 'RGT100', '5GX 플래티넘(디즈니+)', '0M_IPHONE 13', 'NEOpro', 'LGU iPhone 13 pro max', 'iphone 11 PRO MAX_64G', 'LGU_iPhone 11 Pro Max', 'iPhone 13 pro max 자급제', 'iPhone 11 PRO MAX_64G', 'STA-100', 'iPhone 13 mini 자급제', 'KTF iPhone 12 mini', 'LGU iPhone 12 mini', 'IoTsmart팜(100)', 'KTF iPhone 12 Pro', 'iPhone 13 pro 자급제', 'LGU iPhone 12 Pro', 'bz-iot-100', 'iPhone 13 256G', 'iPhone 13 128G', '5GX 플래티넘(스마트기기)', 'IPHONE 13 DEMO', 'IPHONE 13 MINI', 'iPhone 13 512G', 'iphone 11 PRO MAX_256G', 'iphone 11 PRO MAX_512G', 'iPhone 13 pro max 256G', 'iPhone 13 pro max 128G', 'iPhone 11 PRO MAX_256G', 'iPhone 13 pro max 512G', 'iPhone 11 PRO MAX_512G', 'IBWS-100', '엘티이-M 10', 'LGU iPhone14 Pro Max', 'AIT-100S', 'TIPHONE케어 13', 'iPhone5S', 'iPhone4S', 'TIPHONE파손 13', 'iphone5S', 'iphone4S', 'LGU iPhone 13 미니', 'LoRa 100']
+2025-09-10 10:19:25,669 - mms_extractor - INFO - 매칭된 상품 정보: (86, 2)
+2025-09-10 10:19:25,669 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-10 10:19:25,728 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-10 10:19:25,728 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-10 10:19:25,728 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 406 문자
+2025-09-10 10:19:25,728 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-10 10:19:25,728 - mms_extractor - INFO - 후보 아이템 리스트 크기: 108개
+2025-09-10 10:19:25,728 - mms_extractor - INFO - 후보 아이템 리스트: ['T 다이렉트샵', 'IPHONE 13', 'mini', 'Mini', 'pro', 'pro(P)', 'AIG-100', 'pop 100', 'MacSafe 듀오 충전기', 'LTE 혜택 안내', 'Neo Pro+', '5GX 플래티넘(AI클럽)', 'SpeedM', 'Pro기', 'N10', 'M할인', 'X10', 'IPHONE 13 프로', 'S20', 'IPHONE 13 미니', 'D2', 'pro기', '5GX플래티넘', 'ET100', 'Cast-100', 'A10', '아이패드 RETINA 디스플레이', 'IPAD RETINA 디스플레이', 'DSB-100', 'SK텔레콤(주)', 'SMM-100', 'UPS Pro', 'T플랜 max', 'ESM-100', 'T플랜 Max', '5GX 플래티넘(SMART기기)', '5GX 플래티넘(Smart기기)', '5GX 플래티넘(smart기기)', '레이', '5GX 플래티넘(T 우주)', 'G5 프로모션 할인', '5G 액세서리 할인', 'LGU iPhone 12 Pro Max', 'KTF iPhone 12 Pro Max', 'TiPhone파손 13', 'TiPhone케어 13', 'Tiphone케어 13', 'Tiphone파손 13', 'Mini_M', 'TMS100 할인', 'mini_M', 'D2-pro', 'pro(1년)', 'iPhone 13 pro max 1T', '엘티이 혜택 안내', '요금제 test', 'Data 100', 'iPhone 13 pro 1T', 'LGU iPhone 13', 'IPHONE 13 PRO', 'iPhone 13 자급제', 'NEO pro CM', 'NEO Pro CM', 'TEST iPhone 12/min/Pro/Max', 'iPhone 13 프로 1T', 'RGT100', '5GX 플래티넘(디즈니+)', '0M_IPHONE 13', 'NEOpro', 'LGU iPhone 13 pro max', 'iphone 11 PRO MAX_64G', 'LGU_iPhone 11 Pro Max', 'iPhone 13 pro max 자급제', 'iPhone 11 PRO MAX_64G', 'STA-100', 'iPhone 13 mini 자급제', 'KTF iPhone 12 mini', 'LGU iPhone 12 mini', 'IoTsmart팜(100)', 'KTF iPhone 12 Pro', 'iPhone 13 pro 자급제', 'LGU iPhone 12 Pro', 'bz-iot-100', 'iPhone 13 256G', 'iPhone 13 128G', '5GX 플래티넘(스마트기기)', 'IPHONE 13 DEMO', 'IPHONE 13 MINI', 'iPhone 13 512G', 'iphone 11 PRO MAX_256G', 'iphone 11 PRO MAX_512G', 'iPhone 13 pro max 256G', 'iPhone 13 pro max 128G', 'iPhone 11 PRO MAX_256G', 'iPhone 13 pro max 512G', 'iPhone 11 PRO MAX_512G', 'IBWS-100', '엘티이-M 10', 'LGU iPhone14 Pro Max', 'AIT-100S', 'TIPHONE케어 13', 'iPhone5S', 'iPhone4S', 'TIPHONE파손 13', 'iphone5S', 'iphone4S', 'LGU iPhone 13 미니', 'LoRa 100']
+2025-09-10 10:19:25,728 - mms_extractor - INFO - extra_item_pdf 크기: (86, 2)
+2025-09-10 10:19:25,728 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-09-10 10:19:25,729 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0M_IPHONE 13', 'item_id': ['A5E4', 'A5E5']}, {'item_nm': '5G 액세서리 할인', 'item_id': ['NA00007584']}]
+2025-09-10 10:19:25,729 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-09-10 10:19:25,729 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-10 10:19:25,729 - mms_extractor - INFO - 구성된 프롬프트 길이: 8236 문자
+2025-09-10 10:19:25,729 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-09-10 10:19:25,729 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 8236)
+2025-09-10 10:19:25,729 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-10 10:19:25,729 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-10 10:19:31,305 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 10:19:31,310 - mms_extractor - INFO - LLM 응답 길이: 734 문자
+2025-09-10 10:19:31,310 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "2G 사용 고객 대상 행사 안내",
+    "purpose": [
+        "기변유도및해지방어",
+        "혜택 안내"
+    ],
+    "product": [
+        {
+            "name": "2G전환요금할인(70%)",
+            "action": "가입"
+        },
+        {
+            "name": "T플랜 라지",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+        {
+            "type": "대리점",
+            "value": "SK텔레콤 공식인증 매장",
+            "action": "추가 정보"
+        },
+        {
+            "type": "URL",
+            "value": "https://bit.ly/2H...
+2025-09-10 10:19:31,310 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-10 10:19:31,310 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-10 10:19:31,310 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-10 10:19:31,310 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '2G 사용 고객 대상 행사 안내', 'purpose': ['기변유도및해지방어', '혜택 안내'], 'product': [{'name': '2G전환요금할인(70%)', 'action': '가입'}, {'name': 'T플랜 라지', 'action': '가입'}], 'channel': [{'type': '대리점', 'value': 'SK텔레콤 공식인증 매장', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/2HfvfV8', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['기변유도및해지방어', '사용법/혜택/이벤트안내_단말']}
+2025-09-10 10:19:31,310 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-10 10:19:31,310 - mms_extractor - INFO - LLM 추출 엔티티: ['2G전환요금할인(70%)', 'T플랜 라지']
+2025-09-10 10:19:31,784 - mms_extractor - INFO - 프롬프트 저장됨: entity_extraction_prompt (길이: 3717)
+2025-09-10 10:19:31,784 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 2
+2025-09-10 10:19:31,784 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt', 'entity_extraction_prompt']
+2025-09-10 10:19:32,303 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 10:19:32,466 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.16초
+2025-09-10 10:19:32,487 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 10:19:32,488 - mms_extractor - INFO - LLM 응답 길이: 753 문자
+2025-09-10 10:19:32,488 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "iPhone 13 구매 혜택 안내",
+    "purpose": [
+        "상품 가입 유도",
+        "혜택 안내",
+        "이벤트 응모 유도",
+        "경품 제공 안내"
+    ],
+    "product": [
+        {"name": "IPHONE 13", "action": "구매"},
+        {"name": "T 다이렉트샵", "action": "구매"},
+        {"name": "5GX 플래티넘(AI클럽)", "action": "가입"},
+        {"name": "AirPods Pro", "action": "구매"},
+        {"name": "MacSafe 듀오 충전기", "action": "구매"}
+    ],
+    "channel": [
+        {"type": "URL", "value": "http://t-mms.kr/t.do?m=#61&s=5617&a...
+2025-09-10 10:19:32,488 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-10 10:19:32,488 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-10 10:19:32,488 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-10 10:19:32,489 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': 'iPhone 13 구매 혜택 안내', 'purpose': ['상품 가입 유도', '혜택 안내', '이벤트 응모 유도', '경품 제공 안내'], 'product': [{'name': 'IPHONE 13', 'action': '구매'}, {'name': 'T 다이렉트샵', 'action': '구매'}, {'name': '5GX 플래티넘(AI클럽)', 'action': '가입'}, {'name': 'AirPods Pro', 'action': '구매'}, {'name': 'MacSafe 듀오 충전기', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=5617&a=&u=https://bit.ly/3lTcFVq', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['상품및부가서비스가입유도_단말', '사용법/혜택/이벤트안내_단말']}
+2025-09-10 10:19:32,489 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-10 10:19:32,489 - mms_extractor - INFO - LLM 추출 엔티티: ['IPHONE 13', 'T 다이렉트샵', '5GX 플래티넘(AI클럽)', 'AirPods Pro', 'MacSafe 듀오 충전기']
+2025-09-10 10:19:33,074 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-10 10:19:33,074 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:33,075 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-10 10:19:33,075 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:33,075 - mms_extractor - INFO - 제목: 2G 사용 고객 대상 행사 안내
+2025-09-10 10:19:33,075 - mms_extractor - INFO - 목적: ['기변유도및해지방어', '혜택 안내']
+2025-09-10 10:19:33,075 - mms_extractor - INFO - 상품 수: 2개
+2025-09-10 10:19:33,075 - mms_extractor - INFO - 채널 수: 3개
+2025-09-10 10:19:33,075 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-10 10:19:33,075 - mms_extractor - INFO - process_message 실행완료: 19.16초
+2025-09-10 10:19:33,075 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-10 10:19:33,075 - mms_extractor - INFO - 배치 처리 진행률: 1/2 (50.0%)
+2025-09-10 10:19:33,186 - mms_extractor - INFO - 프롬프트 저장됨: entity_extraction_prompt (길이: 4120)
+2025-09-10 10:19:33,186 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 2
+2025-09-10 10:19:33,186 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt', 'entity_extraction_prompt']
+2025-09-10 10:19:34,544 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 10:19:35,044 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 2.56초
+2025-09-10 10:19:35,054 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-10 10:19:35,054 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:35,054 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-10 10:19:35,054 - mms_extractor - INFO - ============================================================
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 제목: iPhone 13 구매 혜택 안내
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 목적: ['상품 가입 유도', '혜택 안내', '이벤트 응모 유도', '경품 제공 안내']
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 상품 수: 5개
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 채널 수: 3개
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-10 10:19:35,054 - mms_extractor - INFO - process_message 실행완료: 21.14초
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 배치 처리 진행률: 2/2 (100.0%)
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 배치 처리 완료: 2개 메시지, 21.14초
+2025-09-10 10:19:35,054 - mms_extractor - INFO - 평균 처리 시간: 10.57초/메시지
+2025-09-10 10:19:35,055 - __main__ - INFO - ✅ 메시지 593 병렬 처리 완료
+2025-09-10 10:19:35,055 - __main__ - INFO - ✅ 메시지 9241 병렬 처리 완료
+2025-09-10 10:19:35,055 - __main__ - INFO - 🎯 병렬 처리 완료: 2개 메시지, 21.14초 소요
+2025-09-10 10:19:35,055 - __main__ - INFO - Creating new results file: test_prd_batch_results.csv
+2025-09-10 10:19:35,058 - __main__ - INFO - Results saved to: test_prd_batch_results.csv
+2025-09-10 10:19:35,058 - __main__ - INFO - Successfully processed 2 messages
+2025-09-10 10:19:35,058 - __main__ - INFO - Processed message IDs: ['593', '9241']
+2025-09-10 10:19:35,058 - __main__ - INFO - ==================================================
+2025-09-10 10:19:35,058 - __main__ - INFO - 🎯 배치 처리 성능 요약
+2025-09-10 10:19:35,058 - __main__ - INFO - ==================================================
+2025-09-10 10:19:35,058 - __main__ - INFO - 처리 모드: 병렬 처리
+2025-09-10 10:19:35,058 - __main__ - INFO - 워커 수: 2
+2025-09-10 10:19:35,058 - __main__ - INFO - DAG 추출: OFF
+2025-09-10 10:19:35,058 - __main__ - INFO - 총 처리 시간: 25.11초
+2025-09-10 10:19:35,058 - __main__ - INFO - 메시지 처리 시간: 21.14초
+2025-09-10 10:19:35,058 - __main__ - INFO - 메시지당 평균 시간: 10.57초
+2025-09-10 10:19:35,058 - __main__ - INFO - 처리량: 0.09 메시지/초
+2025-09-10 10:19:35,058 - __main__ - INFO - ==================================================
+2025-09-10 10:19:35,058 - __main__ - INFO - ==================================================
+2025-09-10 10:19:35,058 - __main__ - INFO - Batch Processing Summary
+2025-09-10 10:19:35,058 - __main__ - INFO - ==================================================
+2025-09-10 10:19:35,058 - __main__ - INFO - status: completed
+2025-09-10 10:19:35,058 - __main__ - INFO - processed_count: 2
+2025-09-10 10:19:35,058 - __main__ - INFO - successful_count: 2
+2025-09-10 10:19:35,058 - __main__ - INFO - failed_count: 0
+2025-09-10 10:19:35,058 - __main__ - INFO - results_file: test_prd_batch_results.csv
+2025-09-10 10:19:35,058 - __main__ - INFO - processing_mode: 병렬 처리
+2025-09-10 10:19:35,058 - __main__ - INFO - max_workers: 2
+2025-09-10 10:19:35,058 - __main__ - INFO - dag_extraction: False
+2025-09-10 10:19:35,058 - __main__ - INFO - total_time_seconds: 25.11
+2025-09-10 10:19:35,058 - __main__ - INFO - processing_time_seconds: 21.14
+2025-09-10 10:19:35,058 - __main__ - INFO - avg_time_per_message: 10.57
+2025-09-10 10:19:35,058 - __main__ - INFO - throughput_messages_per_second: 0.09
+2025-09-10 10:19:35,058 - __main__ - INFO - ==================================================

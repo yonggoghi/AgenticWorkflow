@@ -4348,3 +4348,1056 @@ SKT는 넷플릭스와 웨이브 서비스를 저렴하게 이용할 수 있는 
 2025-09-08 10:51:08,119 - werkzeug - INFO - 127.0.0.1 - - [08/Sep/2025 10:51:08] "POST /extract HTTP/1.1" 200 -
 2025-09-08 10:51:08,146 - werkzeug - INFO - 127.0.0.1 - - [08/Sep/2025 10:51:08] "GET /health HTTP/1.1" 200 -
 2025-09-08 11:23:46,648 - werkzeug - INFO - 127.0.0.1 - - [08/Sep/2025 11:23:46] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:52:05,009 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-09-10 09:52:05,009 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-09-10 09:52:05,009 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-09-10 09:52:05,009 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-10 09:52:05,009 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-10 09:52:05,050 - mms_extractor - INFO - Using device: mps
+2025-09-10 09:52:05,050 - mms_extractor - INFO - _initialize_device 실행완료: 0.04초
+2025-09-10 09:52:05,051 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-09-10 09:52:05,051 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-10 09:52:05,051 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-10 09:52:05,051 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-10 09:52:05,051 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-10 09:52:08,278 - mms_extractor - INFO - Model loaded on mps
+2025-09-10 09:52:08,278 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 3.23초
+2025-09-10 09:52:08,902 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-10 09:52:08,902 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.62초
+2025-09-10 09:52:08,902 - mms_extractor - INFO - ============================================================
+2025-09-10 09:52:08,902 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-10 09:52:08,902 - mms_extractor - INFO - ============================================================
+2025-09-10 09:52:08,902 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-10 09:52:08,902 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-10 09:52:08,902 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-10 09:52:08,902 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-10 09:52:08,902 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-10 09:52:09,030 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-10 09:52:09,030 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-10 09:52:09,042 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-10 09:52:09,048 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-10 09:52:09,049 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 09:52:09,054 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-10 09:52:09,054 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-10 09:52:09,055 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-10 09:52:09,055 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-10 09:52:09,055 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-10 09:52:09,055 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-10 09:52:09,055 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-10 09:52:09,063 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-10 09:52:09,064 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-10 09:52:09,064 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-10 09:52:09,389 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-10 09:52:09,391 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-10 09:52:09,391 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-10 09:52:09,391 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-10 09:52:09,391 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-10 09:52:09,392 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-10 09:52:09,393 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-10 09:52:09,393 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-10 09:52:09,393 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-10 09:52:09,401 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-10 09:52:09,404 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-10 09:52:09,404 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 09:52:09,468 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-10 09:52:09,469 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-10 09:52:09,469 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-10 09:52:09,483 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-10 09:52:09,483 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-10 09:52:09,786 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-10 09:52:09,786 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-10 09:52:09,786 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-10 09:52:10,376 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-10 09:52:10,376 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-10 09:52:10,376 - mms_extractor - INFO - ============================================================
+2025-09-10 09:52:10,376 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-10 09:52:10,376 - mms_extractor - INFO - ============================================================
+2025-09-10 09:52:10,376 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-10 09:52:10,376 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-10 09:52:10,376 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-10 09:52:10,376 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-10 09:52:10,377 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-10 09:52:10,382 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-10 09:52:10,391 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-10 09:52:10,396 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-10 09:52:10,396 - mms_extractor - INFO - _load_data 실행완료: 1.49초
+2025-09-10 09:52:10,396 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-10 09:52:10,396 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-09-10 09:52:10,396 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8000, debug=False
+2025-09-10 09:52:10,396 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-09-10 09:52:10,396 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8000에서 시작합니다
+2025-09-10 09:52:10,396 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-09-10 09:52:10,396 - __main__ - INFO -   GET  /health - 헬스체크
+2025-09-10 09:52:10,396 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-09-10 09:52:10,397 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-09-10 09:52:10,397 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-09-10 09:52:10,397 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-09-10 09:52:10,423 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.0.18:8000
+2025-09-10 09:52:10,423 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-10 09:52:47,064 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-09-10 09:52:47,064 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-09-10 09:52:47,064 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-09-10 09:52:47,064 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-10 09:52:47,064 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-10 09:52:47,091 - mms_extractor - INFO - Using device: mps
+2025-09-10 09:52:47,091 - mms_extractor - INFO - _initialize_device 실행완료: 0.03초
+2025-09-10 09:52:47,091 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-09-10 09:52:47,091 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-10 09:52:47,091 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-10 09:52:47,092 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-10 09:52:47,092 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-10 09:52:48,410 - mms_extractor - INFO - Model loaded on mps
+2025-09-10 09:52:48,410 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 1.32초
+2025-09-10 09:52:48,988 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-10 09:52:48,988 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.58초
+2025-09-10 09:52:48,988 - mms_extractor - INFO - ============================================================
+2025-09-10 09:52:48,988 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-10 09:52:48,988 - mms_extractor - INFO - ============================================================
+2025-09-10 09:52:48,988 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-10 09:52:48,988 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-10 09:52:48,988 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-10 09:52:48,988 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-10 09:52:48,988 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-10 09:52:49,109 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-10 09:52:49,109 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-10 09:52:49,119 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-10 09:52:49,124 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-10 09:52:49,125 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 09:52:49,129 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-10 09:52:49,129 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-10 09:52:49,130 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-10 09:52:49,130 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-10 09:52:49,130 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-10 09:52:49,130 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-10 09:52:49,130 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-10 09:52:49,132 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-10 09:52:49,133 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-10 09:52:49,133 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-10 09:52:49,451 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-10 09:52:49,453 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-10 09:52:49,453 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-10 09:52:49,454 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-10 09:52:49,454 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-10 09:52:49,456 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-10 09:52:49,456 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-10 09:52:49,456 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-10 09:52:49,456 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-10 09:52:49,464 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-10 09:52:49,466 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-10 09:52:49,466 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 09:52:49,530 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-10 09:52:49,531 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-10 09:52:49,531 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-10 09:52:49,533 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-10 09:52:49,533 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-10 09:52:49,765 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-10 09:52:49,766 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-10 09:52:49,766 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-10 09:52:50,313 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-10 09:52:50,314 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-10 09:52:50,314 - mms_extractor - INFO - ============================================================
+2025-09-10 09:52:50,314 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-10 09:52:50,314 - mms_extractor - INFO - ============================================================
+2025-09-10 09:52:50,314 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-10 09:52:50,314 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-10 09:52:50,314 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-10 09:52:50,314 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-10 09:52:50,314 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-10 09:52:50,319 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-10 09:52:50,328 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-10 09:52:50,333 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-10 09:52:50,333 - mms_extractor - INFO - _load_data 실행완료: 1.34초
+2025-09-10 09:52:50,333 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-10 09:52:50,333 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-09-10 09:52:50,333 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8000, debug=False
+2025-09-10 09:52:50,333 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-09-10 09:52:50,333 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8000에서 시작합니다
+2025-09-10 09:52:50,333 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-09-10 09:52:50,333 - __main__ - INFO -   GET  /health - 헬스체크
+2025-09-10 09:52:50,333 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-09-10 09:52:50,333 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-09-10 09:52:50,333 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-09-10 09:52:50,333 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-09-10 09:52:50,345 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.0.18:8000
+2025-09-10 09:52:50,345 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-10 09:53:00,058 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:53:00] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:53:02,680 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:53:02] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:53:02,707 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:53:02] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:53:04,276 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:53:04] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:53:04,282 - __main__ - INFO - 🎯 DAG 추출 요청됨 - LLM: ax, 메시지 길이: 614자
+2025-09-10 09:53:04,282 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-09-10 09:53:04,282 - __main__ - INFO - DAG 추출과 함께 순차 처리 시작
+2025-09-10 09:53:04,282 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네! 
+#04 고객님,
+넷플릭스...
+2025-09-10 09:53:04,282 - mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-09-10 09:53:04,282 - mms_extractor - INFO - ============================================================
+2025-09-10 09:53:04,282 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-10 09:53:04,282 - mms_extractor - INFO - ============================================================
+2025-09-10 09:53:04,283 - mms_extractor - INFO - 메시지 내용: (광고)[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네! 
+#04 고객님,
+넷플릭스와 웨이브 둘 다 보고 싶었지만, 가격 때문에 망설이셨다면 지금이 바로 기회! 
+오직 T 우주에서만, 
+2개월 동안 월 9,900원에 넷플릭스와 웨이브를 모두 즐기실 수 있습니다.
+8월 31일까지만 드리는 혜택이니, 지금 바로 가입해 보세요! 
+
+■ 우주패스 Netfl...
+2025-09-10 09:53:04,283 - mms_extractor - INFO - 메시지 길이: 614 문자
+2025-09-10 09:53:04,283 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-10 09:53:04,283 - mms_extractor - INFO - 데이터 소스: local
+2025-09-10 09:53:04,283 - mms_extractor - INFO - 상품 정보 추출 모드: nlp
+2025-09-10 09:53:04,283 - mms_extractor - INFO - 엔티티 추출 모드: logic
+2025-09-10 09:53:04,283 - mms_extractor - INFO - LLM 모델: ax
+2025-09-10 09:53:04,283 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-09-10 09:53:04,283 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-10 09:53:04,283 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-10 09:53:04,283 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-10 09:53:04,283 - mms_extractor - INFO - 처리할 메시지 길이: 613 문자
+2025-09-10 09:53:04,292 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-09-10 09:53:04,905 - mms_extractor - INFO - 분할된 문장 수: 13개
+2025-09-10 09:53:04,906 - mms_extractor - INFO - 필터링된 문장들: [' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', ' 고객님 넷플릭스와 웨이브 둘 다 싶었지만 가격 때문에 망설이셨다면 지금이 바로 기회 ', '오직 T 우주에서만 동안 월 에 넷플릭스와 웨이브 모두 즐기실 수 있습니다 ']...
+2025-09-10 09:53:04,911 - mms_extractor - INFO - 전체 토큰 수: 229개
+2025-09-10 09:53:04,911 - mms_extractor - INFO - NNP 태그 토큰들: ['광고', '넷플릭스', '웨이브', '넷플릭스', '웨이브', '넷플릭스', '웨이브', '우주패스 Netflix', '-', '-', '우주패스 Netflix', '광고', '스탠다드', '쿠폰', '우주패스 Netflix', '-', '기본', 'Netflix 광고형 스탠다드', 'Wavve 콘텐츠 팩', 'Netflix 스탠다드', '프리미엄', '-', '쿠폰', '-', '쿠폰', '할인', '수신거부']
+2025-09-10 09:53:04,911 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['Wavve 콘텐츠 팩', '우주패스 Netflix', '웨이브', 'Netflix 스탠다드', '넷플릭스', 'Netflix 광고형 스탠다드']
+2025-09-10 09:53:04,911 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-09-10 09:53:13,816 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (7949, 3)
+2025-09-10 09:53:13,817 - mms_extractor - INFO - 퍼지 매칭 성공: 7949개 결과
+2025-09-10 09:53:13,825 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': 'test', 'sim': 0.5}, {'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': '노턴플러스', 'sim': 0.4}, {'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': '데빌스카이', 'sim': 0.4}]
+2025-09-10 09:53:13,825 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-09-10 09:53:14,038 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (7949, 3)
+2025-09-10 09:53:14,039 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': 'test', 'sim': 0.4}, {'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': '노턴플러스', 'sim': 0.32000000000000006}, {'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': '데빌스카이', 'sim': 0.32000000000000006}]
+2025-09-10 09:53:14,039 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-09-10 09:53:14,045 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 157개
+2025-09-10 09:53:14,053 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 8개
+2025-09-10 09:53:14,053 - mms_extractor - INFO - 통합된 후보 아이템 수: 165개
+2025-09-10 09:53:14,056 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['Netflix 광고형 스탠다드', '웨이브', '우주패스 Netflix', '넷플릭스', 'Wavve 콘텐츠 팩', 'Netflix 프리미엄', 'Wavve 콘텐츠 팩 프리미엄', 'Netflix 스탠다드', 'Netflix', '스탠다드+', '스탠다드', 'wavve', 'T 우주패스 Netflix', 'Netflix 광고형 스탠다드 이용권', '스탠다드 Netflix', 'I-프리미엄', '(T)프리미엄', '우주패스 미니', 'Wavve 콘텐츠 팩(TV)', '우주패스 Netflix 추가혜택', 'Netflix 스탠다드 이용권', 'wavve 콘텐츠 팩 프리미엄 구독', 'Wavve 콘텐츠 팩 프리미엄 연간', 'Wavve 콘텐츠 팩 프리미엄 구독', '우주패스 life', '우주패스 mini (Wavve)', 'FLO 콘텐츠 팩', 'Wavve 콘텐츠 팩 플러스', 'Wavve 콘텐츠 팩 구독', 'Wavve 콘텐츠 팩(티비)', 'Wavve 콘텐츠 팩 연간', 'Wavve 콘텐츠 팩 프리미엄_인증', '우주패스 Netflix 인증', 'Lite+wavve', 'All+wavve', '우주패스 미니 (Wavve)', 'wavve 콘텐츠 팩 프리미엄_할인1', 'Wavve 콘텐츠 팩 plus', 'Wavve 콘텐츠 팩 Plus', '오다', 'Wavve 콘텐츠 팩 PLUS', '우드', '기본상품', '기본형', '기본형.', '우주패스 all', '플로', 'T쿠폰', '프로기', '우주패스 mini_Wavve', '우주패스 life 2', 'Wavve 콘텐츠 팩(이벤트)', '티빙 광고형 스탠다드', 'Netflix 프리미엄 이용권', 'Wavve 콘텐츠 팩_인증', '웨이브 콘텐츠 팩 프리미엄', 'Netflix 조합상품', '우주패스 mini', 'tving 광고형 스탠다드', 'TVING 광고형 스탠다드', 'T 우주패스 티빙 & Wavve 프리미엄', '우주패스 life_T', 'Wavve 콘텐츠 팩 플러스 (구)', 'All Netflix', 'tossi 런칭 프로모션', '넷플릭스 광고형 스탠다드', '우주패스 미니_Wavve', 'ⓜU-Fax 프리미엄', 'U-Fax 프리미엄', 'T 우주패스 TVING & Wavve 프리미엄', 'Netflix 단독', 'T 서비스', 'T 에이스', '타다 쿠폰', 'Wavve Lite', 'Wavve 콘텐츠 팩 premium', 'Wavve 콘텐츠 팩 Premium', 'Wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩_할인1', 'Wavve 콘텐츠 팩_할인2', '멜론 콘텐츠 팩', '우주패스 life 연간', '플로 콘텐츠 팩', 'TTL멤버십', 'TV-WiFi 프리미엄', 'T 우주패스 티비ING & Wavve 프리미엄', '(최초)Netflix 스탠다드_스탠', '우주패스 slim', 'T 우주패스 넷플릭스', 'T 우주패스 mini', 'T 우주패스 slim', 'T 우주패스 티빙 & Wavve 스탠다드', 'Wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 Plus (구)', 'Wavve 콘텐츠 팩 plus (구)', 'Wavve 콘텐츠 팩 플러스 구독', 'Wavve 콘텐츠 팩 플러스 연간', 'FLO 콘텐츠 팩 플러스', 'Wavve 앤 data 프리미엄', 'Wavve 앤 Data 프리미엄', 'Wavve 앤 DATA 프리미엄', '넷플릭스 광고형 스탠다드 이용권', '(X)5기가프리미엄', 'T 우주패스 100', 'T 우주패스 DIY', '(Fo) 광랜 프리미엄', 'T 우주패스 TVING & Wavve 스탠다드', '우주pass Netflix', '멤버십콘도 상품', '스탠다드 지상파', 'BTP(프로모션)', 'FLO 콘텐츠 팩 구독', '클럽T 프리미엄', '클럽T 스탠다드', '웹ex_프리미엄', '웹ex_스탠다드', 'Wavve 앤 데이터 프리미엄', 'ISEEU-스탠다드', '우주패스 패밀리', '우주패스 배달형', 'ISEEU-프리미엄', '우주PASS Netflix', '우주Pass Netflix', 'lite']
+2025-09-10 09:53:14,063 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (93, 2)
+2025-09-10 09:53:14,063 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '(Fo) 광랜 프리미엄', 'item_id': ['NI00001266']}, {'item_nm': '(T)프리미엄', 'item_id': ['NS00000005']}, {'item_nm': '(X)5기가프리미엄', 'item_id': ['NI00000930']}]
+2025-09-10 09:53:14,064 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 9.78초
+2025-09-10 09:53:14,064 - mms_extractor - INFO - 추출된 후보 엔티티: ['Netflix 광고형 스탠다드', '웨이브', '우주패스 Netflix', '넷플릭스', 'Wavve 콘텐츠 팩', 'Netflix 프리미엄', 'Wavve 콘텐츠 팩 프리미엄', 'Netflix 스탠다드', 'Netflix', '스탠다드+', '스탠다드', 'wavve', 'T 우주패스 Netflix', 'Netflix 광고형 스탠다드 이용권', '스탠다드 Netflix', 'I-프리미엄', '(T)프리미엄', '우주패스 미니', 'Wavve 콘텐츠 팩(TV)', '우주패스 Netflix 추가혜택', 'Netflix 스탠다드 이용권', 'wavve 콘텐츠 팩 프리미엄 구독', 'Wavve 콘텐츠 팩 프리미엄 연간', 'Wavve 콘텐츠 팩 프리미엄 구독', '우주패스 life', '우주패스 mini (Wavve)', 'FLO 콘텐츠 팩', 'Wavve 콘텐츠 팩 플러스', 'Wavve 콘텐츠 팩 구독', 'Wavve 콘텐츠 팩(티비)', 'Wavve 콘텐츠 팩 연간', 'Wavve 콘텐츠 팩 프리미엄_인증', '우주패스 Netflix 인증', 'Lite+wavve', 'All+wavve', '우주패스 미니 (Wavve)', 'wavve 콘텐츠 팩 프리미엄_할인1', 'Wavve 콘텐츠 팩 plus', 'Wavve 콘텐츠 팩 Plus', '오다', 'Wavve 콘텐츠 팩 PLUS', '우드', '기본상품', '기본형', '기본형.', '우주패스 all', '플로', 'T쿠폰', '프로기', '우주패스 mini_Wavve', '우주패스 life 2', 'Wavve 콘텐츠 팩(이벤트)', '티빙 광고형 스탠다드', 'Netflix 프리미엄 이용권', 'Wavve 콘텐츠 팩_인증', '웨이브 콘텐츠 팩 프리미엄', 'Netflix 조합상품', '우주패스 mini', 'tving 광고형 스탠다드', 'TVING 광고형 스탠다드', 'T 우주패스 티빙 & Wavve 프리미엄', '우주패스 life_T', 'Wavve 콘텐츠 팩 플러스 (구)', 'All Netflix', 'tossi 런칭 프로모션', '넷플릭스 광고형 스탠다드', '우주패스 미니_Wavve', 'ⓜU-Fax 프리미엄', 'U-Fax 프리미엄', 'T 우주패스 TVING & Wavve 프리미엄', 'Netflix 단독', 'T 서비스', 'T 에이스', '타다 쿠폰', 'Wavve Lite', 'Wavve 콘텐츠 팩 premium', 'Wavve 콘텐츠 팩 Premium', 'Wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩_할인1', 'Wavve 콘텐츠 팩_할인2', '멜론 콘텐츠 팩', '우주패스 life 연간', '플로 콘텐츠 팩', 'TTL멤버십', 'TV-WiFi 프리미엄', 'T 우주패스 티비ING & Wavve 프리미엄', '(최초)Netflix 스탠다드_스탠', '우주패스 slim', 'T 우주패스 넷플릭스', 'T 우주패스 mini', 'T 우주패스 slim', 'T 우주패스 티빙 & Wavve 스탠다드', 'Wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 Plus (구)', 'Wavve 콘텐츠 팩 plus (구)', 'Wavve 콘텐츠 팩 플러스 구독', 'Wavve 콘텐츠 팩 플러스 연간', 'FLO 콘텐츠 팩 플러스', 'Wavve 앤 data 프리미엄', 'Wavve 앤 Data 프리미엄', 'Wavve 앤 DATA 프리미엄', '넷플릭스 광고형 스탠다드 이용권', '(X)5기가프리미엄', 'T 우주패스 100', 'T 우주패스 DIY', '(Fo) 광랜 프리미엄', 'T 우주패스 TVING & Wavve 스탠다드', '우주pass Netflix', '멤버십콘도 상품', '스탠다드 지상파', 'BTP(프로모션)', 'FLO 콘텐츠 팩 구독', '클럽T 프리미엄', '클럽T 스탠다드', '웹ex_프리미엄', '웹ex_스탠다드', 'Wavve 앤 데이터 프리미엄', 'ISEEU-스탠다드', '우주패스 패밀리', '우주패스 배달형', 'ISEEU-프리미엄', '우주PASS Netflix', '우주Pass Netflix', 'lite']
+2025-09-10 09:53:14,064 - mms_extractor - INFO - 매칭된 상품 정보: (93, 2)
+2025-09-10 09:53:14,064 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-10 09:53:14,613 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-10 09:53:14,613 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-10 09:53:14,613 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 423 문자
+2025-09-10 09:53:14,613 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-10 09:53:14,614 - mms_extractor - INFO - 후보 아이템 리스트 크기: 124개
+2025-09-10 09:53:14,614 - mms_extractor - INFO - 후보 아이템 리스트: ['Netflix 광고형 스탠다드', '웨이브', '우주패스 Netflix', '넷플릭스', 'Wavve 콘텐츠 팩', 'Netflix 프리미엄', 'Wavve 콘텐츠 팩 프리미엄', 'Netflix 스탠다드', 'Netflix', '스탠다드+', '스탠다드', 'wavve', 'T 우주패스 Netflix', 'Netflix 광고형 스탠다드 이용권', '스탠다드 Netflix', 'I-프리미엄', '(T)프리미엄', '우주패스 미니', 'Wavve 콘텐츠 팩(TV)', '우주패스 Netflix 추가혜택', 'Netflix 스탠다드 이용권', 'wavve 콘텐츠 팩 프리미엄 구독', 'Wavve 콘텐츠 팩 프리미엄 연간', 'Wavve 콘텐츠 팩 프리미엄 구독', '우주패스 life', '우주패스 mini (Wavve)', 'FLO 콘텐츠 팩', 'Wavve 콘텐츠 팩 플러스', 'Wavve 콘텐츠 팩 구독', 'Wavve 콘텐츠 팩(티비)', 'Wavve 콘텐츠 팩 연간', 'Wavve 콘텐츠 팩 프리미엄_인증', '우주패스 Netflix 인증', 'Lite+wavve', 'All+wavve', '우주패스 미니 (Wavve)', 'wavve 콘텐츠 팩 프리미엄_할인1', 'Wavve 콘텐츠 팩 plus', 'Wavve 콘텐츠 팩 Plus', '오다', 'Wavve 콘텐츠 팩 PLUS', '우드', '기본상품', '기본형', '기본형.', '우주패스 all', '플로', 'T쿠폰', '프로기', '우주패스 mini_Wavve', '우주패스 life 2', 'Wavve 콘텐츠 팩(이벤트)', '티빙 광고형 스탠다드', 'Netflix 프리미엄 이용권', 'Wavve 콘텐츠 팩_인증', '웨이브 콘텐츠 팩 프리미엄', 'Netflix 조합상품', '우주패스 mini', 'tving 광고형 스탠다드', 'TVING 광고형 스탠다드', 'T 우주패스 티빙 & Wavve 프리미엄', '우주패스 life_T', 'Wavve 콘텐츠 팩 플러스 (구)', 'All Netflix', 'tossi 런칭 프로모션', '넷플릭스 광고형 스탠다드', '우주패스 미니_Wavve', 'ⓜU-Fax 프리미엄', 'U-Fax 프리미엄', 'T 우주패스 TVING & Wavve 프리미엄', 'Netflix 단독', 'T 서비스', 'T 에이스', '타다 쿠폰', 'Wavve Lite', 'Wavve 콘텐츠 팩 premium', 'Wavve 콘텐츠 팩 Premium', 'Wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩_할인1', 'Wavve 콘텐츠 팩_할인2', '멜론 콘텐츠 팩', '우주패스 life 연간', '플로 콘텐츠 팩', 'TTL멤버십', 'TV-WiFi 프리미엄', 'T 우주패스 티비ING & Wavve 프리미엄', '(최초)Netflix 스탠다드_스탠', '우주패스 slim', 'T 우주패스 넷플릭스', 'T 우주패스 mini', 'T 우주패스 slim', 'T 우주패스 티빙 & Wavve 스탠다드', 'Wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 Plus (구)', 'Wavve 콘텐츠 팩 plus (구)', 'Wavve 콘텐츠 팩 플러스 구독', 'Wavve 콘텐츠 팩 플러스 연간', 'FLO 콘텐츠 팩 플러스', 'Wavve 앤 data 프리미엄', 'Wavve 앤 Data 프리미엄', 'Wavve 앤 DATA 프리미엄', '넷플릭스 광고형 스탠다드 이용권', '(X)5기가프리미엄', 'T 우주패스 100', 'T 우주패스 DIY', '(Fo) 광랜 프리미엄', 'T 우주패스 TVING & Wavve 스탠다드', '우주pass Netflix', '멤버십콘도 상품', '스탠다드 지상파', 'BTP(프로모션)', 'FLO 콘텐츠 팩 구독', '클럽T 프리미엄', '클럽T 스탠다드', '웹ex_프리미엄', '웹ex_스탠다드', 'Wavve 앤 데이터 프리미엄', 'ISEEU-스탠다드', '우주패스 패밀리', '우주패스 배달형', 'ISEEU-프리미엄', '우주PASS Netflix', '우주Pass Netflix', 'lite']
+2025-09-10 09:53:14,614 - mms_extractor - INFO - extra_item_pdf 크기: (93, 2)
+2025-09-10 09:53:14,614 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-09-10 09:53:14,614 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '(Fo) 광랜 프리미엄', 'item_id': ['NI00001266']}, {'item_nm': '(T)프리미엄', 'item_id': ['NS00000005']}]
+2025-09-10 09:53:14,616 - mms_extractor - INFO - NLP 모드: 제품 요소 준비 완료 - 93개
+2025-09-10 09:53:14,616 - mms_extractor - INFO - NLP 모드 제품 요소 샘플: [{'name': '(Fo) 광랜 프리미엄', 'action': '기타'}, {'name': '(T)프리미엄', 'action': '기타'}]
+2025-09-10 09:53:14,616 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-10 09:53:14,616 - mms_extractor - INFO - 구성된 프롬프트 길이: 12849 문자
+2025-09-10 09:53:14,616 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: False
+2025-09-10 09:53:14,616 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 12849)
+2025-09-10 09:53:14,616 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-10 09:53:14,616 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-10 09:53:23,133 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 09:53:23,141 - mms_extractor - INFO - LLM 응답 길이: 1025 문자
+2025-09-10 09:53:23,141 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네!",
+    "purpose": [
+        "상품 가입 유도",
+        "혜택 안내",
+        "쿠폰 제공 안내"
+    ],
+    "product": [
+        {
+            "name": "T 우주패스 Netflix",
+            "action": "가입"
+        },
+        {
+            "name": "Netflix 광고형 스탠다드",
+            "action": "가입"
+        },
+        {
+            "name": "Wavve 콘텐츠 팩",
+            "action": "가입"
+        },
+        {
+            "name": "Netflix 스탠다드",
+            "action": "가입"
+        },
+    ...
+2025-09-10 09:53:23,141 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-10 09:53:23,141 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-10 09:53:23,141 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-10 09:53:23,141 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네!', 'purpose': ['상품 가입 유도', '혜택 안내', '쿠폰 제공 안내'], 'product': [{'name': 'T 우주패스 Netflix', 'action': '가입'}, {'name': 'Netflix 광고형 스탠다드', 'action': '가입'}, {'name': 'Wavve 콘텐츠 팩', 'action': '가입'}, {'name': 'Netflix 스탠다드', 'action': '가입'}, {'name': 'Netflix 프리미엄', 'action': '가입'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/jAs/#74', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1505', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['상품및부가서비스가입유도_구독', '사용법/혜택/이벤트안내_구독']}
+2025-09-10 09:53:23,141 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-10 09:53:23,141 - mms_extractor - INFO - LLM 추출 엔티티: ['T 우주패스 Netflix', 'Netflix 광고형 스탠다드', 'Wavve 콘텐츠 팩', 'Netflix 스탠다드', 'Netflix 프리미엄']
+2025-09-10 09:53:23,487 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-10 09:53:23,487 - mms_extractor - INFO - ============================================================
+2025-09-10 09:53:23,487 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-10 09:53:23,487 - mms_extractor - INFO - ============================================================
+2025-09-10 09:53:23,487 - mms_extractor - INFO - 제목: [SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네!
+2025-09-10 09:53:23,487 - mms_extractor - INFO - 목적: ['상품 가입 유도', '혜택 안내', '쿠폰 제공 안내']
+2025-09-10 09:53:23,487 - mms_extractor - INFO - 상품 수: 5개
+2025-09-10 09:53:23,487 - mms_extractor - INFO - 채널 수: 3개
+2025-09-10 09:53:23,487 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-10 09:53:23,487 - mms_extractor - INFO - process_message 실행완료: 19.20초
+2025-09-10 09:53:23,487 - mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-09-10 09:53:23,487 - entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-09-10 09:53:23,487 - entity_dag_extractor - INFO - 📝 입력 메시지 길이: 614자
+2025-09-10 09:53:23,488 - entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x35ccb6000> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x35ccb5d00> root_client=<openai.OpenAI object at 0x35ccb5e20> root_async_client=<openai.AsyncOpenAI object at 0x35ccb6030> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-09-10 09:53:23,488 - entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-09-10 09:53:23,488 - entity_dag_extractor - INFO - 📏 프롬프트 길이: 3599자
+2025-09-10 09:53:44,380 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 09:53:44,380 - entity_dag_extractor - INFO - 📝 LLM 응답 길이: 2327자
+2025-09-10 09:53:44,381 - entity_dag_extractor - INFO - 📄 LLM 응답 미리보기: ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SKT는 넷플릭스와 웨이브를 동시에 저렴하게 이용할 수 있는 '우주패스 Netflix' 프로모션을 광고하고 있습니다. 8월 31일까지 2개월 동안 월 9,900원에 넷플릭스와 웨이브 콘텐츠를 모두 이용할 수 있는 쿠폰을 제공하며, 이를 통해 고객의 구독 서비스 가입을 유도하고 있습니다.
+
+[식별...
+2025-09-10 09:53:44,381 - entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-09-10 09:53:44,381 - entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 250자
+2025-09-10 09:53:44,381 - entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-09-10 09:53:44,381 - entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 8, 엣지 수: 7
+2025-09-10 09:53:44,381 - entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['웹사이트:접속', '프로모션:확인', '쿠폰:다운로드', '우주패스Netflix:가입', '넷플릭스:사용', '웨이브:사용', 'Wavve콘텐츠팩:사용', '정상가:자동결제']
+2025-09-10 09:53:44,381 - entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('웹사이트:접속', '프로모션:확인'), ('프로모션:확인', '쿠폰:다운로드'), ('쿠폰:다운로드', '우주패스Netflix:가입'), ('우주패스Netflix:가입', '넷플릭스:사용'), ('우주패스Netflix:가입', '웨이브:사용'), ('우주패스Netflix:가입', 'Wavve콘텐츠팩:사용'), ('우주패스Netflix:가입', '정상가:자동결제')]
+2025-09-10 09:53:44,382 - entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-09-10 09:53:44,382 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_95754a0322c7153287e6c564437447a1040ee98e573de11f91fc3d4793120ca7
+2025-09-10 09:53:44,382 - utils - INFO - 📊 입력 그래프 - 노드 수: 8, 엣지 수: 7
+2025-09-10 09:53:44,383 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-09-10 09:53:45,284 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_95754a0322c7153287e6c564437447a1040ee98e573de11f91fc3d4793120ca7.png
+2025-09-10 09:53:45,284 - mms_extractor - INFO - ✅ DAG 추출 완료: dag_95754a0322c7153287e6c564437447a1040ee98e573de11f91fc3d4793120ca7
+2025-09-10 09:53:45,284 - mms_extractor - INFO - 🕒 DAG 처리 시간: 21.796초
+2025-09-10 09:53:45,284 - mms_extractor - INFO - 📏 DAG 섹션 길이: 250자
+2025-09-10 09:53:45,284 - mms_extractor - INFO - 📄 DAG 내용 미리보기: (웹사이트:접속) -[접속하면]-> (프로모션:확인)
+(프로모션:확인) -[확인하면]-> (쿠폰:다운로드)
+(쿠폰:다운로드) -[다운로드후]-> (우주패스Netflix:가입)
+(우주패스Netflix:가입) -[가입하면]-> (넷플릭스:사용)
+(우주패스Netflix:가입) -[가입하면]-> (웨이브:사용)
+(우주패스Netflix:가입) -[가입하면]-> (W...
+2025-09-10 09:53:45,284 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-10 09:53:45,284 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 2개
+2025-09-10 09:53:45,284 - __main__ - INFO - ✅ DAG 추출 성공 - 길이: 7자
+2025-09-10 09:53:45,284 - __main__ - INFO - DAG 내용 미리보기: ['(우주패스Netflix:가입) -[2개월후]-> (정상가:자동결제)', '(우주패스Netflix:가입) -[가입하면]-> (Wavve콘텐츠팩:사용)', '(우주패스Netflix:가입) -[가입하면]-> (넷플릭스:사용)', '(우주패스Netflix:가입) -[가입하면]-> (웨이브:사용)', '(웹사이트:접속) -[접속하면]-> (프로모션:확인)', '(쿠폰:다운로드) -[다운로드후]-> (우주패스Netflix:가입)', '(프로모션:확인) -[확인하면]-> (쿠폰:다운로드)']...
+2025-09-10 09:53:45,284 - __main__ - INFO - 추출 완료: 41.002초
+2025-09-10 09:53:45,285 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:53:45] "POST /extract HTTP/1.1" 200 -
+2025-09-10 09:53:45,310 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:53:45] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:54:33,697 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:54:33] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:54:36,888 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:54:36] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:54:39,652 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:54:39] "GET /health HTTP/1.1" 200 -
+2025-09-10 09:54:39,659 - __main__ - INFO - 🎯 DAG 추출 요청됨 - LLM: ax, 메시지 길이: 614자
+2025-09-10 09:54:39,659 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-09-10 09:54:39,659 - __main__ - INFO - DAG 추출과 함께 순차 처리 시작
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네! 
+#04 고객님,
+넷플릭스...
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-09-10 09:54:39,659 - mms_extractor - INFO - ============================================================
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-10 09:54:39,659 - mms_extractor - INFO - ============================================================
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 메시지 내용: (광고)[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네! 
+#04 고객님,
+넷플릭스와 웨이브 둘 다 보고 싶었지만, 가격 때문에 망설이셨다면 지금이 바로 기회! 
+오직 T 우주에서만, 
+2개월 동안 월 9,900원에 넷플릭스와 웨이브를 모두 즐기실 수 있습니다.
+8월 31일까지만 드리는 혜택이니, 지금 바로 가입해 보세요! 
+
+■ 우주패스 Netfl...
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 메시지 길이: 614 문자
+2025-09-10 09:54:39,659 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 데이터 소스: local
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-09-10 09:54:39,659 - mms_extractor - INFO - LLM 모델: ax
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-10 09:54:39,659 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-10 09:54:39,659 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-10 09:54:39,659 - mms_extractor - INFO - 처리할 메시지 길이: 613 문자
+2025-09-10 09:54:39,670 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-09-10 09:54:39,681 - mms_extractor - INFO - 분할된 문장 수: 13개
+2025-09-10 09:54:39,682 - mms_extractor - INFO - 필터링된 문장들: [' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', ' 고객님 넷플릭스와 웨이브 둘 다 싶었지만 가격 때문에 망설이셨다면 지금이 바로 기회 ', '오직 T 우주에서만 동안 월 에 넷플릭스와 웨이브 모두 즐기실 수 있습니다 ']...
+2025-09-10 09:54:39,686 - mms_extractor - INFO - 전체 토큰 수: 229개
+2025-09-10 09:54:39,686 - mms_extractor - INFO - NNP 태그 토큰들: ['광고', '넷플릭스', '웨이브', '넷플릭스', '웨이브', '넷플릭스', '웨이브', '우주패스 Netflix', '-', '-', '우주패스 Netflix', '광고', '스탠다드', '쿠폰', '우주패스 Netflix', '-', '기본', 'Netflix 광고형 스탠다드', 'Wavve 콘텐츠 팩', 'Netflix 스탠다드', '프리미엄', '-', '쿠폰', '-', '쿠폰', '할인', '수신거부']
+2025-09-10 09:54:39,686 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['Wavve 콘텐츠 팩', '우주패스 Netflix', '웨이브', 'Netflix 스탠다드', '넷플릭스', 'Netflix 광고형 스탠다드']
+2025-09-10 09:54:39,686 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-09-10 09:54:40,768 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (7949, 3)
+2025-09-10 09:54:40,768 - mms_extractor - INFO - 퍼지 매칭 성공: 7949개 결과
+2025-09-10 09:54:40,769 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': 'test', 'sim': 0.5}, {'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': '노턴플러스', 'sim': 0.4}, {'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': '데빌스카이', 'sim': 0.4}]
+2025-09-10 09:54:40,769 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-09-10 09:54:40,953 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (7949, 3)
+2025-09-10 09:54:40,954 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': 'test', 'sim': 0.4}, {'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': '노턴플러스', 'sim': 0.32000000000000006}, {'sent': ' 광고 SKT 넷플릭스 웨이브 월 이게 되네 ', 'item_nm_alias': '데빌스카이', 'sim': 0.32000000000000006}]
+2025-09-10 09:54:40,954 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-09-10 09:54:40,957 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 157개
+2025-09-10 09:54:40,962 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 8개
+2025-09-10 09:54:40,963 - mms_extractor - INFO - 통합된 후보 아이템 수: 165개
+2025-09-10 09:54:40,964 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['Netflix 광고형 스탠다드', '웨이브', '우주패스 Netflix', '넷플릭스', 'Wavve 콘텐츠 팩', 'Netflix 프리미엄', 'Wavve 콘텐츠 팩 프리미엄', 'Netflix 스탠다드', 'Netflix', '스탠다드+', '스탠다드', 'wavve', 'T 우주패스 Netflix', 'Netflix 광고형 스탠다드 이용권', '스탠다드 Netflix', 'I-프리미엄', '(T)프리미엄', '우주패스 미니', 'Wavve 콘텐츠 팩(TV)', '우주패스 Netflix 추가혜택', 'Netflix 스탠다드 이용권', 'wavve 콘텐츠 팩 프리미엄 구독', 'Wavve 콘텐츠 팩 프리미엄 연간', 'Wavve 콘텐츠 팩 프리미엄 구독', '우주패스 life', '우주패스 mini (Wavve)', 'FLO 콘텐츠 팩', 'Wavve 콘텐츠 팩 플러스', 'Wavve 콘텐츠 팩 구독', 'Wavve 콘텐츠 팩(티비)', 'Wavve 콘텐츠 팩 연간', 'Wavve 콘텐츠 팩 프리미엄_인증', '우주패스 Netflix 인증', 'Lite+wavve', 'All+wavve', '우주패스 미니 (Wavve)', 'wavve 콘텐츠 팩 프리미엄_할인1', 'Wavve 콘텐츠 팩 plus', 'Wavve 콘텐츠 팩 Plus', '오다', 'Wavve 콘텐츠 팩 PLUS', '우드', '기본상품', '기본형', '기본형.', '우주패스 all', '플로', 'T쿠폰', '프로기', '우주패스 mini_Wavve', '우주패스 life 2', 'Wavve 콘텐츠 팩(이벤트)', '티빙 광고형 스탠다드', 'Netflix 프리미엄 이용권', 'Wavve 콘텐츠 팩_인증', '웨이브 콘텐츠 팩 프리미엄', 'Netflix 조합상품', '우주패스 mini', 'tving 광고형 스탠다드', 'TVING 광고형 스탠다드', 'T 우주패스 티빙 & Wavve 프리미엄', '우주패스 life_T', 'Wavve 콘텐츠 팩 플러스 (구)', 'All Netflix', 'tossi 런칭 프로모션', '넷플릭스 광고형 스탠다드', '우주패스 미니_Wavve', 'ⓜU-Fax 프리미엄', 'U-Fax 프리미엄', 'T 우주패스 TVING & Wavve 프리미엄', 'Netflix 단독', 'T 서비스', 'T 에이스', '타다 쿠폰', 'Wavve Lite', 'Wavve 콘텐츠 팩 premium', 'Wavve 콘텐츠 팩 Premium', 'Wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩_할인1', 'Wavve 콘텐츠 팩_할인2', '멜론 콘텐츠 팩', '우주패스 life 연간', '플로 콘텐츠 팩', 'TTL멤버십', 'TV-WiFi 프리미엄', 'T 우주패스 티비ING & Wavve 프리미엄', '(최초)Netflix 스탠다드_스탠', '우주패스 slim', 'T 우주패스 넷플릭스', 'T 우주패스 mini', 'T 우주패스 slim', 'T 우주패스 티빙 & Wavve 스탠다드', 'Wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 Plus (구)', 'Wavve 콘텐츠 팩 plus (구)', 'Wavve 콘텐츠 팩 플러스 구독', 'Wavve 콘텐츠 팩 플러스 연간', 'FLO 콘텐츠 팩 플러스', 'Wavve 앤 data 프리미엄', 'Wavve 앤 Data 프리미엄', 'Wavve 앤 DATA 프리미엄', '넷플릭스 광고형 스탠다드 이용권', '(X)5기가프리미엄', 'T 우주패스 100', 'T 우주패스 DIY', '(Fo) 광랜 프리미엄', 'T 우주패스 TVING & Wavve 스탠다드', '우주pass Netflix', '멤버십콘도 상품', '스탠다드 지상파', 'BTP(프로모션)', 'FLO 콘텐츠 팩 구독', '클럽T 프리미엄', '클럽T 스탠다드', '웹ex_프리미엄', '웹ex_스탠다드', 'Wavve 앤 데이터 프리미엄', 'ISEEU-스탠다드', '우주패스 패밀리', '우주패스 배달형', 'ISEEU-프리미엄', '우주PASS Netflix', '우주Pass Netflix', 'lite']
+2025-09-10 09:54:40,969 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (93, 2)
+2025-09-10 09:54:40,969 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '(Fo) 광랜 프리미엄', 'item_id': ['NI00001266']}, {'item_nm': '(T)프리미엄', 'item_id': ['NS00000005']}, {'item_nm': '(X)5기가프리미엄', 'item_id': ['NI00000930']}]
+2025-09-10 09:54:40,969 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 1.31초
+2025-09-10 09:54:40,969 - mms_extractor - INFO - 추출된 후보 엔티티: ['Netflix 광고형 스탠다드', '웨이브', '우주패스 Netflix', '넷플릭스', 'Wavve 콘텐츠 팩', 'Netflix 프리미엄', 'Wavve 콘텐츠 팩 프리미엄', 'Netflix 스탠다드', 'Netflix', '스탠다드+', '스탠다드', 'wavve', 'T 우주패스 Netflix', 'Netflix 광고형 스탠다드 이용권', '스탠다드 Netflix', 'I-프리미엄', '(T)프리미엄', '우주패스 미니', 'Wavve 콘텐츠 팩(TV)', '우주패스 Netflix 추가혜택', 'Netflix 스탠다드 이용권', 'wavve 콘텐츠 팩 프리미엄 구독', 'Wavve 콘텐츠 팩 프리미엄 연간', 'Wavve 콘텐츠 팩 프리미엄 구독', '우주패스 life', '우주패스 mini (Wavve)', 'FLO 콘텐츠 팩', 'Wavve 콘텐츠 팩 플러스', 'Wavve 콘텐츠 팩 구독', 'Wavve 콘텐츠 팩(티비)', 'Wavve 콘텐츠 팩 연간', 'Wavve 콘텐츠 팩 프리미엄_인증', '우주패스 Netflix 인증', 'Lite+wavve', 'All+wavve', '우주패스 미니 (Wavve)', 'wavve 콘텐츠 팩 프리미엄_할인1', 'Wavve 콘텐츠 팩 plus', 'Wavve 콘텐츠 팩 Plus', '오다', 'Wavve 콘텐츠 팩 PLUS', '우드', '기본상품', '기본형', '기본형.', '우주패스 all', '플로', 'T쿠폰', '프로기', '우주패스 mini_Wavve', '우주패스 life 2', 'Wavve 콘텐츠 팩(이벤트)', '티빙 광고형 스탠다드', 'Netflix 프리미엄 이용권', 'Wavve 콘텐츠 팩_인증', '웨이브 콘텐츠 팩 프리미엄', 'Netflix 조합상품', '우주패스 mini', 'tving 광고형 스탠다드', 'TVING 광고형 스탠다드', 'T 우주패스 티빙 & Wavve 프리미엄', '우주패스 life_T', 'Wavve 콘텐츠 팩 플러스 (구)', 'All Netflix', 'tossi 런칭 프로모션', '넷플릭스 광고형 스탠다드', '우주패스 미니_Wavve', 'ⓜU-Fax 프리미엄', 'U-Fax 프리미엄', 'T 우주패스 TVING & Wavve 프리미엄', 'Netflix 단독', 'T 서비스', 'T 에이스', '타다 쿠폰', 'Wavve Lite', 'Wavve 콘텐츠 팩 premium', 'Wavve 콘텐츠 팩 Premium', 'Wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩_할인1', 'Wavve 콘텐츠 팩_할인2', '멜론 콘텐츠 팩', '우주패스 life 연간', '플로 콘텐츠 팩', 'TTL멤버십', 'TV-WiFi 프리미엄', 'T 우주패스 티비ING & Wavve 프리미엄', '(최초)Netflix 스탠다드_스탠', '우주패스 slim', 'T 우주패스 넷플릭스', 'T 우주패스 mini', 'T 우주패스 slim', 'T 우주패스 티빙 & Wavve 스탠다드', 'Wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 Plus (구)', 'Wavve 콘텐츠 팩 plus (구)', 'Wavve 콘텐츠 팩 플러스 구독', 'Wavve 콘텐츠 팩 플러스 연간', 'FLO 콘텐츠 팩 플러스', 'Wavve 앤 data 프리미엄', 'Wavve 앤 Data 프리미엄', 'Wavve 앤 DATA 프리미엄', '넷플릭스 광고형 스탠다드 이용권', '(X)5기가프리미엄', 'T 우주패스 100', 'T 우주패스 DIY', '(Fo) 광랜 프리미엄', 'T 우주패스 TVING & Wavve 스탠다드', '우주pass Netflix', '멤버십콘도 상품', '스탠다드 지상파', 'BTP(프로모션)', 'FLO 콘텐츠 팩 구독', '클럽T 프리미엄', '클럽T 스탠다드', '웹ex_프리미엄', '웹ex_스탠다드', 'Wavve 앤 데이터 프리미엄', 'ISEEU-스탠다드', '우주패스 패밀리', '우주패스 배달형', 'ISEEU-프리미엄', '우주PASS Netflix', '우주Pass Netflix', 'lite']
+2025-09-10 09:54:40,970 - mms_extractor - INFO - 매칭된 상품 정보: (93, 2)
+2025-09-10 09:54:40,970 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-10 09:54:41,081 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-10 09:54:41,081 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-10 09:54:41,081 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 423 문자
+2025-09-10 09:54:41,081 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-10 09:54:41,081 - mms_extractor - INFO - 후보 아이템 리스트 크기: 124개
+2025-09-10 09:54:41,081 - mms_extractor - INFO - 후보 아이템 리스트: ['Netflix 광고형 스탠다드', '웨이브', '우주패스 Netflix', '넷플릭스', 'Wavve 콘텐츠 팩', 'Netflix 프리미엄', 'Wavve 콘텐츠 팩 프리미엄', 'Netflix 스탠다드', 'Netflix', '스탠다드+', '스탠다드', 'wavve', 'T 우주패스 Netflix', 'Netflix 광고형 스탠다드 이용권', '스탠다드 Netflix', 'I-프리미엄', '(T)프리미엄', '우주패스 미니', 'Wavve 콘텐츠 팩(TV)', '우주패스 Netflix 추가혜택', 'Netflix 스탠다드 이용권', 'wavve 콘텐츠 팩 프리미엄 구독', 'Wavve 콘텐츠 팩 프리미엄 연간', 'Wavve 콘텐츠 팩 프리미엄 구독', '우주패스 life', '우주패스 mini (Wavve)', 'FLO 콘텐츠 팩', 'Wavve 콘텐츠 팩 플러스', 'Wavve 콘텐츠 팩 구독', 'Wavve 콘텐츠 팩(티비)', 'Wavve 콘텐츠 팩 연간', 'Wavve 콘텐츠 팩 프리미엄_인증', '우주패스 Netflix 인증', 'Lite+wavve', 'All+wavve', '우주패스 미니 (Wavve)', 'wavve 콘텐츠 팩 프리미엄_할인1', 'Wavve 콘텐츠 팩 plus', 'Wavve 콘텐츠 팩 Plus', '오다', 'Wavve 콘텐츠 팩 PLUS', '우드', '기본상품', '기본형', '기본형.', '우주패스 all', '플로', 'T쿠폰', '프로기', '우주패스 mini_Wavve', '우주패스 life 2', 'Wavve 콘텐츠 팩(이벤트)', '티빙 광고형 스탠다드', 'Netflix 프리미엄 이용권', 'Wavve 콘텐츠 팩_인증', '웨이브 콘텐츠 팩 프리미엄', 'Netflix 조합상품', '우주패스 mini', 'tving 광고형 스탠다드', 'TVING 광고형 스탠다드', 'T 우주패스 티빙 & Wavve 프리미엄', '우주패스 life_T', 'Wavve 콘텐츠 팩 플러스 (구)', 'All Netflix', 'tossi 런칭 프로모션', '넷플릭스 광고형 스탠다드', '우주패스 미니_Wavve', 'ⓜU-Fax 프리미엄', 'U-Fax 프리미엄', 'T 우주패스 TVING & Wavve 프리미엄', 'Netflix 단독', 'T 서비스', 'T 에이스', '타다 쿠폰', 'Wavve Lite', 'Wavve 콘텐츠 팩 premium', 'Wavve 콘텐츠 팩 Premium', 'Wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩_할인1', 'Wavve 콘텐츠 팩_할인2', '멜론 콘텐츠 팩', '우주패스 life 연간', '플로 콘텐츠 팩', 'TTL멤버십', 'TV-WiFi 프리미엄', 'T 우주패스 티비ING & Wavve 프리미엄', '(최초)Netflix 스탠다드_스탠', '우주패스 slim', 'T 우주패스 넷플릭스', 'T 우주패스 mini', 'T 우주패스 slim', 'T 우주패스 티빙 & Wavve 스탠다드', 'Wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 Plus (구)', 'Wavve 콘텐츠 팩 plus (구)', 'Wavve 콘텐츠 팩 플러스 구독', 'Wavve 콘텐츠 팩 플러스 연간', 'FLO 콘텐츠 팩 플러스', 'Wavve 앤 data 프리미엄', 'Wavve 앤 Data 프리미엄', 'Wavve 앤 DATA 프리미엄', '넷플릭스 광고형 스탠다드 이용권', '(X)5기가프리미엄', 'T 우주패스 100', 'T 우주패스 DIY', '(Fo) 광랜 프리미엄', 'T 우주패스 TVING & Wavve 스탠다드', '우주pass Netflix', '멤버십콘도 상품', '스탠다드 지상파', 'BTP(프로모션)', 'FLO 콘텐츠 팩 구독', '클럽T 프리미엄', '클럽T 스탠다드', '웹ex_프리미엄', '웹ex_스탠다드', 'Wavve 앤 데이터 프리미엄', 'ISEEU-스탠다드', '우주패스 패밀리', '우주패스 배달형', 'ISEEU-프리미엄', '우주PASS Netflix', '우주Pass Netflix', 'lite']
+2025-09-10 09:54:41,081 - mms_extractor - INFO - extra_item_pdf 크기: (93, 2)
+2025-09-10 09:54:41,081 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-09-10 09:54:41,081 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '(Fo) 광랜 프리미엄', 'item_id': ['NI00001266']}, {'item_nm': '(T)프리미엄', 'item_id': ['NS00000005']}]
+2025-09-10 09:54:41,082 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-09-10 09:54:41,082 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-10 09:54:41,082 - mms_extractor - INFO - 구성된 프롬프트 길이: 8424 문자
+2025-09-10 09:54:41,082 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-09-10 09:54:41,082 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 8424)
+2025-09-10 09:54:41,082 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-10 09:54:41,082 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-10 09:54:47,091 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 09:54:47,093 - mms_extractor - INFO - LLM 응답 길이: 777 문자
+2025-09-10 09:54:47,093 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네!",
+    "purpose": [
+        "상품 가입 유도",
+        "혜택 안내",
+        "쿠폰 제공 안내"
+    ],
+    "product": [
+        {
+            "name": "우주패스 Netflix(광고형 스탠다드)",
+            "action": "가입"
+        },
+        {
+            "name": "Wavve 콘텐츠 팩",
+            "action": "사용"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/jAs/#74",
+            "action": "추가 정보"
+        },
+        {
+         ...
+2025-09-10 09:54:47,093 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-10 09:54:47,093 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-10 09:54:47,093 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-10 09:54:47,093 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네!', 'purpose': ['상품 가입 유도', '혜택 안내', '쿠폰 제공 안내'], 'product': [{'name': '우주패스 Netflix(광고형 스탠다드)', 'action': '가입'}, {'name': 'Wavve 콘텐츠 팩', 'action': '사용'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/jAs/#74', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1505', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['상품및부가서비스가입유도_구독', '사용법/혜택/이벤트안내_구독']}
+2025-09-10 09:54:47,093 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-10 09:54:47,093 - mms_extractor - INFO - LLM 추출 엔티티: ['우주패스 Netflix(광고형 스탠다드)', 'Wavve 콘텐츠 팩']
+2025-09-10 09:54:47,534 - mms_extractor - INFO - 프롬프트 저장됨: entity_extraction_prompt (길이: 4932)
+2025-09-10 09:54:47,534 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 2
+2025-09-10 09:54:47,535 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt', 'entity_extraction_prompt']
+2025-09-10 09:54:48,521 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 09:54:48,866 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.77초
+2025-09-10 09:54:48,875 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-10 09:54:48,876 - mms_extractor - INFO - ============================================================
+2025-09-10 09:54:48,876 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-10 09:54:48,876 - mms_extractor - INFO - ============================================================
+2025-09-10 09:54:48,876 - mms_extractor - INFO - 제목: [SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네!
+2025-09-10 09:54:48,876 - mms_extractor - INFO - 목적: ['상품 가입 유도', '혜택 안내', '쿠폰 제공 안내']
+2025-09-10 09:54:48,876 - mms_extractor - INFO - 상품 수: 5개
+2025-09-10 09:54:48,876 - mms_extractor - INFO - 채널 수: 3개
+2025-09-10 09:54:48,876 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-10 09:54:48,876 - mms_extractor - INFO - process_message 실행완료: 9.22초
+2025-09-10 09:54:48,876 - mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-09-10 09:54:48,876 - entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-09-10 09:54:48,876 - entity_dag_extractor - INFO - 📝 입력 메시지 길이: 614자
+2025-09-10 09:54:48,876 - entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x35ccb6000> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x35ccb5d00> root_client=<openai.OpenAI object at 0x35ccb5e20> root_async_client=<openai.AsyncOpenAI object at 0x35ccb6030> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-09-10 09:54:48,876 - entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-09-10 09:54:48,876 - entity_dag_extractor - INFO - 📏 프롬프트 길이: 3599자
+2025-09-10 09:55:07,914 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 09:55:07,915 - entity_dag_extractor - INFO - 📝 LLM 응답 길이: 2264자
+2025-09-10 09:55:07,915 - entity_dag_extractor - INFO - 📄 LLM 응답 미리보기: ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SKT는 넷플릭스와 웨이브 콘텐츠를 저렴하게 이용할 수 있는 '우주패스 Netflix' 프로모션을 광고하고 있습니다. 주요 의도는 고객이 '우주패스 Netflix'에 가입하도록 유도하는 것입니다. 8월 31일까지 2개월 동안 월 9,900원에 넷플릭스와 웨이브를 모두 이용할 수 있는 혜택을 제공...
+2025-09-10 09:55:07,915 - entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-09-10 09:55:07,915 - entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 249자
+2025-09-10 09:55:07,915 - entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-09-10 09:55:07,915 - entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 6, 엣지 수: 5
+2025-09-10 09:55:07,915 - entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['프로모션 쿠폰:다운로드', '우주패스 Netflix:가입', '넷플릭스 광고형 스탠다드:사용', '웨이브 콘텐츠 팩:사용', '2개월 동안 월 9,900원:할인', '추가 요금:지불']
+2025-09-10 09:55:07,916 - entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('프로모션 쿠폰:다운로드', '우주패스 Netflix:가입'), ('우주패스 Netflix:가입', '넷플릭스 광고형 스탠다드:사용'), ('우주패스 Netflix:가입', '웨이브 콘텐츠 팩:사용'), ('우주패스 Netflix:가입', '2개월 동안 월 9,900원:할인'), ('우주패스 Netflix:가입', '추가 요금:지불')]
+2025-09-10 09:55:07,916 - entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-09-10 09:55:07,916 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_95754a0322c7153287e6c564437447a1040ee98e573de11f91fc3d4793120ca7
+2025-09-10 09:55:07,916 - utils - INFO - 📊 입력 그래프 - 노드 수: 6, 엣지 수: 5
+2025-09-10 09:55:07,916 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-09-10 09:55:08,153 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_95754a0322c7153287e6c564437447a1040ee98e573de11f91fc3d4793120ca7.png
+2025-09-10 09:55:08,154 - mms_extractor - INFO - ✅ DAG 추출 완료: dag_95754a0322c7153287e6c564437447a1040ee98e573de11f91fc3d4793120ca7
+2025-09-10 09:55:08,154 - mms_extractor - INFO - 🕒 DAG 처리 시간: 19.278초
+2025-09-10 09:55:08,154 - mms_extractor - INFO - 📏 DAG 섹션 길이: 249자
+2025-09-10 09:55:08,154 - mms_extractor - INFO - 📄 DAG 내용 미리보기: (프로모션 쿠폰:다운로드) -[다운로드후]-> (우주패스 Netflix:가입)
+(우주패스 Netflix:가입) -[가입하면]-> (넷플릭스 광고형 스탠다드:사용)
+(우주패스 Netflix:가입) -[가입하면]-> (웨이브 콘텐츠 팩:사용)
+(우주패스 Netflix:가입) -[가입후]-> (2개월 동안 월 9,900원:할인)
+(우주패스 Netflix:가입) ...
+2025-09-10 09:55:08,154 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-10 09:55:08,154 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 3개
+2025-09-10 09:55:08,154 - __main__ - INFO - ✅ DAG 추출 성공 - 길이: 5자
+2025-09-10 09:55:08,154 - __main__ - INFO - DAG 내용 미리보기: ['(우주패스 Netflix:가입) -[가입하면]-> (넷플릭스 광고형 스탠다드:사용)', '(우주패스 Netflix:가입) -[가입하면]-> (웨이브 콘텐츠 팩:사용)', '(우주패스 Netflix:가입) -[가입후]-> (2개월 동안 월 9,900원:할인)', '(우주패스 Netflix:가입) -[가입후]-> (추가 요금:지불) -[지불하면]-> (넷플릭스 스탠다드/프리미엄:선택)', '(프로모션 쿠폰:다운로드) -[다운로드후]-> (우주패스 Netflix:가입)']...
+2025-09-10 09:55:08,154 - __main__ - INFO - 추출 완료: 28.495초
+2025-09-10 09:55:08,155 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:55:08] "POST /extract HTTP/1.1" 200 -
+2025-09-10 09:55:08,178 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 09:55:08] "GET /health HTTP/1.1" 200 -
+2025-09-10 10:26:29,684 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-09-10 10:26:29,684 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-09-10 10:26:29,684 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-09-10 10:26:29,684 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-10 10:26:29,684 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-10 10:26:29,706 - mms_extractor - INFO - Using device: mps
+2025-09-10 10:26:29,707 - mms_extractor - INFO - _initialize_device 실행완료: 0.02초
+2025-09-10 10:26:29,707 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-09-10 10:26:29,707 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-10 10:26:29,707 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-10 10:26:29,707 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-10 10:26:29,707 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-10 10:26:31,128 - mms_extractor - INFO - Model loaded on mps
+2025-09-10 10:26:31,128 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 1.42초
+2025-09-10 10:26:31,639 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-10 10:26:31,639 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.51초
+2025-09-10 10:26:31,639 - mms_extractor - INFO - ============================================================
+2025-09-10 10:26:31,639 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-10 10:26:31,639 - mms_extractor - INFO - ============================================================
+2025-09-10 10:26:31,639 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-10 10:26:31,639 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-10 10:26:31,639 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-10 10:26:31,639 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-10 10:26:31,639 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-10 10:26:31,758 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-10 10:26:31,758 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-10 10:26:31,769 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-10 10:26:31,774 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-10 10:26:31,776 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 10:26:31,780 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-10 10:26:31,780 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-10 10:26:31,780 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-10 10:26:31,780 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-10 10:26:31,780 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-10 10:26:31,780 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-10 10:26:31,780 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-10 10:26:31,782 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-10 10:26:31,783 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-10 10:26:31,783 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-10 10:26:32,104 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-10 10:26:32,106 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-10 10:26:32,106 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-10 10:26:32,107 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-10 10:26:32,107 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-10 10:26:32,108 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-10 10:26:32,108 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-10 10:26:32,108 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-10 10:26:32,108 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-10 10:26:32,116 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-10 10:26:32,119 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-10 10:26:32,119 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 10:26:32,176 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-10 10:26:32,177 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-10 10:26:32,177 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-10 10:26:32,179 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-10 10:26:32,179 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-10 10:26:32,406 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-10 10:26:32,406 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-10 10:26:32,406 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-10 10:26:32,957 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-10 10:26:32,957 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-10 10:26:32,957 - mms_extractor - INFO - ============================================================
+2025-09-10 10:26:32,957 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-10 10:26:32,957 - mms_extractor - INFO - ============================================================
+2025-09-10 10:26:32,957 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-10 10:26:32,957 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-10 10:26:32,957 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-10 10:26:32,957 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-10 10:26:32,957 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-10 10:26:32,962 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-10 10:26:32,970 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-10 10:26:32,974 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-10 10:26:32,974 - mms_extractor - INFO - _load_data 실행완료: 1.34초
+2025-09-10 10:26:32,975 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-10 10:26:32,975 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-09-10 10:26:32,975 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8000, debug=False
+2025-09-10 10:26:32,975 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-09-10 10:26:32,975 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8000에서 시작합니다
+2025-09-10 10:26:32,975 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-09-10 10:26:32,975 - __main__ - INFO -   GET  /health - 헬스체크
+2025-09-10 10:26:32,975 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-09-10 10:26:32,975 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-09-10 10:26:32,975 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-09-10 10:26:32,975 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-09-10 10:26:33,003 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.0.18:8000
+2025-09-10 10:26:33,003 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-10 10:48:50,883 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-09-10 10:48:50,883 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-09-10 10:48:50,883 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-09-10 10:48:50,883 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-10 10:48:50,883 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-10 10:48:50,964 - mms_extractor - INFO - Using device: mps
+2025-09-10 10:48:50,964 - mms_extractor - INFO - _initialize_device 실행완료: 0.08초
+2025-09-10 10:48:50,964 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-09-10 10:48:50,964 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-10 10:48:50,964 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-10 10:48:50,964 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-10 10:48:50,964 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-10 10:48:54,402 - mms_extractor - INFO - Model loaded on mps
+2025-09-10 10:48:54,402 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 3.44초
+2025-09-10 10:48:55,013 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-10 10:48:55,013 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.61초
+2025-09-10 10:48:55,013 - mms_extractor - INFO - ============================================================
+2025-09-10 10:48:55,013 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-10 10:48:55,013 - mms_extractor - INFO - ============================================================
+2025-09-10 10:48:55,013 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-10 10:48:55,013 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-10 10:48:55,013 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-10 10:48:55,013 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-10 10:48:55,013 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-10 10:48:55,137 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-10 10:48:55,137 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-10 10:48:55,147 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-10 10:48:55,153 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-10 10:48:55,154 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 10:48:55,158 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-10 10:48:55,158 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-10 10:48:55,158 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-10 10:48:55,158 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-10 10:48:55,158 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-10 10:48:55,158 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-10 10:48:55,158 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-10 10:48:55,166 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-10 10:48:55,167 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-10 10:48:55,167 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-10 10:48:55,534 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-10 10:48:55,537 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-10 10:48:55,537 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-10 10:48:55,537 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-10 10:48:55,537 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-10 10:48:55,538 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-10 10:48:55,538 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-10 10:48:55,539 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-10 10:48:55,539 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-10 10:48:55,546 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-10 10:48:55,550 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-10 10:48:55,550 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 10:48:55,607 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-10 10:48:55,608 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-10 10:48:55,608 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-10 10:48:55,618 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-10 10:48:55,618 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-10 10:48:57,698 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-10 10:48:57,698 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-10 10:48:57,698 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-10 10:48:58,268 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-10 10:48:58,268 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-10 10:48:58,268 - mms_extractor - INFO - ============================================================
+2025-09-10 10:48:58,268 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-10 10:48:58,268 - mms_extractor - INFO - ============================================================
+2025-09-10 10:48:58,268 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-10 10:48:58,268 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-10 10:48:58,268 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-10 10:48:58,268 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-10 10:48:58,268 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-10 10:48:58,273 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-10 10:48:58,281 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-10 10:48:58,285 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-10 10:48:58,285 - mms_extractor - INFO - _load_data 실행완료: 3.27초
+2025-09-10 10:48:58,285 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-10 10:48:58,286 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-09-10 10:48:58,286 - __main__ - INFO - 파싱된 인자: host=127.0.0.1, port=8000, debug=False
+2025-09-10 10:48:58,286 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-09-10 10:48:58,286 - __main__ - INFO - MMS 추출기 API 서버를 127.0.0.1:8000에서 시작합니다
+2025-09-10 10:48:58,286 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-09-10 10:48:58,286 - __main__ - INFO -   GET  /health - 헬스체크
+2025-09-10 10:48:58,286 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-09-10 10:48:58,286 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-09-10 10:48:58,286 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-09-10 10:48:58,286 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-09-10 10:48:58,312 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8000
+2025-09-10 10:48:58,312 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-10 11:03:27,584 - __main__ - INFO - 🎯 DAG 추출 요청됨 - LLM: ax, 메시지 길이: 370자
+2025-09-10 11:03:27,584 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-09-10 11:03:27,584 - __main__ - INFO - DAG 추출과 함께 순차 처리 시작
+2025-09-10 11:03:27,584 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 ...
+2025-09-10 11:03:27,584 - mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-09-10 11:03:27,585 - mms_extractor - INFO - ============================================================
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-10 11:03:27,585 - mms_extractor - INFO - ============================================================
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-09-10 11:03:27,585 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 데이터 소스: local
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-09-10 11:03:27,585 - mms_extractor - INFO - LLM 모델: ax
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-10 11:03:27,585 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-10 11:03:27,585 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-10 11:03:27,585 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-09-10 11:03:27,591 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-09-10 11:03:28,161 - mms_extractor - INFO - 분할된 문장 수: 14개
+2025-09-10 11:03:28,162 - mms_extractor - INFO - 필터링된 문장들: ['광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', ' 토 혜택 ', '만 13 고객이라면']...
+2025-09-10 11:03:28,163 - mms_extractor - INFO - 전체 토큰 수: 134개
+2025-09-10 11:03:28,163 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '0 day', '광고', '0 day', '베어유', '에이닷', '시크릿', '이벤트', '에이닷', '쿠폰', '에이닷이빵쏜닷', '뚜레쥬르', '데일리', '쿠폰', '시크릿', '수신거부']
+2025-09-10 11:03:28,163 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['에이닷이빵쏜닷', '베어유', '뚜레쥬르', '0 day', '데일리', '시크릿']
+2025-09-10 11:03:28,163 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-09-10 11:03:49,917 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (14323, 3)
+2025-09-10 11:03:49,917 - mms_extractor - INFO - 퍼지 매칭 성공: 14323개 결과
+2025-09-10 11:03:49,921 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.4}]
+2025-09-10 11:03:49,921 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-09-10 11:03:50,033 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (14323, 3)
+2025-09-10 11:03:50,034 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.24}]
+2025-09-10 11:03:50,034 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-09-10 11:03:50,039 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 11개
+2025-09-10 11:03:50,044 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 4개
+2025-09-10 11:03:50,044 - mms_extractor - INFO - 통합된 후보 아이템 수: 15개
+2025-09-10 11:03:50,046 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-09-10 11:03:50,050 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (10, 2)
+2025-09-10 11:03:50,050 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}, {'item_nm': 'LTE 혜택 안내', 'item_id': ['NA00004316']}]
+2025-09-10 11:03:50,051 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 22.47초
+2025-09-10 11:03:50,051 - mms_extractor - INFO - 추출된 후보 엔티티: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-09-10 11:03:50,051 - mms_extractor - INFO - 매칭된 상품 정보: (10, 2)
+2025-09-10 11:03:50,051 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-10 11:03:51,355 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-10 11:03:51,355 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-10 11:03:51,355 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-09-10 11:03:51,355 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-10 11:03:51,355 - mms_extractor - INFO - 후보 아이템 리스트 크기: 10개
+2025-09-10 11:03:51,355 - mms_extractor - INFO - 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-09-10 11:03:51,355 - mms_extractor - INFO - extra_item_pdf 크기: (10, 2)
+2025-09-10 11:03:51,355 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-09-10 11:03:51,355 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}]
+2025-09-10 11:03:51,355 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-09-10 11:03:51,355 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-10 11:03:51,355 - mms_extractor - INFO - 구성된 프롬프트 길이: 6217 문자
+2025-09-10 11:03:51,355 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-09-10 11:03:51,355 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 6217)
+2025-09-10 11:03:51,355 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-10 11:03:51,355 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-10 11:03:58,563 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 11:03:58,567 - mms_extractor - INFO - LLM 응답 길이: 921 문자
+2025-09-10 11:03:58,567 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "사용"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc",
+            "action": "추가 정보"
+        },
+...
+2025-09-10 11:03:58,567 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-10 11:03:58,568 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-10 11:03:58,568 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-10 11:03:58,568 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '사용'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-09-10 11:03:58,568 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-10 11:03:58,568 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-09-10 11:03:58,825 - mms_extractor - INFO - 프롬프트 저장됨: entity_extraction_prompt (길이: 3118)
+2025-09-10 11:03:58,825 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 2
+2025-09-10 11:03:58,825 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt', 'entity_extraction_prompt']
+2025-09-10 11:03:59,476 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 11:03:59,807 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.24초
+2025-09-10 11:03:59,815 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-10 11:03:59,815 - mms_extractor - INFO - ============================================================
+2025-09-10 11:03:59,815 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-10 11:03:59,815 - mms_extractor - INFO - ============================================================
+2025-09-10 11:03:59,815 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-09-10 11:03:59,815 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도']
+2025-09-10 11:03:59,815 - mms_extractor - INFO - 상품 수: 3개
+2025-09-10 11:03:59,815 - mms_extractor - INFO - 채널 수: 4개
+2025-09-10 11:03:59,815 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-10 11:03:59,815 - mms_extractor - INFO - process_message 실행완료: 32.23초
+2025-09-10 11:03:59,815 - mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-09-10 11:03:59,815 - entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-09-10 11:03:59,815 - entity_dag_extractor - INFO - 📝 입력 메시지 길이: 370자
+2025-09-10 11:03:59,816 - entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x12708e7b0> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x12708eb10> root_client=<openai.OpenAI object at 0x1270a5e10> root_async_client=<openai.AsyncOpenAI object at 0x12708e8d0> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-09-10 11:03:59,816 - entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-09-10 11:03:59,816 - entity_dag_extractor - INFO - 📏 프롬프트 길이: 3355자
+2025-09-10 11:04:17,563 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - 📝 LLM 응답 길이: 1922자
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - 📄 LLM 응답 미리보기: ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SK텔레콤은 2월 0 day 혜택으로 두 가지 주요 프로모션을 안내하고 있습니다. 첫 번째는 만 13~34세 고객을 대상으로 베어유 강의 14일 무료 수강 쿠폰을 선착순 3만 명에게 제공하는 이벤트입니다. 두 번째는 에이닷 T 멤버십 쿠폰함에 특정 시크릿코드('에이닷이빵쏜닷')를 입력하면 뚜레쥬...
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 89자
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 5, 엣지 수: 3
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['웹사이트:접속', '베어유쿠폰:수령', '앱:접속', '시크릿코드:입력', '식빵쿠폰:수령']
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('웹사이트:접속', '베어유쿠폰:수령'), ('앱:접속', '시크릿코드:입력'), ('시크릿코드:입력', '식빵쿠폰:수령')]
+2025-09-10 11:04:17,564 - entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-09-10 11:04:17,564 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d
+2025-09-10 11:04:17,564 - utils - INFO - 📊 입력 그래프 - 노드 수: 5, 엣지 수: 3
+2025-09-10 11:04:17,565 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-09-10 11:04:18,412 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d.png
+2025-09-10 11:04:18,412 - mms_extractor - INFO - ✅ DAG 추출 완료: dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d
+2025-09-10 11:04:18,412 - mms_extractor - INFO - 🕒 DAG 처리 시간: 18.597초
+2025-09-10 11:04:18,412 - mms_extractor - INFO - 📏 DAG 섹션 길이: 89자
+2025-09-10 11:04:18,412 - mms_extractor - INFO - 📄 DAG 내용 미리보기: (웹사이트:접속) -[접속하면]-> (베어유쿠폰:수령)
+(앱:접속) -[접속하면]-> (시크릿코드:입력)
+(시크릿코드:입력) -[입력하면]-> (식빵쿠폰:수령)...
+2025-09-10 11:04:18,412 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-10 11:04:18,413 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 3개
+2025-09-10 11:04:18,413 - __main__ - INFO - ✅ DAG 추출 성공 - 길이: 3자
+2025-09-10 11:04:18,413 - __main__ - INFO - DAG 내용 미리보기: ['(시크릿코드:입력) -[입력하면]-> (식빵쿠폰:수령)', '(앱:접속) -[접속하면]-> (시크릿코드:입력)', '(웹사이트:접속) -[접속하면]-> (베어유쿠폰:수령)']...
+2025-09-10 11:04:18,413 - __main__ - INFO - 추출 완료: 50.828초
+2025-09-10 11:04:18,414 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 11:04:18] "POST /extract HTTP/1.1" 200 -
+2025-09-10 11:08:10,089 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-09-10 11:08:10,089 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-09-10 11:08:10,089 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-09-10 11:08:10,089 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-10 11:08:10,089 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-10 11:08:10,154 - mms_extractor - INFO - Using device: mps
+2025-09-10 11:08:10,154 - mms_extractor - INFO - _initialize_device 실행완료: 0.06초
+2025-09-10 11:08:10,154 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-09-10 11:08:10,154 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-10 11:08:10,154 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-10 11:08:10,155 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-10 11:08:10,155 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-10 11:08:13,448 - mms_extractor - INFO - Model loaded on mps
+2025-09-10 11:08:13,449 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 3.29초
+2025-09-10 11:08:14,020 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-10 11:08:14,020 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.57초
+2025-09-10 11:08:14,020 - mms_extractor - INFO - ============================================================
+2025-09-10 11:08:14,020 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-10 11:08:14,020 - mms_extractor - INFO - ============================================================
+2025-09-10 11:08:14,020 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-10 11:08:14,020 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-10 11:08:14,020 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-10 11:08:14,020 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-10 11:08:14,020 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-10 11:08:14,151 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-10 11:08:14,152 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-10 11:08:14,162 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-10 11:08:14,167 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-10 11:08:14,169 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 11:08:14,175 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-10 11:08:14,175 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-10 11:08:14,175 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-10 11:08:14,176 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-10 11:08:14,176 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-10 11:08:14,176 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-10 11:08:14,176 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-10 11:08:14,184 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-10 11:08:14,187 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-10 11:08:14,187 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-10 11:08:14,555 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-10 11:08:14,558 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-10 11:08:14,558 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-10 11:08:14,558 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-10 11:08:14,558 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-10 11:08:14,560 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-10 11:08:14,560 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-10 11:08:14,560 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-10 11:08:14,560 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-10 11:08:14,567 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-10 11:08:14,571 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-10 11:08:14,571 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-10 11:08:14,631 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-10 11:08:14,632 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-10 11:08:14,632 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-10 11:08:14,646 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-10 11:08:14,646 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-10 11:08:16,715 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-10 11:08:16,715 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-10 11:08:16,715 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-10 11:08:17,280 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-10 11:08:17,280 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-10 11:08:17,280 - mms_extractor - INFO - ============================================================
+2025-09-10 11:08:17,280 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-10 11:08:17,280 - mms_extractor - INFO - ============================================================
+2025-09-10 11:08:17,280 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-10 11:08:17,280 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-10 11:08:17,280 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-10 11:08:17,280 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-10 11:08:17,281 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-10 11:08:17,286 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-10 11:08:17,294 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-10 11:08:17,298 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-10 11:08:17,298 - mms_extractor - INFO - _load_data 실행완료: 3.28초
+2025-09-10 11:08:17,298 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-10 11:08:17,298 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-09-10 11:08:17,298 - __main__ - INFO - 파싱된 인자: host=127.0.0.1, port=8080, debug=False
+2025-09-10 11:08:17,298 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-09-10 11:08:17,298 - __main__ - INFO - MMS 추출기 API 서버를 127.0.0.1:8080에서 시작합니다
+2025-09-10 11:08:17,298 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-09-10 11:08:17,298 - __main__ - INFO -   GET  /health - 헬스체크
+2025-09-10 11:08:17,298 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-09-10 11:08:17,298 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-09-10 11:08:17,298 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-09-10 11:08:17,298 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-09-10 11:08:17,309 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-09-10 11:08:17,309 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-10 11:08:18,637 - __main__ - INFO - 🎯 DAG 추출 요청됨 - LLM: ax, 메시지 길이: 370자
+2025-09-10 11:08:18,638 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-09-10 11:08:18,638 - __main__ - INFO - DAG 추출과 함께 순차 처리 시작
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 ...
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-09-10 11:08:18,638 - mms_extractor - INFO - ============================================================
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-10 11:08:18,638 - mms_extractor - INFO - ============================================================
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-09-10 11:08:18,638 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 데이터 소스: local
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-09-10 11:08:18,638 - mms_extractor - INFO - LLM 모델: ax
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 상품 데이터 크기: (94279, 9)
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-10 11:08:18,638 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-10 11:08:18,638 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-10 11:08:18,638 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-09-10 11:08:18,644 - mms_extractor - INFO - 매칭할 상품 별칭 수: 65154개
+2025-09-10 11:08:19,229 - mms_extractor - INFO - 분할된 문장 수: 14개
+2025-09-10 11:08:19,229 - mms_extractor - INFO - 필터링된 문장들: ['광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', ' 토 혜택 ', '만 13 고객이라면']...
+2025-09-10 11:08:19,231 - mms_extractor - INFO - 전체 토큰 수: 134개
+2025-09-10 11:08:19,231 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '0 day', '광고', '0 day', '베어유', '에이닷', '시크릿', '이벤트', '에이닷', '쿠폰', '에이닷이빵쏜닷', '뚜레쥬르', '데일리', '쿠폰', '시크릿', '수신거부']
+2025-09-10 11:08:19,232 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['데일리', '베어유', '0 day', '에이닷이빵쏜닷', '시크릿', '뚜레쥬르']
+2025-09-10 11:08:19,232 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-09-10 11:08:27,197 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (14323, 3)
+2025-09-10 11:08:27,197 - mms_extractor - INFO - 퍼지 매칭 성공: 14323개 결과
+2025-09-10 11:08:27,202 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.42105263157894735}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.4}]
+2025-09-10 11:08:27,202 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-09-10 11:08:27,307 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (14323, 3)
+2025-09-10 11:08:27,307 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'Galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': 'galaxy 탭 S6', 'sim': 0.2909090909090909}, {'sent': '광고 제목 SK텔레콤 0 day 혜택 안내 광고 내용 광고 SKT 0 day 혜택 안내', 'item_nm_alias': '특별한혜택충전 개편', 'sim': 0.24}]
+2025-09-10 11:08:27,307 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-09-10 11:08:27,312 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 11개
+2025-09-10 11:08:27,318 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 4개
+2025-09-10 11:08:27,318 - mms_extractor - INFO - 통합된 후보 아이템 수: 15개
+2025-09-10 11:08:27,320 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-09-10 11:08:27,324 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (10, 2)
+2025-09-10 11:08:27,324 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}, {'item_nm': 'LTE 혜택 안내', 'item_id': ['NA00004316']}]
+2025-09-10 11:08:27,325 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 8.69초
+2025-09-10 11:08:27,326 - mms_extractor - INFO - 추출된 후보 엔티티: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-09-10 11:08:27,326 - mms_extractor - INFO - 매칭된 상품 정보: (10, 2)
+2025-09-10 11:08:27,326 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-10 11:08:28,660 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-10 11:08:28,660 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-10 11:08:28,660 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-09-10 11:08:28,660 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-10 11:08:28,660 - mms_extractor - INFO - 후보 아이템 리스트 크기: 10개
+2025-09-10 11:08:28,660 - mms_extractor - INFO - 후보 아이템 리스트: ['0 day', '뚜레쥬르', '베어유', '시크릿', 'T쿠폰', 'data', '우드', 'T 에이스', 'CU(0 day)', 'LTE 혜택 안내']
+2025-09-10 11:08:28,660 - mms_extractor - INFO - extra_item_pdf 크기: (10, 2)
+2025-09-10 11:08:28,660 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-09-10 11:08:28,660 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': '0 day', 'item_id': ['9301']}, {'item_nm': 'CU(0 day)', 'item_id': ['V861']}]
+2025-09-10 11:08:28,660 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-09-10 11:08:28,660 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-10 11:08:28,660 - mms_extractor - INFO - 구성된 프롬프트 길이: 6217 문자
+2025-09-10 11:08:28,660 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-09-10 11:08:28,660 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 6217)
+2025-09-10 11:08:28,660 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-10 11:08:28,660 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-10 11:08:35,647 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 11:08:35,656 - mms_extractor - INFO - LLM 응답 길이: 921 문자
+2025-09-10 11:08:35,656 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "사용"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc",
+            "action": "추가 정보"
+        },
+...
+2025-09-10 11:08:35,657 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-10 11:08:35,657 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-10 11:08:35,657 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-10 11:08:35,657 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '사용'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-09-10 11:08:35,657 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-10 11:08:35,657 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-09-10 11:08:35,905 - mms_extractor - INFO - 프롬프트 저장됨: entity_extraction_prompt (길이: 3118)
+2025-09-10 11:08:35,905 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 2
+2025-09-10 11:08:35,905 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt', 'entity_extraction_prompt']
+2025-09-10 11:08:36,563 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 11:08:36,908 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.25초
+2025-09-10 11:08:36,916 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-10 11:08:36,917 - mms_extractor - INFO - ============================================================
+2025-09-10 11:08:36,917 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-10 11:08:36,917 - mms_extractor - INFO - ============================================================
+2025-09-10 11:08:36,917 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-09-10 11:08:36,917 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도']
+2025-09-10 11:08:36,917 - mms_extractor - INFO - 상품 수: 3개
+2025-09-10 11:08:36,917 - mms_extractor - INFO - 채널 수: 4개
+2025-09-10 11:08:36,917 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-10 11:08:36,917 - mms_extractor - INFO - process_message 실행완료: 18.28초
+2025-09-10 11:08:36,917 - mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-09-10 11:08:36,917 - entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-09-10 11:08:36,917 - entity_dag_extractor - INFO - 📝 입력 메시지 길이: 370자
+2025-09-10 11:08:36,917 - entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x1278828d0> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x127882c30> root_client=<openai.OpenAI object at 0x127892470> root_async_client=<openai.AsyncOpenAI object at 0x1278829f0> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-09-10 11:08:36,917 - entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-09-10 11:08:36,917 - entity_dag_extractor - INFO - 📏 프롬프트 길이: 3355자
+2025-09-10 11:08:54,610 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - 📝 LLM 응답 길이: 1922자
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - 📄 LLM 응답 미리보기: ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SK텔레콤은 2월 0 day 혜택으로 두 가지 주요 프로모션을 안내하고 있습니다. 첫 번째는 만 13~34세 고객을 대상으로 베어유 강의 14일 무료 수강 쿠폰을 선착순 3만 명에게 제공하는 이벤트입니다. 두 번째는 에이닷 T 멤버십 쿠폰함에 특정 시크릿코드('에이닷이빵쏜닷')를 입력하면 뚜레쥬...
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 89자
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 5, 엣지 수: 3
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['웹사이트:접속', '베어유쿠폰:수령', '앱:접속', '시크릿코드:입력', '식빵쿠폰:수령']
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('웹사이트:접속', '베어유쿠폰:수령'), ('앱:접속', '시크릿코드:입력'), ('시크릿코드:입력', '식빵쿠폰:수령')]
+2025-09-10 11:08:54,612 - entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-09-10 11:08:54,612 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d
+2025-09-10 11:08:54,612 - utils - INFO - 📊 입력 그래프 - 노드 수: 5, 엣지 수: 3
+2025-09-10 11:08:54,613 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-09-10 11:08:54,863 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d.png
+2025-09-10 11:08:54,863 - mms_extractor - INFO - ✅ DAG 추출 완료: dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d
+2025-09-10 11:08:54,863 - mms_extractor - INFO - 🕒 DAG 처리 시간: 17.946초
+2025-09-10 11:08:54,863 - mms_extractor - INFO - 📏 DAG 섹션 길이: 89자
+2025-09-10 11:08:54,863 - mms_extractor - INFO - 📄 DAG 내용 미리보기: (웹사이트:접속) -[접속하면]-> (베어유쿠폰:수령)
+(앱:접속) -[접속하면]-> (시크릿코드:입력)
+(시크릿코드:입력) -[입력하면]-> (식빵쿠폰:수령)...
+2025-09-10 11:08:54,863 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-10 11:08:54,863 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 3개
+2025-09-10 11:08:54,863 - __main__ - INFO - ✅ DAG 추출 성공 - 길이: 3자
+2025-09-10 11:08:54,863 - __main__ - INFO - DAG 내용 미리보기: ['(시크릿코드:입력) -[입력하면]-> (식빵쿠폰:수령)', '(앱:접속) -[접속하면]-> (시크릿코드:입력)', '(웹사이트:접속) -[접속하면]-> (베어유쿠폰:수령)']...
+2025-09-10 11:08:54,863 - __main__ - INFO - 추출 완료: 36.226초
+2025-09-10 11:08:54,865 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 11:08:54] "POST /extract HTTP/1.1" 200 -
