@@ -1173,9 +1173,16 @@ class MMSExtractor:
                     null_count = self.item_pdf_all[col].isnull().sum()
                     logger.info(f"  {col}: {dtype}, null값: {null_count}개")
                 
-                # 컬럼명 소문자 변환
+                # 컬럼명 소문자 변환 및 ITEM_ALS -> item_nm_alias 매핑
                 original_columns = list(self.item_pdf_all.columns)
-                self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
+                
+                # ITEM_ALS 컬럼을 item_nm_alias로 매핑
+                column_mapping = {c: c.lower() for c in self.item_pdf_all.columns}
+                if 'ITEM_ALS' in original_columns:
+                    column_mapping['ITEM_ALS'] = 'item_nm_alias'
+                    logger.info("ITEM_ALS 컬럼을 item_nm_alias로 매핑합니다.")
+                
+                self.item_pdf_all = self.item_pdf_all.rename(columns=column_mapping)
                 logger.info(f"컬럼명 변환: {dict(zip(original_columns, self.item_pdf_all.columns))}")
                 
                 # LOB 데이터가 있는 경우를 대비해 데이터 강제 로드
@@ -1194,8 +1201,29 @@ class MMSExtractor:
                         if 'item_id' in self.item_pdf_all.columns:
                             sample_ids = self.item_pdf_all['item_id'].dropna().head(5).tolist()
                             logger.info(f"상품ID 샘플: {sample_ids}")
+                        
+                        # item_nm_alias 컬럼 확인 및 생성
+                        if 'item_nm_alias' not in self.item_pdf_all.columns:
+                            logger.info("item_nm_alias 컬럼이 없어서 item_nm에서 생성합니다.")
+                            if 'item_nm' in self.item_pdf_all.columns:
+                                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
+                            else:
+                                logger.error("item_nm 컬럼도 없어 item_nm_alias를 생성할 수 없습니다!")
+                                self.item_pdf_all['item_nm_alias'] = None
+                        else:
+                            # item_nm_alias가 비어있는 경우 item_nm으로 채우기
+                            null_count = self.item_pdf_all['item_nm_alias'].isnull().sum()
+                            if null_count > 0:
+                                logger.info(f"DB 모드: item_nm_alias에서 {null_count}개 null 값을 item_nm으로 채웁니다.")
+                                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm_alias'].fillna(self.item_pdf_all['item_nm'])
+                        
+                        # item_nm_alias 샘플 확인
+                        if 'item_nm_alias' in self.item_pdf_all.columns:
+                            alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
+                            logger.info(f"DB 모드 item_nm_alias 샘플: {alias_sample}")
                             
                         logger.info(f"최종 상품 정보 로드 완료: {len(self.item_pdf_all)}개 상품")
+                        logger.info(f"DB 모드 최종 컬럼들: {list(self.item_pdf_all.columns)}")
                     except Exception as load_error:
                         logger.error(f"데이터 강제 로드 중 오류: {load_error}")
                         raise
@@ -1205,6 +1233,12 @@ class MMSExtractor:
         except Exception as e:
             logger.error(f"상품 정보 데이터베이스 로드 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
+            # 비상 상황에서 빈 데이터프레임 생성 (item_nm_alias 컬럼 포함)
+            logger.warning("상품 정보 DB 로드 실패로 빈 데이터프레임을 생성합니다.")
+            self.item_pdf_all = pd.DataFrame(columns=[
+                'item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 
+                'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias'
+            ])
             raise
 
     def _load_program_from_database(self):
