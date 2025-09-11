@@ -97,7 +97,8 @@ from prompts import (
     enhance_prompt_for_retry,
     get_fallback_result,
     build_entity_extraction_prompt,
-    DEFAULT_ENTITY_EXTRACTION_PROMPT
+    DEFAULT_ENTITY_EXTRACTION_PROMPT,
+    DETAILED_ENTITY_EXTRACTION_PROMPT
 )
 
 # 설정 및 의존성 임포트 (원본 코드에서 가져옴)
@@ -1108,17 +1109,44 @@ class MMSExtractor:
     def _get_database_connection(self):
         """Oracle 데이터베이스 연결 생성"""
         try:
+            logger.info("=== 데이터베이스 연결 시도 중 ===")
+            
             username = os.getenv("DB_USERNAME")
             password = os.getenv("DB_PASSWORD")
             host = os.getenv("DB_HOST")
             port = os.getenv("DB_PORT")
             service_name = os.getenv("DB_NAME")
             
-            if not all([username, password, host, port, service_name]):
-                raise ValueError("데이터베이스 연결 정보가 불완전합니다")
+            # 연결 정보 로깅 (비밀번호는 마스킹)
+            logger.info(f"DB 연결 정보:")
+            logger.info(f"  - 사용자명: {username if username else '[비어있음]'}")
+            logger.info(f"  - 비밀번호: {'*' * len(password) if password else '[비어있음]'}")
+            logger.info(f"  - 호스트: {host if host else '[비어있음]'}")
+            logger.info(f"  - 포트: {port if port else '[비어있음]'}")
+            logger.info(f"  - 서비스명: {service_name if service_name else '[비어있음]'}")
             
+            # 환경 변수 확인
+            missing_vars = []
+            if not username: missing_vars.append('DB_USERNAME')
+            if not password: missing_vars.append('DB_PASSWORD')
+            if not host: missing_vars.append('DB_HOST')
+            if not port: missing_vars.append('DB_PORT')
+            if not service_name: missing_vars.append('DB_NAME')
+            
+            if missing_vars:
+                logger.error(f"누락된 환경 변수: {missing_vars}")
+                logger.error("필요한 환경 변수들을 .env 파일에 설정해주세요.")
+                raise ValueError(f"데이터베이스 연결 정보가 불완전합니다. 누락: {missing_vars}")
+            
+            # DSN 생성 및 로깅
+            logger.info(f"DSN 생성 중: {host}:{port}/{service_name}")
             dsn = cx_Oracle.makedsn(host, port, service_name=service_name)
+            logger.info(f"DSN 생성 성공: {dsn}")
+            
+            # 데이터베이스 연결 시도
+            logger.info("데이터베이스 연결 시도 중...")
             conn = cx_Oracle.connect(user=username, password=password, dsn=dsn, encoding="UTF-8")
+            logger.info("데이터베이스 연결 성공!")
             
             # LOB 데이터 처리를 위한 outputtypehandler 설정
             def output_type_handler(cursor, name, default_type, size, precision, scale):
@@ -1129,29 +1157,54 @@ class MMSExtractor:
             
             conn.outputtypehandler = output_type_handler
             
+            # 연결 정보 확인
+            logger.info(f"연결된 DB 버전: {conn.version}")
+            
             return conn
             
+        except cx_Oracle.DatabaseError as db_error:
+            error_obj, = db_error.args
+            logger.error(f"Oracle 데이터베이스 오류:")
+            logger.error(f"  - 오류 코드: {error_obj.code}")
+            logger.error(f"  - 오류 메시지: {error_obj.message}")
+            logger.error(f"  - 전체 오류: {db_error}")
+            raise
+        except ImportError as import_error:
+            logger.error(f"cx_Oracle 모듈 임포트 오류: {import_error}")
+            logger.error("코맨드: pip install cx_Oracle")
+            raise
         except Exception as e:
             logger.error(f"데이터베이스 연결 실패: {e}")
+            logger.error(f"오류 타입: {type(e).__name__}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
             raise
 
     @contextmanager
     def _database_connection(self):
         """데이터베이스 연결 context manager"""
         conn = None
+        start_time = time.time()
         try:
+            logger.info("데이터베이스 연결 context manager 시작")
             conn = self._get_database_connection()
+            connection_time = time.time() - start_time
+            logger.info(f"데이터베이스 연결 완료 ({connection_time:.2f}초)")
             yield conn
         except Exception as e:
             logger.error(f"데이터베이스 작업 중 오류: {e}")
+            logger.error(f"오류 타입: {type(e).__name__}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
             raise
         finally:
             if conn:
                 try:
                     conn.close()
-                    logger.debug("데이터베이스 연결 정상 종료")
+                    total_time = time.time() - start_time
+                    logger.info(f"데이터베이스 연결 정상 종료 (총 소요시간: {total_time:.2f}초)")
                 except Exception as close_error:
                     logger.warning(f"연결 종료 중 오류: {close_error}")
+            else:
+                logger.warning("데이터베이스 연결이 생성되지 않았습니다.")
 
     def _load_item_from_database(self):
         """데이터베이스에서 상품 정보 로드"""
@@ -1519,12 +1572,25 @@ class MMSExtractor:
             logger.info(f"=== 조직 정보 로드 최종 완료: {len(self.org_pdf)}개 조직 ===")
             logger.info(f"최종 조직 데이터 스키마: {list(self.org_pdf.columns)}")
             
+            # 조직 데이터 최종 검증
+            if not self.org_pdf.empty:
+                critical_org_columns = ['item_nm', 'item_id']
+                missing_org_columns = [col for col in critical_org_columns if col not in self.org_pdf.columns]
+                if missing_org_columns:
+                    logger.error(f"조직 데이터에서 중요 컬럼이 누락되었습니다: {missing_org_columns}")
+                    logger.error("이로 인해 조직/매장 추출 기능이 정상 동작하지 않을 수 있습니다.")
+                else:
+                    logger.info("모든 중요 조직 컬럼이 정상적으로 로드되었습니다.")
+            else:
+                logger.warning("조직 데이터가 비어있습니다. 조직/매장 추출이 동작하지 않을 수 있습니다.")
+            
         except Exception as e:
             logger.error(f"조직 정보 로드 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
-            # 빈 DataFrame으로 fallback
+            # 빈 DataFrame으로 fallback (조직 데이터에 필요한 컬럼들 포함)
             self.org_pdf = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
             logger.warning("빈 조직 DataFrame으로 fallback 설정됨")
+            logger.warning("이로 인해 조직/매장 추출 기능이 비활성화됩니다.")
 
     def _load_org_from_database(self):
         """데이터베이스에서 조직 정보 로드 (ITEM_DMN='R')"""
@@ -1539,14 +1605,44 @@ class MMSExtractor:
                 logger.info(f"DB에서 로드된 조직 데이터 크기: {self.org_pdf.shape}")
                 logger.info(f"DB 조직 데이터 컬럼들: {list(self.org_pdf.columns)}")
                 
-                # 컬럼명을 소문자로 변환
-                self.org_pdf = self.org_pdf.rename(columns={c: c.lower() for c in self.org_pdf.columns})
-                logger.info(f"DB 모드 조직 컬럼명 소문자 변환 완료: {list(self.org_pdf.columns)}")
+                # 컬럼명 매핑 및 소문자 변환
+                original_columns = list(self.org_pdf.columns)
+                logger.info(f"DB 조직 데이터 원본 컬럼들: {original_columns}")
                 
-                # 데이터 샘플 확인
+                # 조직 데이터를 위한 컬럼 매핑 (동일한 테이블이지만 사용 목적이 다름)
+                column_mapping = {c: c.lower() for c in self.org_pdf.columns}
+                
+                # 조직 데이터는 item 테이블과 동일한 스키마를 사용하므로 컬럼명 그대로 사용
+                # ITEM_NM -> item_nm, ITEM_ID -> item_id, ITEM_DESC -> item_desc 등
+                
+                self.org_pdf = self.org_pdf.rename(columns=column_mapping)
+                logger.info(f"DB 모드 조직 컬럼명 매핑 완료: {dict(zip(original_columns, self.org_pdf.columns))}")
+                logger.info(f"DB 모드 조직 최종 컬럼들: {list(self.org_pdf.columns)}")
+                
+                # 데이터 샘플 확인 및 컬럼 존재 여부 검증
                 if not self.org_pdf.empty:
-                    sample_orgs = self.org_pdf['item_nm'].dropna().head(5).tolist()
-                    logger.info(f"DB 모드 조직명 샘플: {sample_orgs}")
+                    logger.info(f"DB 모드 조직 데이터 최종 크기: {self.org_pdf.shape}")
+                    
+                    # 필수 컬럼 존재 여부 확인
+                    required_columns = ['item_nm', 'item_id']
+                    missing_columns = [col for col in required_columns if col not in self.org_pdf.columns]
+                    if missing_columns:
+                        logger.error(f"DB 모드 조직 데이터에서 필수 컬럼 누락: {missing_columns}")
+                        logger.error(f"사용 가능한 컬럼들: {list(self.org_pdf.columns)}")
+                    else:
+                        logger.info("모든 필수 조직 컬럼이 존재합니다.")
+                    
+                    # 샘플 데이터 확인
+                    if 'item_nm' in self.org_pdf.columns:
+                        sample_orgs = self.org_pdf['item_nm'].dropna().head(5).tolist()
+                        logger.info(f"DB 모드 조직명 샘플: {sample_orgs}")
+                    else:
+                        logger.error("item_nm 컬럼이 없어 샘플을 표시할 수 없습니다.")
+                        # 전체 데이터 샘플 표시
+                        sample_data = self.org_pdf.head(3).to_dict('records')
+                        logger.info(f"DB 모드 조직 데이터 샘플: {sample_data}")
+                else:
+                    logger.warning("DB에서 로드된 조직 데이터가 비어있습니다!")
                 
                 logger.info(f"DB에서 조직 데이터 로드 성공: {len(self.org_pdf)}개 조직")
                 
@@ -1554,7 +1650,7 @@ class MMSExtractor:
             logger.error(f"DB에서 조직 데이터 로드 실패: {e}")
             logger.error(f"DB 조직 로드 오류 상세: {traceback.format_exc()}")
             
-            # 빈 DataFrame으로 fallback
+            # 빈 DataFrame으로 fallback (조직 데이터에 필요한 컬럼들 포함)
             self.org_pdf = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
             logger.warning("조직 데이터 DB 로드 실패로 빈 DataFrame 사용")
             
@@ -1901,12 +1997,19 @@ class MMSExtractor:
             
             # 로직 기반 방식으로 후보 엔티티 먼저 추출
             cand_entities_by_sim = sorted([
-                e.strip() for e in self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=0.7)['item_nm_alias'].unique() 
+                e.strip() for e in self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.4))['item_nm_alias'].unique() 
                 if e.strip() not in self.stop_item_names and len(e.strip()) >= 2
             ])
 
             # LLM 프롬프트 구성 - 외부 프롬프트 모듈 사용
-            base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', DEFAULT_ENTITY_EXTRACTION_PROMPT)
+            # 프롬프트를 prompts 디렉토리에서 가져오기 (설정 파일 대신)
+            base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
+            if base_prompt is None:
+                # settings.py에 프롬프트가 없으면 prompts 디렉토리에서 가져오기
+                base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
+                logger.info("엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
+            else:
+                logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
             prompt = build_entity_extraction_prompt(msg_text, base_prompt)
             
             # 후보 엔티티 추가
