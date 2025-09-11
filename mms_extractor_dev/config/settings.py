@@ -49,7 +49,7 @@ class METADATAConfig:
     stop_items_path: str = os.getenv("STOP_ITEM_PATH", "./data/stop_words.csv")  # CSV file with words to exclude from entity extraction
     
     # Main item/offer information database
-    offer_data_path: str = os.getenv("OFFER_DATA_PATH", "./data/item_info_all_250527.csv")  # Main CSV file with item/offer information
+    offer_data_path: str = os.getenv("OFFER_DATA_PATH", "./data/offer_master_data.csv")  # Main CSV file with item/offer information (DB schema compatible)
     
     # Organization/store information database
     org_info_path: str = os.getenv("ORG_INFO_PATH", "./data/org_info_all_250605.csv")  # CSV file with organization/store details (Korean encoding)
