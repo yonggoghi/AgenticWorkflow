@@ -138,20 +138,9 @@ class ProcessingConfig:
     product_info_extraction_mode: str = 'llm'  # Product extraction strategy: 'rag', 'llm', 'nlp'
     entity_extraction_mode: str = 'llm'  # Entity matching strategy: 'llm', 'logic'
 
-    entity_extraction_prompt: str = """
-            Extract all product names, including tangible products, services, promotional events, programs, loyalty initiatives, and named campaigns or event identifiers, from the provided advertisement text.
-            Reference the provided candidate entities list as a primary source for string matching to identify potential matches. Extract terms that appear in the advertisement text and qualify as distinct product names based on the following criteria, prioritizing those from the candidate list but allowing extraction of additional relevant items beyond the list if they clearly fit the criteria and are presented as standalone offerings in the text.
-            Consider any named offerings, such as apps, membership programs, events, specific branded items, or campaign names like 'T day' or '0 day', as products if presented as distinct products, services, or promotional entities.
-            For terms that may be platforms or brand elements, include them only if they are presented as standalone offerings.
-            Avoid extracting base or parent brand names (e.g., 'FLO' or 'POOQ') if they are components of more specific offerings (e.g., 'FLO 앤 데이터' or 'POOQ 앤 데이터') presented in the text; focus on the full, distinct product or service names as they appear.
-            Exclude customer support services, such as customer centers or helplines, even if named in the text.
-            Exclude descriptive modifiers or attributes (e.g., terms like "디지털 전용" that describe a product but are not distinct offerings).
-            Exclude sales agency names such as '###대리점'.
-            If multiple terms refer to closely related promotional events (e.g., a general campaign and its specific instances or dates), include the most prominent or overarching campaign name (e.g., '0 day' as a named event) in addition to specific offerings tied to it, unless they are clearly identical.
-            Prioritize recall over precision to ensure all relevant products are captured, while verifying that extracted terms match the text exactly and align with the criteria. For candidates from the list, confirm direct string matches; for any beyond the list, ensure they are unambiguously distinct offerings.
-            Ensure that extracted names are presented exactly as they appear in the original text, without translation into English or any other language.
-            Just return a list with matched entities where the entities are separated by commas without any other text.
-    """
+    # 엔티티 추출 프롬프트는 이제 prompts 디렉토리에서 관리됩니다.
+    # prompts.DETAILED_ENTITY_EXTRACTION_PROMPT 를 사용하세요.
+    entity_extraction_prompt: str = None  # Deprecated: Use prompts.DETAILED_ENTITY_EXTRACTION_PROMPT instead
     
     def __post_init__(self):
         """Initialize default values and validate configuration after creation."""
