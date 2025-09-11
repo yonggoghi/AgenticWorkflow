@@ -230,3 +230,233 @@ SK텔레콤은 2월 0 day 혜택으로 두 가지 주요 프로모션을 안내�
 2025-09-10 11:10:15,251 - __main__ - INFO - DAG 내용 미리보기: ['(시크릿코드:입력) -[입력하면]-> (식빵쿠폰:수령)', '(앱:접속) -[접속하면]-> (시크릿코드:입력)', '(웹사이트:접속) -[접속하면]-> (베어유쿠폰:수령)']...
 2025-09-10 11:10:15,251 - __main__ - INFO - 추출 완료: 36.083초
 2025-09-10 11:10:15,252 - werkzeug - INFO - 127.0.0.1 - - [10/Sep/2025 11:10:15] "POST /extract HTTP/1.1" 200 -
+2025-09-11 11:04:34,423 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-09-11 11:04:34,423 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-09-11 11:04:34,423 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-09-11 11:04:34,423 - mms_extractor - INFO - 🚀 MMSExtractor 초기화 시작
+2025-09-11 11:04:34,423 - mms_extractor - INFO - ⚙️ 기본 설정 적용 중...
+2025-09-11 11:04:34,423 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-11 11:04:34,423 - mms_extractor - INFO - 🔑 환경변수 로드 중...
+2025-09-11 11:04:34,424 - mms_extractor - INFO - 💻 디바이스 설정 중...
+2025-09-11 11:04:34,441 - mms_extractor - INFO - Using device: mps
+2025-09-11 11:04:34,441 - mms_extractor - INFO - _initialize_device 실행완료: 0.02초
+2025-09-11 11:04:34,441 - mms_extractor - INFO - 🤖 LLM 모델 초기화 중...
+2025-09-11 11:04:34,441 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-09-11 11:04:34,442 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-11 11:04:34,442 - mms_extractor - INFO - 🧠 임베딩 모델 로드 중...
+2025-09-11 11:04:34,442 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-11 11:04:34,442 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-11 11:04:34,442 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-11 11:04:35,442 - mms_extractor - INFO - Model loaded on mps
+2025-09-11 11:04:35,442 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 1.00초
+2025-09-11 11:04:35,442 - mms_extractor - INFO - 📝 NLP 도구 (Kiwi) 초기화 중...
+2025-09-11 11:04:35,847 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-11 11:04:35,847 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.40초
+2025-09-11 11:04:35,847 - mms_extractor - INFO - 📁 데이터 로드 중...
+2025-09-11 11:04:35,847 - mms_extractor - INFO - ============================================================
+2025-09-11 11:04:35,847 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-11 11:04:35,847 - mms_extractor - INFO - ============================================================
+2025-09-11 11:04:35,847 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-11 11:04:35,847 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-11 11:04:35,847 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-11 11:04:35,847 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-11 11:04:35,847 - mms_extractor - INFO - CSV 파일 경로: ./data/offer_master_data.csv
+2025-09-11 11:04:35,847 - mms_extractor - ERROR - 상품 정보 로드 실패: [Errno 2] No such file or directory: './data/offer_master_data.csv'
+2025-09-11 11:04:35,849 - mms_extractor - ERROR - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_prd/mms_extractor.py", line 990, in _load_item_data
+    item_pdf_raw = pd.read_csv(csv_path)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/offer_master_data.csv'
+
+2025-09-11 11:04:35,850 - mms_extractor - WARNING - 빈 DataFrame으로 fallback 설정됨
+2025-09-11 11:04:35,850 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (0, 4)
+2025-09-11 11:04:35,850 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn']
+2025-09-11 11:04:35,850 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-11 11:04:35,850 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-11 11:04:35,850 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (0, 4)
+2025-09-11 11:04:35,851 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-11 11:04:35,851 - mms_extractor - INFO - null이 아닌 상품명 수: 0개
+2025-09-11 11:04:35,852 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 0 -> 0
+2025-09-11 11:04:35,852 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-11 11:04:35,852 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (0, 5)
+2025-09-11 11:04:35,852 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-11 11:04:35,853 - mms_extractor - INFO - 정지어 로드 완료: 143개
+2025-09-11 11:04:35,853 - mms_extractor - INFO - 로드된 정지어 수: 143개
+2025-09-11 11:04:35,853 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-11 11:04:35,853 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-11 11:04:35,853 - mms_extractor - INFO - 등록할 고유 별칭 수: 0개
+2025-09-11 11:04:35,853 - mms_extractor - INFO - 유효한 별칭 수: 0개
+2025-09-11 11:04:35,853 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 0개 성공, 0개 실패
+2025-09-11 11:04:35,853 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-11 11:04:35,853 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-11 11:04:35,854 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-11 11:04:35,854 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-11 11:04:36,004 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-11 11:04:36,004 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-11 11:04:36,004 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-11 11:04:36,475 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-11 11:04:36,475 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-11 11:04:36,475 - mms_extractor - INFO - ============================================================
+2025-09-11 11:04:36,475 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-11 11:04:36,475 - mms_extractor - INFO - ============================================================
+2025-09-11 11:04:36,475 - mms_extractor - INFO - ✅ 상품 데이터: (0, 5)
+2025-09-11 11:04:36,475 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-11 11:04:36,475 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-11 11:04:36,475 - mms_extractor - INFO - ✅ 정지어: 143개
+2025-09-11 11:04:36,475 - mms_extractor - INFO - _load_data 실행완료: 0.63초
+2025-09-11 11:04:36,475 - mms_extractor - INFO - ✅ MMSExtractor 초기화 완료
+2025-09-11 11:04:36,475 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-09-11 11:04:36,475 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8000, debug=False
+2025-09-11 11:04:36,475 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-09-11 11:04:36,475 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8000에서 시작합니다
+2025-09-11 11:04:36,475 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-09-11 11:04:36,475 - __main__ - INFO -   GET  /health - 헬스체크
+2025-09-11 11:04:36,475 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-09-11 11:04:36,475 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-09-11 11:04:36,475 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-09-11 11:04:36,475 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-09-11 11:04:36,484 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://172.23.25.54:8000
+2025-09-11 11:04:36,484 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-09-11 11:04:40,039 - __main__ - INFO - 🎯 DAG 추출 요청됨 - LLM: ax, 메시지 길이: 370자
+2025-09-11 11:04:40,039 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-09-11 11:04:40,039 - __main__ - INFO - DAG 추출과 함께 순차 처리 시작
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 ...
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-09-11 11:04:40,040 - mms_extractor - INFO - ============================================================
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-11 11:04:40,040 - mms_extractor - INFO - ============================================================
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 메시지 내용: 광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3...
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 메시지 길이: 370 문자
+2025-09-11 11:04:40,040 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 데이터 소스: local
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-09-11 11:04:40,040 - mms_extractor - INFO - LLM 모델: ax
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 상품 데이터 크기: (0, 5)
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-11 11:04:40,040 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-11 11:04:40,040 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 처리할 메시지 길이: 370 문자
+2025-09-11 11:04:40,040 - mms_extractor - ERROR - 상품 데이터가 비어있습니다! 엔티티 추출 불가
+2025-09-11 11:04:40,040 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 0.00초
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 추출된 후보 엔티티: []
+2025-09-11 11:04:40,040 - mms_extractor - INFO - 매칭된 상품 정보: (0, 0)
+2025-09-11 11:04:40,040 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-11 11:04:40,188 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-11 11:04:40,189 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-11 11:04:40,189 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-09-11 11:04:40,189 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-11 11:04:40,189 - mms_extractor - WARNING - 후보 아이템이 없습니다!
+2025-09-11 11:04:40,189 - mms_extractor - WARNING - 이는 다음 중 하나의 문제일 수 있습니다:
+2025-09-11 11:04:40,189 - mms_extractor - WARNING - 1. 상품 데이터 로딩 실패
+2025-09-11 11:04:40,189 - mms_extractor - WARNING - 2. 엔티티 추출 실패
+2025-09-11 11:04:40,189 - mms_extractor - WARNING - 3. 유사도 매칭 임계값 문제
+2025-09-11 11:04:40,189 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-11 11:04:40,189 - mms_extractor - INFO - 구성된 프롬프트 길이: 5790 문자
+2025-09-11 11:04:40,189 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: False
+2025-09-11 11:04:40,189 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 5790)
+2025-09-11 11:04:40,189 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-11 11:04:40,189 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-11 11:04:47,548 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-11 11:04:47,559 - mms_extractor - INFO - LLM 응답 길이: 921 문자
+2025-09-11 11:04:47,559 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 2월 0 day 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도"
+    ],
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "사용"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc",
+            "action": "추가 정보"
+        },
+...
+2025-09-11 11:04:47,559 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-11 11:04:47,559 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-11 11:04:47,559 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-11 11:04:47,559 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 2월 0 day 혜택 안내', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도'], 'product': [{'name': '베어유 모든 강의', 'action': '사용'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '사용법/혜택/이벤트안내_T멤버십']}
+2025-09-11 11:04:47,559 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-11 11:04:47,559 - mms_extractor - INFO - LLM 추출 엔티티: ['베어유 모든 강의', '뚜레쥬르 데일리우유식빵']
+2025-09-11 11:04:47,571 - mms_extractor - ERROR - LLM 기반 엔티티 추출 실패: 'item_nm_alias'
+2025-09-11 11:04:47,572 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 0.01초
+2025-09-11 11:04:47,575 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-11 11:04:47,575 - mms_extractor - INFO - ============================================================
+2025-09-11 11:04:47,575 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-11 11:04:47,575 - mms_extractor - INFO - ============================================================
+2025-09-11 11:04:47,575 - mms_extractor - INFO - 제목: [SK텔레콤] 2월 0 day 혜택 안내
+2025-09-11 11:04:47,575 - mms_extractor - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도']
+2025-09-11 11:04:47,575 - mms_extractor - INFO - 상품 수: 2개
+2025-09-11 11:04:47,575 - mms_extractor - INFO - 채널 수: 4개
+2025-09-11 11:04:47,576 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-11 11:04:47,576 - mms_extractor - INFO - process_message 실행완료: 7.54초
+2025-09-11 11:04:47,576 - mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-09-11 11:04:47,576 - entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-09-11 11:04:47,576 - entity_dag_extractor - INFO - 📝 입력 메시지 길이: 370자
+2025-09-11 11:04:47,576 - entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x3283b71a0> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x3283b7140> root_client=<openai.OpenAI object at 0x3283b77d0> root_async_client=<openai.AsyncOpenAI object at 0x3283b71d0> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-09-11 11:04:47,576 - entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-09-11 11:04:47,576 - entity_dag_extractor - INFO - 📏 프롬프트 길이: 3355자
+2025-09-11 11:05:05,749 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-11 11:05:05,751 - entity_dag_extractor - INFO - 📝 LLM 응답 길이: 1878자
+2025-09-11 11:05:05,751 - entity_dag_extractor - INFO - 📄 LLM 응답 미리보기: ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SK텔레콤은 2월 0 day 혜택을 통해 만 13~34세 고객에게 베어유 강의 14일 무료 수강 쿠폰을 선착순 3만 명에게 제공하고, 에이닷 T 멤버십 쿠폰함에 '에이닷이빵쏜닷' 시크릿코드를 입력하면 뚜레쥬르 데일리우유식빵 무료 쿠폰을 제공하는 이벤트를 안내하고 있다.
+
+[식별된 가치 제안 목록...
+2025-09-11 11:05:05,751 - entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-09-11 11:05:05,752 - entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 89자
+2025-09-11 11:05:05,752 - entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-09-11 11:05:05,753 - entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 5, 엣지 수: 3
+2025-09-11 11:05:05,753 - entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['웹사이트:접속', '베어유쿠폰:수령', '앱:접속', '시크릿코드:입력', '식빵쿠폰:수령']
+2025-09-11 11:05:05,753 - entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('웹사이트:접속', '베어유쿠폰:수령'), ('앱:접속', '시크릿코드:입력'), ('시크릿코드:입력', '식빵쿠폰:수령')]
+2025-09-11 11:05:05,753 - entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-09-11 11:05:05,753 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d
+2025-09-11 11:05:05,753 - utils - INFO - 📊 입력 그래프 - 노드 수: 5, 엣지 수: 3
+2025-09-11 11:05:05,754 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-09-11 11:05:05,961 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d.png
+2025-09-11 11:05:05,961 - mms_extractor - INFO - ✅ DAG 추출 완료: dag_7624a7d9dc579604383d572d683a433d2c942896ac4eaab92562f8ebd1814b0d
+2025-09-11 11:05:05,961 - mms_extractor - INFO - 🕒 DAG 처리 시간: 18.385초
+2025-09-11 11:05:05,961 - mms_extractor - INFO - 📏 DAG 섹션 길이: 89자
+2025-09-11 11:05:05,961 - mms_extractor - INFO - 📄 DAG 내용 미리보기: (웹사이트:접속) -[접속하면]-> (베어유쿠폰:수령)
+(앱:접속) -[접속하면]-> (시크릿코드:입력)
+(시크릿코드:입력) -[입력하면]-> (식빵쿠폰:수령)...
+2025-09-11 11:05:05,961 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-11 11:05:05,961 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 2개
+2025-09-11 11:05:05,961 - __main__ - INFO - ✅ DAG 추출 성공 - 길이: 3자
+2025-09-11 11:05:05,961 - __main__ - INFO - DAG 내용 미리보기: ['(시크릿코드:입력) -[입력하면]-> (식빵쿠폰:수령)', '(앱:접속) -[접속하면]-> (시크릿코드:입력)', '(웹사이트:접속) -[접속하면]-> (베어유쿠폰:수령)']...
+2025-09-11 11:05:05,961 - __main__ - INFO - 추출 완료: 25.922초
+2025-09-11 11:05:05,962 - werkzeug - INFO - 127.0.0.1 - - [11/Sep/2025 11:05:05] "POST /extract HTTP/1.1" 200 -

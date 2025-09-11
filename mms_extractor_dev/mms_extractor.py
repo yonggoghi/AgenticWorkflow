@@ -1006,6 +1006,16 @@ class MMSExtractor:
                     else:
                         logger.warning(f"필수 컬럼 '{req_col}' 또는 '{req_col.upper()}'를 찾을 수 없습니다.")
                 
+                # ITEM_ALS -> item_nm_alias 매핑 처리
+                if 'ITEM_ALS' in available_columns:
+                    column_mapping['ITEM_ALS'] = 'item_nm_alias'
+                elif 'item_als' in available_columns:
+                    column_mapping['item_als'] = 'item_nm_alias'
+                elif 'item_nm_alias' in available_columns:
+                    column_mapping['item_nm_alias'] = 'item_nm_alias'
+                else:
+                    logger.info("ITEM_ALS/item_nm_alias 컬럼을 찾을 수 없습니다. 나중에 생성됩니다.")
+                
                 logger.info(f"컬럼 매핑: {column_mapping}")
                 
                 # 데이터 추출 및 중복 제거
@@ -1035,8 +1045,26 @@ class MMSExtractor:
                 if 'oper_dt_hms' not in self.item_pdf_all.columns:
                     self.item_pdf_all['oper_dt_hms'] = '20250101000000'
                 
+                # item_nm_alias 컬럼이 없으면 item_nm을 기본값으로 사용
+                if 'item_nm_alias' not in self.item_pdf_all.columns:
+                    logger.info("item_nm_alias 컬럼이 없어서 item_nm을 복사하여 생성합니다.")
+                    self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
+                else:
+                    # item_nm_alias가 비어있는 경우 item_nm으로 채우기
+                    null_count = self.item_pdf_all['item_nm_alias'].isnull().sum()
+                    if null_count > 0:
+                        logger.info(f"item_nm_alias에서 {null_count}개 null 값을 item_nm으로 채웁니다.")
+                        self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm_alias'].fillna(self.item_pdf_all['item_nm'])
+                
                 # 컬럼명이 이미 소문자로 되어 있으므로 추가 변환 불필요
                 logger.info(f"로컬 모드 최종 컬럼들: {list(self.item_pdf_all.columns)}")
+                
+                # item_nm_alias 컬럼 확인
+                if 'item_nm_alias' in self.item_pdf_all.columns:
+                    alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
+                    logger.info(f"item_nm_alias 샘플: {alias_sample}")
+                else:
+                    logger.error("item_nm_alias 컬럼 생성에 실패했습니다!")
                 
                 # 로컬 데이터 샘플 확인
                 if not self.item_pdf_all.empty:
@@ -1061,6 +1089,14 @@ class MMSExtractor:
             logger.info(f"=== 상품 정보 로드 최종 완료: {len(self.item_pdf_all)}개 상품 ===")
             logger.info(f"최종 데이터 스키마: {list(self.item_pdf_all.columns)}")
             logger.info(f"최종 데이터 타입: {self.item_pdf_all.dtypes.to_dict()}")
+            
+            # 중요 컬럼 존재 여부 최종 확인
+            critical_columns = ['item_nm', 'item_id', 'item_nm_alias']
+            missing_columns = [col for col in critical_columns if col not in self.item_pdf_all.columns]
+            if missing_columns:
+                logger.error(f"중요 컬럼이 누락되었습니다: {missing_columns}")
+            else:
+                logger.info("모든 중요 컬럼이 존재합니다.")
             
         except Exception as e:
             logger.error(f"상품 정보 로드 실패: {e}")
