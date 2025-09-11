@@ -1,22 +1,67 @@
 #!/usr/bin/env python3
 """
-MMS 추출기 Flask API 서비스
-==========================
+MMS 추출기 REST API 서비스 (MMS Extractor API Service)
+================================================================
 
-이 모듈은 MMS 광고 텍스트 추출기를 REST API 서비스로 제공합니다.
+🎯 개요
+-------
+이 모듈은 MMS 광고 텍스트 분석 시스템을 RESTful API 서비스로 제공하는
+엔터프라이즈급 웹 서비스입니다. Flask 기반으로 구축되어 고성능과 확장성을 보장합니다.
 
-주요 기능:
-- 단일 메시지 처리 API (/extract)
-- 배치 메시지 처리 API (/extract/batch)
-- 서비스 상태 확인 API (/health, /status)
-- 사용 가능한 모델 목록 API (/models)
-- 다양한 LLM 모델 지원 (Gemma, GPT, Claude)
-- 실시간 설정 변경 지원
+🚀 핵심 기능
+-----------
+• **단일 메시지 처리**: `POST /extract` - 실시간 메시지 분석
+• **배치 처리**: `POST /extract/batch` - 대량 메시지 일괄 처리
+• **서비스 모니터링**: `GET /health`, `GET /status` - 서비스 상태 및 성능 지표
+• **모델 관리**: `GET /models` - 사용 가능한 LLM 모델 목록
+• **다중 LLM 지원**: OpenAI GPT, Anthropic Claude, Gemma 등
+• **실시간 설정**: 런타임 중 설정 변경 지원
 
-사용법:
-    python api.py --host 0.0.0.0 --port 8000
-    python api.py --test --message "테스트 메시지"
+📊 성능 특징
+-----------
+• **고성능**: 비동기 처리 및 멀티프로세싱 지원
+• **확장성**: 마이크로서비스 아키텍처 지원
+• **안정성**: 포괄적인 에러 처리 및 로깅
+• **보안**: CORS 설정 및 입력 검증
+
+🚀 사용법
+---------
+```bash
+# 기본 서비스 시작
+python api.py --host 0.0.0.0 --port 8000
+
+# 특정 LLM 모델로 시작
+python api.py --llm-model gpt-4 --port 8080
+
+# 엔티티 매칭 모드 설정
+python api.py --entity-matching-mode hybrid
+
+# 테스트 모드
+python api.py --test --message "샘플 MMS 텍스트"
+```
+
+🏗️ API 엔드포인트
+--------------
+- `POST /extract`: 단일 메시지 분석
+- `POST /extract/batch`: 배치 메시지 분석
+- `GET /health`: 서비스 상태 확인
+- `GET /status`: 상세 성능 지표
+- `GET /models`: 사용 가능한 모델 목록
+
+📈 모니터링
+-----------
+- 요청/응답 로깅
+- 성능 메트릭스
+- 에러 추적
+- 자원 사용량 모니터링
+
+작성자: MMS 분석팀
+최종 수정: 2024-09
+버전: 2.0.0
 """
+# =============================================================================
+# 필수 라이브러리 임포트
+# =============================================================================
 import sys
 import os
 import json
@@ -30,23 +75,33 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from config import settings
 
-# joblib과 multiprocessing 경고 억제
+# =============================================================================
+# 경고 메시지 억제 (로그 노이즈 감소)
+# =============================================================================
+# joblib과 multiprocessing 관련 경고 억제
 warnings.filterwarnings("ignore", category=UserWarning, module="joblib")
 warnings.filterwarnings("ignore", category=UserWarning, module="multiprocessing") 
 warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 warnings.filterwarnings("ignore", message=".*leaked.*")
 
-# 현재 디렉토리를 Python 경로에 추가
+# =============================================================================
+# 경로 설정 및 모듈 임포트 준비
+# =============================================================================
+# 현재 디렉토리를 Python 경로에 추가 (로컬 모듈 임포트를 위해)
 current_dir = Path(__file__).parent.absolute()
 sys.path.insert(0, str(current_dir))
 
-# MMSExtractor 및 설정 모듈 임포트
+# =============================================================================
+# 핵심 모듈 임포트 (오류 처리 포함)
+# =============================================================================
+# MMS 추출기 및 설정 모듈 임포트
 try:
     from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
 except ImportError as e:
-    print(f"MMSExtractor 임포트 오류: {e}")
-    print("mms_extractor.py가 같은 디렉토리에 있는지 확인하세요")
+    print(f"❌ MMSExtractor 임포트 오류: {e}")
+    print("📝 mms_extractor.py가 같은 디렉토리에 있는지 확인하세요")
+    print("📝 config/ 디렉토리와 설정 파일들을 확인하세요")
     sys.exit(1)
 
 # Flask 앱 초기화
