@@ -1292,7 +1292,41 @@ class MMSExtractor:
                     sample_before = non_null_items.head(3).tolist()
                     logger.info(f"별칭 적용 전 상품명 샘플: {sample_before}")
             
-            self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
+            # 중요: 기존 item_nm_alias 데이터 보존 여부 확인
+            existing_alias_data = None
+            has_existing_alias = 'item_nm_alias' in self.item_pdf_all.columns and not self.item_pdf_all['item_nm_alias'].isnull().all()
+            
+            if has_existing_alias:
+                # 기존 ITEM_ALS 데이터가 있는 경우 보존
+                logger.info("기존 item_nm_alias 데이터를 발견했습니다. 별칭 규칙과 병합합니다.")
+                existing_alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
+                logger.info(f"기존 alias 샘플: {existing_alias_sample}")
+                
+                # 기존 alias 데이터를 별도 컴럼으로 보존
+                self.item_pdf_all['original_item_alias'] = self.item_pdf_all['item_nm_alias']
+                
+                # item_nm에 별칭 규칙을 적용한 다음 기존 alias와 병합
+                generated_aliases = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
+                
+                # 기존 alias와 생성된 alias를 병합
+                def combine_aliases(row):
+                    generated = row['generated_aliases'] if isinstance(row['generated_aliases'], list) else [row['generated_aliases']]
+                    original = [row['original_item_alias']] if pd.notna(row['original_item_alias']) else []
+                    combined = list(set(generated + original))  # 중복 제거
+                    return combined
+                
+                self.item_pdf_all['generated_aliases'] = generated_aliases
+                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all.apply(combine_aliases, axis=1)
+                
+                # 임시 컴럼 삭제
+                self.item_pdf_all = self.item_pdf_all.drop(['original_item_alias', 'generated_aliases'], axis=1)
+                
+                logger.info("기존 ITEM_ALS 데이터와 별칭 규칙이 성공적으로 병합되었습니다.")
+                
+            else:
+                # 기존 alias 데이터가 없는 경우 기존 방식 사용
+                logger.info("기존 item_nm_alias 데이터가 없어 item_nm에서 별칭을 생성합니다.")
+                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
             
             # explode 전후 크기 비교
             before_explode_size = len(self.item_pdf_all)
@@ -1313,10 +1347,13 @@ class MMSExtractor:
         except Exception as e:
             logger.warning(f"별칭 규칙 적용 실패: {e}")
             logger.warning(f"오류 상세: {traceback.format_exc()}")
-            # 원본 이름을 별칭으로 사용
-            if 'item_nm' in self.item_pdf_all.columns:
-                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
-                logger.info("원본 상품명을 별칭으로 사용합니다")
+            # 예외 발생 시 기존 item_nm_alias 데이터 보존 또는 원본 이름 사용
+            if 'item_nm_alias' not in self.item_pdf_all.columns or self.item_pdf_all['item_nm_alias'].isnull().all():
+                if 'item_nm' in self.item_pdf_all.columns:
+                    self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
+                    logger.info("예외 발생으로 원본 상품명을 별칭으로 사용합니다")
+            else:
+                logger.info("기존 item_nm_alias 데이터를 유지합니다")
 
     def _load_stop_words(self):
         """정지어 목록 로드"""
