@@ -991,24 +991,59 @@ class MMSExtractor:
                 logger.info(f"로컬 CSV에서 로드된 원본 데이터 크기: {item_pdf_raw.shape}")
                 logger.info(f"로컬 CSV 원본 컬럼들: {list(item_pdf_raw.columns)}")
                 
-                self.item_pdf_all = item_pdf_raw.drop_duplicates(['item_nm','item_id'])[['item_nm','item_id','item_desc','item_dmn']].copy()
-                logger.info(f"중복 제거 후 데이터 크기: {self.item_pdf_all.shape}")
+                # 스키마 호환성 처리: 대문자/소문자 컬럼명 모두 지원
+                available_columns = list(item_pdf_raw.columns)
                 
-                # 추가 컬럼들 생성
-                self.item_pdf_all['item_ctg'] = None
-                self.item_pdf_all['item_emb_vec'] = None
-                self.item_pdf_all['ofer_cd'] = self.item_pdf_all['item_id']
-                self.item_pdf_all['oper_dt_hms'] = '20250101000000'
+                # 필요한 컬럼명 매핑 (대문자 우선, 소문자 폴백)
+                column_mapping = {}
+                required_cols = ['item_nm', 'item_id', 'item_desc', 'item_dmn']
                 
-                # 컬럼명 소문자 변환
-                original_columns = list(self.item_pdf_all.columns)
-                self.item_pdf_all = self.item_pdf_all.rename(columns={c:c.lower() for c in self.item_pdf_all.columns})
-                logger.info(f"로컬 모드 컬럼명 변환: {dict(zip(original_columns, self.item_pdf_all.columns))}")
+                for req_col in required_cols:
+                    if req_col.upper() in available_columns:
+                        column_mapping[req_col.upper()] = req_col
+                    elif req_col in available_columns:
+                        column_mapping[req_col] = req_col
+                    else:
+                        logger.warning(f"필수 컬럼 '{req_col}' 또는 '{req_col.upper()}'를 찾을 수 없습니다.")
+                
+                logger.info(f"컬럼 매핑: {column_mapping}")
+                
+                # 데이터 추출 및 중복 제거
+                mapped_columns = list(column_mapping.keys())
+                if len(mapped_columns) >= 2:  # 최소 2개 컬럼은 있어야 함
+                    # 대문자 컬럼명으로 중복 제거
+                    dedup_cols = [col for col in ['ITEM_NM', 'ITEM_ID'] if col in available_columns]
+                    if not dedup_cols:  # 대문자가 없으르 소문자 사용
+                        dedup_cols = [col for col in ['item_nm', 'item_id'] if col in available_columns]
+                    
+                    self.item_pdf_all = item_pdf_raw.drop_duplicates(dedup_cols)[mapped_columns].copy()
+                    
+                    # 컬럼명을 소문자로 리네임
+                    self.item_pdf_all = self.item_pdf_all.rename(columns=column_mapping)
+                    logger.info(f"중복 제거 후 데이터 크기: {self.item_pdf_all.shape}")
+                else:
+                    logger.error(f"필수 컬럼을 충분히 찾을 수 없습니다. 사용 가능한 컬럼: {available_columns}")
+                    raise ValueError("필수 컬럼 부족")
+                
+                # 추가 컬럼들 생성 (DB 스키마와 호환성을 위해)
+                if 'item_ctg' not in self.item_pdf_all.columns:
+                    self.item_pdf_all['item_ctg'] = None
+                if 'item_emb_vec' not in self.item_pdf_all.columns:
+                    self.item_pdf_all['item_emb_vec'] = None
+                if 'ofer_cd' not in self.item_pdf_all.columns:
+                    self.item_pdf_all['ofer_cd'] = self.item_pdf_all['item_id']
+                if 'oper_dt_hms' not in self.item_pdf_all.columns:
+                    self.item_pdf_all['oper_dt_hms'] = '20250101000000'
+                
+                # 컬럼명이 이미 소문자로 되어 있으므로 추가 변환 불필요
+                logger.info(f"로컬 모드 최종 컬럼들: {list(self.item_pdf_all.columns)}")
                 
                 # 로컬 데이터 샘플 확인
                 if not self.item_pdf_all.empty:
                     sample_items = self.item_pdf_all['item_nm'].dropna().head(5).tolist()
                     logger.info(f"로컬 모드 상품명 샘플: {sample_items}")
+                    logger.info(f"로컬 모드 데이터 샘플 (5개 행):")
+                    logger.info(f"{self.item_pdf_all.head().to_dict('records')}")
                 
             elif self.offer_info_data_src == "db":
                 # 데이터베이스에서 로드
@@ -1024,6 +1059,8 @@ class MMSExtractor:
                 logger.info(f"도메인 필터링: {before_filter_size} -> {after_filter_size} (제외된 도메인: {excluded_domains})")
                 
             logger.info(f"=== 상품 정보 로드 최종 완료: {len(self.item_pdf_all)}개 상품 ===")
+            logger.info(f"최종 데이터 스키마: {list(self.item_pdf_all.columns)}")
+            logger.info(f"최종 데이터 타입: {self.item_pdf_all.dtypes.to_dict()}")
             
         except Exception as e:
             logger.error(f"상품 정보 로드 실패: {e}")
