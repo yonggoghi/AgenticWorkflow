@@ -52,7 +52,7 @@ class METADATAConfig:
     offer_data_path: str = os.getenv("OFFER_DATA_PATH", "./data/offer_master_data.csv")  # Main CSV file with item/offer information (DB schema compatible)
     
     # Organization/store information database
-    org_info_path: str = os.getenv("ORG_INFO_PATH", "./data/org_info_all_250605.csv")  # CSV file with organization/store details (Korean encoding)
+    org_info_path: str = os.getenv("ORG_INFO_PATH", "./data/offer_master_data.csv")  # CSV file with organization/store details (Korean encoding)
     
     # Program classification information
     pgm_info_path: str = os.getenv("PGM_INFO_PATH", "./data/pgm_tag_ext_250516.csv")  # CSV file with program classification tags and clues
@@ -120,6 +120,7 @@ class ProcessingConfig:
     
     # Similarity thresholds for matching
     similarity_threshold: float = 0.7  # Minimum similarity score for entity matching (0.0-1.0)
+    similarity_threshold_for_store: float = 0.4  # Minimum similarity score for entity matching (0.0-1.0)
     fuzzy_threshold: float = 0.4  # Minimum fuzzy matching score for initial filtering (0.0-1.0)
     high_similarity_threshold: float = 1.1  # Minimum high similarity score for final entity filtering (0.0-2.0)
     

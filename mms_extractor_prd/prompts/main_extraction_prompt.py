@@ -1,9 +1,41 @@
 """
-메인 정보 추출 프롬프트 템플릿
-광고 메시지에서 제목, 목적, 상품, 채널, 프로그램 정보를 추출하는 프롬프트
+메인 정보 추출 프롬프트 모듈 (Main Extraction Prompts)
+================================================================
+
+🎯 목적
+-------
+MMS 광고 메시지에서 구조화된 정보를 추출하기 위한 핵심 프롬프트를 정의합니다.
+LLM이 일관된 품질로 정확한 정보를 추출할 수 있도록 세심하게 설계된 프롬프트입니다.
+
+📊 추출 대상 정보
+--------------
+- **제목 (title)**: 광고의 메인 제목
+- **목적 (purpose)**: 광고의 주요 목적 (가입 유도, 혜택 안내 등)
+- **상품 (product)**: 광고된 상품/서비스와 기대 액션
+- **채널 (channel)**: 고객 접점 채널 (URL, 전화번호, 앱 링크 등)
+- **프로그램 (pgm)**: 관련 프로그램 카테고리
+
+🧠 사고 과정 (Chain of Thought)
+--------------------------
+모드별로 최적화된 사고 과정을 제공하여 LLM이 체계적으로 사고할 수 있도록 안내:
+- **LLM_MODE**: LLM 기반 엔티티 추출 시 사용
+- **DEFAULT_MODE**: 일반적인 추출 상황에서 사용
+- **NLP_MODE**: NLP 기반 전처리와 결합 시 사용
+
+📝 JSON 스키마
+-----------
+출력 데이터의 일관성과 유효성을 보장하기 위한 엄격한 JSON 스키마 정의
+
+작성자: MMS 분석팀
+최종 수정: 2024-09
+버전: 2.0.0
 """
 
-# 사고 과정 정의 (모드별)
+# =============================================================================
+# 사고 과정 정의 (Chain of Thought Templates)
+# =============================================================================
+
+# LLM 모드: LLM 기반 엔티티 추출과 결합 시 사용
 CHAIN_OF_THOUGHT_LLM_MODE = """
 1. Identify the advertisement's purpose first, using expressions as they appear in the original text.
 2. Extract ONLY explicitly mentioned product/service names from the text, using exact original expressions.
@@ -25,7 +57,11 @@ CHAIN_OF_THOUGHT_NLP_MODE = """
 4. Provide channel information considering the extracted product information.
 """
 
-# JSON 스키마 정의
+# =============================================================================
+# JSON 스키마 정의 (Structured Output Schema)
+# =============================================================================
+
+# 출력 데이터의 구조와 제약 조건을 엄격하게 정의
 JSON_SCHEMA = {
     "title": "Advertisement title, using the exact expressions as they appear in the original text.",
     "purpose": {
@@ -62,7 +98,7 @@ JSON_SCHEMA = {
                     "enum": ["URL", "전화번호", "앱", "대리점"],
                     "description": "Channel type."
                 },
-                "value": {"type": "string", "description": "Specific information for the channel."},
+                "value": {"type": "string", "description": "Specific information for the channel. 대리점인 경우 ***점으로 표시될 가능성이 높음"},
                 "action": {
                     "type": "string",
                     "enum": ["가입", "추가 정보", "문의", "수신", "수신 거부"],

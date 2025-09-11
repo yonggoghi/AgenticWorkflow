@@ -1159,7 +1159,7 @@ class MMSExtractor:
             logger.info("=== 데이터베이스에서 상품 정보 로드 시작 ===")
             
             with self._database_connection() as conn:
-                sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ROWNUM <= 1000000"
+                sql = "SELECT * FROM TCAM_RC_OFER_MST"
                 logger.info(f"실행할 SQL: {sql}")
                 
                 self.item_pdf_all = pd.read_sql(sql, conn)
@@ -1446,12 +1446,85 @@ class MMSExtractor:
     def _load_organization_data(self):
         """조직/매장 정보 로드"""
         try:
-            self.org_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'org_info_path', './data/org_info.csv'), encoding='cp949')
-            self.org_pdf['sub_org_cd'] = self.org_pdf['sub_org_cd'].apply(lambda x: str(x).zfill(4))
-            logger.info(f"조직 정보 로드 완료: {len(self.org_pdf)}개 조직")
+            logger.info(f"=== 조직 정보 로드 시작 (모드: {self.offer_info_data_src}) ===")
+            
+            if self.offer_info_data_src == "local":
+                # 로컬 CSV 파일에서 로드
+                logger.info("로컬 CSV 파일에서 조직 정보 로드 중...")
+                csv_path = getattr(METADATA_CONFIG, 'org_info_path', './data/org_info_all_250605.csv')
+                logger.info(f"CSV 파일 경로: {csv_path}")
+                
+                org_pdf_raw = pd.read_csv(csv_path)
+                logger.info(f"로컬 CSV에서 로드된 원본 조직 데이터 크기: {org_pdf_raw.shape}")
+                logger.info(f"로컬 CSV 원본 컬럼들: {list(org_pdf_raw.columns)}")
+                
+                # ITEM_DMN='R' 조건으로 필터링
+                if 'ITEM_DMN' in org_pdf_raw.columns:
+                    self.org_pdf = org_pdf_raw.query("ITEM_DMN=='R'").copy()
+                elif 'item_dmn' in org_pdf_raw.columns:
+                    self.org_pdf = org_pdf_raw.query("item_dmn=='R'").copy()
+                else:
+                    logger.warning("ITEM_DMN/item_dmn 컬럼을 찾을 수 없어 전체 데이터를 사용합니다.")
+                    self.org_pdf = org_pdf_raw.copy()
+                
+                # 컬럼명을 소문자로 리네임
+                self.org_pdf = self.org_pdf.rename(columns={c: c.lower() for c in self.org_pdf.columns})
+                
+                logger.info(f"로컬 모드: ITEM_DMN='R' 필터링 후 데이터 크기: {self.org_pdf.shape}")
+                
+            elif self.offer_info_data_src == "db":
+                # 데이터베이스에서 로드
+                logger.info("데이터베이스에서 조직 정보 로드 중...")
+                self._load_org_from_database()
+            
+            # 데이터 샘플 확인
+            if not self.org_pdf.empty:
+                sample_orgs = self.org_pdf.head(3).to_dict('records')
+                logger.info(f"조직 데이터 샘플 (3개 행): {sample_orgs}")
+            
+            logger.info(f"=== 조직 정보 로드 최종 완료: {len(self.org_pdf)}개 조직 ===")
+            logger.info(f"최종 조직 데이터 스키마: {list(self.org_pdf.columns)}")
+            
         except Exception as e:
-            logger.warning(f"조직 정보 로드 실패: {e}")
-            self.org_pdf = pd.DataFrame(columns=['org_nm', 'org_cd', 'sub_org_cd', 'org_abbr_nm'])
+            logger.error(f"조직 정보 로드 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
+            # 빈 DataFrame으로 fallback
+            self.org_pdf = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
+            logger.warning("빈 조직 DataFrame으로 fallback 설정됨")
+
+    def _load_org_from_database(self):
+        """데이터베이스에서 조직 정보 로드 (ITEM_DMN='R')"""
+        try:
+            logger.info("데이터베이스 연결 시도 중...")
+            
+            with self._database_connection() as conn:
+                sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ITEM_DMN='R'"
+                logger.info(f"실행할 SQL: {sql}")
+                
+                self.org_pdf = pd.read_sql(sql, conn)
+                logger.info(f"DB에서 로드된 조직 데이터 크기: {self.org_pdf.shape}")
+                logger.info(f"DB 조직 데이터 컬럼들: {list(self.org_pdf.columns)}")
+                
+                # 컬럼명을 소문자로 변환
+                self.org_pdf = self.org_pdf.rename(columns={c: c.lower() for c in self.org_pdf.columns})
+                logger.info(f"DB 모드 조직 컬럼명 소문자 변환 완료: {list(self.org_pdf.columns)}")
+                
+                # 데이터 샘플 확인
+                if not self.org_pdf.empty:
+                    sample_orgs = self.org_pdf['item_nm'].dropna().head(5).tolist()
+                    logger.info(f"DB 모드 조직명 샘플: {sample_orgs}")
+                
+                logger.info(f"DB에서 조직 데이터 로드 성공: {len(self.org_pdf)}개 조직")
+                
+        except Exception as e:
+            logger.error(f"DB에서 조직 데이터 로드 실패: {e}")
+            logger.error(f"DB 조직 로드 오류 상세: {traceback.format_exc()}")
+            
+            # 빈 DataFrame으로 fallback
+            self.org_pdf = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
+            logger.warning("조직 데이터 DB 로드 실패로 빈 DataFrame 사용")
+            
+            raise
 
     def _store_prompt_for_preview(self, prompt: str, prompt_type: str):
         """프롬프트를 미리보기용으로 저장"""
@@ -1973,10 +2046,10 @@ class MMSExtractor:
             org_pdf_cand = safe_execute(
                 parallel_fuzzy_similarity,
                 [preprocess_text(store_name.lower())],
-                self.org_pdf['org_abbr_nm'].unique(),
+                self.org_pdf['item_nm'].unique(),
                 threshold=0.5,
                 text_col_nm='org_nm_in_msg',
-                item_col_nm='org_abbr_nm',
+                item_col_nm='item_nm',
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
                 default_return=pd.DataFrame()
@@ -1986,15 +2059,15 @@ class MMSExtractor:
                 return []
 
             org_pdf_cand = org_pdf_cand.drop('org_nm_in_msg', axis=1)
-            org_pdf_cand = self.org_pdf.merge(org_pdf_cand, on=['org_abbr_nm'])
+            org_pdf_cand = self.org_pdf.merge(org_pdf_cand, on=['item_nm'])
             org_pdf_cand['sim'] = org_pdf_cand.apply(
-                lambda x: combined_sequence_similarity(store_name, x['org_nm'])[0], axis=1
+                lambda x: combined_sequence_similarity(store_name, x['item_nm'])[0], axis=1
             ).round(5)
             
             # 대리점 코드('D'로 시작) 우선 검색
-            similarity_threshold = getattr(PROCESSING_CONFIG, 'similarity_threshold', 0.2)
+            similarity_threshold = getattr(PROCESSING_CONFIG, 'similarity_threshold_for_store', 0.2)
             org_pdf_tmp = org_pdf_cand.query(
-                "org_cd.str.startswith('D') & sim >= @similarity_threshold", engine='python'
+                "sim >= @similarity_threshold", engine='python'
             ).sort_values('sim', ascending=False)
             
             if org_pdf_tmp.empty:
@@ -2004,8 +2077,8 @@ class MMSExtractor:
             if not org_pdf_tmp.empty:
                 # 최고 순위 조직들의 정보 추출
                 org_pdf_tmp['rank'] = org_pdf_tmp['sim'].rank(method='dense', ascending=False)
-                org_pdf_tmp['org_cd_full'] = org_pdf_tmp.apply(lambda x: x['org_cd'] + x['sub_org_cd'], axis=1)
-                org_info = org_pdf_tmp.query("rank == 1").groupby('org_nm')['org_cd_full'].apply(list).reset_index(name='org_cd').to_dict('records')
+                org_pdf_tmp = org_pdf_tmp.rename(columns={'item_id':'org_cd','item_nm':'org_nm'})
+                org_info = org_pdf_tmp.query("rank == 1").groupby('org_nm')['org_cd'].apply(list).reset_index(name='org_cd').to_dict('records')
                 return org_info
             else:
                 return []
@@ -2750,8 +2823,31 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-            '[T 우주] 넷플릭스와 웨이브를 월 9,900원에! \n(광고)[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네! __#04 고객님,_넷플릭스와 웨이브 둘 다 보고 싶었지만, 가격 때문에 망설이셨다면 지금이 바로 기회! __오직 T 우주에서만, _2개월 동안 월 9,900원에 넷플릭스와 웨이브를 모두 즐기실 수 있습니다.__8월 31일까지만 드리는 혜택이니, 지금 바로 가입해 보세요! __■ 우주패스 Netflix 런칭 프로모션 _- 기간 : 2024년 8월 31일(토)까지_- 혜택 : 우주패스 Netflix(광고형 스탠다드)를 2개월 동안 월 9,900원에 이용 가능한 쿠폰 제공_▶ 프로모션 자세히 보기: http://t-mms.kr/jAs/#74__■ 우주패스 Netflix(월 12,000원)  _- 기본 혜택 : Netflix 광고형 스탠다드 멤버십_- 추가 혜택 : Wavve 콘텐츠 팩 _* 추가 요금을 내시면 Netflix 스탠다드와 프리미엄 멤버십 상품으로 가입 가능합니다.  __■ 유의 사항_-  프로모션 쿠폰은 1인당 1회 다운로드 가능합니다. _-  쿠폰 할인 기간이 끝나면 정상 이용금액으로 자동 결제 됩니다. __■ 문의: T 우주 고객센터 (1505, 무료)__나만의 구독 유니버스, T 우주 __무료 수신거부 1504'
-            """
+[Web발신]
+(광고)[SKT (을지로점)] 신용욱 단골고객님
+9월은 SKT 직영점에서 혜택받9, 구매하9
+
+【갤럭시 마지막 특가】
+① 와이드8 ▶기기값 5만원
+② A36 ▶기기값 10만원
+③ S24 FE ▶기기값 20만원
+☞ 제휴카드 사용 시 최대 72만원 추가할인
+
+【SK로 통신사 이동 시】
+① 쓰던 폰 그대로 이동시 상품권 20만원
+② 인터넷+TV 가입 최대 70만원
+
+★9/9 까지 선착순 행사 (조건에 따라 할인금액 상이)
+
+♥아이폰17 사전예약♥
+고용량 전색상 바로 개통가능☞ https://naver.me/FTM8rdfj
+
+☞ 을지로입구역 5번출구 하나은행 명동사옥 맞은편
+https://naver.me/GipIR3Lg
+☎ 0507-1399-6011
+
+(무료ARS)수신거부 및 단골해지 : 
+080-801-0011            """
             
             # 단일 메시지 처리 (멀티스레드)
             logger.info("단일 메시지 처리 시작 (멀티스레드)")
