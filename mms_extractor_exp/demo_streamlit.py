@@ -1158,7 +1158,7 @@ def display_single_processing_ui(api_status: bool, args):
                             
                             # MongoDB에 저장 (message_id는 UUID로 자동 생성)
                             saved_id = save_to_mongodb(message, result, extraction_prompts, 
-                                                     worker_id="SKT1110566", message_id=None)
+                                                     user_id="SKT1110566", message_id=None)
                             
                             if saved_id:
                                 st.success("✅ 정보 추출이 완료되었습니다!")
