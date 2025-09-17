@@ -107,29 +107,54 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, save_to_mongod
     
     try:
         logger.debug("MongoDB 저장 시작...")
-        # 프롬프트 정보 구성
+        
+        # 실제 프롬프트 정보를 result에서 추출 시도
+        actual_prompts = result.get('prompts', {})
+        
+        # 디버깅: result 키들과 prompts 확인
+        logger.debug(f"result 키들: {list(result.keys())}")
+        logger.debug(f"actual_prompts: {actual_prompts}")
+        logger.debug(f"actual_prompts 타입: {type(actual_prompts)}")
+        
+        # 프롬프트 정보 구성 (실제 사용된 프롬프트 우선 사용)
+        prompts_data = {}
+        
+        if actual_prompts:
+            logger.debug(f"프롬프트 정보 발견: {list(actual_prompts.keys())}")
+            # result에 프롬프트 정보가 있는 경우 사용
+            for key, prompt_content in actual_prompts.items():
+                logger.debug(f"프롬프트 처리: {key}, 타입: {type(prompt_content)}")
+                if isinstance(prompt_content, dict):
+                    # 이미 구조화된 프롬프트 정보인 경우
+                    prompts_data[key] = {
+                        'title': prompt_content.get('title', f'{key.replace("_", " ").title()} (배치)'),
+                        'description': prompt_content.get('description', f'배치 처리에서 사용된 {key} 프롬프트'),
+                        'content': prompt_content.get('content', ''),
+                        'length': prompt_content.get('length', len(prompt_content.get('content', '')))
+                    }
+                else:
+                    # 문자열 프롬프트인 경우
+                    prompts_data[key] = {
+                        'title': f'{key.replace("_", " ").title()} (배치)',
+                        'description': f'배치 처리에서 사용된 {key} 프롬프트',
+                        'content': prompt_content if isinstance(prompt_content, str) else str(prompt_content),
+                        'length': len(prompt_content) if isinstance(prompt_content, str) else len(str(prompt_content))
+                    }
+        else:
+            logger.debug("프롬프트 정보가 없음 - 기본값 사용")
+            # 프롬프트 정보가 없는 경우 기본값 사용 (배치 처리 특성 반영)
+            prompts_data = {
+                'batch_processing_info': {
+                    'title': '배치 처리 정보',
+                    'description': '배치 처리에서 사용된 설정 정보',
+                    'content': f'배치 처리 모드로 실행됨. 설정: {extractor_kwargs or {}}',
+                    'length': len(str(extractor_kwargs or {}))
+                }
+            }
+        
         extraction_prompts = {
             'success': True,
-            'prompts': {
-                'main_extraction_prompt': {
-                    'title': '메인 정보 추출 프롬프트 (배치)',
-                    'description': 'MMS 메시지에서 기본 정보 추출',
-                    'content': '배치 처리에서 메시지의 제목, 목적, 상품 정보를 추출합니다.',
-                    'length': 100
-                },
-                'entity_extraction_prompt': {
-                    'title': '엔티티 추출 프롬프트 (배치)',
-                    'description': '개체명 인식 및 분류',
-                    'content': '배치 처리에서 메시지의 인물, 장소, 조직 등의 개체명을 추출합니다.',
-                    'length': 100
-                },
-                'dag_extraction_prompt': {
-                    'title': 'DAG 관계 추출 프롬프트 (배치)',
-                    'description': '오퍼 관계 그래프 생성',
-                    'content': '배치 처리에서 추출된 정보들 간의 관계를 DAG 형태로 구성합니다.',
-                    'length': 100
-                }
-            },
+            'prompts': prompts_data,
             'settings': extractor_kwargs or {}
         }
         
@@ -147,7 +172,7 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, save_to_mongod
         # MongoDB에 저장
         from mongodb_utils import save_to_mongodb as mongodb_save_to_mongodb
         saved_id = mongodb_save_to_mongodb(message, extraction_result, extraction_prompts, 
-                                         worker_id="SKT1110566", message_id=message_id)
+                                         user_id="SKT1110566", message_id=message_id)
         
         if saved_id:
             logger.debug(f"MongoDB 저장 성공: {saved_id[:8]}...")

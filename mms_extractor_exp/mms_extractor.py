@@ -2471,6 +2471,12 @@ class MMSExtractor:
             logger.info(f"채널 수: {len(final_result.get('channel', []))}개")
             logger.info(f"프로그램 수: {len(final_result.get('pgm', []))}개")
             
+            # 프롬프트 정보 추가 (MongoDB 저장용)
+            stored_prompts = get_stored_prompts_from_thread()
+            if stored_prompts:
+                final_result['prompts'] = stored_prompts
+                logger.debug(f"프롬프트 정보가 결과에 추가됨: {list(stored_prompts.keys())}")
+            
             return final_result
             
         except Exception as e:
@@ -2739,7 +2745,7 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
         extract_dag: DAG 추출 여부
     
     Returns:
-        dict: 처리 결과
+        dict: 처리 결과 (프롬프트 정보 포함)
     """
     try:
         logger.info(f"워커 프로세스에서 메시지 처리 시작: {message[:50]}...")
@@ -2865,6 +2871,16 @@ def make_entity_dag(msg: str, llm_model, save_dag_image=True):
     return extract_dag_result
 
 
+def get_stored_prompts_from_thread():
+    """현재 스레드에서 저장된 프롬프트 정보를 가져오는 함수"""
+    import threading
+    current_thread = threading.current_thread()
+    
+    if hasattr(current_thread, 'stored_prompts'):
+        return current_thread.stored_prompts
+    else:
+        return {}
+
 def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extractor=None):
     """MongoDB 저장이 활성화된 경우 결과를 저장하는 도우미 함수"""
     if not args.save_to_mongodb:
@@ -2875,29 +2891,33 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
         return None
     
     try:
-        # 프롬프트 정보 구성 (extractor에서 가져오기)
-        extraction_prompts = {
-            'success': True,
-            'prompts': {
+        # 실제 저장된 프롬프트 정보 가져오기
+        stored_prompts = get_stored_prompts_from_thread()
+        
+        # 프롬프트 정보 구성 (실제 저장된 프롬프트 사용)
+        prompts_data = {}
+        for key, prompt_data in stored_prompts.items():
+            prompts_data[key] = {
+                'title': prompt_data.get('title', f'{key} 프롬프트'),
+                'description': prompt_data.get('description', f'{key} 처리를 위한 프롬프트'),
+                'content': prompt_data.get('content', ''),
+                'length': len(prompt_data.get('content', ''))
+            }
+        
+        # 저장된 프롬프트가 없는 경우 기본값 사용
+        if not prompts_data:
+            prompts_data = {
                 'main_extraction_prompt': {
                     'title': '메인 정보 추출 프롬프트',
                     'description': 'MMS 메시지에서 기본 정보 추출',
-                    'content': '메시지에서 제목, 목적, 상품 정보를 추출합니다.',
-                    'length': 100
-                },
-                'entity_extraction_prompt': {
-                    'title': '엔티티 추출 프롬프트',
-                    'description': '개체명 인식 및 분류',
-                    'content': '메시지에서 인물, 장소, 조직 등의 개체명을 추출합니다.',
-                    'length': 100
-                },
-                'dag_extraction_prompt': {
-                    'title': 'DAG 관계 추출 프롬프트',
-                    'description': '오퍼 관계 그래프 생성',
-                    'content': '추출된 정보들 간의 관계를 DAG 형태로 구성합니다.',
-                    'length': 100
+                    'content': '실제 프롬프트 내용이 저장되지 않았습니다.',
+                    'length': 0
                 }
-            },
+            }
+        
+        extraction_prompts = {
+            'success': True,
+            'prompts': prompts_data,
             'settings': {
                 'llm_model': args.llm_model,
                 'offer_data_source': args.offer_data_source,
@@ -2920,7 +2940,7 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
         
         # MongoDB에 저장 (message_id는 UUID로 자동 생성)
         saved_id = save_to_mongodb(message, extraction_result, extraction_prompts, 
-                                 worker_id="SKT1110566", message_id=None)
+                                 user_id="SKT1110566", message_id=None)
         
         if saved_id:
             print(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")

@@ -116,6 +116,14 @@ if __name__ == '__main__':
     import sys
     from pathlib import Path
     
+    # MongoDB 유틸리티 임포트 (선택적)
+    try:
+        from mongodb_utils import save_to_mongodb, test_mongodb_connection
+        MONGODB_AVAILABLE = True
+    except ImportError:
+        MONGODB_AVAILABLE = False
+        print("⚠️ MongoDB 유틸리티를 찾을 수 없습니다. --save-to-mongodb 옵션이 비활성화됩니다.")
+    
     # 로그 디렉토리 생성
     log_dir = Path(__file__).parent / 'logs'
     log_dir.mkdir(exist_ok=True)
@@ -2463,6 +2471,12 @@ class MMSExtractor:
             logger.info(f"채널 수: {len(final_result.get('channel', []))}개")
             logger.info(f"프로그램 수: {len(final_result.get('pgm', []))}개")
             
+            # 프롬프트 정보 추가 (MongoDB 저장용)
+            stored_prompts = get_stored_prompts_from_thread()
+            if stored_prompts:
+                final_result['prompts'] = stored_prompts
+                logger.debug(f"프롬프트 정보가 결과에 추가됨: {list(stored_prompts.keys())}")
+            
             return final_result
             
         except Exception as e:
@@ -2731,7 +2745,7 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
         extract_dag: DAG 추출 여부
     
     Returns:
-        dict: 처리 결과
+        dict: 처리 결과 (프롬프트 정보 포함)
     """
     try:
         logger.info(f"워커 프로세스에서 메시지 처리 시작: {message[:50]}...")
@@ -2857,6 +2871,88 @@ def make_entity_dag(msg: str, llm_model, save_dag_image=True):
     return extract_dag_result
 
 
+def get_stored_prompts_from_thread():
+    """현재 스레드에서 저장된 프롬프트 정보를 가져오는 함수"""
+    import threading
+    current_thread = threading.current_thread()
+    
+    if hasattr(current_thread, 'stored_prompts'):
+        return current_thread.stored_prompts
+    else:
+        return {}
+
+def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extractor=None):
+    """MongoDB 저장이 활성화된 경우 결과를 저장하는 도우미 함수"""
+    if not args.save_to_mongodb:
+        return None
+        
+    if not MONGODB_AVAILABLE:
+        print("❌ MongoDB 저장이 요청되었지만 mongodb_utils를 찾을 수 없습니다.")
+        return None
+    
+    try:
+        # 실제 저장된 프롬프트 정보 가져오기
+        stored_prompts = get_stored_prompts_from_thread()
+        
+        # 프롬프트 정보 구성 (실제 저장된 프롬프트 사용)
+        prompts_data = {}
+        for key, prompt_data in stored_prompts.items():
+            prompts_data[key] = {
+                'title': prompt_data.get('title', f'{key} 프롬프트'),
+                'description': prompt_data.get('description', f'{key} 처리를 위한 프롬프트'),
+                'content': prompt_data.get('content', ''),
+                'length': len(prompt_data.get('content', ''))
+            }
+        
+        # 저장된 프롬프트가 없는 경우 기본값 사용
+        if not prompts_data:
+            prompts_data = {
+                'main_extraction_prompt': {
+                    'title': '메인 정보 추출 프롬프트',
+                    'description': 'MMS 메시지에서 기본 정보 추출',
+                    'content': '실제 프롬프트 내용이 저장되지 않았습니다.',
+                    'length': 0
+                }
+            }
+        
+        extraction_prompts = {
+            'success': True,
+            'prompts': prompts_data,
+            'settings': {
+                'llm_model': args.llm_model,
+                'offer_data_source': args.offer_data_source,
+                'product_info_extraction_mode': args.product_info_extraction_mode,
+                'entity_matching_mode': args.entity_matching_mode,
+                'extract_entity_dag': args.extract_entity_dag
+            }
+        }
+        
+        # 추출 결과를 MongoDB 형식으로 구성
+        extraction_result = {
+            'success': not bool(result.get('error')),
+            'result': result,
+            'metadata': {
+                'processing_time_seconds': result.get('processing_time', 0),
+                'processing_mode': 'single',
+                'model_used': args.llm_model
+            }
+        }
+        
+        # MongoDB에 저장 (message_id는 UUID로 자동 생성)
+        saved_id = save_to_mongodb(message, extraction_result, extraction_prompts, 
+                                 user_id="SKT1110566", message_id=None)
+        
+        if saved_id:
+            print(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")
+            return saved_id
+        else:
+            print("⚠️ MongoDB 저장에 실패했습니다.")
+            return None
+            
+    except Exception as e:
+        print(f"❌ MongoDB 저장 중 오류 발생: {str(e)}")
+        return None
+
 def main():
     """
     커맨드라인에서 실행할 때의 메인 함수
@@ -2871,6 +2967,9 @@ def main():
     
     # 데이터베이스 모드로 배치 처리
     python mms_extractor.py --batch-file messages.txt --offer-data-source db --max-workers 8
+    
+    # MongoDB에 결과 저장
+    python mms_extractor.py --message "광고 메시지" --save-to-mongodb --extract-entity-dag
     """
     import argparse
     
@@ -2889,11 +2988,31 @@ def main():
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
+    parser.add_argument('--save-to-mongodb', action='store_true', default=False, 
+                       help='추출 결과를 MongoDB에 저장 (mongodb_utils.py 필요)')
+    parser.add_argument('--test-mongodb', action='store_true', default=False,
+                       help='MongoDB 연결 테스트만 수행하고 종료')
 
     args = parser.parse_args()
     
     # 로그 레벨 설정
     logging.getLogger().setLevel(getattr(logging, args.log_level))
+    
+    # MongoDB 연결 테스트만 수행하는 경우
+    if args.test_mongodb:
+        if not MONGODB_AVAILABLE:
+            print("❌ MongoDB 유틸리티를 찾을 수 없습니다.")
+            print("mongodb_utils.py 파일과 pymongo 패키지를 확인하세요.")
+            exit(1)
+        
+        print("🔌 MongoDB 연결 테스트 중...")
+        if test_mongodb_connection():
+            print("✅ MongoDB 연결 성공!")
+            exit(0)
+        else:
+            print("❌ MongoDB 연결 실패!")
+            print("MongoDB 서버가 실행 중인지 확인하세요.")
+            exit(1)
     
     try:
                 # 추출기 초기화
@@ -2923,6 +3042,17 @@ def main():
                     extract_dag=args.extract_entity_dag,
                     max_workers=args.max_workers
                 )
+                
+                # MongoDB 저장 (배치 처리)
+                if args.save_to_mongodb:
+                    print("\n📄 MongoDB 저장 중...")
+                    saved_count = 0
+                    for i, result in enumerate(results):
+                        if i < len(messages):  # 메시지가 있는 경우만
+                            saved_id = save_result_to_mongodb_if_enabled(messages[i], result, args, extractor)
+                            if saved_id:
+                                saved_count += 1
+                    print(f"📄 MongoDB 저장 완료: {saved_count}/{len(results)}개")
                 
                 # 배치 결과 출력
                 print("\n" + "="*50)
@@ -2989,6 +3119,13 @@ https://naver.me/GipIR3Lg
             # 단일 메시지 처리 (멀티스레드)
             logger.info("단일 메시지 처리 시작 (멀티스레드)")
             result = process_message_with_dag(extractor, test_message, args.extract_entity_dag)
+        
+            # MongoDB 저장 (단일 메시지)
+            if args.save_to_mongodb:
+                print("\n📄 MongoDB 저장 중...")
+                saved_id = save_result_to_mongodb_if_enabled(test_message, result, args, extractor)
+                if saved_id:
+                    print("📄 MongoDB 저장 완료!")
         
             print("\n" + "="*50)
             print("🎯 최종 추출된 정보")
