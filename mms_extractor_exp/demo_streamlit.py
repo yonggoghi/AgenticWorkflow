@@ -395,16 +395,15 @@ def display_results(result: Dict[str, Any]):
     with tab1:
         st.subheader("추출 정보")
         
-        # 추출된 데이터를 표 형태로 표시 (API 응답 구조에 맞게 수정)
+        # EXTRACTED_RESULT만 표시 (raw_result는 제외)
         extracted_data = None
         
-        # 'result' 키에서 추출된 데이터 찾기
-        if 'result' in result:
+        # 'extracted_result' 키에서 추출된 데이터 찾기
+        if 'extracted_result' in result:
+            extracted_data = result['extracted_result']
+        # 하위 호환성을 위해 'result' 키도 확인 (단, raw_result가 없는 경우만)
+        elif 'result' in result and 'raw_result' not in result:
             extracted_data = result['result']
-            
-        # 'extracted_data' 키에서도 확인 (하위 호환성)
-        elif 'extracted_data' in result:
-            extracted_data = result['extracted_data']
         
         if extracted_data:
             # 딕셔너리인 경우
@@ -607,7 +606,13 @@ def display_results(result: Dict[str, Any]):
     
     with tab2:
         st.subheader("추출 JSON")
-        st.json(result)
+        # EXTRACTED_RESULT만 JSON으로 표시
+        if 'extracted_result' in result:
+            st.json(result['extracted_result'])
+        elif 'result' in result and 'raw_result' not in result:
+            st.json(result['result'])
+        else:
+            st.json(result)
     
     with tab3:
         st.subheader("DAG 이미지")
