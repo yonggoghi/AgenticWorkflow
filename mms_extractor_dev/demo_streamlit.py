@@ -1156,8 +1156,21 @@ def display_single_processing_ui(api_status: bool, args):
                             # 프롬프트 정보 가져오기
                             extraction_prompts = st.session_state.get('extraction_prompts', {})
                             
+                            # 추출 결과와 raw_result 분리
+                            extraction_result = {
+                                'success': result.get('success', True),
+                                'result': result.get('extracted_result', result),
+                                'metadata': result.get('metadata', {})
+                            }
+                            
+                            raw_result = {
+                                'success': result.get('success', True),
+                                'result': result.get('raw_result', {}),
+                                'metadata': result.get('metadata', {})
+                            }
+                            
                             # MongoDB에 저장 (message_id는 UUID로 자동 생성)
-                            saved_id = save_to_mongodb(message, result, extraction_prompts, 
+                            saved_id = save_to_mongodb(message, extraction_result, raw_result, extraction_prompts, 
                                                      user_id="SKT1110566", message_id=None)
                             
                             if saved_id:
