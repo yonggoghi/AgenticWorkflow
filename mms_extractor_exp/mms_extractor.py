@@ -2749,21 +2749,29 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
     """
     try:
         logger.info(f"워커 프로세스에서 메시지 처리 시작: {message[:50]}...")
+
+        # 1. 메인 추출
+        result = extractor.process_message(message)
+        dag_list = []
         
         if extract_dag:
             # 순차적 처리로 변경 (프롬프트 캡처를 위해)
             # 멀티스레드를 사용하면 스레드 로컬 저장소가 분리되어 프롬프트 캡처가 안됨
             logger.info("순차적 처리로 메인 추출 및 DAG 추출 수행")
             
-            # 1. 메인 추출
-            result = extractor.process_message(message)
-            
             # 2. DAG 추출
             dag_result = make_entity_dag(message, extractor.llm_model)
-            result['entity_dag'] = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
-        else:
-            result = extractor.process_message(message)
-            result['entity_dag'] = []
+            dag_list = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
+
+        extracted_result = result.get('extracted_result', {})
+        extracted_result['entity_dag'] = dag_list
+        result['extracted_result'] = extracted_result
+
+        raw_result = result.get('raw_result', {})
+        raw_result['entity_dag'] = dag_list
+        result['raw_result'] = raw_result
+
+        result['error'] = ""
         
         logger.info(f"워커 프로세스에서 메시지 처리 완료")
         return result
@@ -3124,11 +3132,14 @@ https://naver.me/GipIR3Lg
 ☎ 0507-1399-6011
 
 (무료ARS)수신거부 및 단골해지 : 
-080-801-0011            """
+080-801-0011            
+"""
             
             # 단일 메시지 처리 (멀티스레드)
             logger.info("단일 메시지 처리 시작 (멀티스레드)")
             result = process_message_with_dag(extractor, test_message, args.extract_entity_dag)
+            
+
         
             # MongoDB 저장 (단일 메시지)
             if args.save_to_mongodb:

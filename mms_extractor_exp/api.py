@@ -415,9 +415,9 @@ def extract_message():
         # DAG 추출 여부에 따라 병렬 처리 또는 단일 처리
         if extract_entity_dag:
             logger.info("DAG 추출과 함께 순차 처리 시작")
-            result = process_message_with_dag(extractor, message, extract_dag=True)
+            result = process_message_with_dag(extractor, message, extract_dag=True)['extracted_result']
         else:
-            result = extractor.process_message(message)
+            result = extractor.process_message(message)['extracted_result']
             result['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
             
         processing_time = time.time() - start_time
