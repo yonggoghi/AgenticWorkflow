@@ -395,15 +395,16 @@ def display_results(result: Dict[str, Any]):
     with tab1:
         st.subheader("추출 정보")
         
-        # EXTRACTED_RESULT만 표시 (raw_result는 제외)
+        # 추출된 데이터를 표 형태로 표시 (API 응답 구조에 맞게 수정)
         extracted_data = None
         
-        # 'extracted_result' 키에서 추출된 데이터 찾기
-        if 'extracted_result' in result:
-            extracted_data = result['extracted_result']
-        # 하위 호환성을 위해 'result' 키도 확인 (단, raw_result가 없는 경우만)
-        elif 'result' in result and 'raw_result' not in result:
+        # 'result' 키에서 추출된 데이터 찾기
+        if 'result' in result:
             extracted_data = result['result']
+            
+        # 'extracted_data' 키에서도 확인 (하위 호환성)
+        elif 'extracted_data' in result:
+            extracted_data = result['extracted_data']
         
         if extracted_data:
             # 딕셔너리인 경우
@@ -606,13 +607,7 @@ def display_results(result: Dict[str, Any]):
     
     with tab2:
         st.subheader("추출 JSON")
-        # EXTRACTED_RESULT만 JSON으로 표시
-        if 'extracted_result' in result:
-            st.json(result['extracted_result'])
-        elif 'result' in result and 'raw_result' not in result:
-            st.json(result['result'])
-        else:
-            st.json(result)
+        st.json(result)
     
     with tab3:
         st.subheader("DAG 이미지")
@@ -1142,7 +1137,7 @@ def display_single_processing_ui(api_status: bool, args):
                         progress_bar.progress(0)
                 
                 if result:
-                    st.session_state['extraction_result'] = result
+                    st.session_state['extraction_result'] = result['extracted_result']
                     # 추출 결과에 프롬프트가 포함되어 있으면 사용, 없으면 별도 API 호출
                     if 'prompts' in result and result['prompts'].get('success'):
                         st.session_state['extraction_prompts'] = result['prompts']
@@ -1164,7 +1159,7 @@ def display_single_processing_ui(api_status: bool, args):
                             # 추출 결과와 raw_result 분리
                             extraction_result = {
                                 'success': result.get('success', True),
-                                'result': result.get('extracted_result', result),
+                                'result': result.get('extracted_result', result.get('raw_result', {})),
                                 'metadata': result.get('metadata', {})
                             }
                             
