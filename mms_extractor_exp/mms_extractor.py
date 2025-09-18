@@ -65,6 +65,8 @@ import re
 import ast
 import glob
 import os
+from bson import raw_bson
+import copy
 import pandas as pd
 import numpy as np
 
@@ -2418,6 +2420,8 @@ class MMSExtractor:
                 logger.error("🚨 LLM이 스키마 정의를 반환했습니다! 실제 데이터가 아닙니다.")
                 logger.error("재시도 또는 fallback 결과를 사용합니다.")
                 return self._create_fallback_result(msg)
+
+            raw_result = copy.deepcopy(json_objects)
             
             # 7단계: 엔티티 매칭 및 최종 결과 구성
             logger.info("=" * 30 + " 7단계: 최종 결과 구성 " + "=" * 30)
@@ -2470,14 +2474,10 @@ class MMSExtractor:
             logger.info(f"상품 수: {len(final_result.get('product', []))}개")
             logger.info(f"채널 수: {len(final_result.get('channel', []))}개")
             logger.info(f"프로그램 수: {len(final_result.get('pgm', []))}개")
-            
-            # 프롬프트 정보 추가 (MongoDB 저장용)
-            stored_prompts = get_stored_prompts_from_thread()
-            if stored_prompts:
-                final_result['prompts'] = stored_prompts
-                logger.debug(f"프롬프트 정보가 결과에 추가됨: {list(stored_prompts.keys())}")
-            
-            return final_result
+
+            actual_prompts = get_stored_prompts_from_thread()
+
+            return {"extracted_result": final_result, "raw_result": raw_result, "prompts": actual_prompts}
             
         except Exception as e:
             logger.error(f"메시지 처리 실패: {e}")
@@ -2892,7 +2892,7 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
     
     try:
         # 실제 저장된 프롬프트 정보 가져오기
-        stored_prompts = get_stored_prompts_from_thread()
+        stored_prompts = result.get('prompts', {})
         
         # 프롬프트 정보 구성 (실제 저장된 프롬프트 사용)
         prompts_data = {}
@@ -2930,7 +2930,17 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
         # 추출 결과를 MongoDB 형식으로 구성
         extraction_result = {
             'success': not bool(result.get('error')),
-            'result': result,
+            'result': result.get('extracted_result', {}),
+            'metadata': {
+                'processing_time_seconds': result.get('processing_time', 0),
+                'processing_mode': 'single',
+                'model_used': args.llm_model
+            }
+        }
+
+        raw_result = {
+            'success': not bool(result.get('error')),
+            'result': result.get('raw_result', {}),
             'metadata': {
                 'processing_time_seconds': result.get('processing_time', 0),
                 'processing_mode': 'single',
@@ -2939,7 +2949,7 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
         }
         
         # MongoDB에 저장 (message_id는 UUID로 자동 생성)
-        saved_id = save_to_mongodb(message, extraction_result, extraction_prompts, 
+        saved_id = save_to_mongodb(message, extraction_result, raw_result, extraction_prompts, 
                                  user_id="SKT1110566", message_id=None)
         
         if saved_id:
@@ -3126,23 +3136,26 @@ https://naver.me/GipIR3Lg
                 saved_id = save_result_to_mongodb_if_enabled(test_message, result, args, extractor)
                 if saved_id:
                     print("📄 MongoDB 저장 완료!")
+
+            
+            extracted_result = result.get('extracted_result', {})
         
             print("\n" + "="*50)
             print("🎯 최종 추출된 정보")
             print("="*50)
-            print(json.dumps(result, indent=4, ensure_ascii=False))
-            
+            print(json.dumps(extracted_result, indent=4, ensure_ascii=False))
+
             # 성능 요약 정보 출력
             print("\n" + "="*50)
             print("📊 처리 완료")
             print("="*50)
-            print(f"✅ 제목: {result.get('title', 'N/A')}")
-            print(f"✅ 목적: {len(result.get('purpose', []))}개")
-            print(f"✅ 상품: {len(result.get('product', []))}개")
-            print(f"✅ 채널: {len(result.get('channel', []))}개")
-            print(f"✅ 프로그램: {len(result.get('pgm', []))}개")
-            if result.get('error'):
-                print(f"❌ 오류: {result['error']}")
+            print(f"✅ 제목: {extracted_result.get('title', 'N/A')}")
+            print(f"✅ 목적: {len(extracted_result.get('purpose', []))}개")
+            print(f"✅ 상품: {len(extracted_result.get('product', []))}개")
+            print(f"✅ 채널: {len(extracted_result.get('channel', []))}개")
+            print(f"✅ 프로그램: {len(extracted_result.get('pgm', []))}개")
+            if extracted_result.get('error'):
+                print(f"❌ 오류: {extracted_result['error']}")
         
     except Exception as e:
         logger.error(f"실행 실패: {e}")

@@ -108,7 +108,6 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, save_to_mongod
     try:
         logger.debug("MongoDB 저장 시작...")
         
-        # 실제 프롬프트 정보를 result에서 추출 시도
         actual_prompts = result.get('prompts', {})
         
         # 디버깅: result 키들과 prompts 확인
@@ -157,21 +156,31 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, save_to_mongod
             'prompts': prompts_data,
             'settings': extractor_kwargs or {}
         }
-        
+
         # 추출 결과를 MongoDB 형식으로 구성
         extraction_result = {
             'success': not bool(result.get('error')),
-            'result': result,
+            'result': result.get('extracted_result', {}),
             'metadata': {
                 'processing_time_seconds': result.get('processing_time', 0),
                 'processing_mode': 'batch',
                 'model_used': extractor_kwargs.get('llm_model', 'unknown') if extractor_kwargs else 'unknown'
             }
         }
+
+        raw_result = {
+            'success': not bool(result.get('error')),
+            'result': result.get('raw_result', {}),
+            'metadata': {
+                'processing_time_seconds': result.get('processing_time', 0),
+                'processing_mode': 'single',
+                'model_used': extractor_kwargs.get('llm_model', 'unknown') if extractor_kwargs else 'unknown'
+            }
+        }
         
         # MongoDB에 저장
         from mongodb_utils import save_to_mongodb as mongodb_save_to_mongodb
-        saved_id = mongodb_save_to_mongodb(message, extraction_result, extraction_prompts, 
+        saved_id = mongodb_save_to_mongodb(message, extraction_result, raw_result, extraction_prompts, 
                                          user_id="SKT1110566", message_id=message_id)
         
         if saved_id:
@@ -366,6 +375,9 @@ class BatchProcessor:
                 
                 if i < len(batch_result):
                     extraction_result = batch_result[i]
+
+                    print("=" * 50 + " extraction_result " + "=" * 50)
+                    print(extraction_result)
                     
                     # Create result record
                     result_record = {
