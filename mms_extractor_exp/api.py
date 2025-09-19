@@ -96,7 +96,7 @@ sys.path.insert(0, str(current_dir))
 # =============================================================================
 # MMS 추출기 및 설정 모듈 임포트
 try:
-    from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch
+    from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
 except ImportError as e:
     print(f"❌ MMSExtractor 임포트 오류: {e}")
@@ -333,6 +333,8 @@ def extract_message():
         - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: False)
                                          True일 경우 메시지에서 엔티티 간 관계를 DAG 형태로 추출하고
                                          시각적 다이어그램도 함께 생성합니다.
+        - result_type (optional): 추출 결과 타입 (기본값: 'ext')
+        - save_to_mongodb (optional): MongoDB 저장 여부 (기본값: True)
     
     Returns:
         JSON: 추출 결과
@@ -372,6 +374,8 @@ def extract_message():
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', False)
+        save_to_mongodb = data.get('save_to_mongodb', True)
+        result_type = data.get('result_type', 'ext')
         
         # DAG 추출 요청 로깅
         if extract_entity_dag:
@@ -415,10 +419,22 @@ def extract_message():
         # DAG 추출 여부에 따라 병렬 처리 또는 단일 처리
         if extract_entity_dag:
             logger.info("DAG 추출과 함께 순차 처리 시작")
-            result = process_message_with_dag(extractor, message, extract_dag=True)['extracted_result']
+            result = process_message_with_dag(extractor, message, extract_dag=True)
         else:
-            result = extractor.process_message(message)['extracted_result']
-            result['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
+            result = extractor.process_message(message)
+            result['extracted_result']['entity_dag'] = []
+            result['raw_result']['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
+
+        if save_to_mongodb:
+            logger.info("MongoDB 저장 중...")
+            saved_id = save_result_to_mongodb_if_enabled(message, result, argparse.Namespace(**data), extractor)
+            if saved_id:
+                logger.info("MongoDB 저장 완료!")
+
+        if result_type == 'raw':
+            result = result.get('raw_result', {})
+        else:
+            result = result.get('extracted_result', {})
             
         processing_time = time.time() - start_time
         
@@ -597,7 +613,7 @@ def extract_batch():
                     })
                 else:
                     if valid_result_idx < len(batch_results):
-                        batch_result = batch_results[valid_result_idx]
+                        batch_result = batch_results[valid_result_idx]['extracted_result']
                         if batch_result.get('error'):
                             results.append({
                                 "index": i,
@@ -750,9 +766,9 @@ def get_prompts():
         
         # 추출 수행
         if extract_entity_dag:
-            result = process_message_with_dag(extractor, message, extract_dag=True)
+            result = process_message_with_dag(extractor, message, extract_dag=True)['extracted_result']
         else:
-            result = extractor.process_message(message)
+            result = extractor.process_message(message)['extracted_result']
         
         # 저장된 프롬프트들 가져오기
         stored_prompts = getattr(current_thread, 'stored_prompts', {})
