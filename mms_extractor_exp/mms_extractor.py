@@ -118,13 +118,7 @@ if __name__ == '__main__':
     import sys
     from pathlib import Path
     
-    # MongoDB 유틸리티 임포트 (선택적)
-    try:
-        from mongodb_utils import save_to_mongodb, test_mongodb_connection
-        MONGODB_AVAILABLE = True
-    except ImportError:
-        MONGODB_AVAILABLE = False
-        print("⚠️ MongoDB 유틸리티를 찾을 수 없습니다. --save-to-mongodb 옵션이 비활성화됩니다.")
+    # MongoDB 유틸리티는 필요할 때 동적으로 임포트
     
     # 로그 디렉토리 생성
     log_dir = Path(__file__).parent / 'logs'
@@ -2889,20 +2883,37 @@ def get_stored_prompts_from_thread():
     else:
         return {}
 
-def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extractor=None):
-    """MongoDB 저장이 활성화된 경우 결과를 저장하는 도우미 함수"""
-    if not args.save_to_mongodb:
-        return None
-        
-    if not MONGODB_AVAILABLE:
-        print("❌ MongoDB 저장이 요청되었지만 mongodb_utils를 찾을 수 없습니다.")
-        return None
+def save_result_to_mongodb_if_enabled(message: str, result: dict, args_or_data, extractor=None):
+    """MongoDB 저장이 활성화된 경우 결과를 저장하는 도우미 함수
     
-    try:
-        # 실제 저장된 프롬프트 정보 가져오기
-        stored_prompts = result.get('prompts', {})
+    Args:
+        message: 처리할 메시지
+        result: 처리 결과 (extracted_result, raw_result 포함)
+        args_or_data: argparse.Namespace 객체 또는 딕셔너리
+        extractor: MMSExtractor 인스턴스 (선택적)
+    
+    Returns:
+        str: 저장된 문서 ID, 실패 시 None
+    """
+    # args_or_data가 딕셔너리인 경우 Namespace로 변환
+    if isinstance(args_or_data, dict):
+        import argparse
+        args = argparse.Namespace(**args_or_data)
+    else:
+        args = args_or_data
+    
+    # save_to_mongodb 속성이 없거나 False인 경우
+    if not getattr(args, 'save_to_mongodb', False):
+        return None
         
-        # 프롬프트 정보 구성 (실제 저장된 프롬프트 사용)
+    try:
+        # MongoDB 임포트 시도
+        from mongodb_utils import save_to_mongodb
+        
+        # 스레드 로컬 저장소에서 프롬프트 정보 가져오기
+        stored_prompts = result.get('prompts', get_stored_prompts_from_thread()) 
+        
+        # 프롬프트 정보 구성
         prompts_data = {}
         for key, prompt_data in stored_prompts.items():
             prompts_data[key] = {
@@ -2927,38 +2938,39 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
             'success': True,
             'prompts': prompts_data,
             'settings': {
-                'llm_model': args.llm_model,
-                'offer_data_source': args.offer_data_source,
-                'product_info_extraction_mode': args.product_info_extraction_mode,
-                'entity_matching_mode': args.entity_matching_mode,
-                'extract_entity_dag': args.extract_entity_dag
+                'llm_model': getattr(args, 'llm_model', 'unknown'),
+                'offer_data_source': getattr(args, 'offer_data_source', getattr(args, 'offer_info_data_src', 'unknown')),
+                'product_info_extraction_mode': getattr(args, 'product_info_extraction_mode', 'unknown'),
+                'entity_matching_mode': getattr(args, 'entity_matching_mode', getattr(args, 'entity_extraction_mode', 'unknown')),
+                'extract_entity_dag': getattr(args, 'extract_entity_dag', False)
             }
         }
         
         # 추출 결과를 MongoDB 형식으로 구성
         extraction_result = {
             'success': not bool(result.get('error')),
-            'result': result.get('extracted_result', {}),
+            'result': result.get('extracted_result', result.get('result', {})),
             'metadata': {
                 'processing_time_seconds': result.get('processing_time', 0),
-                'processing_mode': 'single',
-                'model_used': args.llm_model
+                'processing_mode': getattr(args, 'processing_mode', 'single'),
+                'model_used': getattr(args, 'llm_model', 'unknown')
             }
         }
 
-        raw_result = {
+        raw_result_data = {
             'success': not bool(result.get('error')),
             'result': result.get('raw_result', {}),
             'metadata': {
                 'processing_time_seconds': result.get('processing_time', 0),
-                'processing_mode': 'single',
-                'model_used': args.llm_model
+                'processing_mode': getattr(args, 'processing_mode', 'single'),
+                'model_used': getattr(args, 'llm_model', 'unknown')
             }
         }
         
-        # MongoDB에 저장 (message_id는 UUID로 자동 생성)
-        saved_id = save_to_mongodb(message, extraction_result, raw_result, extraction_prompts, 
-                                 user_id="SKT1110566", message_id=None)
+        # MongoDB에 저장
+        user_id = getattr(args, 'user_id', 'DEFAULT_USER')
+        saved_id = save_to_mongodb(message, extraction_result, raw_result_data, extraction_prompts, 
+                                 user_id=user_id, message_id=None)
         
         if saved_id:
             print(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")
@@ -2966,6 +2978,14 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
         else:
             print("⚠️ MongoDB 저장에 실패했습니다.")
             return None
+            
+    except ImportError:
+        print("❌ MongoDB 저장이 요청되었지만 mongodb_utils를 찾을 수 없습니다.")
+        return None
+    except Exception as e:
+        print(f"❌ MongoDB 저장 중 오류 발생: {str(e)}")
+        return None
+
             
     except Exception as e:
         print(f"❌ MongoDB 저장 중 오류 발생: {str(e)}")
@@ -3018,7 +3038,9 @@ def main():
     
     # MongoDB 연결 테스트만 수행하는 경우
     if args.test_mongodb:
-        if not MONGODB_AVAILABLE:
+        try:
+            from mongodb_utils import test_mongodb_connection
+        except ImportError:
             print("❌ MongoDB 유틸리티를 찾을 수 없습니다.")
             print("mongodb_utils.py 파일과 pymongo 패키지를 확인하세요.")
             exit(1)
@@ -3064,6 +3086,7 @@ def main():
                 # MongoDB 저장 (배치 처리)
                 if args.save_to_mongodb:
                     print("\n📄 MongoDB 저장 중...")
+                    args.processing_mode = 'batch'
                     saved_count = 0
                     for i, result in enumerate(results):
                         if i < len(messages):  # 메시지가 있는 경우만
@@ -3138,12 +3161,11 @@ https://naver.me/GipIR3Lg
             # 단일 메시지 처리 (멀티스레드)
             logger.info("단일 메시지 처리 시작 (멀티스레드)")
             result = process_message_with_dag(extractor, test_message, args.extract_entity_dag)
-            
-
-        
+                    
             # MongoDB 저장 (단일 메시지)
             if args.save_to_mongodb:
                 print("\n📄 MongoDB 저장 중...")
+                args.processing_mode = 'single'
                 saved_id = save_result_to_mongodb_if_enabled(test_message, result, args, extractor)
                 if saved_id:
                     print("📄 MongoDB 저장 완료!")
