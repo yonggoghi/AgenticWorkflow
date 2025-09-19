@@ -9,13 +9,7 @@ import pandas as pd
 import argparse
 import sys
 
-# MongoDB 유틸리티 임포트
-try:
-    from mongodb_utils import save_to_mongodb, test_mongodb_connection, get_mongodb_manager
-    MONGODB_AVAILABLE = True
-except ImportError:
-    MONGODB_AVAILABLE = False
-    st.warning("⚠️ MongoDB 유틸리티를 찾을 수 없습니다. MongoDB 저장 기능이 비활성화됩니다.")
+# MongoDB 유틸리티는 필요할 때 동적으로 임포트
 
 # 페이지 설정
 st.set_page_config(
@@ -1040,6 +1034,7 @@ def display_single_processing_ui(api_status: bool, args):
             # MongoDB 연결 테스트
             if st.button("🔌 연결 테스트", use_container_width=True):
                 with st.spinner("MongoDB 연결 확인 중..."):
+                    from mongodb_utils import test_mongodb_connection
                     if test_mongodb_connection():
                         st.success("✅ MongoDB 연결 성공")
                     else:
@@ -1047,6 +1042,7 @@ def display_single_processing_ui(api_status: bool, args):
             
             # MongoDB 통계 표시
             try:
+                from mongodb_utils import get_mongodb_manager
                 manager = get_mongodb_manager()
                 if manager.connect():
                     stats = manager.get_extraction_stats()
@@ -1151,39 +1147,41 @@ def display_single_processing_ui(api_status: bool, args):
                     st.session_state['current_message'] = message  # 현재 메시지 저장
                     
                     # MongoDB에 결과 저장
-                    if MONGODB_AVAILABLE:
-                        try:
-                            # 프롬프트 정보 가져오기
-                            extraction_prompts = st.session_state.get('extraction_prompts', {})
-                            
-                            # 추출 결과와 raw_result 분리
-                            extraction_result = {
-                                'success': result.get('success', True),
-                                'result': result.get('extracted_result', result.get('raw_result', {})),
-                                'metadata': result.get('metadata', {})
-                            }
-                            
-                            raw_result = {
-                                'success': result.get('success', True),
-                                'result': result.get('raw_result', {}),
-                                'metadata': result.get('metadata', {})
-                            }
-                            
-                            # MongoDB에 저장 (message_id는 UUID로 자동 생성)
-                            saved_id = save_to_mongodb(message, extraction_result, raw_result, extraction_prompts, 
-                                                     user_id="SKT1110566", message_id=None)
-                            
-                            if saved_id:
-                                st.success("✅ 정보 추출이 완료되었습니다!")
-                                st.info(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")
-                            else:
-                                st.success("✅ 정보 추출이 완료되었습니다!")
-                                st.warning("⚠️ MongoDB 저장에 실패했습니다.")
-                        except Exception as e:
+                    try:
+                        from mongodb_utils import save_to_mongodb
+                        
+                        # 프롬프트 정보 가져오기
+                        extraction_prompts = st.session_state.get('extraction_prompts', {})
+                        
+                        # 추출 결과와 raw_result 분리
+                        extraction_result = {
+                            'success': result.get('success', True),
+                            'result': result.get('extracted_result', result.get('raw_result', {})),
+                            'metadata': result.get('metadata', {})
+                        }
+                        
+                        raw_result = {
+                            'success': result.get('success', True),
+                            'result': result.get('raw_result', {}),
+                            'metadata': result.get('metadata', {})
+                        }
+                        
+                        # MongoDB에 저장 (message_id는 UUID로 자동 생성)
+                        saved_id = save_to_mongodb(message, extraction_result, raw_result, extraction_prompts, 
+                                                 user_id="DEMO_USER", message_id=None)
+                        
+                        if saved_id:
                             st.success("✅ 정보 추출이 완료되었습니다!")
-                            st.error(f"❌ MongoDB 저장 중 오류 발생: {str(e)}")
-                    else:
+                            st.info(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")
+                        else:
+                            st.success("✅ 정보 추출이 완료되었습니다!")
+                            st.warning("⚠️ MongoDB 저장에 실패했습니다.")
+                    except ImportError:
                         st.success("✅ 정보 추출이 완료되었습니다!")
+                        st.warning("⚠️ MongoDB 유틸리티를 찾을 수 없어 저장하지 못했습니다.")
+                    except Exception as e:
+                        st.success("✅ 정보 추출이 완료되었습니다!")
+                        st.error(f"❌ MongoDB 저장 중 오류 발생: {str(e)}")
                     
                     st.rerun()  # 페이지 새로고침으로 결과 표시
                 else:
