@@ -896,6 +896,52 @@ class MMSExtractor:
                 logger.warning("임베딩 모델 없이 동작 모드로 전환")
                 self.emb_model = None
 
+    def _initialize_multiple_llm_models(self, model_names: List[str]) -> List:
+        """
+        복수의 LLM 모델을 초기화하는 헬퍼 메서드
+        
+        Args:
+            model_names (List[str]): 초기화할 모델명 리스트 (예: ['ax', 'gpt', 'gen'])
+            
+        Returns:
+            List: 초기화된 LLM 모델 객체 리스트
+        """
+        llm_models = []
+        
+        # 모델명 매핑 (기존 LLM 초기화 로직과 동일)
+        model_mapping = {
+            "cld": getattr(MODEL_CONFIG, 'anthropic_model', 'amazon/anthropic/claude-sonnet-4-20250514'),
+            "ax": getattr(MODEL_CONFIG, 'ax_model', 'skt/ax4'),
+            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06')
+        }
+        
+        for model_name in model_names:
+            try:
+                actual_model_name = model_mapping.get(model_name, model_name)
+                
+                # 모델별 설정 (기존 로직과 동일)
+                model_kwargs = {
+                    "temperature": 0.0,
+                    "openai_api_key": getattr(API_CONFIG, 'llm_api_key', os.getenv('OPENAI_API_KEY')),
+                    "openai_api_base": getattr(API_CONFIG, 'llm_api_url', None),
+                    "model": actual_model_name,
+                    "max_tokens": getattr(MODEL_CONFIG, 'llm_max_tokens', 4000)
+                }
+                
+                # GPT 모델의 경우 시드 설정
+                if 'gpt' in actual_model_name.lower():
+                    model_kwargs["seed"] = 42
+                
+                llm_model = ChatOpenAI(**model_kwargs)
+                llm_models.append(llm_model)
+                logger.info(f"✅ LLM 모델 초기화 완료: {model_name} ({actual_model_name})")
+                
+            except Exception as e:
+                logger.error(f"❌ LLM 모델 초기화 실패: {model_name} - {e}")
+                continue
+        
+        return llm_models
+
     @log_performance
     def _initialize_kiwi(self):
         """Kiwi 형태소 분석기 초기화"""
@@ -1994,47 +2040,110 @@ class MMSExtractor:
             return pd.DataFrame()
 
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 5) -> pd.DataFrame:
-        """LLM 기반 엔티티 추출"""
+    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 5, llm_models: List = None) -> pd.DataFrame:
+        """
+        LLM 기반 엔티티 추출 (복수 모델 병렬 처리 지원)
+        
+        Args:
+            msg_text (str): 분석할 메시지 텍스트
+            rank_limit (int): 결과에서 반환할 최대 순위
+            llm_models (List, optional): 사용할 LLM 모델 리스트. None이면 기본 모델 사용
+            
+        Returns:
+            pd.DataFrame: 추출된 엔티티와 유사도 정보
+        """
         try:
             msg_text = validate_text_input(msg_text)
+            
+            # LLM 모델이 지정되지 않은 경우 기본 모델 사용
+            if llm_models is None:
+                llm_models = [self.llm_model]
             
             # 로직 기반 방식으로 후보 엔티티 먼저 추출
             cand_entities_by_sim = sorted([
                 e.strip() for e in self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.4))['item_nm_alias'].unique() 
                 if e.strip() not in self.stop_item_names and len(e.strip()) >= 2
             ])
+            
+            def get_entities_by_llm(args_dict):
+                """단일 LLM으로 엔티티 추출하는 내부 함수"""
+                llm_model, msg_text, cand_entities_list = args_dict['llm_model'], args_dict['msg_text'], args_dict['cand_entities_list']
+                
+                try:
+                    # 프롬프트 구성 - 기존 로직과 동일
+                    base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
+                    if base_prompt is None:
+                        base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
+                        logger.info("엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
+                    else:
+                        logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
+                    
+                    # PromptTemplate 사용 (langchain 방식)
+                    from langchain.prompts import PromptTemplate
+                    zero_shot_prompt = PromptTemplate(
+                        input_variables=["entity_extraction_prompt", "msg", "cand_entities"],
+                        template="""
+                        {entity_extraction_prompt}
+                        
+                        ## message:                
+                        {msg}
 
-            # LLM 프롬프트 구성 - 외부 프롬프트 모듈 사용
-            # 프롬프트를 prompts 디렉토리에서 가져오기 (설정 파일 대신)
+                        ## Candidate entities:
+                        {cand_entities}
+                        """
+                    )
+                    
+                    chain = zero_shot_prompt | llm_model
+                    cand_entities = chain.invoke({
+                        "entity_extraction_prompt": base_prompt, 
+                        "msg": msg_text, 
+                        "cand_entities": cand_entities_list
+                    }).content
+                    
+                    # LLM 응답 파싱 및 정리
+                    cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
+                    cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e) >= 2]
+                    
+                    return cand_entity_list
+                    
+                except Exception as e:
+                    logger.error(f"LLM 모델에서 엔티티 추출 실패: {e}")
+                    return []
+            
+            # 프롬프트 미리보기 저장 (디버깅용) - 복수 모델이어도 프롬프트는 동일하므로 항상 저장
             base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
             if base_prompt is None:
-                # settings.py에 프롬프트가 없으면 prompts 디렉토리에서 가져오기
                 base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
-                logger.info("엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
-            else:
-                logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
-            prompt = build_entity_extraction_prompt(msg_text, base_prompt)
-            
-            # 후보 엔티티 추가
-            prompt += f"""
+            preview_prompt = build_entity_extraction_prompt(msg_text, base_prompt)
+            preview_prompt += f"""
 
             ## Candidate entities:
             {cand_entities_by_sim}
             """
+            self._store_prompt_for_preview(preview_prompt, "entity_extraction")
             
-            # 프롬프트 저장 (디버깅/미리보기용)
-            self._store_prompt_for_preview(prompt, "entity_extraction")
+            # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
+            batches = []
+            for llm_model in llm_models:
+                batches.append({
+                    "msg_text": msg_text, 
+                    "llm_model": llm_model, 
+                    "cand_entities_list": cand_entities_by_sim
+                })
             
-            # LLM 호출 (프롬프트 저장은 이미 위에서 했으므로 직접 호출)
-            response = self.llm_model.invoke(prompt)
-            cand_entities = response.content if hasattr(response, 'content') else str(response)
+            logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
             
-            # LLM 응답 파싱 및 정리
-            cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
-            cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e) >= 2]
+            # 병렬 작업 실행
+            n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
+            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
+            
+            # 모든 결과를 합치고 중복 제거
+            cand_entity_list = list(set(sum(batch_results, [])))
+            logger.info(f"✅ LLM 추출 완료: {cand_entity_list}")
 
             if not cand_entity_list:
+                logger.warning("LLM 추출에서 유효한 엔티티를 찾지 못함")
                 return pd.DataFrame()
 
             # 후보 엔티티들과 상품 DB 매칭
@@ -2613,8 +2722,9 @@ class MMSExtractor:
                 cand_entities = [item.get('name', '') for item in product_items if item.get('name')]
                 similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
             else:
-                # LLM 기반: LLM을 통한 엔티티 추출
-                similarities_fuzzy = self.extract_entities_by_llm(msg)
+                # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=claude, gen=gemini, gpt)
+                default_llm_models = self._initialize_multiple_llm_models(['ax', 'gpt', 'cld'])
+                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models)
 
             # 상품 정보 매핑
             if not similarities_fuzzy.empty:
