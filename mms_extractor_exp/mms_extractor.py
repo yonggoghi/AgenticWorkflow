@@ -1746,9 +1746,26 @@ class MMSExtractor:
         current_thread.stored_prompts[prompt_key] = prompt_data
         
         # 디버깅 로그 추가
-        logger.info(f"프롬프트 저장됨: {prompt_key} (길이: {len(prompt)})")
-        logger.info(f"현재 저장된 프롬프트 수: {len(current_thread.stored_prompts)}")
-        logger.info(f"저장된 프롬프트 키들: {list(current_thread.stored_prompts.keys())}")
+        prompt_length = len(prompt)
+        logger.info(f"📝 프롬프트 저장됨: {prompt_key}")
+        logger.info(f"📝 프롬프트 길이: {prompt_length:,} 문자")
+        
+        # 프롬프트가 매우 긴 경우 경고
+        if prompt_length > 20000:
+            logger.warning(f"⚠️ 매우 긴 프롬프트가 저장됨: {prompt_length:,} 문자")
+            logger.warning("이는 UI 표시 성능에 영향을 줄 수 있습니다.")
+            
+            # 프롬프트 내용 분석 (엔티티 추출 프롬프트인 경우)
+            if 'entity' in prompt_key.lower():
+                entity_section_start = prompt.find("## Candidate entities:")
+                if entity_section_start > 0:
+                    entity_section = prompt[entity_section_start:]
+                    entity_lines = entity_section.split('\n')
+                    entity_count = len([line for line in entity_lines if line.strip().startswith('-')])
+                    logger.warning(f"🔍 후보 엔티티 개수: {entity_count}개")
+        
+        logger.info(f"📝 현재 저장된 프롬프트 수: {len(current_thread.stored_prompts)}")
+        logger.info(f"📝 저장된 프롬프트 키들: {list(current_thread.stored_prompts.keys())}")
 
     def _safe_llm_invoke(self, prompt: str, max_retries: int = 3) -> str:
         """안전한 LLM 호출 메소드"""
@@ -2064,10 +2081,48 @@ class MMSExtractor:
                 llm_models = [self.llm_model]
             
             # 로직 기반 방식으로 후보 엔티티 먼저 추출
-            cand_entities_by_sim = sorted([
-                e.strip() for e in self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.4))['item_nm_alias'].unique() 
+            logger.info("=== 후보 엔티티 추출 시작 ===")
+            fuzzy_threshold = getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.4)
+            logger.info(f"퍼지 매칭 임계값: {fuzzy_threshold}")
+            
+            # 로직 기반 엔티티 추출
+            logic_result = self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=fuzzy_threshold)
+            raw_entities = logic_result['item_nm_alias'].unique()
+            logger.info(f"로직 기반 추출 원본 엔티티 수: {len(raw_entities)}개")
+            
+            # 필터링 전 엔티티 샘플 확인
+            if len(raw_entities) > 0:
+                sample_raw = raw_entities[:10] if len(raw_entities) > 10 else raw_entities
+                logger.info(f"원본 엔티티 샘플 (최대 10개): {list(sample_raw)}")
+            
+            # 필터링 적용
+            filtered_entities = [
+                e.strip() for e in raw_entities
                 if e.strip() not in self.stop_item_names and len(e.strip()) >= 2
-            ])
+            ]
+            logger.info(f"필터링 후 엔티티 수: {len(filtered_entities)}개")
+            logger.info(f"제거된 엔티티 수: {len(raw_entities) - len(filtered_entities)}개")
+            
+            # 정렬
+            cand_entities_by_sim = sorted(filtered_entities)
+            logger.info(f"최종 후보 엔티티 수: {len(cand_entities_by_sim)}개")
+            
+            # 후보 엔티티가 너무 많은 경우 경고
+            if len(cand_entities_by_sim) > 100:
+                logger.warning(f"⚠️ 후보 엔티티가 매우 많습니다: {len(cand_entities_by_sim)}개")
+                logger.warning("이는 프롬프트 길이를 크게 증가시킬 수 있습니다.")
+                
+                # 상위 100개만 사용하도록 제한
+                original_count = len(cand_entities_by_sim)
+                cand_entities_by_sim = cand_entities_by_sim[:100]
+                logger.warning(f"성능을 위해 상위 {len(cand_entities_by_sim)}개만 사용합니다. (원본: {original_count}개)")
+            
+            # 최종 후보 엔티티 샘플 표시
+            if len(cand_entities_by_sim) > 0:
+                sample_final = cand_entities_by_sim[:10] if len(cand_entities_by_sim) > 10 else cand_entities_by_sim
+                logger.info(f"최종 후보 엔티티 샘플 (최대 10개): {sample_final}")
+            
+            logger.info("=== 후보 엔티티 추출 완료 ===")
             
             def get_entities_by_llm(args_dict):
                 """단일 LLM으로 엔티티 추출하는 내부 함수"""
@@ -2081,6 +2136,29 @@ class MMSExtractor:
                         logger.info("엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
                     else:
                         logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
+                    
+                    # 후보 엔티티 리스트 크기 디버깅
+                    logger.info(f"🔍 프롬프트 구성 중 - LLM 모델: {llm_model}")
+                    logger.info(f"🔍 후보 엔티티 개수: {len(cand_entities_list)}개")
+                    
+                    # 후보 엔티티를 문자열로 변환
+                    cand_entities_str = '\n'.join([f"- {entity}" for entity in cand_entities_list])
+                    cand_entities_str_length = len(cand_entities_str)
+                    logger.info(f"🔍 후보 엔티티 문자열 길이: {cand_entities_str_length:,} 문자")
+                    
+                    # 베이스 프롬프트 길이 확인
+                    base_prompt_length = len(base_prompt)
+                    msg_length = len(msg_text)
+                    logger.info(f"🔍 베이스 프롬프트 길이: {base_prompt_length:,} 문자")
+                    logger.info(f"🔍 메시지 길이: {msg_length:,} 문자")
+                    
+                    # 전체 예상 프롬프트 길이 계산
+                    estimated_total_length = base_prompt_length + msg_length + cand_entities_str_length + 100  # 템플릿 여백
+                    logger.info(f"🔍 예상 전체 프롬프트 길이: {estimated_total_length:,} 문자")
+                    
+                    if estimated_total_length > 50000:  # 50K 문자 이상인 경우 경고
+                        logger.warning(f"⚠️ 프롬프트가 매우 깁니다: {estimated_total_length:,} 문자")
+                        logger.warning("LLM 토큰 제한에 도달할 수 있습니다.")
                     
                     # PromptTemplate 사용 (langchain 방식)
                     from langchain.prompts import PromptTemplate
@@ -2119,11 +2197,21 @@ class MMSExtractor:
             if base_prompt is None:
                 base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
             preview_prompt = build_entity_extraction_prompt(msg_text, base_prompt)
-            preview_prompt += f"""
+            
+            # 후보 엔티티 섹션 추가 전 디버깅
+            entities_section = f"""
 
             ## Candidate entities:
             {cand_entities_by_sim}
             """
+            logger.info(f"🔍 프롬프트에 추가될 엔티티 섹션 길이: {len(entities_section):,} 문자")
+            
+            preview_prompt += entities_section
+            
+            # 최종 프롬프트 길이 확인
+            final_prompt_length = len(preview_prompt)
+            logger.info(f"🔍 최종 엔티티 추출 프롬프트 길이: {final_prompt_length:,} 문자")
+            
             self._store_prompt_for_preview(preview_prompt, "entity_extraction")
             
             # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
