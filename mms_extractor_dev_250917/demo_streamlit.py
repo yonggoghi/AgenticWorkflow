@@ -9,8 +9,6 @@ import pandas as pd
 import argparse
 import sys
 
-# MongoDB 유틸리티는 필요할 때 동적으로 임포트
-
 # 페이지 설정
 st.set_page_config(
     page_title="MMS Extractor API Demo",
@@ -231,6 +229,8 @@ def call_extraction_api(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             timeout=120  # 2분으로 증가
         )
         
+
+        
         if response.status_code == 200:
             result = response.json()
             st.write("✅ API 응답 성공!")
@@ -390,15 +390,13 @@ def display_results(result: Dict[str, Any]):
         # 추출된 데이터를 표 형태로 표시 (API 응답 구조에 맞게 수정)
         extracted_data = None
         
-        # API 응답 구조에 따라 추출된 데이터 찾기
+        # 'result' 키에서 추출된 데이터 찾기
         if 'result' in result:
-            # API 응답에서 result 필드가 실제 추출 결과
             extracted_data = result['result']
-        # 하위 호환성을 위한 다른 키 확인
+            
+        # 'extracted_data' 키에서도 확인 (하위 호환성)
         elif 'extracted_data' in result:
             extracted_data = result['extracted_data']
-        elif 'extracted_result' in result:
-            extracted_data = result['extracted_result']
         
         if extracted_data:
             # 딕셔너리인 경우
@@ -461,29 +459,11 @@ def display_results(result: Dict[str, Any]):
                                         flattened_item = {}
                                         for key, value in item.items():
                                             if isinstance(value, list):
-                                                # 리스트인 경우 처리
-                                                if len(value) == 0:
-                                                    flattened_item[key] = ""
-                                                elif len(value) == 1:
-                                                    # 단일 항목인 경우, 중첩 구조 확인
-                                                    if isinstance(value[0], dict):
-                                                        # 딕셔너리 리스트인 경우 JSON 문자열로 변환
-                                                        flattened_item[key] = str(value[0])
-                                                    else:
-                                                        flattened_item[key] = str(value[0])
+                                                # 리스트인 경우 문자열로 변환
+                                                if len(value) == 1:
+                                                    flattened_item[key] = value[0]
                                                 else:
-                                                    # 여러 항목인 경우
-                                                    if all(isinstance(v, dict) for v in value):
-                                                        # 딕셔너리 리스트인 경우 요약 정보 생성
-                                                        summary = []
-                                                        for v in value:
-                                                            if 'item_nm' in v:
-                                                                summary.append(v['item_nm'])
-                                                            else:
-                                                                summary.append(str(v))
-                                                        flattened_item[key] = ', '.join(summary)
-                                                    else:
-                                                        flattened_item[key] = ', '.join(map(str, value))
+                                                    flattened_item[key] = ', '.join(map(str, value))
                                             else:
                                                 # 스칼라 값은 그대로 사용
                                                 flattened_item[key] = value
@@ -501,7 +481,7 @@ def display_results(result: Dict[str, Any]):
                                         new_column_order = available_columns + remaining_columns
                                         df = df[new_column_order]
                                     
-                                    st.dataframe(df, width='stretch')
+                                    st.dataframe(df, use_container_width=True)
                                 else:
                                     # 딕셔너리가 아닌 항목들이 있으면 단순 값들을 DataFrame으로 변환 시도
                                     simple_items = []
@@ -519,7 +499,7 @@ def display_results(result: Dict[str, Any]):
                                                 simple_items.append({"항목": i+1, "내용": str(item)})
                                     
                                     df = pd.DataFrame(simple_items)
-                                    st.dataframe(df, width='stretch')
+                                    st.dataframe(df, use_container_width=True)
                             except Exception as e:
                                 # DataFrame 변환 실패 시 개별 항목으로 표시
                                 st.info(f"테이블 형태로 표시할 수 없어 개별 항목으로 표시합니다.")
@@ -547,7 +527,7 @@ def display_results(result: Dict[str, Any]):
                                         else:
                                             dict_items.append({"속성": key, "값": str(value)})
                                     df = pd.DataFrame(dict_items)
-                                    st.dataframe(df, width='stretch')
+                                    st.dataframe(df, use_container_width=True)
                                 else:
                                     # 단일 값을 DataFrame으로 표시
                                     if category.lower() in ['entity_dag', 'purpose', 'title']:
@@ -556,7 +536,7 @@ def display_results(result: Dict[str, Any]):
                                     else:
                                         single_item = [{"항목": 1, "내용": str(items)}]
                                     df = pd.DataFrame(single_item)
-                                    st.dataframe(df, width='stretch')
+                                    st.dataframe(df, use_container_width=True)
                             except Exception as e:
                                 # DataFrame 변환 실패 시 기본 표시
                                 if isinstance(items, dict):
@@ -627,7 +607,7 @@ def display_results(result: Dict[str, Any]):
                     dag_response = requests.get(full_dag_url, timeout=10)
                     
                     if dag_response.status_code == 200:
-                        st.image(dag_response.content, caption="오퍼 관계 DAG", width='stretch')
+                        st.image(dag_response.content, caption="오퍼 관계 DAG", use_container_width=True)
                         break  # 성공하면 루프 종료
                     else:
                         st.warning(f"DAG 이미지 응답 오류: {dag_response.status_code}")
@@ -637,7 +617,7 @@ def display_results(result: Dict[str, Any]):
                     continue
         
         # 2. 현재 메시지에 해당하는 DAG 이미지 찾기 (메시지 해시 기반)
-        if not dag_found and 'result' in st.session_state:
+        if not dag_found and 'extraction_result' in st.session_state:
             # 현재 메시지 가져오기 (세션에서)
             current_message = st.session_state.get('current_message', '')
             if current_message:
@@ -648,20 +628,18 @@ def display_results(result: Dict[str, Any]):
                     message_hash = hashlib.sha256(current_message.encode('utf-8')).hexdigest()
                     expected_filename = f"dag_{message_hash}.png"
                     
-                    # 1. 먼저 로컬 파일 시스템에서 확인 (현재 디렉토리 기준으로 우선 확인)
+                    # 1. 먼저 로컬 파일 시스템에서 확인
                     possible_dag_paths = [
-                        Path(__file__).parent / "dag_images" / expected_filename,
-                        Path("dag_images") / expected_filename,
-                        Path.cwd() / "dag_images" / expected_filename,
                         Path.cwd() / "mms_extractor_unified" / "dag_images" / expected_filename,
-                        Path.cwd() / "mms_extractor_exp" / "dag_images" / expected_filename
+                        Path("dag_images") / expected_filename,
+                        Path(__file__).parent / "dag_images" / expected_filename
                     ]
                     
                     local_file_found = False
                     for dag_path in possible_dag_paths:
                         if dag_path.exists():
                             try:
-                                st.image(str(dag_path), caption=f"메시지별 DAG 이미지 ({expected_filename})", width='stretch')
+                                st.image(str(dag_path), caption=f"메시지별 DAG 이미지 ({expected_filename})", use_container_width=True)
                                 dag_found = True
                                 local_file_found = True
                                 break
@@ -670,23 +648,19 @@ def display_results(result: Dict[str, Any]):
                     
                     # 2. 로컬에서 찾지 못한 경우 Demo Server를 통해 시도
                     if not local_file_found:
-                        try:
-                            specific_dag_url = f"{DEMO_API_BASE_URL}/dag_images/{expected_filename}"
-                            dag_response = requests.get(specific_dag_url, timeout=5)
+                        specific_dag_url = f"{DEMO_API_BASE_URL}/dag_images/{expected_filename}"
+                        dag_response = requests.get(specific_dag_url, timeout=10)
+                        
+                        if dag_response.status_code == 200:
+                            # Content-Type 확인
+                            content_type = dag_response.headers.get('Content-Type', '')
                             
-                            if dag_response.status_code == 200:
-                                # Content-Type 확인
-                                content_type = dag_response.headers.get('Content-Type', '')
-                                
-                                if 'image' in content_type:
-                                    st.image(dag_response.content, caption=f"메시지별 DAG 이미지 ({expected_filename})", width='stretch')
-                                    dag_found = True
-                                else:
-                                    st.warning(f"⚠️ 이미지가 아닌 응답: {content_type}")
-                        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as conn_error:
-                            pass  # 조용히 로컬 파일로 대체
-                        except Exception as e:
-                            pass  # 기타 오류는 조용히 처리
+                            if 'image' in content_type:
+                                st.image(dag_response.content, caption=f"메시지별 DAG 이미지 ({expected_filename})", use_container_width=True)
+                                dag_found = True
+                            else:
+                                st.warning(f"⚠️ 이미지가 아닌 응답: {content_type}")
+                                st.text(f"응답 내용: {dag_response.text[:200]}")
                         
                 except Exception as e:
                     pass  # 오류 메시지 숨김
@@ -695,7 +669,7 @@ def display_results(result: Dict[str, Any]):
         if not dag_found and 'metadata' in result:
             metadata = result['metadata']
             if metadata.get('extract_entity_dag'):
-                pass  # 메시지 없이 바로 로컬 파일 검색으로 진행
+                st.info("DAG 추출이 활성화되어 있지만 이미지 URL을 찾을 수 없습니다.")
                 
                 # DAG 이미지 디렉토리에서 최신 이미지 찾기 시도
 
@@ -704,16 +678,16 @@ def display_results(result: Dict[str, Any]):
                     import os
                     from pathlib import Path
                     
-                    # DAG 이미지 디렉토리 경로 (현재 실행 위치 기준으로 우선 확인)
+                    # DAG 이미지 디렉토리 경로 (절대 경로 사용)
                     current_dir = Path.cwd()
+                    dag_images_dir = current_dir / "mms_extractor_unified" / "dag_images"
                     
-                    # 다양한 가능한 경로 시도 (현재 위치 우선)
+                    # 다양한 가능한 경로 시도
                     possible_paths = [
-                        Path(__file__).parent / "dag_images",  # 스크립트와 같은 디렉토리 (최우선)
-                        Path("dag_images"),  # 현재 디렉토리
+                        dag_images_dir,
+                        Path("dag_images"),  # 현재 디렉토리에서 실행된 경우
                         current_dir / "dag_images",
-                        current_dir / "mms_extractor_exp" / "dag_images",
-                        current_dir / "mms_extractor_unified" / "dag_images"
+                        Path(__file__).parent / "dag_images"  # 스크립트와 같은 디렉토리
                     ]
                     
                     for i, path in enumerate(possible_paths):
@@ -730,27 +704,30 @@ def display_results(result: Dict[str, Any]):
                             # 가장 최근 파일 선택 (수정 시간 기준)
                             latest_file = max(dag_files, key=lambda x: x.stat().st_mtime)
                             
-                            # 우선 로컬 파일 직접 읽기 시도
-                            try:
-                                if latest_file.exists() and latest_file.is_file():
-                                    st.image(str(latest_file), caption=f"DAG 이미지 (로컬) - {latest_file.name}", width='stretch')
-                                    dag_found = True
-                                    pass  # 성공 메시지 제거
-                                else:
-                                    # 로컬 파일이 없으면 Demo Server를 통해 시도
-                                    latest_dag_url = f"{DEMO_API_BASE_URL}/dag_images/{latest_file.name}"
-                                    
-                                    image_response = requests.get(latest_dag_url, timeout=5)
-                                    if image_response.status_code == 200:
-                                        st.image(image_response.content, caption=f"DAG 이미지 ({latest_file.name})", width='stretch')
+                            # Demo Server를 통해 이미지 로드
+                            latest_dag_url = f"{DEMO_API_BASE_URL}/dag_images/{latest_file.name}"
+                            
+                            image_response = requests.get(latest_dag_url, timeout=10)
+                            if image_response.status_code == 200:
+                                st.image(image_response.content, caption=f"DAG 이미지 ({latest_file.name})", use_container_width=True)
+                                dag_found = True
+                                st.success("✅ DAG 이미지를 성공적으로 로드했습니다!")
+                            else:
+                                st.warning(f"DAG 이미지 로딩 실패: {image_response.status_code}")
+                                
+                                # 대안: 로컬 파일 직접 읽기
+                                try:
+                                    st.write(f"📁 로컬 파일 직접 읽기 시도: {latest_file}")
+                                    if latest_file.exists() and latest_file.is_file():
+                                        st.image(str(latest_file), caption=f"DAG 이미지 (로컬) - {latest_file.name}", use_container_width=True)
                                         dag_found = True
-                                        pass  # 성공 메시지 제거
+                                        st.success("✅ 로컬 파일에서 DAG 이미지를 로드했습니다!")
                                     else:
-                                        st.warning(f"⚠️ DAG 이미지 로딩 실패: {image_response.status_code}")
-                            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as conn_error:
-                                pass  # 조용히 처리
-                            except Exception as local_error:
-                                st.warning(f"⚠️ 이미지 로딩 중 오류: {local_error}")
+                                        st.error(f"로컬 파일이 존재하지 않습니다: {latest_file}")
+                                except Exception as local_error:
+                                    st.error(f"로컬 파일 읽기 실패: {local_error}")
+                                    import traceback
+                                    st.text(f"상세 오류: {traceback.format_exc()}")
                         else:
                             st.info("DAG 이미지 파일이 생성되지 않았습니다.")
                     else:
@@ -769,7 +746,7 @@ def display_results(result: Dict[str, Any]):
                                     
                                     image_response = requests.get(latest_dag_url, timeout=10)
                                     if image_response.status_code == 200:
-                                        st.image(image_response.content, caption=f"DAG 이미지 ({latest_image['filename']})", width='stretch')
+                                        st.image(image_response.content, caption=f"DAG 이미지 ({latest_image['filename']})", use_container_width=True)
                                         dag_found = True
                         except Exception as api_error:
                             pass  # 오류 메시지 숨김
@@ -840,7 +817,7 @@ def display_results(result: Dict[str, Any]):
         st.subheader("실제 사용된 LLM 프롬프트")
         
         # 추출 결과에서 프롬프트 정보 가져오기
-        if 'result' in st.session_state:
+        if 'extraction_result' in st.session_state:
             # 동일한 설정으로 프롬프트 가져오기
             current_message = st.session_state.get('current_message', '')
             if current_message:
@@ -1028,7 +1005,7 @@ def display_single_processing_ui(api_status: bool, args):
         
         # DAG 추출 옵션
         extract_dag = st.checkbox("오퍼 관계 DAG 추출", value=True)
-        
+    
     # 메인 컨텐츠 (메시지 입력 부분을 줄이고 추출 결과 부분을 키움)
     col1, col2 = st.columns([1, 2])
     
@@ -1037,15 +1014,15 @@ def display_single_processing_ui(api_status: bool, args):
         
         # 샘플 메시지 선택
         for i, sample in enumerate(SAMPLE_MESSAGES):
-            if st.button(sample["title"], key=f"sample_{i}", width='stretch'):
-                st.session_state['message_input'] = sample["content"]
+            if st.button(sample["title"], key=f"sample_{i}", use_container_width=True):
+                st.session_state['selected_message'] = sample["content"]
                 st.rerun()
         
         # 메시지 입력
         st.subheader("📝 메시지 입력")
         
-        # 세션 상태에서 메시지 가져오기 (key와 동일한 이름 사용)
-        default_message = st.session_state.get('message_input', '')
+        # 세션 상태에서 메시지 가져오기
+        default_message = st.session_state.get('selected_message', '')
         
         message = st.text_area(
             "MMS 메시지 내용",
@@ -1061,7 +1038,7 @@ def display_single_processing_ui(api_status: bool, args):
         st.write(f"🔍 API 상태: {api_status}")
         st.write(f"📝 메시지 길이: {len(message.strip()) if message else 0}")
         
-        if st.button("🚀 정보 추출 실행", type="primary", width='stretch', disabled=not api_status):
+        if st.button("🚀 정보 추출 실행", type="primary", use_container_width=True, disabled=not api_status):
             st.write("🎯 버튼이 클릭되었습니다!")
             
             if not message.strip():
@@ -1103,7 +1080,7 @@ def display_single_processing_ui(api_status: bool, args):
                         progress_bar.progress(0)
                 
                 if result:
-                    st.session_state['result'] = result
+                    st.session_state['extraction_result'] = result
                     # 추출 결과에 프롬프트가 포함되어 있으면 사용, 없으면 별도 API 호출
                     if 'prompts' in result and result['prompts'].get('success'):
                         st.session_state['extraction_prompts'] = result['prompts']
@@ -1115,7 +1092,7 @@ def display_single_processing_ui(api_status: bool, args):
                         st.info("✅ 프롬프트를 별도로 가져왔습니다.")
                     
                     st.session_state['current_message'] = message  # 현재 메시지 저장
-                    
+                    st.success("✅ 정보 추출이 완료되었습니다!")
                     st.rerun()  # 페이지 새로고침으로 결과 표시
                 else:
                     st.error("❌ 추출 중 오류가 발생했습니다.")
@@ -1124,8 +1101,8 @@ def display_single_processing_ui(api_status: bool, args):
         st.subheader("📊 작업 결과")
         
         # 결과 표시
-        if 'result' in st.session_state:
-            display_results(st.session_state['result'])
+        if 'extraction_result' in st.session_state:
+            display_results(st.session_state['extraction_result'])
         else:
             st.info("메시지를 입력하고 '정보 추출 실행' 버튼을 클릭하세요.")
 

@@ -9,13 +9,7 @@ import pandas as pd
 import argparse
 import sys
 
-# MongoDB 유틸리티 임포트
-try:
-    from mongodb_utils import save_to_mongodb, test_mongodb_connection, get_mongodb_manager
-    MONGODB_AVAILABLE = True
-except ImportError:
-    MONGODB_AVAILABLE = False
-    st.warning("⚠️ MongoDB 유틸리티를 찾을 수 없습니다. MongoDB 저장 기능이 비활성화됩니다.")
+# MongoDB 유틸리티는 필요할 때 동적으로 임포트
 
 # 페이지 설정
 st.set_page_config(
@@ -237,8 +231,6 @@ def call_extraction_api(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             timeout=120  # 2분으로 증가
         )
         
-
-        
         if response.status_code == 200:
             result = response.json()
             st.write("✅ API 응답 성공!")
@@ -398,13 +390,15 @@ def display_results(result: Dict[str, Any]):
         # 추출된 데이터를 표 형태로 표시 (API 응답 구조에 맞게 수정)
         extracted_data = None
         
-        # 'result' 키에서 추출된 데이터 찾기
+        # API 응답 구조에 따라 추출된 데이터 찾기
         if 'result' in result:
+            # API 응답에서 result 필드가 실제 추출 결과
             extracted_data = result['result']
-            
-        # 'extracted_data' 키에서도 확인 (하위 호환성)
+        # 하위 호환성을 위한 다른 키 확인
         elif 'extracted_data' in result:
             extracted_data = result['extracted_data']
+        elif 'extracted_result' in result:
+            extracted_data = result['extracted_result']
         
         if extracted_data:
             # 딕셔너리인 경우
@@ -643,7 +637,7 @@ def display_results(result: Dict[str, Any]):
                     continue
         
         # 2. 현재 메시지에 해당하는 DAG 이미지 찾기 (메시지 해시 기반)
-        if not dag_found and 'extraction_result' in st.session_state:
+        if not dag_found and 'result' in st.session_state:
             # 현재 메시지 가져오기 (세션에서)
             current_message = st.session_state.get('current_message', '')
             if current_message:
@@ -843,7 +837,7 @@ def display_results(result: Dict[str, Any]):
         st.subheader("실제 사용된 LLM 프롬프트")
         
         # 추출 결과에서 프롬프트 정보 가져오기
-        if 'extraction_result' in st.session_state:
+        if 'result' in st.session_state:
             # 동일한 설정으로 프롬프트 가져오기
             current_message = st.session_state.get('current_message', '')
             if current_message:
@@ -1032,37 +1026,6 @@ def display_single_processing_ui(api_status: bool, args):
         # DAG 추출 옵션
         extract_dag = st.checkbox("오퍼 관계 DAG 추출", value=True)
         
-        # MongoDB 상태 및 관리
-        st.divider()
-        st.header("🗄️ MongoDB 상태")
-        
-        if MONGODB_AVAILABLE:
-            # MongoDB 연결 테스트
-            if st.button("🔌 연결 테스트", use_container_width=True):
-                with st.spinner("MongoDB 연결 확인 중..."):
-                    if test_mongodb_connection():
-                        st.success("✅ MongoDB 연결 성공")
-                    else:
-                        st.error("❌ MongoDB 연결 실패")
-            
-            # MongoDB 통계 표시
-            try:
-                manager = get_mongodb_manager()
-                if manager.connect():
-                    stats = manager.get_extraction_stats()
-                    if stats:
-                        st.write("📊 **저장 통계**")
-                        st.write(f"- 총 저장 건수: {stats.get('total_extractions', 0):,}")
-                        st.write(f"- 성공 건수: {stats.get('successful_extractions', 0):,}")
-                        st.write(f"- 성공률: {stats.get('success_rate', 0):.1f}%")
-                        st.write(f"- 최근 24시간: {stats.get('recent_24h', 0):,}")
-                    manager.disconnect()
-            except Exception as e:
-                st.warning(f"⚠️ 통계 조회 실패: {str(e)}")
-        else:
-            st.error("❌ MongoDB 비활성화")
-            st.write("pymongo 패키지를 설치하고 mongodb_utils.py를 확인하세요.")
-    
     # 메인 컨텐츠 (메시지 입력 부분을 줄이고 추출 결과 부분을 키움)
     col1, col2 = st.columns([1, 2])
     
@@ -1137,7 +1100,7 @@ def display_single_processing_ui(api_status: bool, args):
                         progress_bar.progress(0)
                 
                 if result:
-                    st.session_state['extraction_result'] = result
+                    st.session_state['result'] = result
                     # 추출 결과에 프롬프트가 포함되어 있으면 사용, 없으면 별도 API 호출
                     if 'prompts' in result and result['prompts'].get('success'):
                         st.session_state['extraction_prompts'] = result['prompts']
@@ -1150,28 +1113,6 @@ def display_single_processing_ui(api_status: bool, args):
                     
                     st.session_state['current_message'] = message  # 현재 메시지 저장
                     
-                    # MongoDB에 결과 저장
-                    if MONGODB_AVAILABLE:
-                        try:
-                            # 프롬프트 정보 가져오기
-                            extraction_prompts = st.session_state.get('extraction_prompts', {})
-                            
-                            # MongoDB에 저장 (message_id는 UUID로 자동 생성)
-                            saved_id = save_to_mongodb(message, result, extraction_prompts, 
-                                                     user_id="SKT1110566", message_id=None)
-                            
-                            if saved_id:
-                                st.success("✅ 정보 추출이 완료되었습니다!")
-                                st.info(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")
-                            else:
-                                st.success("✅ 정보 추출이 완료되었습니다!")
-                                st.warning("⚠️ MongoDB 저장에 실패했습니다.")
-                        except Exception as e:
-                            st.success("✅ 정보 추출이 완료되었습니다!")
-                            st.error(f"❌ MongoDB 저장 중 오류 발생: {str(e)}")
-                    else:
-                        st.success("✅ 정보 추출이 완료되었습니다!")
-                    
                     st.rerun()  # 페이지 새로고침으로 결과 표시
                 else:
                     st.error("❌ 추출 중 오류가 발생했습니다.")
@@ -1180,8 +1121,8 @@ def display_single_processing_ui(api_status: bool, args):
         st.subheader("📊 작업 결과")
         
         # 결과 표시
-        if 'extraction_result' in st.session_state:
-            display_results(st.session_state['extraction_result'])
+        if 'result' in st.session_state:
+            display_results(st.session_state['result'])
         else:
             st.info("메시지를 입력하고 '정보 추출 실행' 버튼을 클릭하세요.")
 
