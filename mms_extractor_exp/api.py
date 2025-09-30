@@ -44,6 +44,7 @@ python api.py --test --message "샘플 MMS 텍스트"
 --------------
 - `POST /extract`: 단일 메시지 분석
 - `POST /extract/batch`: 배치 메시지 분석
+- `POST /dag`: Entity DAG 추출
 - `GET /health`: 서비스 상태 확인
 - `GET /status`: 상세 성능 지표
 - `GET /models`: 사용 가능한 모델 목록
@@ -98,6 +99,7 @@ sys.path.insert(0, str(current_dir))
 try:
     from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
+    from entity_dag_extractor import DAGParser, extract_dag, llm_ax, llm_gem, llm_cld, llm_gen, llm_gpt
 except ImportError as e:
     print(f"❌ MMSExtractor 임포트 오류: {e}")
     print("📝 mms_extractor.py가 같은 디렉토리에 있는지 확인하세요")
@@ -882,6 +884,138 @@ def get_prompts():
             "timestamp": time.time()
         }), 500
 
+@app.route('/dag', methods=['POST'])
+def extract_dag_endpoint():
+    """
+    Entity DAG 추출 API
+    
+    MMS 메시지에서 엔티티 간의 관계를 분석하여 DAG(Directed Acyclic Graph) 형태로 추출합니다.
+    
+    Request Body (JSON):
+        - message (required): 분석할 MMS 메시지 텍스트
+        - llm_model (optional): 사용할 LLM 모델 (기본값: 'ax')
+                                선택 가능: 'ax', 'gem', 'cld', 'gen', 'gpt'
+        - save_dag_image (optional): DAG 이미지 저장 여부 (기본값: False)
+    
+    Returns:
+        JSON: DAG 추출 결과
+            - success: 처리 성공 여부
+            - result: DAG 추출 결과
+                - dag_section: 파싱된 DAG 텍스트
+                - dag_raw: LLM 원본 응답
+                - dag_json: NetworkX 그래프를 JSON으로 변환
+                - analysis: 그래프 분석 정보 (노드 수, 엣지 수, root/leaf 노드 등)
+            - metadata: 처리 메타데이터 (처리 시간, 사용된 설정 등)
+    
+    HTTP Status Codes:
+        - 200: 성공
+        - 400: 잘못된 요청 (필수 필드 누락, 잘못된 파라미터 등)
+        - 500: 서버 내부 오류
+    
+    Example Request:
+        ```json
+        {
+            "message": "SK텔레콤 가입하시면 ZEM폰을 드립니다",
+            "llm_model": "ax",
+            "save_dag_image": true
+        }
+        ```
+    """
+    try:
+        # 요청 데이터 검증
+        if not request.is_json:
+            return jsonify({"error": "Content-Type은 application/json이어야 합니다"}), 400
+        
+        data = request.get_json()
+        
+        # 필수 필드 검증
+        if 'message' not in data:
+            return jsonify({"error": "필수 필드가 누락되었습니다: 'message'"}), 400
+        
+        message = data['message']
+        if not message or not message.strip():
+            return jsonify({"error": "메시지는 비어있을 수 없습니다"}), 400
+        
+        # 선택적 파라미터 추출
+        llm_model_name = data.get('llm_model', 'ax')
+        save_dag_image = data.get('save_dag_image', False)
+        
+        # 파라미터 유효성 검증
+        valid_llm_models = ['ax', 'gem', 'cld', 'gen', 'gpt']
+        if llm_model_name not in valid_llm_models:
+            return jsonify({"error": f"잘못된 llm_model입니다. 사용 가능: {valid_llm_models}"}), 400
+        
+        # LLM 모델 매핑
+        llm_model_map = {
+            'ax': llm_ax,
+            'gem': llm_gem,
+            'cld': llm_cld,
+            'gen': llm_gen,
+            'gpt': llm_gpt
+        }
+        llm_model = llm_model_map[llm_model_name]
+        
+        logger.info(f"🎯 DAG 추출 요청 - LLM: {llm_model_name}, 메시지 길이: {len(message)}자")
+        
+        # DAG 파서 초기화
+        parser = DAGParser()
+        
+        # DAG 추출 실행
+        start_time = time.time()
+        result = extract_dag(parser, message, llm_model)
+        processing_time = time.time() - start_time
+        
+        # NetworkX 그래프를 JSON으로 변환
+        dag = result['dag']
+        dag_json = parser.to_json(dag)
+        analysis = parser.analyze_graph(dag)
+        
+        # 이미지 저장 (선택 사항)
+        dag_image_path = None
+        if save_dag_image:
+            try:
+                from utils import create_dag_diagram, sha256_hash
+                dag_hash = sha256_hash(message)
+                dag_image_filename = f'dag_{dag_hash}'
+                create_dag_diagram(dag, filename=dag_image_filename)
+                # 절대 경로로 변환
+                dag_image_path = str(Path(__file__).parent / 'dag_images' / f'{dag_image_filename}.png')
+                logger.info(f"📊 DAG 이미지 저장됨: {dag_image_path}")
+            except Exception as e:
+                logger.warning(f"⚠️ DAG 이미지 저장 실패: {e}")
+        
+        # 응답 구성
+        response = {
+            "success": True,
+            "result": {
+                "dag_section": result['dag_section'],
+                "dag_raw": result['dag_raw'],
+                "dag_json": json.loads(dag_json),
+                "analysis": analysis,
+                "dag_image_path": dag_image_path
+            },
+            "metadata": {
+                "llm_model": llm_model_name,
+                "processing_time_seconds": round(processing_time, 3),
+                "timestamp": time.time(),
+                "message_length": len(message),
+                "save_dag_image": save_dag_image
+            }
+        }
+        
+        logger.info(f"✅ DAG 추출 완료: {processing_time:.3f}초, 노드: {analysis['num_nodes']}, 엣지: {analysis['num_edges']}")
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"❌ DAG 추출 중 오류 발생: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }), 500
+
 @app.errorhandler(404)
 def not_found(error):
     """404 에러 핸들러 - 존재하지 않는 엔드포인트 접근 시"""
@@ -999,6 +1133,7 @@ def main():
         logger.info("  GET  /status - 서버 상태 조회")
         logger.info("  POST /extract - 단일 메시지 추출")
         logger.info("  POST /extract/batch - 다중 메시지 배치 추출")
+        logger.info("  POST /dag - Entity DAG 추출")
         
         # Flask 설정 적용
         app.config['DEBUG'] = args.debug
