@@ -115,6 +115,38 @@ class ModelConfig:
         return descriptions.get(self.model_loading_mode, 'Unknown mode')
 
 @dataclass
+class StorageConfig:
+    """Storage configuration for DAG images and other files."""
+    
+    # DAG image storage mode: 'local' or 'nas'
+    dag_storage_mode: str = os.getenv("DAG_STORAGE_MODE", "local")  # 'local' = local disk, 'nas' = NAS server
+    
+    # Storage paths
+    dag_local_dir: str = "dag_images_local"  # Local storage directory
+    dag_nas_dir: str = "dag_images"  # NAS storage directory (can be symlink)
+    
+    def __post_init__(self):
+        """Validate storage mode after initialization."""
+        valid_modes = ['local', 'nas']
+        if self.dag_storage_mode not in valid_modes:
+            raise ValueError(f"dag_storage_mode must be one of {valid_modes}, got: {self.dag_storage_mode}")
+    
+    def get_dag_images_dir(self) -> str:
+        """Get the current DAG images directory based on storage mode."""
+        if self.dag_storage_mode == 'local':
+            return self.dag_local_dir
+        else:
+            return self.dag_nas_dir
+    
+    def get_storage_description(self) -> str:
+        """Get human-readable description of current storage mode."""
+        descriptions = {
+            'local': 'Local disk storage (no NAS required)',
+            'nas': 'NAS server storage (requires NAS mount)'
+        }
+        return descriptions.get(self.dag_storage_mode, 'Unknown mode')
+
+@dataclass
 class ProcessingConfig:
     """Processing configuration settings that control the behavior of entity extraction and matching."""
     
@@ -211,3 +243,4 @@ MODEL_CONFIG = ModelConfig()  # AI model configurations
 PROCESSING_CONFIG = ProcessingConfig()  # Processing behavior settings
 METADATA_CONFIG = METADATAConfig()  # Data file paths
 EMBEDDING_CONFIG = EmbeddingConfig()  # Embedding and model file paths
+STORAGE_CONFIG = StorageConfig()  # Storage configuration for DAG images

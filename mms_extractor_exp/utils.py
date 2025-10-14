@@ -8,12 +8,12 @@ import logging
 # 로거 설정
 logger = logging.getLogger(__name__)
 
-def create_dag_diagram(G, filename='dag_diagram', wrap_method='record', **kwargs):
+def create_dag_diagram(G, filename='dag_diagram', wrap_method='record', output_dir=None, **kwargs):
     """
     DAG 시각화 다이어그램 생성 함수
     
     NetworkX 그래프를 Graphviz를 사용하여 시각적 다이어그램으로 변환합니다.
-    생성된 이미지는 ./dag_images/ 디렉토리에 PNG 형태로 저장됩니다.
+    생성된 이미지는 지정된 디렉토리에 PNG 형태로 저장됩니다.
     
     Parameters:
     -----------
@@ -23,6 +23,8 @@ def create_dag_diagram(G, filename='dag_diagram', wrap_method='record', **kwargs
         저장할 파일명 (확장자 제외, 기본값: 'dag_diagram')
     wrap_method : str
         텍스트 래핑 방법 ('html_table', 'record', 'manual_wrap', 'fixedsize_false')
+    output_dir : str, optional
+        출력 디렉토리 경로. None이면 설정에서 자동 선택 (default: None)
     **kwargs : dict
         Graphviz 스타일링 파라미터 (색상, 폰트, 레이아웃 등)
         
@@ -36,7 +38,18 @@ def create_dag_diagram(G, filename='dag_diagram', wrap_method='record', **kwargs
     - 자동 텍스트 래핑으로 가독성 향상
     - 노드와 엣지의 시각적 구분
     - PNG 형식으로 고품질 이미지 생성
+    - 로컬/NAS 저장 위치 선택 가능
     """
+    
+    # 출력 디렉토리 결정
+    if output_dir is None:
+        try:
+            from config.settings import STORAGE_CONFIG
+            output_dir = f'./{STORAGE_CONFIG.get_dag_images_dir()}'
+            logger.info(f"📁 저장 위치: {output_dir} ({STORAGE_CONFIG.dag_storage_mode} 모드)")
+        except:
+            output_dir = './dag_images'  # 기본값
+            logger.warning(f"⚠️ 설정 로드 실패, 기본 경로 사용: {output_dir}")
     
     logger.info(f"🎨 DAG 다이어그램 생성 시작 - 파일명: {filename}")
     logger.info(f"📊 입력 그래프 - 노드 수: {G.number_of_nodes()}, 엣지 수: {G.number_of_edges()}")
@@ -149,8 +162,12 @@ def create_dag_diagram(G, filename='dag_diagram', wrap_method='record', **kwargs
     
     # Render
     try:
+        # 출력 디렉토리가 없으면 생성
+        import os
+        os.makedirs(output_dir, exist_ok=True)
+        
         logger.info("🖼️ DAG 이미지 렌더링 중...")
-        output_path = dot.render(filename, directory='./dag_images', cleanup=True)
+        output_path = dot.render(filename, directory=output_dir, cleanup=True)
         logger.info(f"✅ DAG 다이어그램 생성 완료: {output_path}")
         return output_path
     except Exception as e:

@@ -45,6 +45,7 @@ python api.py --test --message "샘플 MMS 텍스트"
 - `POST /extract`: 단일 메시지 분석
 - `POST /extract/batch`: 배치 메시지 분석
 - `POST /dag`: Entity DAG 추출
+- `GET /dag_images/<filename>`: DAG 이미지 파일 제공
 - `GET /health`: 서비스 상태 확인
 - `GET /status`: 상세 성능 지표
 - `GET /models`: 사용 가능한 모델 목록
@@ -72,7 +73,7 @@ import argparse
 import warnings
 import atexit
 from pathlib import Path
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from config import settings
 
@@ -971,16 +972,29 @@ def extract_dag_endpoint():
         analysis = parser.analyze_graph(dag)
         
         # 이미지 저장 (선택 사항)
+        dag_image_url = None
         dag_image_path = None
         if save_dag_image:
             try:
                 from utils import create_dag_diagram, sha256_hash
+                from config.settings import STORAGE_CONFIG
+                
                 dag_hash = sha256_hash(message)
-                dag_image_filename = f'dag_{dag_hash}'
-                create_dag_diagram(dag, filename=dag_image_filename)
-                # 절대 경로로 변환
-                dag_image_path = str(Path(__file__).parent / 'dag_images' / f'{dag_image_filename}.png')
-                logger.info(f"📊 DAG 이미지 저장됨: {dag_image_path}")
+                dag_image_filename = f'dag_{dag_hash}.png'
+                
+                # 설정에 따라 저장 위치 결정
+                dag_dir = STORAGE_CONFIG.get_dag_images_dir()
+                create_dag_diagram(dag, filename=f'dag_{dag_hash}')
+                
+                # HTTP URL 생성 (외부 시스템 접근 가능)
+                # URL은 항상 /dag_images/로 통일 (라우팅에서 처리)
+                dag_image_url = f"{request.url_root.rstrip('/')}/dag_images/{dag_image_filename}"
+                
+                # 실제 로컬 경로
+                dag_image_path = str(Path(__file__).parent / dag_dir / dag_image_filename)
+                
+                logger.info(f"📊 DAG 이미지 저장됨: {dag_image_path} ({STORAGE_CONFIG.dag_storage_mode} 모드)")
+                logger.info(f"🌐 DAG 이미지 URL: {dag_image_url}")
             except Exception as e:
                 logger.warning(f"⚠️ DAG 이미지 저장 실패: {e}")
         
@@ -992,7 +1006,8 @@ def extract_dag_endpoint():
                 "dag_raw": result['dag_raw'],
                 "dag_json": json.loads(dag_json),
                 "analysis": analysis,
-                "dag_image_path": dag_image_path
+                "dag_image_url": dag_image_url,  # HTTP URL (외부 시스템용)
+                "dag_image_path": dag_image_path  # 로컬 경로 (내부 참조용)
             },
             "metadata": {
                 "llm_model": llm_model_name,
@@ -1014,6 +1029,55 @@ def extract_dag_endpoint():
             "success": False,
             "error": str(e),
             "timestamp": time.time()
+        }), 500
+
+@app.route('/dag_images/<path:filename>', methods=['GET'])
+def serve_dag_image(filename):
+    """
+    DAG 이미지 파일 제공 엔드포인트
+    
+    외부 시스템에서 HTTP를 통해 DAG 이미지에 접근할 수 있도록 합니다.
+    설정에 따라 로컬 또는 NAS 디렉토리에서 파일을 제공합니다.
+    
+    Parameters:
+    -----------
+    filename : str
+        이미지 파일명 (예: dag_abc123.png)
+    
+    Returns:
+    --------
+    file : 이미지 파일
+    """
+    try:
+        from config.settings import STORAGE_CONFIG
+        
+        # 설정에 따라 디렉토리 결정
+        dag_dir = STORAGE_CONFIG.get_dag_images_dir()
+        dag_images_dir = Path(__file__).parent / dag_dir
+        
+        logger.info(f"📊 DAG 이미지 요청: {filename} (from {dag_dir})")
+        
+        # 파일이 존재하지 않으면 다른 디렉토리도 확인 (하위 호환성)
+        if not (dag_images_dir / filename).exists():
+            # 로컬에서 찾지 못하면 다른 디렉토리 시도
+            alt_dir = 'dag_images' if dag_dir == 'dag_images_local' else 'dag_images_local'
+            alt_path = Path(__file__).parent / alt_dir
+            if (alt_path / filename).exists():
+                logger.info(f"📁 대체 경로에서 찾음: {alt_dir}")
+                dag_images_dir = alt_path
+        
+        return send_from_directory(dag_images_dir, filename)
+    except FileNotFoundError:
+        logger.warning(f"⚠️ DAG 이미지 없음: {filename}")
+        return jsonify({
+            "success": False,
+            "error": "Image not found"
+        }), 404
+    except Exception as e:
+        logger.error(f"❌ DAG 이미지 제공 오류: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
         }), 500
 
 @app.errorhandler(404)
@@ -1071,8 +1135,16 @@ def main():
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
+    parser.add_argument('--storage', choices=['local', 'nas'], default='local',
+                       help='DAG 이미지 저장 위치 (local: 로컬 디스크, nas: NAS 서버)')
     
     args = parser.parse_args()
+    
+    # DAG 저장 모드 설정
+    os.environ['DAG_STORAGE_MODE'] = args.storage
+    from config.settings import STORAGE_CONFIG
+    logger.info(f"📁 DAG 저장 모드: {STORAGE_CONFIG.dag_storage_mode} - {STORAGE_CONFIG.get_storage_description()}")
+    logger.info(f"📂 DAG 저장 경로: {STORAGE_CONFIG.get_dag_images_dir()}")
     
     # 전역 CLI 데이터 소스 설정
     CLI_DATA_SOURCE = args.offer_data_source
