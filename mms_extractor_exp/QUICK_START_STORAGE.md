@@ -5,7 +5,7 @@
 **방화벽 문제가 있거나 즉시 사용하고 싶으면** → **로컬 저장 모드 (권장)**
 
 ```bash
-cd /Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp
+cd /path/to/mms_extractor_exp
 
 # API 서버 시작 (기본값 = 로컬 저장)
 python api.py

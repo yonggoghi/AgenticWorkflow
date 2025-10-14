@@ -65,6 +65,8 @@ import re
 import ast
 import glob
 import os
+from bson import raw_bson
+import copy
 import pandas as pd
 import numpy as np
 
@@ -116,13 +118,7 @@ if __name__ == '__main__':
     import sys
     from pathlib import Path
     
-    # MongoDB 유틸리티 임포트 (선택적)
-    try:
-        from mongodb_utils import save_to_mongodb, test_mongodb_connection
-        MONGODB_AVAILABLE = True
-    except ImportError:
-        MONGODB_AVAILABLE = False
-        print("⚠️ MongoDB 유틸리티를 찾을 수 없습니다. --save-to-mongodb 옵션이 비활성화됩니다.")
+    # MongoDB 유틸리티는 필요할 때 동적으로 임포트
     
     # 로그 디렉토리 생성
     log_dir = Path(__file__).parent / 'logs'
@@ -900,6 +896,52 @@ class MMSExtractor:
                 logger.warning("임베딩 모델 없이 동작 모드로 전환")
                 self.emb_model = None
 
+    def _initialize_multiple_llm_models(self, model_names: List[str]) -> List:
+        """
+        복수의 LLM 모델을 초기화하는 헬퍼 메서드
+        
+        Args:
+            model_names (List[str]): 초기화할 모델명 리스트 (예: ['ax', 'gpt', 'gen'])
+            
+        Returns:
+            List: 초기화된 LLM 모델 객체 리스트
+        """
+        llm_models = []
+        
+        # 모델명 매핑 (기존 LLM 초기화 로직과 동일)
+        model_mapping = {
+            "cld": getattr(MODEL_CONFIG, 'anthropic_model', 'amazon/anthropic/claude-sonnet-4-20250514'),
+            "ax": getattr(MODEL_CONFIG, 'ax_model', 'skt/ax4'),
+            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06')
+        }
+        
+        for model_name in model_names:
+            try:
+                actual_model_name = model_mapping.get(model_name, model_name)
+                
+                # 모델별 설정 (기존 로직과 동일)
+                model_kwargs = {
+                    "temperature": 0.0,
+                    "openai_api_key": getattr(API_CONFIG, 'llm_api_key', os.getenv('OPENAI_API_KEY')),
+                    "openai_api_base": getattr(API_CONFIG, 'llm_api_url', None),
+                    "model": actual_model_name,
+                    "max_tokens": getattr(MODEL_CONFIG, 'llm_max_tokens', 4000)
+                }
+                
+                # GPT 모델의 경우 시드 설정
+                if 'gpt' in actual_model_name.lower():
+                    model_kwargs["seed"] = 42
+                
+                llm_model = ChatOpenAI(**model_kwargs)
+                llm_models.append(llm_model)
+                logger.info(f"✅ LLM 모델 초기화 완료: {model_name} ({actual_model_name})")
+                
+            except Exception as e:
+                logger.error(f"❌ LLM 모델 초기화 실패: {model_name} - {e}")
+                continue
+        
+        return llm_models
+
     @log_performance
     def _initialize_kiwi(self):
         """Kiwi 형태소 분석기 초기화"""
@@ -997,6 +1039,9 @@ class MMSExtractor:
                 logger.info(f"CSV 파일 경로: {csv_path}")
                 
                 item_pdf_raw = pd.read_csv(csv_path)
+
+                # 단말기인 경우, 설명을 상품명으로 사용
+                item_pdf_raw['ITEM_NM'] = item_pdf_raw.apply(lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1)
                 logger.info(f"로컬 CSV에서 로드된 원본 데이터 크기: {item_pdf_raw.shape}")
                 logger.info(f"로컬 CSV 원본 컬럼들: {list(item_pdf_raw.columns)}")
                 
@@ -1224,6 +1269,7 @@ class MMSExtractor:
                 logger.info(f"실행할 SQL: {sql}")
                 
                 self.item_pdf_all = pd.read_sql(sql, conn)
+                self.item_pdf_all['ITEM_NM'] = self.item_pdf_all.apply(lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1)
                 logger.info(f"DB에서 로드된 원본 데이터 크기: {self.item_pdf_all.shape}")
                 logger.info(f"DB에서 로드된 컬럼들: {list(self.item_pdf_all.columns)}")
                 
@@ -1700,9 +1746,26 @@ class MMSExtractor:
         current_thread.stored_prompts[prompt_key] = prompt_data
         
         # 디버깅 로그 추가
-        logger.info(f"프롬프트 저장됨: {prompt_key} (길이: {len(prompt)})")
-        logger.info(f"현재 저장된 프롬프트 수: {len(current_thread.stored_prompts)}")
-        logger.info(f"저장된 프롬프트 키들: {list(current_thread.stored_prompts.keys())}")
+        prompt_length = len(prompt)
+        logger.info(f"📝 프롬프트 저장됨: {prompt_key}")
+        logger.info(f"📝 프롬프트 길이: {prompt_length:,} 문자")
+        
+        # 프롬프트가 매우 긴 경우 경고
+        if prompt_length > 20000:
+            logger.warning(f"⚠️ 매우 긴 프롬프트가 저장됨: {prompt_length:,} 문자")
+            logger.warning("이는 UI 표시 성능에 영향을 줄 수 있습니다.")
+            
+            # 프롬프트 내용 분석 (엔티티 추출 프롬프트인 경우)
+            if 'entity' in prompt_key.lower():
+                entity_section_start = prompt.find("## Candidate entities:")
+                if entity_section_start > 0:
+                    entity_section = prompt[entity_section_start:]
+                    entity_lines = entity_section.split('\n')
+                    entity_count = len([line for line in entity_lines if line.strip().startswith('-')])
+                    logger.warning(f"🔍 후보 엔티티 개수: {entity_count}개")
+        
+        logger.info(f"📝 현재 저장된 프롬프트 수: {len(current_thread.stored_prompts)}")
+        logger.info(f"📝 저장된 프롬프트 키들: {list(current_thread.stored_prompts.keys())}")
 
     def _safe_llm_invoke(self, prompt: str, max_retries: int = 3) -> str:
         """안전한 LLM 호출 메소드"""
@@ -1998,47 +2061,181 @@ class MMSExtractor:
             return pd.DataFrame()
 
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 5) -> pd.DataFrame:
-        """LLM 기반 엔티티 추출"""
+    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 5, llm_models: List = None) -> pd.DataFrame:
+        """
+        LLM 기반 엔티티 추출 (복수 모델 병렬 처리 지원)
+        
+        Args:
+            msg_text (str): 분석할 메시지 텍스트
+            rank_limit (int): 결과에서 반환할 최대 순위
+            llm_models (List, optional): 사용할 LLM 모델 리스트. None이면 기본 모델 사용
+            
+        Returns:
+            pd.DataFrame: 추출된 엔티티와 유사도 정보
+        """
         try:
             msg_text = validate_text_input(msg_text)
             
+            # LLM 모델이 지정되지 않은 경우 기본 모델 사용
+            if llm_models is None:
+                llm_models = [self.llm_model]
+            
             # 로직 기반 방식으로 후보 엔티티 먼저 추출
-            cand_entities_by_sim = sorted([
-                e.strip() for e in self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.4))['item_nm_alias'].unique() 
+            logger.info("=== 후보 엔티티 추출 시작 ===")
+            fuzzy_threshold = getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.4)
+            logger.info(f"퍼지 매칭 임계값: {fuzzy_threshold}")
+            
+            # 로직 기반 엔티티 추출
+            logic_result = self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=fuzzy_threshold)
+            raw_entities = logic_result['item_nm_alias'].unique()
+            logger.info(f"로직 기반 추출 원본 엔티티 수: {len(raw_entities)}개")
+            
+            # 필터링 전 엔티티 샘플 확인
+            if len(raw_entities) > 0:
+                sample_raw = raw_entities[:10] if len(raw_entities) > 10 else raw_entities
+                logger.info(f"원본 엔티티 샘플 (최대 10개): {list(sample_raw)}")
+            
+            # 필터링 적용
+            filtered_entities = [
+                e.strip() for e in raw_entities
                 if e.strip() not in self.stop_item_names and len(e.strip()) >= 2
-            ])
+            ]
+            logger.info(f"필터링 후 엔티티 수: {len(filtered_entities)}개")
+            logger.info(f"제거된 엔티티 수: {len(raw_entities) - len(filtered_entities)}개")
+            
+            # 정렬
+            cand_entities_by_sim = sorted(filtered_entities)
+            logger.info(f"최종 후보 엔티티 수: {len(cand_entities_by_sim)}개")
+            
+            # 후보 엔티티가 너무 많은 경우 경고
+            if len(cand_entities_by_sim) > 100:
+                logger.warning(f"⚠️ 후보 엔티티가 매우 많습니다: {len(cand_entities_by_sim)}개")
+                logger.warning("이는 프롬프트 길이를 크게 증가시킬 수 있습니다.")
+                
+                # 상위 100개만 사용하도록 제한
+                original_count = len(cand_entities_by_sim)
+                cand_entities_by_sim = cand_entities_by_sim[:100]
+                logger.warning(f"성능을 위해 상위 {len(cand_entities_by_sim)}개만 사용합니다. (원본: {original_count}개)")
+            
+            # 최종 후보 엔티티 샘플 표시
+            if len(cand_entities_by_sim) > 0:
+                sample_final = cand_entities_by_sim[:10] if len(cand_entities_by_sim) > 10 else cand_entities_by_sim
+                logger.info(f"최종 후보 엔티티 샘플 (최대 10개): {sample_final}")
+            
+            logger.info("=== 후보 엔티티 추출 완료 ===")
+            
+            def get_entities_by_llm(args_dict):
+                """단일 LLM으로 엔티티 추출하는 내부 함수"""
+                llm_model, msg_text, cand_entities_list = args_dict['llm_model'], args_dict['msg_text'], args_dict['cand_entities_list']
+                
+                try:
+                    # 프롬프트 구성 - 기존 로직과 동일
+                    base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
+                    if base_prompt is None:
+                        base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
+                        logger.info("엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
+                    else:
+                        logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
+                    
+                    # 후보 엔티티 리스트 크기 디버깅
+                    logger.info(f"🔍 프롬프트 구성 중 - LLM 모델: {llm_model}")
+                    logger.info(f"🔍 후보 엔티티 개수: {len(cand_entities_list)}개")
+                    
+                    # 후보 엔티티를 문자열로 변환
+                    cand_entities_str = '\n'.join([f"- {entity}" for entity in cand_entities_list])
+                    cand_entities_str_length = len(cand_entities_str)
+                    logger.info(f"🔍 후보 엔티티 문자열 길이: {cand_entities_str_length:,} 문자")
+                    
+                    # 베이스 프롬프트 길이 확인
+                    base_prompt_length = len(base_prompt)
+                    msg_length = len(msg_text)
+                    logger.info(f"🔍 베이스 프롬프트 길이: {base_prompt_length:,} 문자")
+                    logger.info(f"🔍 메시지 길이: {msg_length:,} 문자")
+                    
+                    # 전체 예상 프롬프트 길이 계산
+                    estimated_total_length = base_prompt_length + msg_length + cand_entities_str_length + 100  # 템플릿 여백
+                    logger.info(f"🔍 예상 전체 프롬프트 길이: {estimated_total_length:,} 문자")
+                    
+                    if estimated_total_length > 50000:  # 50K 문자 이상인 경우 경고
+                        logger.warning(f"⚠️ 프롬프트가 매우 깁니다: {estimated_total_length:,} 문자")
+                        logger.warning("LLM 토큰 제한에 도달할 수 있습니다.")
+                    
+                    # PromptTemplate 사용 (langchain 방식)
+                    from langchain.prompts import PromptTemplate
+                    zero_shot_prompt = PromptTemplate(
+                        input_variables=["entity_extraction_prompt", "msg", "cand_entities"],
+                        template="""
+                        {entity_extraction_prompt}
+                        
+                        ## message:                
+                        {msg}
 
-            # LLM 프롬프트 구성 - 외부 프롬프트 모듈 사용
-            # 프롬프트를 prompts 디렉토리에서 가져오기 (설정 파일 대신)
+                        ## Candidate entities:
+                        {cand_entities}
+                        """
+                    )
+                    
+                    chain = zero_shot_prompt | llm_model
+                    cand_entities = chain.invoke({
+                        "entity_extraction_prompt": base_prompt, 
+                        "msg": msg_text, 
+                        "cand_entities": cand_entities_list
+                    }).content
+                    
+                    # LLM 응답 파싱 및 정리
+                    cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
+                    cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e) >= 2]
+                    
+                    return cand_entity_list
+                    
+                except Exception as e:
+                    logger.error(f"LLM 모델에서 엔티티 추출 실패: {e}")
+                    return []
+            
+            # 프롬프트 미리보기 저장 (디버깅용) - 복수 모델이어도 프롬프트는 동일하므로 항상 저장
             base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
             if base_prompt is None:
-                # settings.py에 프롬프트가 없으면 prompts 디렉토리에서 가져오기
                 base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
-                logger.info("엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
-            else:
-                logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
-            prompt = build_entity_extraction_prompt(msg_text, base_prompt)
+            preview_prompt = build_entity_extraction_prompt(msg_text, base_prompt)
             
-            # 후보 엔티티 추가
-            prompt += f"""
+            # 후보 엔티티 섹션 추가 전 디버깅
+            entities_section = f"""
 
             ## Candidate entities:
             {cand_entities_by_sim}
             """
+            logger.info(f"🔍 프롬프트에 추가될 엔티티 섹션 길이: {len(entities_section):,} 문자")
             
-            # 프롬프트 저장 (디버깅/미리보기용)
-            self._store_prompt_for_preview(prompt, "entity_extraction")
+            preview_prompt += entities_section
             
-            # LLM 호출 (프롬프트 저장은 이미 위에서 했으므로 직접 호출)
-            response = self.llm_model.invoke(prompt)
-            cand_entities = response.content if hasattr(response, 'content') else str(response)
+            # 최종 프롬프트 길이 확인
+            final_prompt_length = len(preview_prompt)
+            logger.info(f"🔍 최종 엔티티 추출 프롬프트 길이: {final_prompt_length:,} 문자")
             
-            # LLM 응답 파싱 및 정리
-            cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
-            cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e) >= 2]
+            self._store_prompt_for_preview(preview_prompt, "entity_extraction")
+            
+            # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
+            batches = []
+            for llm_model in llm_models:
+                batches.append({
+                    "msg_text": msg_text, 
+                    "llm_model": llm_model, 
+                    "cand_entities_list": cand_entities_by_sim
+                })
+            
+            logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
+            
+            # 병렬 작업 실행
+            n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
+            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
+            
+            # 모든 결과를 합치고 중복 제거
+            cand_entity_list = list(set(sum(batch_results, [])))
+            logger.info(f"✅ LLM 추출 완료: {cand_entity_list}")
 
             if not cand_entity_list:
+                logger.warning("LLM 추출에서 유효한 엔티티를 찾지 못함")
                 return pd.DataFrame()
 
             # 후보 엔티티들과 상품 DB 매칭
@@ -2418,6 +2615,8 @@ class MMSExtractor:
                 logger.error("🚨 LLM이 스키마 정의를 반환했습니다! 실제 데이터가 아닙니다.")
                 logger.error("재시도 또는 fallback 결과를 사용합니다.")
                 return self._create_fallback_result(msg)
+
+            raw_result = copy.deepcopy(json_objects)
             
             # 7단계: 엔티티 매칭 및 최종 결과 구성
             logger.info("=" * 30 + " 7단계: 최종 결과 구성 " + "=" * 30)
@@ -2470,14 +2669,10 @@ class MMSExtractor:
             logger.info(f"상품 수: {len(final_result.get('product', []))}개")
             logger.info(f"채널 수: {len(final_result.get('channel', []))}개")
             logger.info(f"프로그램 수: {len(final_result.get('pgm', []))}개")
-            
-            # 프롬프트 정보 추가 (MongoDB 저장용)
-            stored_prompts = get_stored_prompts_from_thread()
-            if stored_prompts:
-                final_result['prompts'] = stored_prompts
-                logger.debug(f"프롬프트 정보가 결과에 추가됨: {list(stored_prompts.keys())}")
-            
-            return final_result
+
+            actual_prompts = get_stored_prompts_from_thread()
+
+            return {"extracted_result": final_result, "raw_result": raw_result, "prompts": actual_prompts}
             
         except Exception as e:
             logger.error(f"메시지 처리 실패: {e}")
@@ -2619,8 +2814,11 @@ class MMSExtractor:
                 cand_entities = [item.get('name', '') for item in product_items if item.get('name')]
                 similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
             else:
-                # LLM 기반: LLM을 통한 엔티티 추출
-                similarities_fuzzy = self.extract_entities_by_llm(msg)
+                # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
+                default_llm_models = self._initialize_multiple_llm_models(['ax', 'cld'])
+                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models)
+
+            similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '') in x['item_name_in_msg'].replace(' ', '') or x['item_name_in_msg'].replace(' ', '') in x['item_nm_alias'].replace(' ', '')) , axis=1)]
 
             # 상품 정보 매핑
             if not similarities_fuzzy.empty:
@@ -2749,21 +2947,29 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
     """
     try:
         logger.info(f"워커 프로세스에서 메시지 처리 시작: {message[:50]}...")
+
+        # 1. 메인 추출
+        result = extractor.process_message(message)
+        dag_list = []
         
         if extract_dag:
             # 순차적 처리로 변경 (프롬프트 캡처를 위해)
             # 멀티스레드를 사용하면 스레드 로컬 저장소가 분리되어 프롬프트 캡처가 안됨
             logger.info("순차적 처리로 메인 추출 및 DAG 추출 수행")
             
-            # 1. 메인 추출
-            result = extractor.process_message(message)
-            
             # 2. DAG 추출
             dag_result = make_entity_dag(message, extractor.llm_model)
-            result['entity_dag'] = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
-        else:
-            result = extractor.process_message(message)
-            result['entity_dag'] = []
+            dag_list = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
+
+        extracted_result = result.get('extracted_result', {})
+        extracted_result['entity_dag'] = dag_list
+        result['extracted_result'] = extracted_result
+
+        raw_result = result.get('raw_result', {})
+        raw_result['entity_dag'] = dag_list
+        result['raw_result'] = raw_result
+
+        result['error'] = ""
         
         logger.info(f"워커 프로세스에서 메시지 처리 완료")
         return result
@@ -2881,20 +3087,37 @@ def get_stored_prompts_from_thread():
     else:
         return {}
 
-def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extractor=None):
-    """MongoDB 저장이 활성화된 경우 결과를 저장하는 도우미 함수"""
-    if not args.save_to_mongodb:
-        return None
-        
-    if not MONGODB_AVAILABLE:
-        print("❌ MongoDB 저장이 요청되었지만 mongodb_utils를 찾을 수 없습니다.")
-        return None
+def save_result_to_mongodb_if_enabled(message: str, result: dict, args_or_data, extractor=None):
+    """MongoDB 저장이 활성화된 경우 결과를 저장하는 도우미 함수
     
-    try:
-        # 실제 저장된 프롬프트 정보 가져오기
-        stored_prompts = get_stored_prompts_from_thread()
+    Args:
+        message: 처리할 메시지
+        result: 처리 결과 (extracted_result, raw_result 포함)
+        args_or_data: argparse.Namespace 객체 또는 딕셔너리
+        extractor: MMSExtractor 인스턴스 (선택적)
+    
+    Returns:
+        str: 저장된 문서 ID, 실패 시 None
+    """
+    # args_or_data가 딕셔너리인 경우 Namespace로 변환
+    if isinstance(args_or_data, dict):
+        import argparse
+        args = argparse.Namespace(**args_or_data)
+    else:
+        args = args_or_data
+    
+    # save_to_mongodb 속성이 없거나 False인 경우
+    if not getattr(args, 'save_to_mongodb', False):
+        return None
         
-        # 프롬프트 정보 구성 (실제 저장된 프롬프트 사용)
+    try:
+        # MongoDB 임포트 시도
+        from mongodb_utils import save_to_mongodb
+        
+        # 스레드 로컬 저장소에서 프롬프트 정보 가져오기
+        stored_prompts = result.get('prompts', get_stored_prompts_from_thread()) 
+        
+        # 프롬프트 정보 구성
         prompts_data = {}
         for key, prompt_data in stored_prompts.items():
             prompts_data[key] = {
@@ -2919,28 +3142,39 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
             'success': True,
             'prompts': prompts_data,
             'settings': {
-                'llm_model': args.llm_model,
-                'offer_data_source': args.offer_data_source,
-                'product_info_extraction_mode': args.product_info_extraction_mode,
-                'entity_matching_mode': args.entity_matching_mode,
-                'extract_entity_dag': args.extract_entity_dag
+                'llm_model': getattr(args, 'llm_model', 'unknown'),
+                'offer_data_source': getattr(args, 'offer_data_source', getattr(args, 'offer_info_data_src', 'unknown')),
+                'product_info_extraction_mode': getattr(args, 'product_info_extraction_mode', 'unknown'),
+                'entity_matching_mode': getattr(args, 'entity_matching_mode', getattr(args, 'entity_extraction_mode', 'unknown')),
+                'extract_entity_dag': getattr(args, 'extract_entity_dag', False)
             }
         }
         
         # 추출 결과를 MongoDB 형식으로 구성
         extraction_result = {
             'success': not bool(result.get('error')),
-            'result': result,
+            'result': result.get('extracted_result', result.get('result', {})),
             'metadata': {
                 'processing_time_seconds': result.get('processing_time', 0),
-                'processing_mode': 'single',
-                'model_used': args.llm_model
+                'processing_mode': getattr(args, 'processing_mode', 'single'),
+                'model_used': getattr(args, 'llm_model', 'unknown')
+            }
+        }
+
+        raw_result_data = {
+            'success': not bool(result.get('error')),
+            'result': result.get('raw_result', {}),
+            'metadata': {
+                'processing_time_seconds': result.get('processing_time', 0),
+                'processing_mode': getattr(args, 'processing_mode', 'single'),
+                'model_used': getattr(args, 'llm_model', 'unknown')
             }
         }
         
-        # MongoDB에 저장 (message_id는 UUID로 자동 생성)
-        saved_id = save_to_mongodb(message, extraction_result, extraction_prompts, 
-                                 user_id="SKT1110566", message_id=None)
+        # MongoDB에 저장
+        user_id = getattr(args, 'user_id', 'DEFAULT_USER')
+        saved_id = save_to_mongodb(message, extraction_result, raw_result_data, extraction_prompts, 
+                                 user_id=user_id, message_id=None)
         
         if saved_id:
             print(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")
@@ -2948,6 +3182,14 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args, extracto
         else:
             print("⚠️ MongoDB 저장에 실패했습니다.")
             return None
+            
+    except ImportError:
+        print("❌ MongoDB 저장이 요청되었지만 mongodb_utils를 찾을 수 없습니다.")
+        return None
+    except Exception as e:
+        print(f"❌ MongoDB 저장 중 오류 발생: {str(e)}")
+        return None
+
             
     except Exception as e:
         print(f"❌ MongoDB 저장 중 오류 발생: {str(e)}")
@@ -3000,7 +3242,9 @@ def main():
     
     # MongoDB 연결 테스트만 수행하는 경우
     if args.test_mongodb:
-        if not MONGODB_AVAILABLE:
+        try:
+            from mongodb_utils import test_mongodb_connection
+        except ImportError:
             print("❌ MongoDB 유틸리티를 찾을 수 없습니다.")
             print("mongodb_utils.py 파일과 pymongo 패키지를 확인하세요.")
             exit(1)
@@ -3046,6 +3290,7 @@ def main():
                 # MongoDB 저장 (배치 처리)
                 if args.save_to_mongodb:
                     print("\n📄 MongoDB 저장 중...")
+                    args.processing_mode = 'batch'
                     saved_count = 0
                     for i, result in enumerate(results):
                         if i < len(messages):  # 메시지가 있는 경우만
@@ -3114,35 +3359,40 @@ https://naver.me/GipIR3Lg
 ☎ 0507-1399-6011
 
 (무료ARS)수신거부 및 단골해지 : 
-080-801-0011            """
+080-801-0011            
+"""
             
             # 단일 메시지 처리 (멀티스레드)
             logger.info("단일 메시지 처리 시작 (멀티스레드)")
             result = process_message_with_dag(extractor, test_message, args.extract_entity_dag)
-        
+                    
             # MongoDB 저장 (단일 메시지)
             if args.save_to_mongodb:
                 print("\n📄 MongoDB 저장 중...")
+                args.processing_mode = 'single'
                 saved_id = save_result_to_mongodb_if_enabled(test_message, result, args, extractor)
                 if saved_id:
                     print("📄 MongoDB 저장 완료!")
+
+            
+            extracted_result = result.get('extracted_result', {})
         
             print("\n" + "="*50)
             print("🎯 최종 추출된 정보")
             print("="*50)
-            print(json.dumps(result, indent=4, ensure_ascii=False))
-            
+            print(json.dumps(extracted_result, indent=4, ensure_ascii=False))
+
             # 성능 요약 정보 출력
             print("\n" + "="*50)
             print("📊 처리 완료")
             print("="*50)
-            print(f"✅ 제목: {result.get('title', 'N/A')}")
-            print(f"✅ 목적: {len(result.get('purpose', []))}개")
-            print(f"✅ 상품: {len(result.get('product', []))}개")
-            print(f"✅ 채널: {len(result.get('channel', []))}개")
-            print(f"✅ 프로그램: {len(result.get('pgm', []))}개")
-            if result.get('error'):
-                print(f"❌ 오류: {result['error']}")
+            print(f"✅ 제목: {extracted_result.get('title', 'N/A')}")
+            print(f"✅ 목적: {len(extracted_result.get('purpose', []))}개")
+            print(f"✅ 상품: {len(extracted_result.get('product', []))}개")
+            print(f"✅ 채널: {len(extracted_result.get('channel', []))}개")
+            print(f"✅ 프로그램: {len(extracted_result.get('pgm', []))}개")
+            if extracted_result.get('error'):
+                print(f"❌ 오류: {extracted_result['error']}")
         
     except Exception as e:
         logger.error(f"실행 실패: {e}")

@@ -1,0 +1,488 @@
+2025-09-04 09:04:19,611 - __main__ - INFO - === 성능 검증 전체 실행 시작 ===
+2025-09-04 09:04:19,612 - __main__ - INFO - 설정: 배치 크기=3, 출력 디렉토리=results
+2025-09-04 09:04:19,612 - __main__ - INFO - 유사도 임계값=0.9, 최소 메시지 길이=300자
+2025-09-04 09:04:19,612 - __main__ - INFO - === 1단계: 모델 추출 실험 실행 ===
+2025-09-04 09:04:21,015 - numexpr.utils - INFO - NumExpr defaulting to 14 threads.
+2025-09-04 09:04:52,224 - __main__ - INFO - MMS 데이터 로딩
+2025-09-04 09:04:52,224 - model_comparison_experiment - INFO - MMS 데이터 로딩: /Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/data/mms_data_250806.csv
+2025-09-04 09:04:53,284 - model_comparison_experiment - INFO - 총 23950개 메시지 로드됨
+2025-09-04 09:04:53,289 - model_comparison_experiment - INFO - 메시지 길이 필터링 적용 (최소 300자): 23950개 → 22320개
+2025-09-04 09:04:53,289 - model_comparison_experiment - INFO - 3개 메시지 샘플링 완료
+2025-09-04 09:04:53,290 - __main__ - INFO - 모든 모델로 추출 실행
+2025-09-04 09:04:53,290 - model_comparison_experiment - INFO - === 전체 모델 추출 실험 시작 ===
+2025-09-04 09:04:53,290 - model_comparison_experiment - INFO - === gemma 모델 추출 시작 (skt/gemma3-12b-it) ===
+2025-09-04 09:04:53,290 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-04 09:04:53,290 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-04 09:04:53,388 - mms_extractor - INFO - Using device: mps
+2025-09-04 09:04:53,388 - mms_extractor - INFO - _initialize_device 실행완료: 0.10초
+2025-09-04 09:04:53,388 - mms_extractor - INFO - LLM 초기화 완료: skt/gemma3-12b-it (skt/ax4)
+2025-09-04 09:04:53,388 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-04 09:04:53,388 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-04 09:04:53,389 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-04 09:04:53,389 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-04 09:04:57,967 - mms_extractor - INFO - Model loaded on mps
+2025-09-04 09:04:57,967 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 4.58초
+2025-09-04 09:04:58,540 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-04 09:04:58,540 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.57초
+2025-09-04 09:04:58,540 - mms_extractor - INFO - ============================================================
+2025-09-04 09:04:58,540 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-04 09:04:58,540 - mms_extractor - INFO - ============================================================
+2025-09-04 09:04:58,540 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-04 09:04:58,540 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-04 09:04:58,540 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-04 09:04:58,540 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-04 09:04:58,540 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-04 09:04:58,664 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-04 09:04:58,665 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-04 09:04:58,674 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-04 09:04:58,678 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-04 09:04:58,679 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:04:58,683 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-04 09:04:58,683 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-04 09:04:58,683 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-04 09:04:58,683 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-04 09:04:58,683 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-04 09:04:58,683 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-04 09:04:58,683 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-04 09:04:58,691 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-04 09:04:58,692 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-04 09:04:58,692 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-04 09:04:59,012 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-04 09:04:59,014 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-04 09:04:59,014 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-04 09:04:59,014 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-04 09:04:59,014 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-04 09:04:59,015 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-04 09:04:59,015 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-04 09:04:59,015 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-04 09:04:59,015 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-04 09:04:59,023 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-04 09:04:59,026 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-04 09:04:59,026 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:04:59,083 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-04 09:04:59,084 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-04 09:04:59,084 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-04 09:04:59,093 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-04 09:04:59,094 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-04 09:04:59,377 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-04 09:04:59,378 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-04 09:04:59,378 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-04 09:04:59,962 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-04 09:04:59,962 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-04 09:04:59,962 - mms_extractor - INFO - ============================================================
+2025-09-04 09:04:59,962 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-04 09:04:59,962 - mms_extractor - INFO - ============================================================
+2025-09-04 09:04:59,962 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-04 09:04:59,962 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-04 09:04:59,962 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-04 09:04:59,962 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-04 09:04:59,962 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-04 09:04:59,968 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-04 09:04:59,977 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-04 09:04:59,981 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-04 09:04:59,981 - mms_extractor - INFO - _load_data 실행완료: 1.44초
+2025-09-04 09:04:59,981 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-04 09:04:59,981 - model_comparison_experiment - INFO - gemma skt/gemma3-12b-it 추출기 초기화 완료
+2025-09-04 09:04:59,982 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 1/3 (ID: 3707)
+2025-09-04 09:05:06,766 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:05:06,779 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:05:06,779 - model_comparison_experiment - INFO - ✅ gemma - 메시지 3707 추출 완료
+2025-09-04 09:05:07,786 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 2/3 (ID: 2158)
+2025-09-04 09:05:14,414 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:05:14,418 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:05:14,418 - model_comparison_experiment - INFO - ✅ gemma - 메시지 2158 추출 완료
+2025-09-04 09:05:15,423 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 3/3 (ID: 11712)
+2025-09-04 09:05:21,376 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:05:21,377 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:05:21,377 - model_comparison_experiment - INFO - ✅ gemma - 메시지 11712 추출 완료
+2025-09-04 09:05:22,381 - model_comparison_experiment - INFO - === gemma 모델 추출 완료 ===
+2025-09-04 09:05:22,486 - model_comparison_experiment - INFO - ✅ gemma 모델 완료: 3/3 성공, 29.20초 소요
+2025-09-04 09:05:22,486 - model_comparison_experiment - INFO - === gemini 모델 추출 시작 (gcp/gemini-2.5-flash) ===
+2025-09-04 09:05:22,486 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-04 09:05:22,486 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-04 09:05:22,488 - mms_extractor - INFO - Using device: mps
+2025-09-04 09:05:22,488 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-04 09:05:22,489 - mms_extractor - INFO - LLM 초기화 완료: gcp/gemini-2.5-flash (skt/ax4)
+2025-09-04 09:05:22,489 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-04 09:05:22,489 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-04 09:05:22,489 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-04 09:05:22,489 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-04 09:05:22,859 - mms_extractor - INFO - Model loaded on mps
+2025-09-04 09:05:22,859 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 0.37초
+2025-09-04 09:05:23,345 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-04 09:05:23,345 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.49초
+2025-09-04 09:05:23,345 - mms_extractor - INFO - ============================================================
+2025-09-04 09:05:23,345 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-04 09:05:23,345 - mms_extractor - INFO - ============================================================
+2025-09-04 09:05:23,345 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-04 09:05:23,345 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-04 09:05:23,345 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-04 09:05:23,346 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-04 09:05:23,346 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-04 09:05:23,471 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-04 09:05:23,471 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-04 09:05:23,481 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-04 09:05:23,486 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-04 09:05:23,488 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:05:23,491 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-04 09:05:23,491 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-04 09:05:23,492 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-04 09:05:23,492 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-04 09:05:23,492 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-04 09:05:23,492 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-04 09:05:23,492 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-04 09:05:23,494 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-04 09:05:23,496 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-04 09:05:23,496 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-04 09:05:23,939 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-04 09:05:23,942 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-04 09:05:23,942 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-04 09:05:23,942 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-04 09:05:23,943 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-04 09:05:23,944 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-04 09:05:23,944 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-04 09:05:23,944 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-04 09:05:23,944 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-04 09:05:23,956 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-04 09:05:23,960 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-04 09:05:23,960 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:05:24,036 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-04 09:05:24,036 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-04 09:05:24,037 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-04 09:05:24,038 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-04 09:05:24,038 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-04 09:05:24,077 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-04 09:05:24,077 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-04 09:05:24,077 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-04 09:05:24,642 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-04 09:05:24,643 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-04 09:05:24,643 - mms_extractor - INFO - ============================================================
+2025-09-04 09:05:24,643 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-04 09:05:24,643 - mms_extractor - INFO - ============================================================
+2025-09-04 09:05:24,643 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-04 09:05:24,643 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-04 09:05:24,643 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-04 09:05:24,643 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-04 09:05:24,643 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-04 09:05:24,649 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-04 09:05:24,656 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-04 09:05:24,661 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-04 09:05:24,661 - mms_extractor - INFO - _load_data 실행완료: 1.32초
+2025-09-04 09:05:24,661 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-04 09:05:24,661 - model_comparison_experiment - INFO - gemini gcp/gemini-2.5-flash 추출기 초기화 완료
+2025-09-04 09:05:24,661 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 1/3 (ID: 3707)
+2025-09-04 09:05:31,207 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:05:31,211 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:05:31,212 - model_comparison_experiment - INFO - ✅ gemini - 메시지 3707 추출 완료
+2025-09-04 09:05:32,218 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 2/3 (ID: 2158)
+2025-09-04 09:05:38,779 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:05:38,783 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:05:38,783 - model_comparison_experiment - INFO - ✅ gemini - 메시지 2158 추출 완료
+2025-09-04 09:05:39,789 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 3/3 (ID: 11712)
+2025-09-04 09:05:45,750 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:05:45,754 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:05:45,754 - model_comparison_experiment - INFO - ✅ gemini - 메시지 11712 추출 완료
+2025-09-04 09:05:46,759 - model_comparison_experiment - INFO - === gemini 모델 추출 완료 ===
+2025-09-04 09:05:46,853 - model_comparison_experiment - INFO - ✅ gemini 모델 완료: 3/3 성공, 24.37초 소요
+2025-09-04 09:05:46,853 - model_comparison_experiment - INFO - === claude 모델 추출 시작 (amazon/anthropic/claude-sonnet-4-20250514) ===
+2025-09-04 09:05:46,853 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-04 09:05:46,853 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-04 09:05:46,855 - mms_extractor - INFO - Using device: mps
+2025-09-04 09:05:46,855 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-04 09:05:46,855 - mms_extractor - INFO - LLM 초기화 완료: amazon/anthropic/claude-sonnet-4-20250514 (skt/ax4)
+2025-09-04 09:05:46,855 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-04 09:05:46,855 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-04 09:05:46,855 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-04 09:05:46,856 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-04 09:05:47,074 - mms_extractor - INFO - Model loaded on mps
+2025-09-04 09:05:47,074 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 0.22초
+2025-09-04 09:05:47,542 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-04 09:05:47,542 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.47초
+2025-09-04 09:05:47,542 - mms_extractor - INFO - ============================================================
+2025-09-04 09:05:47,542 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-04 09:05:47,542 - mms_extractor - INFO - ============================================================
+2025-09-04 09:05:47,542 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-04 09:05:47,542 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-04 09:05:47,542 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-04 09:05:47,542 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-04 09:05:47,542 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-04 09:05:47,657 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-04 09:05:47,658 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-04 09:05:47,667 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-04 09:05:47,673 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-04 09:05:47,674 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:05:47,677 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-04 09:05:47,677 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-04 09:05:47,678 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-04 09:05:47,678 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-04 09:05:47,678 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-04 09:05:47,678 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-04 09:05:47,678 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-04 09:05:47,680 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-04 09:05:47,681 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-04 09:05:47,681 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-04 09:05:48,003 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-04 09:05:48,005 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-04 09:05:48,005 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-04 09:05:48,006 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-04 09:05:48,006 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-04 09:05:48,007 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-04 09:05:48,007 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-04 09:05:48,007 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-04 09:05:48,007 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-04 09:05:48,014 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-04 09:05:48,017 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-04 09:05:48,017 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:05:48,077 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-04 09:05:48,077 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-04 09:05:48,077 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-04 09:05:48,079 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-04 09:05:48,079 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-04 09:05:48,096 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-04 09:05:48,096 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-04 09:05:48,096 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-04 09:05:48,621 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-04 09:05:48,621 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-04 09:05:48,621 - mms_extractor - INFO - ============================================================
+2025-09-04 09:05:48,621 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-04 09:05:48,621 - mms_extractor - INFO - ============================================================
+2025-09-04 09:05:48,621 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-04 09:05:48,621 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-04 09:05:48,621 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-04 09:05:48,621 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-04 09:05:48,621 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-04 09:05:48,626 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-04 09:05:48,634 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-04 09:05:48,639 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-04 09:05:48,639 - mms_extractor - INFO - _load_data 실행완료: 1.10초
+2025-09-04 09:05:48,639 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-04 09:05:48,639 - model_comparison_experiment - INFO - claude amazon/anthropic/claude-sonnet-4-20250514 추출기 초기화 완료
+2025-09-04 09:05:48,639 - model_comparison_experiment - INFO - 처리 중: claude - 메시지 1/3 (ID: 3707)
+2025-09-04 09:05:55,052 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:05:55,054 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:05:55,054 - model_comparison_experiment - INFO - ✅ claude - 메시지 3707 추출 완료
+2025-09-04 09:05:56,060 - model_comparison_experiment - INFO - 처리 중: claude - 메시지 2/3 (ID: 2158)
+2025-09-04 09:06:02,584 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:06:02,588 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:06:02,588 - model_comparison_experiment - INFO - ✅ claude - 메시지 2158 추출 완료
+2025-09-04 09:06:03,591 - model_comparison_experiment - INFO - 처리 중: claude - 메시지 3/3 (ID: 11712)
+2025-09-04 09:06:09,505 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:06:09,507 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:06:09,507 - model_comparison_experiment - INFO - ✅ claude - 메시지 11712 추출 완료
+2025-09-04 09:06:10,512 - model_comparison_experiment - INFO - === claude 모델 추출 완료 ===
+2025-09-04 09:06:10,608 - model_comparison_experiment - INFO - ✅ claude 모델 완료: 3/3 성공, 23.75초 소요
+2025-09-04 09:06:10,608 - model_comparison_experiment - INFO - === ax 모델 추출 시작 (skt/ax4) ===
+2025-09-04 09:06:10,608 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-04 09:06:10,608 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-04 09:06:10,611 - mms_extractor - INFO - Using device: mps
+2025-09-04 09:06:10,611 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-04 09:06:10,611 - mms_extractor - INFO - LLM 초기화 완료: skt/ax4 (skt/ax4)
+2025-09-04 09:06:10,611 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-04 09:06:10,611 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-04 09:06:10,611 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-04 09:06:10,611 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-04 09:06:11,104 - mms_extractor - INFO - Model loaded on mps
+2025-09-04 09:06:11,104 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 0.49초
+2025-09-04 09:06:11,572 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-04 09:06:11,572 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.47초
+2025-09-04 09:06:11,572 - mms_extractor - INFO - ============================================================
+2025-09-04 09:06:11,572 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-04 09:06:11,572 - mms_extractor - INFO - ============================================================
+2025-09-04 09:06:11,572 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-04 09:06:11,572 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-04 09:06:11,572 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-04 09:06:11,572 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-04 09:06:11,572 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-04 09:06:11,689 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-04 09:06:11,689 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-04 09:06:11,698 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-04 09:06:11,702 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-04 09:06:11,704 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:06:11,707 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-04 09:06:11,708 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-04 09:06:11,708 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-04 09:06:11,708 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-04 09:06:11,708 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-04 09:06:11,708 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-04 09:06:11,708 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-04 09:06:11,710 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-04 09:06:11,711 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-04 09:06:11,711 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-04 09:06:12,033 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-04 09:06:12,035 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-04 09:06:12,035 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-04 09:06:12,036 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-04 09:06:12,036 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-04 09:06:12,037 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-04 09:06:12,037 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-04 09:06:12,037 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-04 09:06:12,037 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-04 09:06:12,045 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-04 09:06:12,047 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-04 09:06:12,047 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:06:12,113 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-04 09:06:12,114 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-04 09:06:12,114 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-04 09:06:12,116 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-04 09:06:12,116 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-04 09:06:12,181 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-04 09:06:12,181 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-04 09:06:12,181 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-04 09:06:12,708 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-04 09:06:12,708 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-04 09:06:12,708 - mms_extractor - INFO - ============================================================
+2025-09-04 09:06:12,708 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-04 09:06:12,708 - mms_extractor - INFO - ============================================================
+2025-09-04 09:06:12,708 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-04 09:06:12,708 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-04 09:06:12,709 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-04 09:06:12,709 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-04 09:06:12,709 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-04 09:06:12,714 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-04 09:06:12,722 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-04 09:06:12,726 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-04 09:06:12,726 - mms_extractor - INFO - _load_data 실행완료: 1.15초
+2025-09-04 09:06:12,726 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-04 09:06:12,726 - model_comparison_experiment - INFO - ax skt/ax4 추출기 초기화 완료
+2025-09-04 09:06:12,726 - model_comparison_experiment - INFO - 처리 중: ax - 메시지 1/3 (ID: 3707)
+2025-09-04 09:06:19,234 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:06:19,237 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:06:19,238 - model_comparison_experiment - INFO - ✅ ax - 메시지 3707 추출 완료
+2025-09-04 09:06:20,241 - model_comparison_experiment - INFO - 처리 중: ax - 메시지 2/3 (ID: 2158)
+2025-09-04 09:06:26,803 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:06:26,806 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:06:26,807 - model_comparison_experiment - INFO - ✅ ax - 메시지 2158 추출 완료
+2025-09-04 09:06:27,812 - model_comparison_experiment - INFO - 처리 중: ax - 메시지 3/3 (ID: 11712)
+2025-09-04 09:06:33,753 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:06:33,756 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:06:33,756 - model_comparison_experiment - INFO - ✅ ax - 메시지 11712 추출 완료
+2025-09-04 09:06:34,757 - model_comparison_experiment - INFO - === ax 모델 추출 완료 ===
+2025-09-04 09:06:34,863 - model_comparison_experiment - INFO - ✅ ax 모델 완료: 3/3 성공, 24.26초 소요
+2025-09-04 09:06:34,863 - model_comparison_experiment - INFO - === gpt 모델 추출 시작 (azure/openai/gpt-4o-2024-08-06) ===
+2025-09-04 09:06:34,863 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-04 09:06:34,863 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-04 09:06:34,865 - mms_extractor - INFO - Using device: mps
+2025-09-04 09:06:34,865 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-04 09:06:34,865 - mms_extractor - INFO - LLM 초기화 완료: azure/openai/gpt-4o-2024-08-06 (skt/ax4)
+2025-09-04 09:06:34,865 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-04 09:06:34,865 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-04 09:06:34,866 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-04 09:06:34,866 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-04 09:06:35,192 - mms_extractor - INFO - Model loaded on mps
+2025-09-04 09:06:35,192 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 0.33초
+2025-09-04 09:06:35,645 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-04 09:06:35,645 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.45초
+2025-09-04 09:06:35,645 - mms_extractor - INFO - ============================================================
+2025-09-04 09:06:35,645 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-04 09:06:35,645 - mms_extractor - INFO - ============================================================
+2025-09-04 09:06:35,645 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-04 09:06:35,645 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-04 09:06:35,645 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-04 09:06:35,645 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-04 09:06:35,645 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-04 09:06:35,758 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (44275, 7)
+2025-09-04 09:06:35,758 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'start_dt', 'end_dt', 'rank']
+2025-09-04 09:06:35,767 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (44275, 4)
+2025-09-04 09:06:35,773 - mms_extractor - INFO - 로컬 모드 컬럼명 변환: {'item_nm': 'item_nm', 'item_id': 'item_id', 'item_desc': 'item_desc', 'item_dmn': 'item_dmn', 'item_ctg': 'item_ctg', 'item_emb_vec': 'item_emb_vec', 'ofer_cd': 'ofer_cd', 'oper_dt_hms': 'oper_dt_hms'}
+2025-09-04 09:06:35,774 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:06:35,777 - mms_extractor - INFO - 도메인 필터링: 44275 -> 44275 (제외된 도메인: ['R'])
+2025-09-04 09:06:35,777 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 44275개 상품 ===
+2025-09-04 09:06:35,778 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (44275, 8)
+2025-09-04 09:06:35,778 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-04 09:06:35,778 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-04 09:06:35,778 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-04 09:06:35,778 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (44275, 8)
+2025-09-04 09:06:35,780 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-04 09:06:35,781 - mms_extractor - INFO - null이 아닌 상품명 수: 44275개
+2025-09-04 09:06:35,781 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['#', '#', 'EHI-CADW']
+2025-09-04 09:06:36,194 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 44275 -> 94279
+2025-09-04 09:06:36,196 - mms_extractor - INFO - 별칭 적용 후 샘플: ['#', '#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2']
+2025-09-04 09:06:36,196 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-04 09:06:36,197 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (94279, 9)
+2025-09-04 09:06:36,197 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-04 09:06:36,198 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-04 09:06:36,198 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-04 09:06:36,198 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-04 09:06:36,198 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-04 09:06:36,206 - mms_extractor - INFO - 등록할 고유 별칭 수: 65154개
+2025-09-04 09:06:36,208 - mms_extractor - INFO - 유효한 별칭 수: 65154개
+2025-09-04 09:06:36,209 - mms_extractor - INFO - 등록할 별칭 샘플: ['#', 'EHI-CADW', 'IPAD 10.2', '아이패드 10.2', 'KTF_IPAD PRO 12.9 5세대 2T(리퍼단말)']
+2025-09-04 09:06:36,274 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 65154개 성공, 0개 실패
+2025-09-04 09:06:36,275 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-04 09:06:36,275 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-04 09:06:36,277 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-04 09:06:36,277 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-04 09:06:36,347 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-04 09:06:36,347 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-04 09:06:36,347 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-04 09:06:36,889 - mms_extractor - INFO - 조직 정보 로드 완료: 259233개 조직
+2025-09-04 09:06:36,889 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (259233, 8)
+2025-09-04 09:06:36,889 - mms_extractor - INFO - ============================================================
+2025-09-04 09:06:36,889 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-04 09:06:36,889 - mms_extractor - INFO - ============================================================
+2025-09-04 09:06:36,889 - mms_extractor - INFO - ✅ 상품 데이터: (94279, 9)
+2025-09-04 09:06:36,889 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-04 09:06:36,889 - mms_extractor - INFO - ✅ 조직 데이터: (259233, 8)
+2025-09-04 09:06:36,889 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-04 09:06:36,889 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-04 09:06:36,895 - mms_extractor - INFO - 고유 상품명 수: 32157개
+2025-09-04 09:06:36,902 - mms_extractor - INFO - 고유 별칭 수: 65154개
+2025-09-04 09:06:36,907 - mms_extractor - INFO - 고유 상품ID 수: 44186개
+2025-09-04 09:06:36,907 - mms_extractor - INFO - _load_data 실행완료: 1.26초
+2025-09-04 09:06:36,907 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-04 09:06:36,907 - model_comparison_experiment - INFO - gpt azure/openai/gpt-4o-2024-08-06 추출기 초기화 완료
+2025-09-04 09:06:36,907 - model_comparison_experiment - INFO - 처리 중: gpt - 메시지 1/3 (ID: 3707)
+2025-09-04 09:06:43,363 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:06:43,367 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:06:43,367 - model_comparison_experiment - INFO - ✅ gpt - 메시지 3707 추출 완료
+2025-09-04 09:06:44,372 - model_comparison_experiment - INFO - 처리 중: gpt - 메시지 2/3 (ID: 2158)
+2025-09-04 09:06:51,126 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:06:51,129 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:06:51,129 - model_comparison_experiment - INFO - ✅ gpt - 메시지 2158 추출 완료
+2025-09-04 09:06:52,133 - model_comparison_experiment - INFO - 처리 중: gpt - 메시지 3/3 (ID: 11712)
+2025-09-04 09:06:58,049 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-04 09:06:58,053 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-04 09:06:58,053 - model_comparison_experiment - INFO - ✅ gpt - 메시지 11712 추출 완료
+2025-09-04 09:06:59,054 - model_comparison_experiment - INFO - === gpt 모델 추출 완료 ===
+2025-09-04 09:06:59,128 - model_comparison_experiment - INFO - ✅ gpt 모델 완료: 3/3 성공, 24.27초 소요
+2025-09-04 09:06:59,128 - model_comparison_experiment - INFO - === 전체 모델 추출 실험 완료 ===
+2025-09-04 09:06:59,128 - __main__ - INFO - 결과 저장
+2025-09-04 09:06:59,129 - model_comparison_experiment - INFO - 통합 결과 저장 중...
+2025-09-04 09:06:59,131 - model_comparison_experiment - INFO - 통합 결과 저장 완료: results_202509040904
+2025-09-04 09:06:59,131 - __main__ - INFO - ✅ 모델 추출 실험 완료
+2025-09-04 09:06:59,131 - __main__ - INFO - 실제 생성된 결과 디렉토리: results_202509040904
+2025-09-04 09:06:59,131 - __main__ - INFO - === 2단계: 성능 평가 실행 ===
+2025-09-04 09:06:59,140 - __main__ - INFO - 추출 결과 로딩
+2025-09-04 09:06:59,140 - model_performance_evaluator - INFO - 추출 결과 로딩 중...
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - 피클 파일에서 결과 로딩 완료
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - gemma: 3/3 성공
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - gemini: 3/3 성공
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - claude: 3/3 성공
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - ax: 3/3 성공
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - gpt: 3/3 성공
+2025-09-04 09:06:59,146 - __main__ - INFO - 정답 데이터셋 생성
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - 정답 데이터셋 생성 시작 (유사도 임계값: 0.9, 최소 메시지 길이: 300자)
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - 3개 참조 모델 모두 성공한 메시지: 3개
+2025-09-04 09:06:59,146 - model_performance_evaluator - INFO - 추가 조건 적용 후 유효한 메시지: 3개
+2025-09-04 09:06:59,150 - model_performance_evaluator - INFO - 정답 데이터셋 생성 완료: 3개 메시지
+2025-09-04 09:06:59,151 - model_performance_evaluator - INFO - 정답 데이터셋 저장: results_202509040904/evaluation/ground_truth_dataset.json
+2025-09-04 09:06:59,151 - __main__ - INFO - 대상 모델 평가
+2025-09-04 09:06:59,151 - model_performance_evaluator - INFO - 대상 모델 성능 평가 시작
+2025-09-04 09:06:59,151 - model_performance_evaluator - INFO - === gemma 모델 평가 ===
+2025-09-04 09:06:59,153 - model_performance_evaluator - INFO - gemma 평가 완료:
+2025-09-04 09:06:59,153 - model_performance_evaluator - INFO -   - 평가 메시지 수: 3
+2025-09-04 09:06:59,153 - model_performance_evaluator - INFO -   - 평균 유사도: 1.0000
+2025-09-04 09:06:59,153 - model_performance_evaluator - INFO -   - 표준편차: 0.0000
+2025-09-04 09:06:59,153 - model_performance_evaluator - INFO -   - 최소/최대: 1.0000/1.0000
+2025-09-04 09:06:59,153 - model_performance_evaluator - INFO - === ax 모델 평가 ===
+2025-09-04 09:06:59,154 - model_performance_evaluator - INFO - ax 평가 완료:
+2025-09-04 09:06:59,154 - model_performance_evaluator - INFO -   - 평가 메시지 수: 3
+2025-09-04 09:06:59,154 - model_performance_evaluator - INFO -   - 평균 유사도: 1.0000
+2025-09-04 09:06:59,154 - model_performance_evaluator - INFO -   - 표준편차: 0.0000
+2025-09-04 09:06:59,154 - model_performance_evaluator - INFO -   - 최소/최대: 1.0000/1.0000
+2025-09-04 09:06:59,154 - __main__ - INFO - 성능 리포트 생성
+2025-09-04 09:06:59,154 - model_performance_evaluator - INFO - 성능 평가 리포트 생성 중...
+2025-09-04 09:06:59,161 - model_performance_evaluator - INFO - 성능 평가 리포트 저장 완료: results_202509040904/evaluation
+2025-09-04 09:06:59,161 - __main__ - INFO - ✅ 성능 평가 완료
+2025-09-04 09:06:59,161 - __main__ - INFO - === 성능 검증 전체 완료 ===
+2025-09-04 09:06:59,161 - __main__ - INFO - 결과는 results_202509040904 디렉토리에서 확인할 수 있습니다

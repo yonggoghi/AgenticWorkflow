@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAG 이미지 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-image {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ DAG 이미지 로드 테스트</h1>
+        
+        <div class="test-section">
+            <h2>1. 직접 이미지 URL 테스트</h2>
+            <div id="direct-test-status" class="status info">테스트 준비 중...</div>
+            <img id="direct-image" 
+                 src="/dag_images/dag_7918d9d4d4c330a6d67eec805db2f25918f6da467b9c0f04752a6d08c07595be.png"
+                 alt="직접 로드 테스트" 
+                 class="test-image"
+                 onload="onImageLoad('direct')"
+                 onerror="onImageError('direct')">
+        </div>
+
+        <div class="test-section">
+            <h2>2. API를 통한 해시 계산 테스트</h2>
+            <div id="api-test-status" class="status info">API 호출 중...</div>
+            <button onclick="testHashAPI()">해시 API 테스트</button>
+            <pre id="api-result"></pre>
+        </div>
+
+        <div class="test-section">
+            <h2>3. 동적 이미지 로드 테스트</h2>
+            <div id="dynamic-test-status" class="status info">대기 중...</div>
+            <button onclick="testDynamicLoad()">동적 로드 테스트</button>
+            <div id="dynamic-image-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. 디버그 정보</h2>
+            <div id="debug-info"></div>
+        </div>
+    </div>
+
+    <script>
+        // 이미지 로드 성공 핸들러
+        function onImageLoad(testType) {
+            const statusEl = document.getElementById(testType + '-test-status');
+            statusEl.className = 'status success';
+            statusEl.textContent = '✅ 이미지 로드 성공!';
+            console.log(`${testType} 이미지 로드 성공`);
+        }
+
+        // 이미지 로드 실패 핸들러
+        function onImageError(testType) {
+            const statusEl = document.getElementById(testType + '-test-status');
+            statusEl.className = 'status error';
+            statusEl.textContent = '❌ 이미지 로드 실패!';
+            console.error(`${testType} 이미지 로드 실패`);
+        }
+
+        // 해시 API 테스트
+        async function testHashAPI() {
+            const statusEl = document.getElementById('api-test-status');
+            const resultEl = document.getElementById('api-result');
+            
+            try {
+                statusEl.className = 'status info';
+                statusEl.textContent = 'API 호출 중...';
+                
+                const response = await fetch('/api/calculate-hash', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `[SK텔레콤] ZEM폰 포켓몬에디션3 안내
+(광고)[SKT] 우리 아이 첫 번째 스마트폰, ZEM 키즈폰__#04 고객님, 안녕하세요!
+우리 아이 스마트폰 고민 중이셨다면, 자녀 스마트폰 관리 앱 ZEM이 설치된 SKT만의 안전한 키즈폰,
+ZEM폰 포켓몬에디션3으로 우리 아이 취향을 저격해 보세요!
+
+✨ 특별 혜택
+- 월 요금 20% 할인 (첫 6개월)
+- 포켓몬 케이스 무료 증정
+- ZEM 프리미엄 서비스 3개월 무료
+
+📞 문의: 1588-0011 (평일 9시-18시)
+🏪 가까운 T world 매장 방문
+🌐 www.tworld.co.kr
+
+수신거부 080-011-0000`
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    statusEl.className = 'status success';
+                    statusEl.textContent = '✅ API 호출 성공!';
+                    resultEl.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ API 호출 실패: ' + error.message;
+                resultEl.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        // 동적 이미지 로드 테스트
+        async function testDynamicLoad() {
+            const statusEl = document.getElementById('dynamic-test-status');
+            const containerEl = document.getElementById('dynamic-image-container');
+            
+            try {
+                statusEl.className = 'status info';
+                statusEl.textContent = '동적 로드 중...';
+                
+                // API에서 이미지 정보 가져오기
+                const response = await fetch('/api/calculate-hash', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `[SK텔레콤] ZEM폰 포켓몬에디션3 안내
+(광고)[SKT] 우리 아이 첫 번째 스마트폰, ZEM 키즈폰__#04 고객님, 안녕하세요!
+우리 아이 스마트폰 고민 중이셨다면, 자녀 스마트폰 관리 앱 ZEM이 설치된 SKT만의 안전한 키즈폰,
+ZEM폰 포켓몬에디션3으로 우리 아이 취향을 저격해 보세요!
+
+✨ 특별 혜택
+- 월 요금 20% 할인 (첫 6개월)
+- 포켓몬 케이스 무료 증정
+- ZEM 프리미엄 서비스 3개월 무료
+
+📞 문의: 1588-0011 (평일 9시-18시)
+🏪 가까운 T world 매장 방문
+🌐 www.tworld.co.kr
+
+수신거부 080-011-0000`
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.image_exists) {
+                    containerEl.innerHTML = `
+                        <p><strong>파일명:</strong> ${data.expected_filename}</p>
+                        <p><strong>URL:</strong> ${data.url}</p>
+                        <img src="${data.url}" alt="동적 로드 이미지" class="test-image"
+                             onload="onImageLoad('dynamic')" 
+                             onerror="onImageError('dynamic')">
+                    `;
+                    statusEl.className = 'status success';
+                    statusEl.textContent = '✅ 동적 로드 준비 완료';
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ 이미지가 존재하지 않음';
+                    containerEl.innerHTML = '<p>이미지가 존재하지 않습니다.</p>';
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ 동적 로드 실패: ' + error.message;
+                containerEl.innerHTML = '<p>오류: ' + error.message + '</p>';
+            }
+        }
+
+        // 페이지 로드 시 디버그 정보 표시
+        document.addEventListener('DOMContentLoaded', function() {
+            const debugEl = document.getElementById('debug-info');
+            debugEl.innerHTML = `
+                <p><strong>현재 URL:</strong> ${window.location.href}</p>
+                <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+                <p><strong>시간:</strong> ${new Date().toLocaleString()}</p>
+            `;
+            
+            // 자동으로 API 테스트 실행
+            setTimeout(testHashAPI, 1000);
+        });
+    </script>
+</body>
+</html>

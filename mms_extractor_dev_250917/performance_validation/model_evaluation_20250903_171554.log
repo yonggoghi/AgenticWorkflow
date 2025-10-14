@@ -1,0 +1,2 @@
+2025-09-03 17:15:54,195 - __main__ - INFO - === 모델 성능 평가 시작 ===
+2025-09-03 17:15:54,195 - __main__ - ERROR - 평가 중 오류 발생: [Errno 2] No such file or directory: 'length_test/evaluation'

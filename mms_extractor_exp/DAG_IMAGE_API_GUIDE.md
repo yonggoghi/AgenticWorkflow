@@ -166,7 +166,7 @@ def process():
 이미지는 NAS 서버에 저장됩니다:
 ```
 로컬 심볼릭 링크:    ./dag_images/
-실제 마운트 위치:    /Volumes/nas_dag_images/dag_images/  (macOS)
+실제 마운트 위치:    /mnt/nas_dag_images/dag_images/  (Linux)
 NAS 서버 경로:       172.27.7.58:/aos_ext/dag_images/
 ```
 

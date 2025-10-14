@@ -6,9 +6,9 @@ echo "======================================="
 echo "NAS DAG Images 설정 검증"
 echo "======================================="
 
-# macOS는 /Volumes 사용
-MOUNT_POINT="/Volumes/nas_dag_images"
-PROJECT_DIR="/Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp"
+# Linux는 /mnt 사용
+MOUNT_POINT="/mnt/nas_dag_images"
+PROJECT_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
 
 # 1. NAS 마운트 확인
 echo ""

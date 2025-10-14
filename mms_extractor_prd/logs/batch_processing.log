@@ -335,3 +335,457 @@
 2025-09-10 10:19:35,058 - __main__ - INFO - avg_time_per_message: 10.57
 2025-09-10 10:19:35,058 - __main__ - INFO - throughput_messages_per_second: 0.09
 2025-09-10 10:19:35,058 - __main__ - INFO - ==================================================
+2025-09-19 16:32:14,812 - __main__ - INFO - ==================================================
+2025-09-19 16:32:14,814 - __main__ - INFO - 🚀 Starting Batch MMS Processing
+2025-09-19 16:32:14,814 - __main__ - INFO - ==================================================
+2025-09-19 16:32:14,814 - __main__ - INFO - 배치 크기: 2
+2025-09-19 16:32:14,814 - __main__ - INFO - 출력 파일: ./data/batch_results.csv
+2025-09-19 16:32:14,814 - __main__ - INFO - 병렬 처리: ON
+2025-09-19 16:32:14,814 - __main__ - INFO - 최대 워커 수: 14
+2025-09-19 16:32:14,814 - __main__ - INFO - 추출기 설정: {'offer_info_data_src': 'local', 'product_info_extraction_mode': 'llm', 'entity_extraction_mode': 'llm', 'llm_model': 'ax', 'extract_entity_dag': True}
+2025-09-19 16:32:14,814 - __main__ - INFO - 🎯 DAG 추출 모드 활성화됨
+2025-09-19 16:32:14,814 - __main__ - INFO - 📄 MongoDB 저장 모드 활성화됨
+2025-09-19 16:32:14,814 - __main__ - INFO - ==================================================
+2025-09-19 16:32:14,814 - __main__ - INFO - Loading MMS data from: ./data/mms_data_250806.csv
+2025-09-19 16:32:15,251 - __main__ - INFO - Loaded 23950 messages
+2025-09-19 16:32:15,251 - __main__ - INFO - Initializing MMS Extractor...
+2025-09-19 16:32:15,251 - mms_extractor - INFO - 🚀 MMSExtractor 초기화 시작
+2025-09-19 16:32:15,251 - mms_extractor - INFO - ⚙️ 기본 설정 적용 중...
+2025-09-19 16:32:15,251 - mms_extractor - INFO - 🎯 DAG 추출 모드 활성화됨
+2025-09-19 16:32:15,251 - mms_extractor - INFO - 🔑 환경변수 로드 중...
+2025-09-19 16:32:15,253 - mms_extractor - INFO - 💻 디바이스 설정 중...
+2025-09-19 16:32:15,320 - mms_extractor - INFO - Using device: mps
+2025-09-19 16:32:15,320 - mms_extractor - INFO - _initialize_device 실행완료: 0.07초
+2025-09-19 16:32:15,320 - mms_extractor - INFO - 🤖 LLM 모델 초기화 중...
+2025-09-19 16:32:15,320 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-09-19 16:32:15,320 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-19 16:32:15,320 - mms_extractor - INFO - 🧠 임베딩 모델 로드 중...
+2025-09-19 16:32:15,320 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-19 16:32:15,320 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-19 16:32:15,320 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-19 16:32:20,965 - mms_extractor - INFO - Model loaded on mps
+2025-09-19 16:32:20,965 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 5.64초
+2025-09-19 16:32:20,965 - mms_extractor - INFO - 📝 NLP 도구 (Kiwi) 초기화 중...
+2025-09-19 16:32:21,451 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-19 16:32:21,451 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.49초
+2025-09-19 16:32:21,451 - mms_extractor - INFO - 📁 데이터 로드 중...
+2025-09-19 16:32:21,451 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:21,451 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-19 16:32:21,451 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:21,451 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-19 16:32:21,451 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-19 16:32:21,451 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-19 16:32:21,451 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-19 16:32:21,451 - mms_extractor - INFO - CSV 파일 경로: ./data/offer_master_data.csv
+2025-09-19 16:32:21,521 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 데이터 크기: (16316, 9)
+2025-09-19 16:32:21,521 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['ITEM_ID', 'ITEM_NM', 'ITEM_DMN', 'ITEM_DESC', 'ITEM_CTG', 'ITEM_ALS', 'ITEM_EMB_VEC', 'OFER_CD', 'OPER_DT_HMS']
+2025-09-19 16:32:21,521 - mms_extractor - INFO - 컬럼 매핑: {'ITEM_NM': 'item_nm', 'ITEM_ID': 'item_id', 'ITEM_DESC': 'item_desc', 'ITEM_DMN': 'item_dmn', 'ITEM_ALS': 'item_nm_alias'}
+2025-09-19 16:32:21,525 - mms_extractor - INFO - 중복 제거 후 데이터 크기: (16316, 5)
+2025-09-19 16:32:21,525 - mms_extractor - INFO - item_nm_alias에서 16316개 null 값을 item_nm으로 채웁니다.
+2025-09-19 16:32:21,526 - mms_extractor - INFO - 로컬 모드 최종 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-19 16:32:21,526 - mms_extractor - INFO - item_nm_alias 샘플: ['우주패스 Netflix 인증', 'LTE-M10(24년_간선망)', '유선대체 70']
+2025-09-19 16:32:21,527 - mms_extractor - INFO - 로컬 모드 상품명 샘플: ['우주패스 Netflix 인증', 'LTE-M10(24년_간선망)', '유선대체 70', '뉴스콤 관제30', '구축-Smart PayHub']
+2025-09-19 16:32:21,527 - mms_extractor - INFO - 로컬 모드 데이터 샘플 (5개 행):
+2025-09-19 16:32:21,534 - mms_extractor - INFO - [{'item_nm': '우주패스 Netflix 인증', 'item_id': 'NA00008735', 'item_desc': '우주패스 Netflix 인증&&T 우주패스 Netflix를 인증하면 가입되는 더미코드&&', 'item_dmn': 'P', 'item_nm_alias': '우주패스 Netflix 인증', 'item_ctg': None, 'item_emb_vec': None, 'ofer_cd': 'NA00008735', 'oper_dt_hms': '20250101000000'}, {'item_nm': 'LTE-M10(24년_간선망)', 'item_id': 'NA00008782', 'item_desc': 'LTE-M10(24년_간선망)&&ㅇ 한전 AMI 간선망용 무선모뎀 사업수주에 따른 신규 전용상품(요금제) 출시   - 수주일자 : 4/3  - 수량 : 13,656대 (Cat.1 모뎀)  - 상품명 : LTE-M10(24년_한전 간선망)  - 제안요금 : 711원(Vat별도)     > “LTE-M 10 요금제” + “기업데이터 청구” 형태       >  총91MB 제공  - 부가서비스 상품명 : 한전_부가_PGW#37    > UUT 211 적용&&', 'item_dmn': 'P', 'item_nm_alias': 'LTE-M10(24년_간선망)', 'item_ctg': None, 'item_emb_vec': None, 'ofer_cd': 'NA00008782', 'oper_dt_hms': '20250101000000'}, {'item_nm': '유선대체 70', 'item_id': 'NA00005883', 'item_desc': '유선대체 70&&ㅇ 기본료 : 7,000원 (VAT포함 7,700원)_ㅇ 기본제공 : 데이터 120MB_ㅇ 특징_  - 월 제공 데이터 소진 후 30kbps로 속도 제어된 상태에서 사용하는 Data는 비과금 처리(월 기본료를 제외한 추가과금 없음)_  - 유선대체 요금제는 당사가 지정하는 012번호의 사물통신형 단말중에서 고정형결제기만 가입가능(단말 리스트 별도관리)_ㅇ 초과요율_  - Data : 월 제공 Data 소진 이후, 30Kbps로 속도 제어된 상태로 사용하는 Data는 비과금 처리(기본료를 초과하여 과금하지 않음)_  - 문자 : SMS 22원/건, 텍스트형MMS 33원/건, 멀티미디어형MMS 110원/건&&ㅇ 기본료 : 7,000원 (VAT포함 7,700원)_ㅇ 기본제공 : 데이터 120MB_ㅇ 특징_  - 월 제공 데이터 소진 후 30kbps로 속도 제어된 상태에서 사용하는 Data는 비과금 처리(월 기본료를 제외한 추가과금 없음)_  - 유선대체 요금제는 당사가 지정하는 012번호의 사물통신형 단말중에서 고정형결제기만 가입가능(단말 리스트 별도관리)_ㅇ 초과요율_  - Data : 월 제공 Data 소진 이후, 30Kbps로 속도 제어된 상태로 사용하는 Data는 비과금 처리(기본료를 초과하여 과금하지 않음)_  - 문자 : SMS 22원/건, 텍스트형MMS 33원/건, 멀티미디어형MMS 110원/건', 'item_dmn': 'P', 'item_nm_alias': '유선대체 70', 'item_ctg': None, 'item_emb_vec': None, 'ofer_cd': 'NA00005883', 'oper_dt_hms': '20250101000000'}, {'item_nm': '뉴스콤 관제30', 'item_id': 'NB00000764', 'item_desc': '뉴스콤 관제30&&고객사의 메인망은 초고속인터넷이고 백업망으로 당사의 이동통신망을 이용하는 무선라우터를 공급하는 경우, 원격에서 무선라우터에 연결된 LTE망 장애여부 확인 / 원격 On-Off/ 원격조치 불가능시 출동후 장애 조치 서비스&&원격에서 무선라우터에 연결된 LTE망 장애여부 확인 / 원격 On-Off / 원격조치 불가능시 출동후 장애 조치 서비스', 'item_dmn': 'P', 'item_nm_alias': '뉴스콤 관제30', 'item_ctg': None, 'item_emb_vec': None, 'ofer_cd': 'NB00000764', 'oper_dt_hms': '20250101000000'}, {'item_nm': '구축-Smart PayHub', 'item_id': 'PD00013310', 'item_desc': '구축-Smart PayHub&&&&', 'item_dmn': 'P', 'item_nm_alias': '구축-Smart PayHub', 'item_ctg': None, 'item_emb_vec': None, 'ofer_cd': 'PD00013310', 'oper_dt_hms': '20250101000000'}]
+2025-09-19 16:32:21,536 - mms_extractor - INFO - 도메인 필터링: 16316 -> 10551 (제외된 도메인: ['R'])
+2025-09-19 16:32:21,536 - mms_extractor - INFO - === 상품 정보 로드 최종 완료: 10551개 상품 ===
+2025-09-19 16:32:21,536 - mms_extractor - INFO - 최종 데이터 스키마: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-19 16:32:21,536 - mms_extractor - INFO - 최종 데이터 타입: {'item_nm': dtype('O'), 'item_id': dtype('O'), 'item_desc': dtype('O'), 'item_dmn': dtype('O'), 'item_nm_alias': dtype('O'), 'item_ctg': dtype('O'), 'item_emb_vec': dtype('O'), 'ofer_cd': dtype('O'), 'oper_dt_hms': dtype('O')}
+2025-09-19 16:32:21,536 - mms_extractor - INFO - 모든 중요 컬럼이 존재합니다.
+2025-09-19 16:32:21,536 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (10551, 9)
+2025-09-19 16:32:21,537 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias', 'item_ctg', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-19 16:32:21,537 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-19 16:32:21,537 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-19 16:32:21,537 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (10551, 9)
+2025-09-19 16:32:21,543 - mms_extractor - INFO - 로드된 별칭 규칙 수: 167개
+2025-09-19 16:32:21,543 - mms_extractor - INFO - null이 아닌 상품명 수: 10551개
+2025-09-19 16:32:21,543 - mms_extractor - INFO - 별칭 적용 전 상품명 샘플: ['우주패스 Netflix 인증', 'LTE-M10(24년_간선망)', '유선대체 70']
+2025-09-19 16:32:21,544 - mms_extractor - INFO - 기존 item_nm_alias 데이터를 발견했습니다. 별칭 규칙과 병합합니다.
+2025-09-19 16:32:21,544 - mms_extractor - INFO - 기존 alias 샘플: ['우주패스 Netflix 인증', 'LTE-M10(24년_간선망)', '유선대체 70']
+2025-09-19 16:32:21,672 - mms_extractor - INFO - 기존 ITEM_ALS 데이터와 별칭 규칙이 성공적으로 병합되었습니다.
+2025-09-19 16:32:21,677 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: 10551 -> 21522
+2025-09-19 16:32:21,677 - mms_extractor - INFO - 별칭 적용 후 샘플: ['우주pass Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증', '우주패스 넷플릭스 인증', '우주패스 Netflix 인증']
+2025-09-19 16:32:21,677 - mms_extractor - INFO - 별칭 규칙 적용 완료: 167개 규칙
+2025-09-19 16:32:21,678 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (21522, 9)
+2025-09-19 16:32:21,678 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-19 16:32:21,679 - mms_extractor - INFO - 정지어 로드 완료: 166개
+2025-09-19 16:32:21,679 - mms_extractor - INFO - 로드된 정지어 수: 166개
+2025-09-19 16:32:21,679 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-19 16:32:21,679 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-19 16:32:21,680 - mms_extractor - INFO - 등록할 고유 별칭 수: 16403개
+2025-09-19 16:32:21,681 - mms_extractor - INFO - 유효한 별칭 수: 16403개
+2025-09-19 16:32:21,681 - mms_extractor - INFO - 등록할 별칭 샘플: ['우주pass Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증', '우주패스 넷플릭스 인증', '우주패스 Netflix 인증']
+2025-09-19 16:32:21,693 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 16403개 성공, 0개 실패
+2025-09-19 16:32:21,693 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-19 16:32:21,693 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-19 16:32:21,707 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-09-19 16:32:21,707 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-09-19 16:32:21,877 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-09-19 16:32:21,877 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-09-19 16:32:21,878 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-19 16:32:21,878 - mms_extractor - INFO - === 조직 정보 로드 시작 (모드: local) ===
+2025-09-19 16:32:21,878 - mms_extractor - INFO - 로컬 CSV 파일에서 조직 정보 로드 중...
+2025-09-19 16:32:21,878 - mms_extractor - INFO - CSV 파일 경로: ./data/offer_master_data.csv
+2025-09-19 16:32:21,941 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 조직 데이터 크기: (16316, 9)
+2025-09-19 16:32:21,941 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['ITEM_ID', 'ITEM_NM', 'ITEM_DMN', 'ITEM_DESC', 'ITEM_CTG', 'ITEM_ALS', 'ITEM_EMB_VEC', 'OFER_CD', 'OPER_DT_HMS']
+2025-09-19 16:32:21,943 - mms_extractor - INFO - 로컬 모드: ITEM_DMN='R' 필터링 후 데이터 크기: (5765, 9)
+2025-09-19 16:32:21,943 - mms_extractor - INFO - 조직 데이터 샘플 (3개 행): [{'item_id': 'D15198_0020', 'item_nm': '가로수대리점 하늘도시점', 'item_dmn': 'R', 'item_desc': '인천 중구 하늘중앙로195번길 11,&&1층 105호(중산동)&&003202309011', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541517', 'oper_dt_hms': 20250909151123}, {'item_id': 'D13622_0398', 'item_nm': 'MD대리점 주엽직영점', 'item_dmn': 'R', 'item_desc': '경기 고양시 일산서구 중앙로 1426,&&(주엽동) 1층111호&&003109152662', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541945', 'oper_dt_hms': 20250909151123}, {'item_id': 'D15320_0001', 'item_nm': '강서대리점(온라인매장)', 'item_dmn': 'R', 'item_desc': '서울 양천구 남부순환로 354,&&1층 (신월동)&&007078567800', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430542104', 'oper_dt_hms': 20250909151123}]
+2025-09-19 16:32:21,943 - mms_extractor - INFO - === 조직 정보 로드 최종 완료: 5765개 조직 ===
+2025-09-19 16:32:21,943 - mms_extractor - INFO - 최종 조직 데이터 스키마: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-09-19 16:32:21,943 - mms_extractor - INFO - 모든 중요 조직 컬럼이 정상적으로 로드되었습니다.
+2025-09-19 16:32:21,943 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (5765, 9)
+2025-09-19 16:32:21,944 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:21,944 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-19 16:32:21,944 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:21,944 - mms_extractor - INFO - ✅ 상품 데이터: (21522, 9)
+2025-09-19 16:32:21,944 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-09-19 16:32:21,944 - mms_extractor - INFO - ✅ 조직 데이터: (5765, 9)
+2025-09-19 16:32:21,944 - mms_extractor - INFO - ✅ 정지어: 166개
+2025-09-19 16:32:21,944 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-09-19 16:32:21,945 - mms_extractor - INFO - 고유 상품명 수: 6847개
+2025-09-19 16:32:21,947 - mms_extractor - INFO - 고유 별칭 수: 16403개
+2025-09-19 16:32:21,947 - mms_extractor - INFO - 고유 상품ID 수: 10551개
+2025-09-19 16:32:21,947 - mms_extractor - INFO - _load_data 실행완료: 0.50초
+2025-09-19 16:32:21,948 - mms_extractor - INFO - ✅ MMSExtractor 초기화 완료
+2025-09-19 16:32:21,948 - __main__ - INFO - MMS Extractor initialized successfully (DAG 추출: ON)
+2025-09-19 16:32:21,977 - __main__ - INFO - Found 131 previously processed messages
+2025-09-19 16:32:21,985 - __main__ - INFO - Total messages: 23950
+2025-09-19 16:32:21,985 - __main__ - INFO - Previously processed: 131
+2025-09-19 16:32:21,985 - __main__ - INFO - Unprocessed messages: 23819
+2025-09-19 16:32:21,985 - __main__ - INFO - Sampled 2 messages for processing
+2025-09-19 16:32:21,986 - __main__ - INFO - 🚀 병렬 처리 모드로 2개 메시지 처리 시작 (워커: 14개)
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 배치 처리 시작: 2개 메시지, 14개 워커
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: [SK텔레콤] 깜빡하셨나요? 메가커피, CU, 컬리 혜택 종료 2일 전!
+(광고)[SKT]...
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: [SK텔레콤] 구형 및 커팅 유심 교체 안내드립니다. 
+[SKT] 구형 및 커팅 유심(US...
+2025-09-19 16:32:21,986 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:21,986 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 🚀 MMS 메시지 처리 시작
+2025-09-19 16:32:21,986 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 메시지 내용: [SK텔레콤] 구형 및 커팅 유심 교체 안내드립니다. 
+[SKT] 구형 및 커팅 유심(USIM) 교체 안내__고객님, 안녕하세요._휴대폰에 들어 있는 유심(USIM)은 소모품으로 일정 기간(약 5년) 이상 사용하면 제 기능을 하지 못합니다. 이로 인해 서비스 이용에 불편함을 느끼실 수 있습니다. 아래와 같은 현상을 겪으신 고객님께서는 가까운 대리점에 방문하...
+2025-09-19 16:32:21,986 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 메시지 길이: 587 문자
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 메시지 내용: [SK텔레콤] 깜빡하셨나요? 메가커피, CU, 컬리 혜택 종료 2일 전!
+(광고)[SKT] 깜빡하셨나요? 메가커피, CU, 컬리 혜택 종료 2일 전!__#04 고객님께서 놓치신 혜택을 알려드립니다. __메가커피, CU 30% 할인과 컬리멤버스 혜택을 3개월 동안 무료로 드리니, 아직 가입하지 않으신 혜택이 있는지 지금 바로! 확인해 보세요. __■ 우주패스...
+2025-09-19 16:32:21,986 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 메시지 길이: 747 문자
+2025-09-19 16:32:21,986 - mms_extractor - INFO - 데이터 소스: local
+2025-09-19 16:32:21,986 - mms_extractor - INFO - === 현재 추출기 설정 ===
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 데이터 소스: local
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 상품 정보 추출 모드: llm
+2025-09-19 16:32:21,987 - mms_extractor - INFO - LLM 모델: ax
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 엔티티 추출 모드: llm
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 상품 데이터 크기: (21522, 9)
+2025-09-19 16:32:21,987 - mms_extractor - INFO - LLM 모델: ax
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 상품 데이터 크기: (21522, 9)
+2025-09-19 16:32:21,987 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 프로그램 데이터 크기: (25, 6)
+2025-09-19 16:32:21,987 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-19 16:32:21,987 - mms_extractor - INFO - ============================== 1단계: 엔티티 추출 ==============================
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 처리할 메시지 길이: 587 문자
+2025-09-19 16:32:21,987 - mms_extractor - INFO - === Kiwi 기반 엔티티 추출 시작 ===
+2025-09-19 16:32:21,987 - mms_extractor - INFO - 처리할 메시지 길이: 747 문자
+2025-09-19 16:32:21,989 - mms_extractor - INFO - 매칭할 상품 별칭 수: 16403개
+2025-09-19 16:32:21,989 - mms_extractor - INFO - 매칭할 상품 별칭 수: 16403개
+2025-09-19 16:32:22,439 - mms_extractor - INFO - 분할된 문장 수: 21개
+2025-09-19 16:32:22,440 - mms_extractor - INFO - 분할된 문장 수: 26개
+2025-09-19 16:32:22,441 - mms_extractor - INFO - 필터링된 문장들: [' SK텔레콤 구형 및 커팅 유심 교체 안내드립니다 SKT ', '구형 및 커팅 유심 USIM 교체 안내', '고객님 안녕하세요 ']...
+2025-09-19 16:32:22,441 - mms_extractor - INFO - 필터링된 문장들: [' SK텔레콤 깜빡하셨나요 ', '메가커피 CU 컬리 혜택 종료 전 광고 SKT ', '깜빡하셨나요 ']...
+2025-09-19 16:32:22,447 - mms_extractor - INFO - 전체 토큰 수: 299개
+2025-09-19 16:32:22,451 - mms_extractor - INFO - 전체 토큰 수: 345개
+2025-09-19 16:32:22,451 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '미', '티머니', '캐시비', '영상통화', '코로나']
+2025-09-19 16:32:22,451 - mms_extractor - INFO - NNP 태그 토큰들: ['SK텔레콤', '컬리', '컬리', '메가커피', '컬리', '컬리멤버스', '컬리', '신규가입']
+2025-09-19 16:32:22,451 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['코로나', '캐시비', '티머니']
+2025-09-19 16:32:22,451 - mms_extractor - INFO - 필터링 후 Kiwi 추출 엔티티: ['컬리멤버스', '메가커피']
+2025-09-19 16:32:22,451 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-09-19 16:32:22,451 - mms_extractor - INFO - 퍼지 매칭 시작...
+2025-09-19 16:32:29,137 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (6139, 3)
+2025-09-19 16:32:29,138 - mms_extractor - INFO - 퍼지 매칭 결과 크기: (1553, 3)
+2025-09-19 16:32:29,139 - mms_extractor - INFO - 퍼지 매칭 성공: 6139개 결과
+2025-09-19 16:32:29,139 - mms_extractor - INFO - 퍼지 매칭 성공: 1553개 결과
+2025-09-19 16:32:29,140 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': ' SK텔레콤 깜빡하셨나요 ', 'item_nm_alias': 'EasyDisk', 'sim': 0.4}, {'sent': ' SK텔레콤 깜빡하셨나요 ', 'item_nm_alias': '나뚜르', 'sim': 0.4}, {'sent': '메가커피 CU 컬리 혜택 종료 전 광고 SKT ', 'item_nm_alias': 'ZEM플랜 smart', 'sim': 0.4}]
+2025-09-19 16:32:29,140 - mms_extractor - INFO - 퍼지 매칭 샘플: [{'sent': ' SK텔레콤 구형 및 커팅 유심 교체 안내드립니다 SKT ', 'item_nm_alias': '유선대체 70', 'sim': 0.4285714285714286}, {'sent': ' SK텔레콤 구형 및 커팅 유심 교체 안내드립니다 SKT ', 'item_nm_alias': 'T시그니처 Master', 'sim': 0.4444444444444444}, {'sent': ' SK텔레콤 구형 및 커팅 유심 교체 안내드립니다 SKT ', 'item_nm_alias': 'IB 심 2일', 'sim': 0.4285714285714286}]
+2025-09-19 16:32:29,140 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-09-19 16:32:29,140 - mms_extractor - INFO - 시퀀스 유사도 계산 시작...
+2025-09-19 16:32:29,190 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (1553, 3)
+2025-09-19 16:32:29,190 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': ' SK텔레콤 구형 및 커팅 유심 교체 안내드립니다 SKT ', 'item_nm_alias': '유선대체 70', 'sim': 0.34285714285714286}, {'sent': ' SK텔레콤 구형 및 커팅 유심 교체 안내드립니다 SKT ', 'item_nm_alias': 'T시그니처 Master', 'sim': 0.2}, {'sent': ' SK텔레콤 구형 및 커팅 유심 교체 안내드립니다 SKT ', 'item_nm_alias': 'IB 심 2일', 'sim': 0.34285714285714286}]
+2025-09-19 16:32:29,190 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-09-19 16:32:29,198 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 4개
+2025-09-19 16:32:29,201 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 0개
+2025-09-19 16:32:29,203 - mms_extractor - INFO - 통합된 후보 아이템 수: 4개
+2025-09-19 16:32:29,215 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['리안', '영화', 'T 서비스']
+2025-09-19 16:32:29,218 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (3, 2)
+2025-09-19 16:32:29,218 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': 'T 서비스', 'item_id': ['NA00003911']}, {'item_nm': '리안', 'item_id': ['X000000029']}, {'item_nm': '영화', 'item_id': ['X000000013']}]
+2025-09-19 16:32:29,219 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 7.23초
+2025-09-19 16:32:29,219 - mms_extractor - INFO - 추출된 후보 엔티티: ['리안', '영화', 'T 서비스']
+2025-09-19 16:32:29,219 - mms_extractor - INFO - 매칭된 상품 정보: (3, 2)
+2025-09-19 16:32:29,219 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-19 16:32:29,242 - mms_extractor - INFO - 시퀀스 유사도 결과 크기: (6139, 3)
+2025-09-19 16:32:29,243 - mms_extractor - INFO - 시퀀스 유사도 샘플: [{'sent': ' SK텔레콤 깜빡하셨나요 ', 'item_nm_alias': 'EasyDisk', 'sim': 0.2}, {'sent': ' SK텔레콤 깜빡하셨나요 ', 'item_nm_alias': '나뚜르', 'sim': 0.26666666666666666}, {'sent': '메가커피 CU 컬리 혜택 종료 전 광고 SKT ', 'item_nm_alias': 'ZEM플랜 smart', 'sim': 0.21818181818181817}]
+2025-09-19 16:32:29,243 - mms_extractor - INFO - 사용할 유사도 임계값: 0.7
+2025-09-19 16:32:29,246 - mms_extractor - INFO - 임계값 필터링 후 후보 아이템 수: 5개
+2025-09-19 16:32:29,247 - mms_extractor - INFO - Kiwi 엔티티 매칭 결과: 0개
+2025-09-19 16:32:29,249 - mms_extractor - INFO - 통합된 후보 아이템 수: 5개
+2025-09-19 16:32:29,252 - mms_extractor - INFO - 최종 후보 아이템 리스트: ['CU 할인', 'G1', '메가MGC커피 할인', '일상플러스(무료)']
+2025-09-19 16:32:29,257 - mms_extractor - INFO - 최종 상품 정보 DataFrame 크기: (4, 2)
+2025-09-19 16:32:29,258 - mms_extractor - INFO - 최종 상품 정보 샘플: [{'item_nm': 'CU 할인', 'item_id': ['PR00000344']}, {'item_nm': 'G1', 'item_id': ['B9W3']}, {'item_nm': '메가MGC커피 할인', 'item_id': ['PR00000500', 'PR00000359']}]
+2025-09-19 16:32:29,259 - mms_extractor - INFO - extract_entities_from_kiwi 실행완료: 7.27초
+2025-09-19 16:32:29,259 - mms_extractor - INFO - 추출된 후보 엔티티: ['CU 할인', 'G1', '메가MGC커피 할인', '일상플러스(무료)']
+2025-09-19 16:32:29,259 - mms_extractor - INFO - 매칭된 상품 정보: (4, 2)
+2025-09-19 16:32:29,259 - mms_extractor - INFO - ============================== 2단계: 프로그램 분류 ==============================
+2025-09-19 16:32:29,538 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-19 16:32:29,538 - mms_extractor - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-09-19 16:32:29,538 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-19 16:32:29,538 - mms_extractor - INFO - ============================== 3단계: RAG 컨텍스트 구성 ==============================
+2025-09-19 16:32:29,539 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-09-19 16:32:29,539 - mms_extractor - INFO - 프로그램 분류 컨텍스트 길이: 379 문자
+2025-09-19 16:32:29,539 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-19 16:32:29,539 - mms_extractor - INFO - ============================== 4단계: 제품 정보 준비 ==============================
+2025-09-19 16:32:29,539 - mms_extractor - INFO - 후보 아이템 리스트 크기: 4개
+2025-09-19 16:32:29,539 - mms_extractor - INFO - 후보 아이템 리스트 크기: 3개
+2025-09-19 16:32:29,539 - mms_extractor - INFO - 후보 아이템 리스트: ['CU 할인', 'G1', '메가MGC커피 할인', '일상플러스(무료)']
+2025-09-19 16:32:29,539 - mms_extractor - INFO - 후보 아이템 리스트: ['리안', '영화', 'T 서비스']
+2025-09-19 16:32:29,539 - mms_extractor - INFO - extra_item_pdf 크기: (4, 2)
+2025-09-19 16:32:29,539 - mms_extractor - INFO - extra_item_pdf 크기: (3, 2)
+2025-09-19 16:32:29,539 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-09-19 16:32:29,539 - mms_extractor - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-09-19 16:32:29,539 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': 'CU 할인', 'item_id': ['PR00000344']}, {'item_nm': 'G1', 'item_id': ['B9W3']}]
+2025-09-19 16:32:29,539 - mms_extractor - INFO - extra_item_pdf 샘플: [{'item_nm': 'T 서비스', 'item_id': ['NA00003911']}, {'item_nm': '리안', 'item_id': ['X000000029']}]
+2025-09-19 16:32:29,539 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-09-19 16:32:29,539 - mms_extractor - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-09-19 16:32:29,539 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-19 16:32:29,539 - mms_extractor - INFO - ============================== 5단계: LLM 호출 ==============================
+2025-09-19 16:32:29,540 - mms_extractor - INFO - 구성된 프롬프트 길이: 6576 문자
+2025-09-19 16:32:29,540 - mms_extractor - INFO - 구성된 프롬프트 길이: 6387 문자
+2025-09-19 16:32:29,540 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-09-19 16:32:29,540 - mms_extractor - INFO - RAG 컨텍스트 포함 여부: True
+2025-09-19 16:32:29,540 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 6576)
+2025-09-19 16:32:29,540 - mms_extractor - INFO - 프롬프트 저장됨: main_extraction_prompt (길이: 6387)
+2025-09-19 16:32:29,540 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-19 16:32:29,540 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 1
+2025-09-19 16:32:29,540 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-19 16:32:29,540 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt']
+2025-09-19 16:32:34,664 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-19 16:32:34,676 - mms_extractor - INFO - LLM 응답 길이: 531 문자
+2025-09-19 16:32:34,676 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "구형 및 커팅 유심 교체 안내드립니다.",
+    "purpose": [
+        "대리점/매장 방문 유도",
+        "기타 정보 제공"
+    ],
+    "product": [
+        {
+            "name": "유심(USIM)",
+            "action": "교체"
+        }
+    ],
+    "channel": [
+        {
+            "type": "대리점",
+            "value": "가까운 대리점",
+            "action": "문의"
+        },
+        {
+            "type": "전화번호",
+            "value": "SKT 고객센터(114)",
+            "action": "문의"
+        }
+    ],
+    "pgm": [
+        "기변유도및해지방어",
+    ...
+2025-09-19 16:32:34,676 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-19 16:32:34,677 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-19 16:32:34,677 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-19 16:32:34,677 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '구형 및 커팅 유심 교체 안내드립니다.', 'purpose': ['대리점/매장 방문 유도', '기타 정보 제공'], 'product': [{'name': '유심(USIM)', 'action': '교체'}], 'channel': [{'type': '대리점', 'value': '가까운 대리점', 'action': '문의'}, {'type': '전화번호', 'value': 'SKT 고객센터(114)', 'action': '문의'}], 'pgm': ['기변유도및해지방어', '대고객사과및오발송정정안내']}
+2025-09-19 16:32:34,677 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-19 16:32:34,677 - mms_extractor - INFO - LLM 추출 엔티티: ['유심(USIM)']
+2025-09-19 16:32:34,949 - mms_extractor - INFO - 엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용
+2025-09-19 16:32:34,949 - mms_extractor - INFO - 프롬프트 저장됨: entity_extraction_prompt (길이: 8298)
+2025-09-19 16:32:34,949 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 2
+2025-09-19 16:32:34,950 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt', 'entity_extraction_prompt']
+2025-09-19 16:32:35,684 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-19 16:32:35,775 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 1.10초
+2025-09-19 16:32:35,841 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-19 16:32:35,841 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:35,841 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-19 16:32:35,841 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:35,841 - mms_extractor - INFO - 제목: 구형 및 커팅 유심 교체 안내드립니다.
+2025-09-19 16:32:35,842 - mms_extractor - INFO - 목적: ['대리점/매장 방문 유도', '기타 정보 제공']
+2025-09-19 16:32:35,842 - mms_extractor - INFO - 상품 수: 1개
+2025-09-19 16:32:35,842 - mms_extractor - INFO - 채널 수: 2개
+2025-09-19 16:32:35,842 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-19 16:32:35,842 - mms_extractor - INFO - process_message 실행완료: 13.86초
+2025-09-19 16:32:35,842 - mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-09-19 16:32:35,842 - mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-09-19 16:32:35,842 - entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-09-19 16:32:35,842 - entity_dag_extractor - INFO - 📝 입력 메시지 길이: 587자
+2025-09-19 16:32:35,842 - entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x129c49490> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x129c497f0> root_client=<openai.OpenAI object at 0x129c596a0> root_async_client=<openai.AsyncOpenAI object at 0x129c495b0> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-09-19 16:32:35,842 - entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-09-19 16:32:35,842 - entity_dag_extractor - INFO - 📏 프롬프트 길이: 3572자
+2025-09-19 16:32:38,218 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-19 16:32:38,222 - mms_extractor - INFO - LLM 응답 길이: 1088 문자
+2025-09-19 16:32:38,223 - mms_extractor - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "[SK텔레콤] 깜빡하셨나요? 메가커피, CU, 컬리 혜택 종료 2일 전!",
+    "purpose": [
+        "상품 가입 유도",
+        "혜택 안내"
+    ],
+    "product": [
+        {
+            "name": "메가MGC커피 4900",
+            "action": "가입"
+        },
+        {
+            "name": "CU 4900",
+            "action": "가입"
+        },
+        {
+            "name": "컬리멤버스 1900",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/brq/#74",
+   ...
+2025-09-19 16:32:38,223 - mms_extractor - INFO - ============================== 6단계: JSON 파싱 ==============================
+2025-09-19 16:32:38,224 - mms_extractor - INFO - 추출된 JSON 객체 수: 1개
+2025-09-19 16:32:38,224 - mms_extractor - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-19 16:32:38,224 - mms_extractor - INFO - 파싱된 JSON 내용: {'title': '[SK텔레콤] 깜빡하셨나요? 메가커피, CU, 컬리 혜택 종료 2일 전!', 'purpose': ['상품 가입 유도', '혜택 안내'], 'product': [{'name': '메가MGC커피 4900', 'action': '가입'}, {'name': 'CU 4900', 'action': '가입'}, {'name': '컬리멤버스 1900', 'action': '가입'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/brq/#74', 'action': '추가 정보'}, {'type': 'URL', 'value': 'http://t-mms.kr/brA/#74', 'action': '추가 정보'}, {'type': 'URL', 'value': 'http://t-mms.kr/brf/#74', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1505', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_T멤버십', '사용법/혜택/이벤트안내_구독']}
+2025-09-19 16:32:38,224 - mms_extractor - INFO - ============================== 7단계: 최종 결과 구성 ==============================
+2025-09-19 16:32:38,225 - mms_extractor - INFO - LLM 추출 엔티티: ['메가MGC커피 4900', 'CU 4900', '컬리멤버스 1900']
+2025-09-19 16:32:38,976 - mms_extractor - INFO - 엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용
+2025-09-19 16:32:38,976 - mms_extractor - INFO - 프롬프트 저장됨: entity_extraction_prompt (길이: 25109)
+2025-09-19 16:32:38,976 - mms_extractor - INFO - 현재 저장된 프롬프트 수: 2
+2025-09-19 16:32:38,976 - mms_extractor - INFO - 저장된 프롬프트 키들: ['main_extraction_prompt', 'entity_extraction_prompt']
+2025-09-19 16:32:41,210 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-19 16:32:41,325 - mms_extractor - INFO - extract_entities_by_llm 실행완료: 3.10초
+2025-09-19 16:32:41,326 - mms_extractor - INFO - ============================== 8단계: 결과 검증 ==============================
+2025-09-19 16:32:41,326 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:41,326 - mms_extractor - INFO - ✅ 메시지 처리 완료 - 최종 결과 요약
+2025-09-19 16:32:41,326 - mms_extractor - INFO - ============================================================
+2025-09-19 16:32:41,326 - mms_extractor - INFO - 제목: [SK텔레콤] 깜빡하셨나요? 메가커피, CU, 컬리 혜택 종료 2일 전!
+2025-09-19 16:32:41,326 - mms_extractor - INFO - 목적: ['상품 가입 유도', '혜택 안내']
+2025-09-19 16:32:41,326 - mms_extractor - INFO - 상품 수: 3개
+2025-09-19 16:32:41,326 - mms_extractor - INFO - 채널 수: 5개
+2025-09-19 16:32:41,326 - mms_extractor - INFO - 프로그램 수: 2개
+2025-09-19 16:32:41,326 - mms_extractor - INFO - process_message 실행완료: 19.34초
+2025-09-19 16:32:41,326 - mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-09-19 16:32:41,326 - mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-09-19 16:32:41,326 - entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-09-19 16:32:41,326 - entity_dag_extractor - INFO - 📝 입력 메시지 길이: 747자
+2025-09-19 16:32:41,326 - entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x129c49490> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x129c497f0> root_client=<openai.OpenAI object at 0x129c596a0> root_async_client=<openai.AsyncOpenAI object at 0x129c495b0> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-09-19 16:32:41,326 - entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-09-19 16:32:41,326 - entity_dag_extractor - INFO - 📏 프롬프트 길이: 3732자
+2025-09-19 16:32:58,974 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-19 16:32:58,976 - entity_dag_extractor - INFO - 📝 LLM 응답 길이: 2170자
+2025-09-19 16:32:58,976 - entity_dag_extractor - INFO - 📄 LLM 응답 미리보기: ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SK텔레콤은 구형 및 커팅 유심(USIM)의 기능 저하로 인한 서비스 이용 불편 현상을 알리고, 가까운 대리점에 방문하여 유심을 교체할 것을 권장하고 있다. 유심 문제로 인해 발생할 수 있는 다양한 불편 현상과 유의사항을 안내하며, 필요시 고객센터로 문의할 수 있음을 안내하고 있다.
+
+[식별된 ...
+2025-09-19 16:32:58,977 - entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-09-19 16:32:58,978 - entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 175자
+2025-09-19 16:32:58,978 - entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-09-19 16:32:58,979 - entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 7, 엣지 수: 6
+2025-09-19 16:32:58,979 - entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['대리점:방문', '유심:교체', '통화:안정적사용', '데이터:안정적사용', '인증:정상적사용', '교통카드:정상적사용', '출입증:정상적사용']
+2025-09-19 16:32:58,979 - entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('대리점:방문', '유심:교체'), ('유심:교체', '통화:안정적사용'), ('유심:교체', '데이터:안정적사용'), ('유심:교체', '인증:정상적사용'), ('유심:교체', '교통카드:정상적사용'), ('유심:교체', '출입증:정상적사용')]
+2025-09-19 16:32:58,980 - entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-09-19 16:32:58,980 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_22a0c79b1759b5501703d6567e42b6e384e9c06992656b3ec5da7e00a520d8dd
+2025-09-19 16:32:58,980 - utils - INFO - 📊 입력 그래프 - 노드 수: 7, 엣지 수: 6
+2025-09-19 16:32:58,982 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-09-19 16:32:59,219 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_22a0c79b1759b5501703d6567e42b6e384e9c06992656b3ec5da7e00a520d8dd.png
+2025-09-19 16:32:59,219 - mms_extractor - INFO - ✅ DAG 추출 완료: dag_22a0c79b1759b5501703d6567e42b6e384e9c06992656b3ec5da7e00a520d8dd
+2025-09-19 16:32:59,219 - mms_extractor - INFO - 🕒 DAG 처리 시간: 23.378초
+2025-09-19 16:32:59,220 - mms_extractor - INFO - 📏 DAG 섹션 길이: 175자
+2025-09-19 16:32:59,220 - mms_extractor - INFO - 📄 DAG 내용 미리보기: (대리점:방문) -[방문하면]-> (유심:교체)
+(유심:교체) -[교체하면]-> (통화:안정적사용)
+(유심:교체) -[교체하면]-> (데이터:안정적사용)
+(유심:교체) -[교체하면]-> (인증:정상적사용)
+(유심:교체) -[교체하면]-> (교통카드:정상적사용)
+(유심:교체) -[교체하면]-> (출입증:정상적사용)...
+2025-09-19 16:32:59,220 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-19 16:33:09,457 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-19 16:33:09,460 - entity_dag_extractor - INFO - 📝 LLM 응답 길이: 2794자
+2025-09-19 16:33:09,460 - entity_dag_extractor - INFO - 📄 LLM 응답 미리보기: ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SK텔레콤은 고객에게 우주패스 플러스의 메가커피, CU, 컬리 혜택이 곧 종료됨을 알리고, 아직 가입하지 않은 혜택이 있다면 즉시 확인 및 가입을 유도하고자 합니다. 특히, SK텔레콤에서 휴대폰을 신규 가입하거나 기기 변경한 고객에게만 제공되는 3개월 무료 프로모션 혜택을 강조합니다.
+
+[식별된...
+2025-09-19 16:33:09,460 - entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-09-19 16:33:09,460 - entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 284자
+2025-09-19 16:33:09,460 - entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-09-19 16:33:09,461 - entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 8, 엣지 수: 7
+2025-09-19 16:33:09,461 - entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['SK텔레콤:휴대폰_신규_가입/기기변경', '우주패스_플러스:가입', '메가MGC커피_4900:사용', '커피_할인:수령', 'CU_4900:사용', 'CU_할인:수령', '컬리멤버스_1900:사용', '컬리_적립금_및_쿠폰:수령']
+2025-09-19 16:33:09,461 - entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('SK텔레콤:휴대폰_신규_가입/기기변경', '우주패스_플러스:가입'), ('우주패스_플러스:가입', '메가MGC커피_4900:사용'), ('우주패스_플러스:가입', 'CU_4900:사용'), ('우주패스_플러스:가입', '컬리멤버스_1900:사용'), ('메가MGC커피_4900:사용', '커피_할인:수령'), ('CU_4900:사용', 'CU_할인:수령'), ('컬리멤버스_1900:사용', '컬리_적립금_및_쿠폰:수령')]
+2025-09-19 16:33:09,461 - entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-09-19 16:33:09,461 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_ab014b40418039f312124ce3b0dbb221a7a495df6a325c4b9c3ed754fca46169
+2025-09-19 16:33:09,461 - utils - INFO - 📊 입력 그래프 - 노드 수: 8, 엣지 수: 7
+2025-09-19 16:33:09,462 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-09-19 16:33:09,662 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_ab014b40418039f312124ce3b0dbb221a7a495df6a325c4b9c3ed754fca46169.png
+2025-09-19 16:33:09,662 - mms_extractor - INFO - ✅ DAG 추출 완료: dag_ab014b40418039f312124ce3b0dbb221a7a495df6a325c4b9c3ed754fca46169
+2025-09-19 16:33:09,662 - mms_extractor - INFO - 🕒 DAG 처리 시간: 28.336초
+2025-09-19 16:33:09,662 - mms_extractor - INFO - 📏 DAG 섹션 길이: 284자
+2025-09-19 16:33:09,662 - mms_extractor - INFO - 📄 DAG 내용 미리보기: (SK텔레콤:휴대폰_신규_가입/기기변경) -[가입/변경하면]-> (우주패스_플러스:가입)
+(우주패스_플러스:가입) -[가입하면]-> (메가MGC커피_4900:사용)
+(메가MGC커피_4900:사용) -[사용하면]-> (커피_할인:수령)
+(우주패스_플러스:가입) -[가입하면]-> (CU_4900:사용)
+(CU_4900:사용) -[사용하면]-> (CU_할인:수령...
+2025-09-19 16:33:09,662 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-09-19 16:33:09,662 - mms_extractor - INFO - 배치 처리 진행률: 1/2 (50.0%)
+2025-09-19 16:33:09,662 - mms_extractor - INFO - 배치 처리 진행률: 2/2 (100.0%)
+2025-09-19 16:33:09,664 - mms_extractor - INFO - 배치 처리 완료: 2개 메시지, 47.68초
+2025-09-19 16:33:09,664 - mms_extractor - INFO - 평균 처리 시간: 23.84초/메시지
+2025-09-19 16:33:10,195 - mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-09-19 16:33:10,196 - mongodb_utils - INFO - 문서 저장 성공: 68cd07368cdc2ad6a2c92e2c
+2025-09-19 16:33:10,197 - mongodb_utils - INFO - MongoDB 연결 해제
+2025-09-19 16:33:10,197 - __main__ - INFO - ✅ 메시지 11076 병렬 처리 완료
+2025-09-19 16:33:10,202 - mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-09-19 16:33:10,203 - mongodb_utils - INFO - 문서 저장 성공: 68cd07368cdc2ad6a2c92e2e
+2025-09-19 16:33:10,204 - mongodb_utils - INFO - MongoDB 연결 해제
+2025-09-19 16:33:10,204 - __main__ - INFO - ✅ 메시지 10973 병렬 처리 완료
+2025-09-19 16:33:10,204 - __main__ - INFO - 🎯 병렬 처리 완료: 2개 메시지, 48.22초 소요
+2025-09-19 16:33:10,206 - __main__ - INFO - Appending 2 results to existing file: ./data/batch_results.csv
+2025-09-19 16:33:10,266 - __main__ - INFO - Results saved to: ./data/batch_results.csv
+2025-09-19 16:33:10,266 - __main__ - WARNING - No messages were successfully processed
+2025-09-19 16:33:10,266 - __main__ - INFO - ==================================================
+2025-09-19 16:33:10,266 - __main__ - INFO - 🎯 배치 처리 성능 요약
+2025-09-19 16:33:10,266 - __main__ - INFO - ==================================================
+2025-09-19 16:33:10,266 - __main__ - INFO - 처리 모드: 병렬 처리
+2025-09-19 16:33:10,266 - __main__ - INFO - 워커 수: 14
+2025-09-19 16:33:10,266 - __main__ - INFO - DAG 추출: ON
+2025-09-19 16:33:10,266 - __main__ - INFO - 총 처리 시간: 55.45초
+2025-09-19 16:33:10,267 - __main__ - INFO - 메시지 처리 시간: 48.22초
+2025-09-19 16:33:10,267 - __main__ - INFO - 메시지당 평균 시간: 24.11초
+2025-09-19 16:33:10,267 - __main__ - INFO - 처리량: 0.04 메시지/초
+2025-09-19 16:33:10,267 - __main__ - INFO - ==================================================
+2025-09-19 16:33:10,267 - __main__ - INFO - ==================================================
+2025-09-19 16:33:10,267 - __main__ - INFO - Batch Processing Summary
+2025-09-19 16:33:10,267 - __main__ - INFO - ==================================================
+2025-09-19 16:33:10,267 - __main__ - INFO - status: completed
+2025-09-19 16:33:10,267 - __main__ - INFO - processed_count: 2
+2025-09-19 16:33:10,267 - __main__ - INFO - successful_count: 0
+2025-09-19 16:33:10,267 - __main__ - INFO - failed_count: 2
+2025-09-19 16:33:10,267 - __main__ - INFO - results_file: ./data/batch_results.csv
+2025-09-19 16:33:10,267 - __main__ - INFO - processing_mode: 병렬 처리
+2025-09-19 16:33:10,267 - __main__ - INFO - max_workers: 14
+2025-09-19 16:33:10,267 - __main__ - INFO - dag_extraction: True
+2025-09-19 16:33:10,267 - __main__ - INFO - total_time_seconds: 55.45
+2025-09-19 16:33:10,267 - __main__ - INFO - processing_time_seconds: 48.22
+2025-09-19 16:33:10,267 - __main__ - INFO - avg_time_per_message: 24.11
+2025-09-19 16:33:10,267 - __main__ - INFO - throughput_messages_per_second: 0.04
+2025-09-19 16:33:10,267 - __main__ - INFO - ==================================================

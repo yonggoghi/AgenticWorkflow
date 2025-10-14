@@ -1,0 +1,284 @@
+{
+  "gemma": {
+    "model": "gemma",
+    "total_evaluated": 10,
+    "avg_overall_similarity": 0.9618272640371327,
+    "std_overall_similarity": 0.05407684380756142,
+    "min_overall_similarity": 0.85,
+    "max_overall_similarity": 1.0,
+    "median_overall_similarity": 0.9937499999999999,
+    "detailed_evaluations": [
+      {
+        "msg_id": "3707",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "2158",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "11712",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "21514",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 0.85,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 0.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "21099",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 0.9874999999999999,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 0.9166666666666666,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 0.9583333333333334
+      },
+      {
+        "msg_id": "19464",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 0.9625,
+          "title_similarity": 1.0,
+          "purpose_similarity": 0.75,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 0.975
+      },
+      {
+        "msg_id": "11793",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "4190",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "18983",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 0.8688888888888889,
+          "title_similarity": 0.8444444444444444,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 0.3333333333333333
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "9932",
+        "model": "gemma",
+        "similarity_result": {
+          "overall_similarity": 0.9493837514824357,
+          "title_similarity": 0.8947368421052632,
+          "purpose_similarity": 1.0,
+          "product_similarity": 0.9783896658896659,
+          "channel_similarity": 0.8533333333333333,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 0.9669794995452891
+      }
+    ]
+  },
+  "ax": {
+    "model": "ax",
+    "total_evaluated": 10,
+    "avg_overall_similarity": 0.980638888888889,
+    "std_overall_similarity": 0.0416507469587548,
+    "min_overall_similarity": 0.8688888888888889,
+    "max_overall_similarity": 1.0,
+    "median_overall_similarity": 1.0,
+    "detailed_evaluations": [
+      {
+        "msg_id": "3707",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "2158",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "11712",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "21514",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "21099",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 0.9374999999999999,
+          "title_similarity": 1.0,
+          "purpose_similarity": 0.6666666666666666,
+          "product_similarity": 1.0,
+          "channel_similarity": 0.9166666666666666,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 0.9583333333333334
+      },
+      {
+        "msg_id": "19464",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 0.975
+      },
+      {
+        "msg_id": "11793",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "4190",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "18983",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 0.8688888888888889,
+          "title_similarity": 0.8444444444444444,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 0.3333333333333333
+        },
+        "ground_truth_avg_similarity": 1.0
+      },
+      {
+        "msg_id": "9932",
+        "model": "ax",
+        "similarity_result": {
+          "overall_similarity": 1.0,
+          "title_similarity": 1.0,
+          "purpose_similarity": 1.0,
+          "product_similarity": 1.0,
+          "channel_similarity": 1.0,
+          "pgm_similarity": 1.0
+        },
+        "ground_truth_avg_similarity": 0.9669794995452891
+      }
+    ]
+  }
+}

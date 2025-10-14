@@ -47,15 +47,9 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config.settings import METADATA_CONFIG
-from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch
+from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
 
-# MongoDB 유틸리티 임포트 (선택적)
-try:
-    from mongodb_utils import save_to_mongodb, test_mongodb_connection
-    MONGODB_AVAILABLE = True
-except ImportError:
-    MONGODB_AVAILABLE = False
-    print("⚠️ MongoDB 유틸리티를 찾을 수 없습니다. --save-to-mongodb 옵션이 비활성화됩니다.")
+# MongoDB 유틸리티는 필요할 때 동적으로 임포트
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 import multiprocessing
 import time
@@ -93,100 +87,7 @@ if not root_logger.handlers:
 logger = logging.getLogger(__name__)
 
 
-def save_result_to_mongodb_if_enabled(message: str, result: dict, save_to_mongodb: bool, extractor_kwargs: dict = None, message_id: str = None):
-    """MongoDB 저장이 활성화된 경우 결과를 저장하는 도우미 함수"""
-    logger.debug(f"MongoDB 저장 함수 호출: save_to_mongodb={save_to_mongodb}, MONGODB_AVAILABLE={MONGODB_AVAILABLE}")
-    
-    if not save_to_mongodb:
-        logger.debug("MongoDB 저장이 비활성화되어 있어 건너뜁니다.")
-        return None
-        
-    if not MONGODB_AVAILABLE:
-        logger.warning("MongoDB 저장이 요청되었지만 mongodb_utils를 찾을 수 없습니다.")
-        return None
-    
-    try:
-        logger.debug("MongoDB 저장 시작...")
-        
-        # 실제 프롬프트 정보를 result에서 추출 시도
-        actual_prompts = result.get('prompts', {})
-        
-        # 디버깅: result 키들과 prompts 확인
-        logger.debug(f"result 키들: {list(result.keys())}")
-        logger.debug(f"actual_prompts: {actual_prompts}")
-        logger.debug(f"actual_prompts 타입: {type(actual_prompts)}")
-        
-        # 프롬프트 정보 구성 (실제 사용된 프롬프트 우선 사용)
-        prompts_data = {}
-        
-        if actual_prompts:
-            logger.debug(f"프롬프트 정보 발견: {list(actual_prompts.keys())}")
-            # result에 프롬프트 정보가 있는 경우 사용
-            for key, prompt_content in actual_prompts.items():
-                logger.debug(f"프롬프트 처리: {key}, 타입: {type(prompt_content)}")
-                if isinstance(prompt_content, dict):
-                    # 이미 구조화된 프롬프트 정보인 경우
-                    prompts_data[key] = {
-                        'title': prompt_content.get('title', f'{key.replace("_", " ").title()} (배치)'),
-                        'description': prompt_content.get('description', f'배치 처리에서 사용된 {key} 프롬프트'),
-                        'content': prompt_content.get('content', ''),
-                        'length': prompt_content.get('length', len(prompt_content.get('content', '')))
-                    }
-                else:
-                    # 문자열 프롬프트인 경우
-                    prompts_data[key] = {
-                        'title': f'{key.replace("_", " ").title()} (배치)',
-                        'description': f'배치 처리에서 사용된 {key} 프롬프트',
-                        'content': prompt_content if isinstance(prompt_content, str) else str(prompt_content),
-                        'length': len(prompt_content) if isinstance(prompt_content, str) else len(str(prompt_content))
-                    }
-        else:
-            logger.debug("프롬프트 정보가 없음 - 기본값 사용")
-            # 프롬프트 정보가 없는 경우 기본값 사용 (배치 처리 특성 반영)
-            prompts_data = {
-                'batch_processing_info': {
-                    'title': '배치 처리 정보',
-                    'description': '배치 처리에서 사용된 설정 정보',
-                    'content': f'배치 처리 모드로 실행됨. 설정: {extractor_kwargs or {}}',
-                    'length': len(str(extractor_kwargs or {}))
-                }
-            }
-        
-        extraction_prompts = {
-            'success': True,
-            'prompts': prompts_data,
-            'settings': extractor_kwargs or {}
-        }
-        
-        # 추출 결과를 MongoDB 형식으로 구성
-        extraction_result = {
-            'success': not bool(result.get('error')),
-            'result': result,
-            'metadata': {
-                'processing_time_seconds': result.get('processing_time', 0),
-                'processing_mode': 'batch',
-                'model_used': extractor_kwargs.get('llm_model', 'unknown') if extractor_kwargs else 'unknown'
-            }
-        }
-        
-        # MongoDB에 저장
-        from mongodb_utils import save_to_mongodb as mongodb_save_to_mongodb
-        saved_id = mongodb_save_to_mongodb(message, extraction_result, extraction_prompts, 
-                                         user_id="SKT1110566", message_id=message_id)
-        
-        if saved_id:
-            logger.debug(f"MongoDB 저장 성공: {saved_id[:8]}...")
-            return saved_id
-        else:
-            logger.warning("MongoDB 저장 실패")
-            return None
-            
-    except Exception as e:
-        logger.error(f"MongoDB 저장 중 오류 발생: {str(e)}")
-        logger.error(f"오류 타입: {type(e)}")
-        import traceback
-        logger.error(f"스택 트레이스: {traceback.format_exc()}")
-        return None
+# save_result_to_mongodb_if_enabled 함수는 mms_extractor.py에서 임포트됨
 
 
 class BatchProcessor:
@@ -366,6 +267,9 @@ class BatchProcessor:
                 
                 if i < len(batch_result):
                     extraction_result = batch_result[i]
+
+                    print("=" * 50 + " extraction_result " + "=" * 50)
+                    print(extraction_result)
                     
                     # Create result record
                     result_record = {
@@ -389,12 +293,18 @@ class BatchProcessor:
                         elif hasattr(llm_model_name, '__class__'):
                             llm_model_name = llm_model_name.__class__.__name__
                         
-                        extractor_kwargs = {
+                        # MongoDB 저장을 위한 args 딕셔너리 구성
+                        args_data = {
+                            'save_to_mongodb': self.save_to_mongodb,
                             'llm_model': str(llm_model_name),
-                            'offer_info_data_src': getattr(self.extractor, 'offer_info_data_src', 'unknown'),
-                            'entity_extraction_mode': getattr(self.extractor, 'entity_extraction_mode', 'unknown')
+                            'offer_data_source': getattr(self.extractor, 'offer_info_data_src', 'unknown'),
+                            'product_info_extraction_mode': getattr(self.extractor, 'product_info_extraction_mode', 'unknown'),
+                            'entity_matching_mode': getattr(self.extractor, 'entity_extraction_mode', 'unknown'),
+                            'extract_entity_dag': getattr(self.extractor, 'extract_entity_dag', False),
+                            'user_id': 'BATCH_USER',
+                            'processing_mode': 'batch'
                         }
-                        save_result_to_mongodb_if_enabled(msg, extraction_result, self.save_to_mongodb, extractor_kwargs, message_id=msg_id)
+                        save_result_to_mongodb_if_enabled(msg, extraction_result, args_data, self.extractor)
                     
                     # DAG 추출 결과 검증 및 로깅
                     if self.extract_entity_dag and 'entity_dag' in extraction_result:
@@ -483,12 +393,18 @@ class BatchProcessor:
                     elif hasattr(llm_model_name, '__class__'):
                         llm_model_name = llm_model_name.__class__.__name__
                     
-                    extractor_kwargs = {
+                    # MongoDB 저장을 위한 args 딕셔너리 구성
+                    args_data = {
+                        'save_to_mongodb': self.save_to_mongodb,
                         'llm_model': str(llm_model_name),
-                        'offer_info_data_src': getattr(self.extractor, 'offer_info_data_src', 'unknown'),
-                        'entity_extraction_mode': getattr(self.extractor, 'entity_extraction_mode', 'unknown')
+                        'offer_data_source': getattr(self.extractor, 'offer_info_data_src', 'unknown'),
+                        'product_info_extraction_mode': getattr(self.extractor, 'product_info_extraction_mode', 'unknown'),
+                        'entity_matching_mode': getattr(self.extractor, 'entity_extraction_mode', 'unknown'),
+                        'extract_entity_dag': getattr(self.extractor, 'extract_entity_dag', False),
+                        'user_id': 'BATCH_USER',
+                        'processing_mode': 'batch'
                     }
-                    save_result_to_mongodb_if_enabled(msg, extraction_result, self.save_to_mongodb, extractor_kwargs, message_id=msg_id)
+                    save_result_to_mongodb_if_enabled(msg, extraction_result, args_data, self.extractor)
                 
                 results.append(result_record)
                 
@@ -692,7 +608,9 @@ def main():
     
     # MongoDB 연결 테스트만 수행하는 경우
     if args.test_mongodb:
-        if not MONGODB_AVAILABLE:
+        try:
+            from mongodb_utils import test_mongodb_connection
+        except ImportError:
             print("❌ MongoDB 유틸리티를 찾을 수 없습니다.")
             print("mongodb_utils.py 파일과 pymongo 패키지를 확인하세요.")
             sys.exit(1)
