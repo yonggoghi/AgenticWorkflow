@@ -12,8 +12,9 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 프로젝트 디렉토리
-PROJECT_DIR="/Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp"
+# 프로젝트 디렉토리 (스크립트 위치 기반)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$SCRIPT_DIR"
 cd "$PROJECT_DIR"
 
 # 테스트 1: 로컬 저장 모드
@@ -35,7 +36,7 @@ fi
 echo ""
 echo "로컬 저장 모드 설정 확인:"
 export DAG_STORAGE_MODE=local
-python3 -c "from config.settings import STORAGE_CONFIG; print(f'저장 모드: {STORAGE_CONFIG.dag_storage_mode}'); print(f'저장 경로: {STORAGE_CONFIG.get_dag_images_dir()}'); print(f'설명: {STORAGE_CONFIG.get_storage_description()}')"
+python -c "from config.settings import STORAGE_CONFIG; print(f'저장 모드: {STORAGE_CONFIG.dag_storage_mode}'); print(f'저장 경로: {STORAGE_CONFIG.get_dag_images_dir()}'); print(f'설명: {STORAGE_CONFIG.get_storage_description()}')" 2>/dev/null || echo "Python 설정 확인 실패"
 
 echo ""
 echo -e "${GREEN}✅ 로컬 저장 모드 설정 완료${NC}"
@@ -72,7 +73,7 @@ fi
 echo ""
 echo "NAS 저장 모드 설정 확인:"
 export DAG_STORAGE_MODE=nas
-python3 -c "from config.settings import STORAGE_CONFIG; print(f'저장 모드: {STORAGE_CONFIG.dag_storage_mode}'); print(f'저장 경로: {STORAGE_CONFIG.get_dag_images_dir()}'); print(f'설명: {STORAGE_CONFIG.get_storage_description()}')"
+python -c "from config.settings import STORAGE_CONFIG; print(f'저장 모드: {STORAGE_CONFIG.dag_storage_mode}'); print(f'저장 경로: {STORAGE_CONFIG.get_dag_images_dir()}'); print(f'설명: {STORAGE_CONFIG.get_storage_description()}')" 2>/dev/null || echo "Python 설정 확인 실패"
 
 if [ "$NAS_AVAILABLE" = true ]; then
     echo -e "${GREEN}✅ NAS 저장 모드 사용 가능${NC}"
@@ -97,7 +98,7 @@ echo ""
 if [ "$NAS_AVAILABLE" = true ]; then
     echo -e "${GREEN}✅ NAS 저장 (nas)${NC}"
     echo "   명령어: python api.py --storage nas"
-    echo "   저장 위치: ./dag_images/ -> /Volumes/nas_dag_images/dag_images/"
+    echo "   저장 위치: ./dag_images/ -> /mnt/nas_dag_images/dag_images/"
 else
     echo -e "${YELLOW}⚠️  NAS 저장 (nas) - 마운트 필요${NC}"
     echo "   설정 방법:"

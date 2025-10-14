@@ -241,10 +241,10 @@ nc -zv <NAS-IP> 2049
 nc -zv <NAS-IP> 111
 
 # 수동 마운트 테스트
-sudo mkdir -p /Volumes/nas_test
-sudo mount -t nfs <NAS-IP>:/aos_ext /Volumes/nas_test
-ls /Volumes/nas_test
-sudo umount /Volumes/nas_test
+sudo mkdir -p /mnt/nas_test
+sudo mount -t nfs -o nfsvers=3 <NAS-IP>:/aos_ext /mnt/nas_test
+ls /mnt/nas_test
+sudo umount /mnt/nas_test
 ```
 
 ---

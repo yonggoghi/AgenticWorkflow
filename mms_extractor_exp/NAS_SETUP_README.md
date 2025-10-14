@@ -6,6 +6,8 @@ Entity DAG API의 이미지를 로컬이 아닌 NAS 서버(172.27.7.58:/aos_ext)
 
 **코드 수정 없이** NFS 마운트와 심볼릭 링크만으로 구현됩니다.
 
+**환경**: Red Hat Enterprise Linux 8.10
+
 ---
 
 ## 🚀 빠른 시작 (3단계)
@@ -13,12 +15,12 @@ Entity DAG API의 이미지를 로컬이 아닌 NAS 서버(172.27.7.58:/aos_ext)
 ### **1단계: NAS 마운트** (sudo 필요)
 
 ```bash
-cd /Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp
+cd $(pwd)/mms_extractor_exp
 sudo bash scripts/setup_nas_mount.sh
 ```
 
 이 스크립트는:
-- `/Volumes/nas_dag_images` 디렉토리 생성 (macOS 표준 위치)
+- `/mnt/nas_dag_images` 디렉토리 생성 (Linux 표준 위치)
 - NAS(172.27.7.58:/aos_ext) 마운트
 - `dag_images` 디렉토리 생성 및 권한 설정
 - 쓰기 권한 테스트
@@ -34,7 +36,7 @@ bash scripts/setup_symlink.sh
 이 스크립트는:
 - 기존 `dag_images` 백업 (날짜/시간 포함)
 - 기존 이미지를 NAS로 복사
-- 심볼릭 링크 생성: `./dag_images` → `/Volumes/nas_dag_images/dag_images`
+- 심볼릭 링크 생성: `./dag_images` → `/mnt/nas_dag_images/dag_images`
 - 설정 검증
 
 ---
@@ -67,13 +69,13 @@ sudo bash scripts/setup_fstab.sh
 **API 응답 (변경 없음):**
 ```json
 {
-  "dag_image_path": "/Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/dag_images/dag_abc123.png"
+  "dag_image_path": "/path/to/mms_extractor_exp/dag_images/dag_abc123.png"
 }
 ```
 
 **실제 파일 위치:**
 ```
-/Volumes/nas_dag_images/dag_images/dag_abc123.png
+/mnt/nas_dag_images/dag_images/dag_abc123.png
 ↓
 NAS: 172.27.7.58:/aos_ext/dag_images/dag_abc123.png
 ```
@@ -82,17 +84,33 @@ NAS: 172.27.7.58:/aos_ext/dag_images/dag_abc123.png
 
 ## 🔧 문제 해결
 
-### macOS 특정 이슈: /mnt 사용 불가
+### **Red Hat Linux 특정 설정**
 
-macOS Catalina (10.15) 이후로 루트 파일시스템이 읽기 전용이므로 `/mnt` 사용 불가합니다.
-이 가이드는 **`/Volumes`** 를 사용하도록 설정되어 있습니다 (macOS 표준).
+#### **NFS 클라이언트 패키지 설치**
 
 ```bash
-# ❌ macOS에서 작동하지 않음
-/mnt/nas_dag_images
+# nfs-utils 설치 확인
+rpm -qa | grep nfs-utils
 
-# ✅ macOS에서 작동함
-/Volumes/nas_dag_images
+# 설치되어 있지 않으면
+sudo yum install nfs-utils -y
+
+# NFS 서비스 활성화
+sudo systemctl enable --now nfs-client.target
+sudo systemctl enable --now rpcbind
+```
+
+#### **방화벽 설정 (필요 시)**
+
+```bash
+# 방화벽 상태 확인
+sudo firewall-cmd --state
+
+# NFS 클라이언트 허용
+sudo firewall-cmd --permanent --add-service=nfs
+sudo firewall-cmd --permanent --add-service=rpc-bind
+sudo firewall-cmd --permanent --add-service=mountd
+sudo firewall-cmd --reload
 ```
 
 ---
@@ -104,28 +122,29 @@ macOS Catalina (10.15) 이후로 루트 파일시스템이 읽기 전용이므�
 showmount -e 172.27.7.58
 
 # 네트워크 연결 확인
-ping 172.27.7.58
+ping -c 3 172.27.7.58
 
 # NFS 포트 확인
 nc -zv 172.27.7.58 2049
+nc -zv 172.27.7.58 111
 ```
 
 ### 권한 문제
 
 ```bash
 # NAS 디렉토리 권한 재설정
-sudo chown yongwook:staff /Volumes/nas_dag_images/dag_images
-sudo chmod 755 /Volumes/nas_dag_images/dag_images
+sudo chown $(whoami):$(id -gn) /mnt/nas_dag_images/dag_images
+sudo chmod 755 /mnt/nas_dag_images/dag_images
 ```
 
 ### 마운트 해제
 
 ```bash
 # 강제 언마운트
-sudo umount -f /Volumes/nas_dag_images
+sudo umount -f /mnt/nas_dag_images
 
 # 심볼릭 링크 제거
-cd /Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp
+cd $(pwd)/mms_extractor_exp
 rm dag_images
 
 # 백업 복원 (필요 시)
@@ -144,7 +163,7 @@ mms_extractor_exp/
 │   ├── setup_fstab.sh          (영구 마운트 설정 - sudo 필요)
 │   └── verify_nas_setup.sh     (설정 검증)
 ├── NAS_SETUP_README.md         (이 파일)
-└── dag_images -> /Volumes/nas_dag_images/dag_images  (설정 후)
+└── dag_images -> /mnt/nas_dag_images/dag_images  (설정 후)
 ```
 
 ---
@@ -156,14 +175,14 @@ mms_extractor_exp/
 다른 디렉토리에도 적용하려면:
 ```bash
 # mms_extractor_dev
-cd /Users/yongwook/workspace/AgenticWorkflow/mms_extractor_dev
+cd /path/to/mms_extractor_dev
 rm -rf ./dag_images
-ln -s /Volumes/nas_dag_images/dag_images ./dag_images
+ln -s /mnt/nas_dag_images/dag_images ./dag_images
 
 # mms_extractor_prd
-cd /Users/yongwook/workspace/AgenticWorkflow/mms_extractor_prd
+cd /path/to/mms_extractor_prd
 rm -rf ./dag_images
-ln -s /Volumes/nas_dag_images/dag_images ./dag_images
+ln -s /mnt/nas_dag_images/dag_images ./dag_images
 ```
 
 ---
@@ -172,7 +191,52 @@ ln -s /Volumes/nas_dag_images/dag_images ./dag_images
 
 문제가 발생하면 다음 명령어로 상태를 확인하세요:
 ```bash
-cd /Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp
+cd $(pwd)/mms_extractor_exp
 bash scripts/verify_nas_setup.sh
 ```
 
+---
+
+## 🔧 Red Hat Linux 8.10 전용 팁
+
+### SELinux 설정 (필요 시)
+
+```bash
+# SELinux 상태 확인
+getenforce
+
+# NFS 관련 SELinux boolean 설정
+sudo setsebool -P use_nfs_home_dirs 1
+sudo setsebool -P nfs_export_all_rw 1
+
+# SELinux 컨텍스트 설정
+sudo semanage fcontext -a -t nfs_t "/mnt/nas_dag_images(/.*)?"
+sudo restorecon -R /mnt/nas_dag_images
+```
+
+### 자동 마운트 확인
+
+```bash
+# systemd 마운트 유닛 상태 확인
+sudo systemctl list-units --type=mount | grep mnt
+
+# 마운트 재시도
+sudo systemctl daemon-reload
+sudo mount -a
+```
+
+### 로그 확인
+
+```bash
+# NFS 관련 로그
+sudo journalctl -u nfs-client.target -n 50
+
+# 마운트 관련 로그
+dmesg | grep -i nfs
+```
+
+---
+
+**작성일**: 2024-10-14  
+**환경**: Red Hat Enterprise Linux 8.10  
+**상태**: Linux 환경 최적화 완료

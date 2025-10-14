@@ -57,7 +57,7 @@ python api.py --storage nas
 ```
 ./dag_images/dag_abc123.png  (심볼릭 링크)
  ↓
-/Volumes/nas_dag_images/dag_images/dag_abc123.png
+/mnt/nas_dag_images/dag_images/dag_abc123.png
  ↓
 NAS: 172.27.7.58:/aos_ext/dag_images/dag_abc123.png
 ```
@@ -96,7 +96,7 @@ NAS: 172.27.7.58:/aos_ext/dag_images/dag_abc123.png
 #### **1. API 서버 시작**
 
 ```bash
-cd /Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp
+cd /path/to/mms_extractor_exp
 
 # 기본 (로컬 저장)
 python api.py
@@ -173,7 +173,7 @@ python api.py --storage nas --port 8000
 python api_test.py
 
 # NAS에 저장되었는지 확인
-ls -la /Volumes/nas_dag_images/dag_images/
+ls -la /mnt/nas_dag_images/dag_images/
 ```
 
 ---
@@ -190,7 +190,7 @@ sudo bash scripts/setup_nas_mount.sh
 bash scripts/setup_symlink.sh
 
 # 3. 기존 로컬 이미지를 NAS로 복사 (선택사항)
-cp -r ./dag_images_local/* /Volumes/nas_dag_images/dag_images/
+cp -r ./dag_images_local/* /mnt/nas_dag_images/dag_images/
 
 # 4. NAS 모드로 재시작
 python api.py --storage nas
@@ -202,7 +202,7 @@ python api.py --storage nas
 # 1. API 중지
 
 # 2. NAS 이미지를 로컬로 복사 (선택사항)
-cp -r /Volumes/nas_dag_images/dag_images/* ./dag_images_local/
+cp -r /mnt/nas_dag_images/dag_images/* ./dag_images_local/
 
 # 3. 로컬 모드로 재시작
 python api.py --storage local
@@ -284,7 +284,7 @@ sleep 5
 python api_test.py
 
 # 4. NAS에 저장되었는지 확인
-ls -lh /Volumes/nas_dag_images/dag_images/
+ls -lh /mnt/nas_dag_images/dag_images/
 
 # 5. 종료
 kill $API_PID

@@ -1,0 +1,41 @@
+{
+    "single_message": {
+        "sequential_avg": 6.026459455490112,
+        "sequential_std": 4.75317635818901,
+        "sequential_dag_avg": 22.453134298324585,
+        "sequential_dag_std": 0.3053620588510924,
+        "parallel_dag_avg": 19.025731325149536,
+        "parallel_dag_std": 0.267818396591032,
+        "speedup_ratio": 1.1801456624505398
+    },
+    "batch_processing": {
+        "workers_1": {
+            "no_dag_time": 31.134305000305176,
+            "with_dag_time": 182.6953661441803,
+            "no_dag_per_message": 3.1134305000305176,
+            "with_dag_per_message": 18.26953661441803,
+            "successful_count": 10
+        },
+        "workers_2": {
+            "no_dag_time": 17.060441732406616,
+            "with_dag_time": 91.97944712638855,
+            "no_dag_per_message": 1.7060441732406617,
+            "with_dag_per_message": 9.197944712638854,
+            "successful_count": 10
+        },
+        "workers_4": {
+            "no_dag_time": 10.444598913192749,
+            "with_dag_time": 57.001835107803345,
+            "no_dag_per_message": 1.0444598913192749,
+            "with_dag_per_message": 5.7001835107803345,
+            "successful_count": 10
+        }
+    },
+    "dag_comparison": {
+        "no_dag_avg": 3.0601254304250083,
+        "with_dag_avg": 18.975871006647747,
+        "overhead_ratio": 6.201010853340174,
+        "overhead_seconds": 15.915745576222738
+    },
+    "worker_scaling": {}
+}

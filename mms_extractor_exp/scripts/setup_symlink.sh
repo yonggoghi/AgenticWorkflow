@@ -8,9 +8,9 @@ echo "================================"
 echo "심볼릭 링크 설정 시작"
 echo "================================"
 
-PROJECT_DIR="/Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp"
-# macOS는 /Volumes 사용
-MOUNT_POINT="/Volumes/nas_dag_images"
+PROJECT_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
+# Linux는 /mnt 사용
+MOUNT_POINT="/mnt/nas_dag_images"
 
 # NAS 마운트 확인
 if ! mount | grep -q "$MOUNT_POINT"; then

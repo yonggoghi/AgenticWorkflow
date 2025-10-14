@@ -11,9 +11,9 @@ echo "================================"
 # 변수 설정
 NAS_IP="172.27.7.58"
 NAS_PATH="/aos_ext"
-# macOS는 /mnt를 사용할 수 없으므로 /Volumes 사용
-MOUNT_POINT="/Volumes/nas_dag_images"
-PROJECT_DIR="/Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp"
+# Linux는 /mnt 사용
+MOUNT_POINT="/mnt/nas_dag_images"
+PROJECT_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
 
 # Step 1: 마운트 디렉토리 생성
 echo ""
@@ -25,8 +25,8 @@ else
     echo "✅ $MOUNT_POINT 이미 존재"
 fi
 
-# 소유자 설정
-chown yongwook:staff "$MOUNT_POINT"
+# 소유자 설정 (현재 사용자)
+chown $(whoami):$(id -gn) "$MOUNT_POINT"
 echo "✅ 소유자 설정 완료"
 
 # Step 2: NFS 마운트
@@ -39,8 +39,8 @@ if mount | grep -q "$MOUNT_POINT"; then
     umount -f "$MOUNT_POINT" 2>/dev/null || true
 fi
 
-# NFS 마운트
-mount -t nfs -o resvport,rw,bg,hard,intr,nolocks,tcp "$NAS_IP:$NAS_PATH" "$MOUNT_POINT"
+# NFS 마운트 (Linux)
+mount -t nfs -o rw,hard,intr,nfsvers=3 "$NAS_IP:$NAS_PATH" "$MOUNT_POINT"
 
 if mount | grep -q "$MOUNT_POINT"; then
     echo "✅ NFS 마운트 성공"
@@ -60,7 +60,7 @@ else
     echo "✅ dag_images 디렉토리 이미 존재"
 fi
 
-chown yongwook:staff "$MOUNT_POINT/dag_images"
+chown $(whoami):$(id -gn) "$MOUNT_POINT/dag_images"
 chmod 755 "$MOUNT_POINT/dag_images"
 
 # Step 4: 쓰기 권한 테스트

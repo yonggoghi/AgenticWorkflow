@@ -1,0 +1,566 @@
+2025-09-03 17:29:27,645 - __main__ - INFO - === 모델 비교 실험 시작 ===
+2025-09-03 17:29:27,645 - __main__ - INFO - 배치 크기: 1
+2025-09-03 17:29:27,645 - __main__ - INFO - 결과 저장 디렉토리: gpt_test
+2025-09-03 17:29:27,645 - __main__ - INFO - 최소 메시지 길이: 300자
+2025-09-03 17:29:27,645 - __main__ - INFO - 1단계: MMS 데이터 로딩
+2025-09-03 17:29:27,645 - __main__ - INFO - MMS 데이터 로딩: /Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/data/mms_data_250806.csv
+2025-09-03 17:29:28,618 - __main__ - INFO - 총 23950개 메시지 로드됨
+2025-09-03 17:29:28,622 - __main__ - INFO - 메시지 길이 필터링 적용 (최소 300자): 23950개 → 22320개
+2025-09-03 17:29:28,622 - __main__ - INFO - 1개 메시지 샘플링 완료
+2025-09-03 17:29:28,623 - __main__ - INFO - 2단계: 모든 모델로 추출 실행
+2025-09-03 17:29:28,623 - __main__ - INFO - === 전체 모델 추출 실험 시작 ===
+2025-09-03 17:29:28,623 - __main__ - INFO - === gemma 모델 추출 시작 (skt/gemma3-12b-it) ===
+2025-09-03 17:29:28,623 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-03 17:29:28,623 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-03 17:29:28,644 - mms_extractor - INFO - Using device: mps
+2025-09-03 17:29:28,644 - mms_extractor - INFO - _initialize_device 실행완료: 0.02초
+2025-09-03 17:29:28,644 - mms_extractor - INFO - LLM 초기화 완료: skt/gemma3-12b-it (skt/ax4)
+2025-09-03 17:29:28,644 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-03 17:29:28,644 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-03 17:29:28,645 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:29:28,645 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-03 17:29:28,645 - mms_extractor - ERROR - 임베딩 모델 초기화 실패: Path ./models/ko-sbert-nli not found
+2025-09-03 17:29:28,645 - mms_extractor - INFO - 기본 모델로 fallback 시도
+2025-09-03 17:29:28,645 - mms_extractor - INFO - Loading model from jhgan/ko-sroberta-multitask...
+2025-09-03 17:29:28,645 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:29:28,645 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: jhgan/ko-sroberta-multitask
+2025-09-03 17:29:33,052 - mms_extractor - INFO - Model loaded on mps
+2025-09-03 17:29:33,053 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 4.41초
+2025-09-03 17:29:33,576 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-03 17:29:33,576 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.52초
+2025-09-03 17:29:33,576 - mms_extractor - INFO - ============================================================
+2025-09-03 17:29:33,576 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-03 17:29:33,576 - mms_extractor - INFO - ============================================================
+2025-09-03 17:29:33,576 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-03 17:29:33,576 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-03 17:29:33,576 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-03 17:29:33,576 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-03 17:29:33,576 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-03 17:29:33,577 - mms_extractor - ERROR - 상품 정보 로드 실패: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+2025-09-03 17:29:33,580 - mms_extractor - ERROR - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 797, in _load_item_data
+    item_pdf_raw = pd.read_csv(csv_path)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+
+2025-09-03 17:29:33,580 - mms_extractor - WARNING - 빈 DataFrame으로 fallback 설정됨
+2025-09-03 17:29:33,580 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:29:33,580 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn']
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-03 17:29:33,581 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (0, 4)
+2025-09-03 17:29:33,581 - mms_extractor - WARNING - 별칭 규칙 적용 실패: [Errno 2] No such file or directory: './data/alias_rules.csv'
+2025-09-03 17:29:33,581 - mms_extractor - WARNING - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1005, in _apply_alias_rules
+    alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/alias_rules.csv'
+
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 원본 상품명을 별칭으로 사용합니다
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (0, 5)
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-03 17:29:33,581 - mms_extractor - WARNING - 정지어 로드 실패: [Errno 2] No such file or directory: './data/stop_words.csv'
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 로드된 정지어 수: 0개
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-03 17:29:33,581 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 등록할 고유 별칭 수: 0개
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 유효한 별칭 수: 0개
+2025-09-03 17:29:33,581 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 0개 성공, 0개 실패
+2025-09-03 17:29:33,581 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-03 17:29:33,582 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-03 17:29:33,582 - mms_extractor - ERROR - 프로그램 데이터 로드 실패: [Errno 2] No such file or directory: './data/pgm_tag_ext_250516.csv'
+2025-09-03 17:29:33,582 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (0, 3)
+2025-09-03 17:29:33,582 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-03 17:29:33,588 - mms_extractor - WARNING - 조직 정보 로드 실패: [Errno 2] No such file or directory: './data/org_info_all_250605.csv'
+2025-09-03 17:29:33,589 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:29:33,589 - mms_extractor - INFO - ============================================================
+2025-09-03 17:29:33,589 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-03 17:29:33,589 - mms_extractor - INFO - ============================================================
+2025-09-03 17:29:33,589 - mms_extractor - INFO - ✅ 상품 데이터: (0, 5)
+2025-09-03 17:29:33,589 - mms_extractor - INFO - ✅ 프로그램 데이터: (0, 3)
+2025-09-03 17:29:33,589 - mms_extractor - INFO - ✅ 조직 데이터: (0, 4)
+2025-09-03 17:29:33,589 - mms_extractor - INFO - ✅ 정지어: 0개
+2025-09-03 17:29:33,589 - mms_extractor - INFO - _load_data 실행완료: 0.01초
+2025-09-03 17:29:33,589 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-03 17:29:33,589 - __main__ - INFO - gemma 추출기 초기화 완료
+2025-09-03 17:29:33,589 - __main__ - INFO - 처리 중: gemma - 메시지 1/1 (ID: 3707)
+2025-09-03 17:29:47,337 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:29:47,348 - __main__ - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:29:47,348 - __main__ - INFO - ✅ gemma - 메시지 3707 추출 완료
+2025-09-03 17:29:48,353 - __main__ - INFO - === gemma 모델 추출 완료 ===
+2025-09-03 17:29:48,388 - __main__ - INFO - ✅ gemma 모델 완료: 1/1 성공, 19.76초 소요
+2025-09-03 17:29:48,388 - __main__ - INFO - === gemini 모델 추출 시작 (gcp/gemini-2.5-flash) ===
+2025-09-03 17:29:48,388 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-03 17:29:48,388 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-03 17:29:48,390 - mms_extractor - INFO - Using device: mps
+2025-09-03 17:29:48,390 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-03 17:29:48,390 - mms_extractor - INFO - LLM 초기화 완료: gcp/gemini-2.5-flash (skt/ax4)
+2025-09-03 17:29:48,390 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-03 17:29:48,390 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-03 17:29:48,391 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:29:48,391 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-03 17:29:48,391 - mms_extractor - ERROR - 임베딩 모델 초기화 실패: Path ./models/ko-sbert-nli not found
+2025-09-03 17:29:48,391 - mms_extractor - INFO - 기본 모델로 fallback 시도
+2025-09-03 17:29:48,391 - mms_extractor - INFO - Loading model from jhgan/ko-sroberta-multitask...
+2025-09-03 17:29:48,391 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:29:48,391 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: jhgan/ko-sroberta-multitask
+2025-09-03 17:29:52,958 - mms_extractor - INFO - Model loaded on mps
+2025-09-03 17:29:52,959 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 4.57초
+2025-09-03 17:29:53,419 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-03 17:29:53,419 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.46초
+2025-09-03 17:29:53,420 - mms_extractor - INFO - ============================================================
+2025-09-03 17:29:53,420 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-03 17:29:53,420 - mms_extractor - INFO - ============================================================
+2025-09-03 17:29:53,420 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-03 17:29:53,420 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-03 17:29:53,420 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-03 17:29:53,420 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-03 17:29:53,420 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-03 17:29:53,420 - mms_extractor - ERROR - 상품 정보 로드 실패: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+2025-09-03 17:29:53,421 - mms_extractor - ERROR - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 797, in _load_item_data
+    item_pdf_raw = pd.read_csv(csv_path)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+
+2025-09-03 17:29:53,421 - mms_extractor - WARNING - 빈 DataFrame으로 fallback 설정됨
+2025-09-03 17:29:53,421 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:29:53,421 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn']
+2025-09-03 17:29:53,421 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-03 17:29:53,422 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-03 17:29:53,422 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (0, 4)
+2025-09-03 17:29:53,422 - mms_extractor - WARNING - 별칭 규칙 적용 실패: [Errno 2] No such file or directory: './data/alias_rules.csv'
+2025-09-03 17:29:53,422 - mms_extractor - WARNING - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1005, in _apply_alias_rules
+    alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/alias_rules.csv'
+
+2025-09-03 17:29:53,422 - mms_extractor - INFO - 원본 상품명을 별칭으로 사용합니다
+2025-09-03 17:29:53,422 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (0, 5)
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-03 17:29:53,423 - mms_extractor - WARNING - 정지어 로드 실패: [Errno 2] No such file or directory: './data/stop_words.csv'
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 로드된 정지어 수: 0개
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-03 17:29:53,423 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 등록할 고유 별칭 수: 0개
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 유효한 별칭 수: 0개
+2025-09-03 17:29:53,423 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 0개 성공, 0개 실패
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-03 17:29:53,423 - mms_extractor - ERROR - 프로그램 데이터 로드 실패: [Errno 2] No such file or directory: './data/pgm_tag_ext_250516.csv'
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (0, 3)
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-03 17:29:53,423 - mms_extractor - WARNING - 조직 정보 로드 실패: [Errno 2] No such file or directory: './data/org_info_all_250605.csv'
+2025-09-03 17:29:53,423 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:29:53,423 - mms_extractor - INFO - ============================================================
+2025-09-03 17:29:53,424 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-03 17:29:53,424 - mms_extractor - INFO - ============================================================
+2025-09-03 17:29:53,424 - mms_extractor - INFO - ✅ 상품 데이터: (0, 5)
+2025-09-03 17:29:53,424 - mms_extractor - INFO - ✅ 프로그램 데이터: (0, 3)
+2025-09-03 17:29:53,424 - mms_extractor - INFO - ✅ 조직 데이터: (0, 4)
+2025-09-03 17:29:53,424 - mms_extractor - INFO - ✅ 정지어: 0개
+2025-09-03 17:29:53,424 - mms_extractor - INFO - _load_data 실행완료: 0.00초
+2025-09-03 17:29:53,424 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-03 17:29:53,424 - __main__ - INFO - gemini 추출기 초기화 완료
+2025-09-03 17:29:53,424 - __main__ - INFO - 처리 중: gemini - 메시지 1/1 (ID: 3707)
+2025-09-03 17:30:00,662 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:30:00,666 - __main__ - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:30:00,666 - __main__ - INFO - ✅ gemini - 메시지 3707 추출 완료
+2025-09-03 17:30:01,671 - __main__ - INFO - === gemini 모델 추출 완료 ===
+2025-09-03 17:30:01,695 - __main__ - INFO - ✅ gemini 모델 완료: 1/1 성공, 13.31초 소요
+2025-09-03 17:30:01,695 - __main__ - INFO - === claude 모델 추출 시작 (amazon/anthropic/claude-sonnet-4-20250514) ===
+2025-09-03 17:30:01,695 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-03 17:30:01,695 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-03 17:30:01,697 - mms_extractor - INFO - Using device: mps
+2025-09-03 17:30:01,697 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-03 17:30:01,697 - mms_extractor - INFO - LLM 초기화 완료: amazon/anthropic/claude-sonnet-4-20250514 (skt/ax4)
+2025-09-03 17:30:01,697 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-03 17:30:01,697 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-03 17:30:01,697 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:30:01,697 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-03 17:30:01,697 - mms_extractor - ERROR - 임베딩 모델 초기화 실패: Path ./models/ko-sbert-nli not found
+2025-09-03 17:30:01,697 - mms_extractor - INFO - 기본 모델로 fallback 시도
+2025-09-03 17:30:01,697 - mms_extractor - INFO - Loading model from jhgan/ko-sroberta-multitask...
+2025-09-03 17:30:01,697 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:30:01,697 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: jhgan/ko-sroberta-multitask
+2025-09-03 17:30:07,167 - mms_extractor - INFO - Model loaded on mps
+2025-09-03 17:30:07,169 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 5.47초
+2025-09-03 17:30:07,581 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-03 17:30:07,581 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.41초
+2025-09-03 17:30:07,581 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:07,581 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-03 17:30:07,581 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:07,581 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-03 17:30:07,581 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-03 17:30:07,581 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-03 17:30:07,581 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-03 17:30:07,581 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-03 17:30:07,582 - mms_extractor - ERROR - 상품 정보 로드 실패: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+2025-09-03 17:30:07,582 - mms_extractor - ERROR - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 797, in _load_item_data
+    item_pdf_raw = pd.read_csv(csv_path)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+
+2025-09-03 17:30:07,582 - mms_extractor - WARNING - 빈 DataFrame으로 fallback 설정됨
+2025-09-03 17:30:07,582 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:30:07,583 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn']
+2025-09-03 17:30:07,583 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-03 17:30:07,583 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-03 17:30:07,583 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (0, 4)
+2025-09-03 17:30:07,583 - mms_extractor - WARNING - 별칭 규칙 적용 실패: [Errno 2] No such file or directory: './data/alias_rules.csv'
+2025-09-03 17:30:07,583 - mms_extractor - WARNING - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1005, in _apply_alias_rules
+    alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/alias_rules.csv'
+
+2025-09-03 17:30:07,583 - mms_extractor - INFO - 원본 상품명을 별칭으로 사용합니다
+2025-09-03 17:30:07,583 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (0, 5)
+2025-09-03 17:30:07,583 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-03 17:30:07,583 - mms_extractor - WARNING - 정지어 로드 실패: [Errno 2] No such file or directory: './data/stop_words.csv'
+2025-09-03 17:30:07,583 - mms_extractor - INFO - 로드된 정지어 수: 0개
+2025-09-03 17:30:07,583 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-03 17:30:07,583 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-03 17:30:07,584 - mms_extractor - INFO - 등록할 고유 별칭 수: 0개
+2025-09-03 17:30:07,584 - mms_extractor - INFO - 유효한 별칭 수: 0개
+2025-09-03 17:30:07,584 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 0개 성공, 0개 실패
+2025-09-03 17:30:07,584 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-03 17:30:07,584 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-03 17:30:07,584 - mms_extractor - ERROR - 프로그램 데이터 로드 실패: [Errno 2] No such file or directory: './data/pgm_tag_ext_250516.csv'
+2025-09-03 17:30:07,584 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (0, 3)
+2025-09-03 17:30:07,584 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-03 17:30:07,584 - mms_extractor - WARNING - 조직 정보 로드 실패: [Errno 2] No such file or directory: './data/org_info_all_250605.csv'
+2025-09-03 17:30:07,584 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:30:07,584 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:07,584 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-03 17:30:07,584 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:07,584 - mms_extractor - INFO - ✅ 상품 데이터: (0, 5)
+2025-09-03 17:30:07,584 - mms_extractor - INFO - ✅ 프로그램 데이터: (0, 3)
+2025-09-03 17:30:07,584 - mms_extractor - INFO - ✅ 조직 데이터: (0, 4)
+2025-09-03 17:30:07,584 - mms_extractor - INFO - ✅ 정지어: 0개
+2025-09-03 17:30:07,584 - mms_extractor - INFO - _load_data 실행완료: 0.00초
+2025-09-03 17:30:07,584 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-03 17:30:07,584 - __main__ - INFO - claude 추출기 초기화 완료
+2025-09-03 17:30:07,584 - __main__ - INFO - 처리 중: claude - 메시지 1/1 (ID: 3707)
+2025-09-03 17:30:29,188 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:30:29,190 - __main__ - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:30:29,190 - __main__ - INFO - ✅ claude - 메시지 3707 추출 완료
+2025-09-03 17:30:30,194 - __main__ - INFO - === claude 모델 추출 완료 ===
+2025-09-03 17:30:30,222 - __main__ - INFO - ✅ claude 모델 완료: 1/1 성공, 28.53초 소요
+2025-09-03 17:30:30,222 - __main__ - INFO - === ax 모델 추출 시작 (skt/ax4) ===
+2025-09-03 17:30:30,222 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-03 17:30:30,222 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-03 17:30:30,223 - mms_extractor - INFO - Using device: mps
+2025-09-03 17:30:30,223 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-03 17:30:30,224 - mms_extractor - INFO - LLM 초기화 완료: skt/ax4 (skt/ax4)
+2025-09-03 17:30:30,224 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-03 17:30:30,224 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-03 17:30:30,224 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:30:30,224 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-03 17:30:30,224 - mms_extractor - ERROR - 임베딩 모델 초기화 실패: Path ./models/ko-sbert-nli not found
+2025-09-03 17:30:30,224 - mms_extractor - INFO - 기본 모델로 fallback 시도
+2025-09-03 17:30:30,224 - mms_extractor - INFO - Loading model from jhgan/ko-sroberta-multitask...
+2025-09-03 17:30:30,224 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:30:30,224 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: jhgan/ko-sroberta-multitask
+2025-09-03 17:30:33,574 - mms_extractor - INFO - Model loaded on mps
+2025-09-03 17:30:33,574 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 3.35초
+2025-09-03 17:30:34,036 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-03 17:30:34,037 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.46초
+2025-09-03 17:30:34,037 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:34,037 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-03 17:30:34,037 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:34,037 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-03 17:30:34,038 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-03 17:30:34,038 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-03 17:30:34,038 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-03 17:30:34,038 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-03 17:30:34,038 - mms_extractor - ERROR - 상품 정보 로드 실패: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+2025-09-03 17:30:34,039 - mms_extractor - ERROR - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 797, in _load_item_data
+    item_pdf_raw = pd.read_csv(csv_path)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+
+2025-09-03 17:30:34,040 - mms_extractor - WARNING - 빈 DataFrame으로 fallback 설정됨
+2025-09-03 17:30:34,040 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:30:34,041 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn']
+2025-09-03 17:30:34,041 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-03 17:30:34,041 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-03 17:30:34,041 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (0, 4)
+2025-09-03 17:30:34,041 - mms_extractor - WARNING - 별칭 규칙 적용 실패: [Errno 2] No such file or directory: './data/alias_rules.csv'
+2025-09-03 17:30:34,041 - mms_extractor - WARNING - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1005, in _apply_alias_rules
+    alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/alias_rules.csv'
+
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 원본 상품명을 별칭으로 사용합니다
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (0, 5)
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-03 17:30:34,042 - mms_extractor - WARNING - 정지어 로드 실패: [Errno 2] No such file or directory: './data/stop_words.csv'
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 로드된 정지어 수: 0개
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-03 17:30:34,042 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 등록할 고유 별칭 수: 0개
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 유효한 별칭 수: 0개
+2025-09-03 17:30:34,042 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 0개 성공, 0개 실패
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-03 17:30:34,042 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-03 17:30:34,043 - mms_extractor - ERROR - 프로그램 데이터 로드 실패: [Errno 2] No such file or directory: './data/pgm_tag_ext_250516.csv'
+2025-09-03 17:30:34,043 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (0, 3)
+2025-09-03 17:30:34,043 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-03 17:30:34,043 - mms_extractor - WARNING - 조직 정보 로드 실패: [Errno 2] No such file or directory: './data/org_info_all_250605.csv'
+2025-09-03 17:30:34,043 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:30:34,043 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:34,043 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-03 17:30:34,043 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:34,043 - mms_extractor - INFO - ✅ 상품 데이터: (0, 5)
+2025-09-03 17:30:34,043 - mms_extractor - INFO - ✅ 프로그램 데이터: (0, 3)
+2025-09-03 17:30:34,043 - mms_extractor - INFO - ✅ 조직 데이터: (0, 4)
+2025-09-03 17:30:34,043 - mms_extractor - INFO - ✅ 정지어: 0개
+2025-09-03 17:30:34,043 - mms_extractor - INFO - _load_data 실행완료: 0.01초
+2025-09-03 17:30:34,044 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-03 17:30:34,044 - __main__ - INFO - ax 추출기 초기화 완료
+2025-09-03 17:30:34,044 - __main__ - INFO - 처리 중: ax - 메시지 1/1 (ID: 3707)
+2025-09-03 17:30:41,298 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:30:41,300 - __main__ - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:30:41,300 - __main__ - INFO - ✅ ax - 메시지 3707 추출 완료
+2025-09-03 17:30:42,302 - __main__ - INFO - === ax 모델 추출 완료 ===
+2025-09-03 17:30:42,336 - __main__ - INFO - ✅ ax 모델 완료: 1/1 성공, 12.11초 소요
+2025-09-03 17:30:42,336 - __main__ - INFO - === gpt 모델 추출 시작 (azure/openai/gpt-4o-2024-08-06) ===
+2025-09-03 17:30:42,336 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-03 17:30:42,336 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-03 17:30:42,337 - mms_extractor - INFO - Using device: mps
+2025-09-03 17:30:42,337 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-03 17:30:42,337 - mms_extractor - INFO - LLM 초기화 완료: azure/openai/gpt-4o-2024-08-06 (skt/ax4)
+2025-09-03 17:30:42,338 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-03 17:30:42,338 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-03 17:30:42,338 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:30:42,338 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-03 17:30:42,338 - mms_extractor - ERROR - 임베딩 모델 초기화 실패: Path ./models/ko-sbert-nli not found
+2025-09-03 17:30:42,338 - mms_extractor - INFO - 기본 모델로 fallback 시도
+2025-09-03 17:30:42,338 - mms_extractor - INFO - Loading model from jhgan/ko-sroberta-multitask...
+2025-09-03 17:30:42,338 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:30:42,338 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: jhgan/ko-sroberta-multitask
+2025-09-03 17:30:45,974 - mms_extractor - INFO - Model loaded on mps
+2025-09-03 17:30:45,974 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 3.64초
+2025-09-03 17:30:46,467 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-03 17:30:46,467 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.49초
+2025-09-03 17:30:46,467 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:46,467 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-03 17:30:46,467 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:46,467 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-03 17:30:46,467 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-03 17:30:46,467 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-03 17:30:46,467 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-03 17:30:46,467 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-03 17:30:46,467 - mms_extractor - ERROR - 상품 정보 로드 실패: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+2025-09-03 17:30:46,468 - mms_extractor - ERROR - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 797, in _load_item_data
+    item_pdf_raw = pd.read_csv(csv_path)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+
+2025-09-03 17:30:46,468 - mms_extractor - WARNING - 빈 DataFrame으로 fallback 설정됨
+2025-09-03 17:30:46,469 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:30:46,469 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn']
+2025-09-03 17:30:46,469 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-03 17:30:46,469 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-03 17:30:46,469 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (0, 4)
+2025-09-03 17:30:46,469 - mms_extractor - WARNING - 별칭 규칙 적용 실패: [Errno 2] No such file or directory: './data/alias_rules.csv'
+2025-09-03 17:30:46,469 - mms_extractor - WARNING - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1005, in _apply_alias_rules
+    alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/alias_rules.csv'
+
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 원본 상품명을 별칭으로 사용합니다
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (0, 5)
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-03 17:30:46,470 - mms_extractor - WARNING - 정지어 로드 실패: [Errno 2] No such file or directory: './data/stop_words.csv'
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 로드된 정지어 수: 0개
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-03 17:30:46,470 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 등록할 고유 별칭 수: 0개
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 유효한 별칭 수: 0개
+2025-09-03 17:30:46,470 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 0개 성공, 0개 실패
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-03 17:30:46,470 - mms_extractor - ERROR - 프로그램 데이터 로드 실패: [Errno 2] No such file or directory: './data/pgm_tag_ext_250516.csv'
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (0, 3)
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-03 17:30:46,470 - mms_extractor - WARNING - 조직 정보 로드 실패: [Errno 2] No such file or directory: './data/org_info_all_250605.csv'
+2025-09-03 17:30:46,470 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:30:46,471 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:46,471 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-03 17:30:46,471 - mms_extractor - INFO - ============================================================
+2025-09-03 17:30:46,471 - mms_extractor - INFO - ✅ 상품 데이터: (0, 5)
+2025-09-03 17:30:46,471 - mms_extractor - INFO - ✅ 프로그램 데이터: (0, 3)
+2025-09-03 17:30:46,471 - mms_extractor - INFO - ✅ 조직 데이터: (0, 4)
+2025-09-03 17:30:46,471 - mms_extractor - INFO - ✅ 정지어: 0개
+2025-09-03 17:30:46,471 - mms_extractor - INFO - _load_data 실행완료: 0.00초
+2025-09-03 17:30:46,471 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-03 17:30:46,471 - __main__ - INFO - gpt 추출기 초기화 완료
+2025-09-03 17:30:46,471 - __main__ - INFO - 처리 중: gpt - 메시지 1/1 (ID: 3707)
+2025-09-03 17:31:03,706 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:31:03,708 - __main__ - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:31:03,709 - __main__ - INFO - ✅ gpt - 메시지 3707 추출 완료
+2025-09-03 17:31:04,713 - __main__ - INFO - === gpt 모델 추출 완료 ===
+2025-09-03 17:31:04,748 - __main__ - INFO - ✅ gpt 모델 완료: 1/1 성공, 22.41초 소요
+2025-09-03 17:31:04,748 - __main__ - INFO - === 전체 모델 추출 실험 완료 ===
+2025-09-03 17:31:04,748 - __main__ - INFO - 3단계: 결과 저장
+2025-09-03 17:31:04,748 - __main__ - INFO - 통합 결과 저장 중...
+2025-09-03 17:31:04,750 - __main__ - INFO - 통합 결과 저장 완료: gpt_test_202509031729
+2025-09-03 17:31:04,750 - __main__ - INFO - === 모델 비교 실험 완료 ===

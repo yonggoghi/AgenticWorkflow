@@ -8,8 +8,8 @@ echo "================================"
 echo "영구 마운트 설정 (fstab)"
 echo "================================"
 
-# macOS는 /Volumes 사용
-FSTAB_LINE="172.27.7.58:/aos_ext /Volumes/nas_dag_images nfs resvport,rw,bg,hard,intr,nolocks,tcp,nofail 0 0"
+# Linux는 /mnt 사용
+FSTAB_LINE="172.27.7.58:/aos_ext /mnt/nas_dag_images nfs defaults,_netdev,nofail,nfsvers=3 0 0"
 
 # fstab 백업
 echo "Step 1: /etc/fstab 백업..."
@@ -46,6 +46,6 @@ echo ""
 echo "재부팅 후에도 자동으로 마운트됩니다."
 echo ""
 echo "테스트하려면:"
-echo "  sudo umount /Volumes/nas_dag_images"
+echo "  sudo umount /mnt/nas_dag_images"
 echo "  sudo mount -a"
 

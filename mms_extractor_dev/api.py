@@ -96,7 +96,7 @@ sys.path.insert(0, str(current_dir))
 # =============================================================================
 # MMS 추출기 및 설정 모듈 임포트
 try:
-    from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch
+    from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
 except ImportError as e:
     print(f"❌ MMSExtractor 임포트 오류: {e}")
@@ -333,6 +333,8 @@ def extract_message():
         - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: False)
                                          True일 경우 메시지에서 엔티티 간 관계를 DAG 형태로 추출하고
                                          시각적 다이어그램도 함께 생성합니다.
+        - result_type (optional): 추출 결과 타입 (기본값: 'ext')
+        - save_to_mongodb (optional): MongoDB 저장 여부 (기본값: True)
     
     Returns:
         JSON: 추출 결과
@@ -372,6 +374,12 @@ def extract_message():
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', False)
+        save_to_mongodb = data.get('save_to_mongodb', True)
+        result_type = data.get('result_type', 'ext')
+
+        data['save_to_mongodb'] = save_to_mongodb
+        data['result_type'] = result_type
+        data['processing_mode'] = 'single'
         
         # DAG 추출 요청 로깅
         if extract_entity_dag:
@@ -418,7 +426,19 @@ def extract_message():
             result = process_message_with_dag(extractor, message, extract_dag=True)
         else:
             result = extractor.process_message(message)
-            result['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
+            result['extracted_result']['entity_dag'] = []
+            result['raw_result']['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
+
+        if save_to_mongodb:
+            logger.info("MongoDB 저장 중...")
+            saved_id = save_result_to_mongodb_if_enabled(message, result, data, extractor)
+            if saved_id:
+                logger.info("MongoDB 저장 완료!")
+
+        if result_type == 'raw':
+            result = result.get('raw_result', {})
+        else:
+            result = result.get('extracted_result', {})
             
         processing_time = time.time() - start_time
         
@@ -537,6 +557,12 @@ def extract_batch():
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', False)
         max_workers = data.get('max_workers', None)
+        save_to_mongodb = data.get('save_to_mongodb', True)
+        result_type = data.get('result_type', 'ext')
+
+        data['save_to_mongodb'] = save_to_mongodb
+        data['result_type'] = result_type
+        data['processing_mode'] = 'batch'
         
         # 파라미터 유효성 검증
         valid_sources = ['local', 'db']
@@ -565,6 +591,11 @@ def extract_batch():
         # 멀티프로세스 배치 처리
         start_time = time.time()
         
+        # 프롬프트 캡처를 위한 스레드 로컬 저장소 초기화
+        import threading
+        current_thread = threading.current_thread()
+        current_thread.stored_prompts = {}
+        
         # 빈 메시지 필터링
         valid_messages = []
         message_indices = []
@@ -575,6 +606,9 @@ def extract_batch():
         
         logger.info(f"배치 처리 시작: {len(valid_messages)}/{len(messages)}개 유효한 메시지")
         
+        # MongoDB 저장 카운터 초기화
+        saved_count = 0
+        
         try:
             # 멀티프로세스 배치 처리 실행
             batch_results = process_messages_batch(
@@ -584,7 +618,7 @@ def extract_batch():
                 max_workers=max_workers
             )
             
-            # 결과를 원래 인덱스와 매핑
+            # 결과를 원래 인덱스와 매핑 및 MongoDB 저장
             results = []
             valid_result_idx = 0
             
@@ -598,17 +632,38 @@ def extract_batch():
                 else:
                     if valid_result_idx < len(batch_results):
                         batch_result = batch_results[valid_result_idx]
-                        if batch_result.get('error'):
+
+                        # result_type에 따라 결과 선택
+                        if result_type == 'raw':
+                            result_data = batch_result.get('raw_result', {})
+                        else:
+                            result_data = batch_result.get('extracted_result', {})
+
+                        # print("=" * 50 + " batch_result " + "=" * 50)
+                        # print(batch_result)
+                        # print("=" * 50 + " batch_result " + "=" * 50)
+                        
+                        if result_data.get('error'):
                             results.append({
                                 "index": i,
                                 "success": False,
-                                "error": batch_result['error']
+                                "error": result_data['error']
                             })
                         else:
+                            # MongoDB 저장 (배치 처리에서는 각 메시지별로 저장)
+                            if save_to_mongodb:
+                                try:
+                                    saved_id = save_result_to_mongodb_if_enabled(message, batch_result, data, extractor)
+                                    if saved_id:
+                                        saved_count += 1
+                                        logger.debug(f"메시지 {i} MongoDB 저장 완료 (ID: {saved_id[:8]}...)")
+                                except Exception as e:
+                                    logger.warning(f"메시지 {i} MongoDB 저장 실패: {str(e)}")
+                                
                             results.append({
                                 "index": i,
                                 "success": True,
-                                "result": batch_result
+                                "result": result_data
                             })
                         valid_result_idx += 1
                     else:
@@ -617,6 +672,9 @@ def extract_batch():
                             "success": False,
                             "error": "배치 처리 결과 부족"
                         })
+            
+            if save_to_mongodb and saved_count > 0:
+                logger.info(f"MongoDB 저장 완료: {saved_count}/{len(valid_messages)}개 메시지")
         
         except Exception as e:
             logger.error(f"배치 처리 중 오류: {e}")
@@ -631,6 +689,10 @@ def extract_batch():
         
         processing_time = time.time() - start_time
         
+        # 캡처된 프롬프트들 가져오기
+        captured_prompts = getattr(current_thread, 'stored_prompts', {})
+        logger.info(f"배치 추출 과정에서 캡처된 프롬프트: {len(captured_prompts)}개")
+        
         # 성공/실패 개수 집계
         successful = sum(1 for r in results if r["success"])
         failed = len(results) - successful
@@ -641,7 +703,8 @@ def extract_batch():
             "summary": {
                 "total_messages": len(messages),
                 "successful": successful,
-                "failed": failed
+                "failed": failed,
+                "saved_to_mongodb": saved_count if save_to_mongodb else 0
             },
             "metadata": {
                 "llm_model": llm_model,
@@ -651,6 +714,23 @@ def extract_batch():
                 "extract_entity_dag": extract_entity_dag,
                 "max_workers": max_workers,
                 "processing_time_seconds": round(processing_time, 3),
+                "timestamp": time.time()
+            },
+            "prompts": {
+                "success": True,
+                "prompts": captured_prompts,
+                "settings": {
+                    "llm_model": llm_model,
+                    "offer_info_data_src": offer_info_data_src,
+                    "product_info_extraction_mode": product_info_extraction_mode,
+                    "entity_matching_mode": entity_matching_mode,
+                    "extract_entity_dag": extract_entity_dag
+                },
+                "batch_info": {
+                    "total_messages": len(messages),
+                    "successful": successful,
+                    "failed": failed
+                },
                 "timestamp": time.time()
             }
         }
@@ -750,9 +830,9 @@ def get_prompts():
         
         # 추출 수행
         if extract_entity_dag:
-            result = process_message_with_dag(extractor, message, extract_dag=True)
+            result = process_message_with_dag(extractor, message, extract_dag=True)['extracted_result']
         else:
-            result = extractor.process_message(message)
+            result = extractor.process_message(message)['extracted_result']
         
         # 저장된 프롬프트들 가져오기
         stored_prompts = getattr(current_thread, 'stored_prompts', {})

@@ -1,0 +1,695 @@
+2025-09-03 17:34:43,606 - __main__ - INFO - === 성능 검증 전체 실행 시작 ===
+2025-09-03 17:34:43,606 - __main__ - INFO - 설정: 배치 크기=100, 출력 디렉토리=results
+2025-09-03 17:34:43,606 - __main__ - INFO - 유사도 임계값=0.9, 최소 메시지 길이=300자
+2025-09-03 17:34:43,606 - __main__ - INFO - === 1단계: 모델 추출 실험 실행 ===
+2025-09-03 17:34:43,976 - numexpr.utils - INFO - NumExpr defaulting to 14 threads.
+2025-09-03 17:34:48,669 - __main__ - INFO - MMS 데이터 로딩
+2025-09-03 17:34:48,669 - model_comparison_experiment - INFO - MMS 데이터 로딩: /Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/data/mms_data_250806.csv
+2025-09-03 17:34:49,601 - model_comparison_experiment - INFO - 총 23950개 메시지 로드됨
+2025-09-03 17:34:49,605 - model_comparison_experiment - INFO - 메시지 길이 필터링 적용 (최소 300자): 23950개 → 22320개
+2025-09-03 17:34:49,605 - model_comparison_experiment - INFO - 100개 메시지 샘플링 완료
+2025-09-03 17:34:49,605 - __main__ - INFO - 모든 모델로 추출 실행
+2025-09-03 17:34:49,606 - model_comparison_experiment - INFO - === 전체 모델 추출 실험 시작 ===
+2025-09-03 17:34:49,606 - model_comparison_experiment - INFO - === gemma 모델 추출 시작 (skt/gemma3-12b-it) ===
+2025-09-03 17:34:49,606 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-03 17:34:49,606 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-03 17:34:49,625 - mms_extractor - INFO - Using device: mps
+2025-09-03 17:34:49,625 - mms_extractor - INFO - _initialize_device 실행완료: 0.02초
+2025-09-03 17:34:49,625 - mms_extractor - INFO - LLM 초기화 완료: skt/gemma3-12b-it (skt/ax4)
+2025-09-03 17:34:49,625 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-03 17:34:49,625 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-03 17:34:49,626 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:34:49,626 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-03 17:34:49,626 - mms_extractor - ERROR - 임베딩 모델 초기화 실패: Path ./models/ko-sbert-nli not found
+2025-09-03 17:34:49,626 - mms_extractor - INFO - 기본 모델로 fallback 시도
+2025-09-03 17:34:49,626 - mms_extractor - INFO - Loading model from jhgan/ko-sroberta-multitask...
+2025-09-03 17:34:49,626 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:34:49,626 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: jhgan/ko-sroberta-multitask
+2025-09-03 17:34:54,891 - mms_extractor - INFO - Model loaded on mps
+2025-09-03 17:34:54,892 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 5.27초
+2025-09-03 17:34:55,315 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-03 17:34:55,315 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.42초
+2025-09-03 17:34:55,315 - mms_extractor - INFO - ============================================================
+2025-09-03 17:34:55,315 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-03 17:34:55,315 - mms_extractor - INFO - ============================================================
+2025-09-03 17:34:55,315 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-03 17:34:55,315 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-03 17:34:55,315 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-03 17:34:55,315 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-03 17:34:55,315 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-03 17:34:55,316 - mms_extractor - ERROR - 상품 정보 로드 실패: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+2025-09-03 17:34:55,318 - mms_extractor - ERROR - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 797, in _load_item_data
+    item_pdf_raw = pd.read_csv(csv_path)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+
+2025-09-03 17:34:55,318 - mms_extractor - WARNING - 빈 DataFrame으로 fallback 설정됨
+2025-09-03 17:34:55,318 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:34:55,318 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn']
+2025-09-03 17:34:55,318 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-03 17:34:55,318 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-03 17:34:55,318 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (0, 4)
+2025-09-03 17:34:55,319 - mms_extractor - WARNING - 별칭 규칙 적용 실패: [Errno 2] No such file or directory: './data/alias_rules.csv'
+2025-09-03 17:34:55,319 - mms_extractor - WARNING - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1005, in _apply_alias_rules
+    alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/alias_rules.csv'
+
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 원본 상품명을 별칭으로 사용합니다
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (0, 5)
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-03 17:34:55,319 - mms_extractor - WARNING - 정지어 로드 실패: [Errno 2] No such file or directory: './data/stop_words.csv'
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 로드된 정지어 수: 0개
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-03 17:34:55,319 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 등록할 고유 별칭 수: 0개
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 유효한 별칭 수: 0개
+2025-09-03 17:34:55,319 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 0개 성공, 0개 실패
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-03 17:34:55,319 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-03 17:34:55,319 - mms_extractor - ERROR - 프로그램 데이터 로드 실패: [Errno 2] No such file or directory: './data/pgm_tag_ext_250516.csv'
+2025-09-03 17:34:55,320 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (0, 3)
+2025-09-03 17:34:55,320 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-03 17:34:55,325 - mms_extractor - WARNING - 조직 정보 로드 실패: [Errno 2] No such file or directory: './data/org_info_all_250605.csv'
+2025-09-03 17:34:55,325 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:34:55,326 - mms_extractor - INFO - ============================================================
+2025-09-03 17:34:55,326 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-03 17:34:55,326 - mms_extractor - INFO - ============================================================
+2025-09-03 17:34:55,326 - mms_extractor - INFO - ✅ 상품 데이터: (0, 5)
+2025-09-03 17:34:55,326 - mms_extractor - INFO - ✅ 프로그램 데이터: (0, 3)
+2025-09-03 17:34:55,326 - mms_extractor - INFO - ✅ 조직 데이터: (0, 4)
+2025-09-03 17:34:55,326 - mms_extractor - INFO - ✅ 정지어: 0개
+2025-09-03 17:34:55,326 - mms_extractor - INFO - _load_data 실행완료: 0.01초
+2025-09-03 17:34:55,326 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-03 17:34:55,326 - model_comparison_experiment - INFO - gemma 추출기 초기화 완료
+2025-09-03 17:34:55,326 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 1/100 (ID: 3707)
+2025-09-03 17:35:02,228 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:35:02,245 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:35:02,246 - model_comparison_experiment - INFO - ✅ gemma - 메시지 3707 추출 완료
+2025-09-03 17:35:03,252 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 2/100 (ID: 2158)
+2025-09-03 17:35:11,933 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:35:11,939 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:35:11,939 - model_comparison_experiment - INFO - ✅ gemma - 메시지 2158 추출 완료
+2025-09-03 17:35:12,946 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 3/100 (ID: 11712)
+2025-09-03 17:35:21,317 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:35:21,321 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:35:21,321 - model_comparison_experiment - INFO - ✅ gemma - 메시지 11712 추출 완료
+2025-09-03 17:35:22,322 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 4/100 (ID: 21514)
+2025-09-03 17:35:28,983 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:35:28,988 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:35:28,988 - model_comparison_experiment - INFO - ✅ gemma - 메시지 21514 추출 완료
+2025-09-03 17:35:29,990 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 5/100 (ID: 21099)
+2025-09-03 17:35:48,316 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:35:48,321 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:35:48,321 - model_comparison_experiment - INFO - ✅ gemma - 메시지 21099 추출 완료
+2025-09-03 17:35:49,323 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 6/100 (ID: 19464)
+2025-09-03 17:35:56,065 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:35:56,069 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:35:56,069 - model_comparison_experiment - INFO - ✅ gemma - 메시지 19464 추출 완료
+2025-09-03 17:35:57,075 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 7/100 (ID: 11793)
+2025-09-03 17:36:30,051 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:36:30,055 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:36:30,055 - model_comparison_experiment - INFO - ✅ gemma - 메시지 11793 추출 완료
+2025-09-03 17:36:31,060 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 8/100 (ID: 4190)
+2025-09-03 17:36:40,072 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:36:40,077 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:36:40,077 - model_comparison_experiment - INFO - ✅ gemma - 메시지 4190 추출 완료
+2025-09-03 17:36:41,078 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 9/100 (ID: 18983)
+2025-09-03 17:36:49,216 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:36:49,218 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:36:49,218 - model_comparison_experiment - INFO - ✅ gemma - 메시지 18983 추출 완료
+2025-09-03 17:36:50,224 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 10/100 (ID: 9932)
+2025-09-03 17:37:00,026 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:37:00,027 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:37:00,027 - model_comparison_experiment - INFO - ✅ gemma - 메시지 9932 추출 완료
+2025-09-03 17:37:01,033 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 11/100 (ID: 12204)
+2025-09-03 17:37:20,955 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:37:20,959 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:37:20,959 - model_comparison_experiment - INFO - ✅ gemma - 메시지 12204 추출 완료
+2025-09-03 17:37:21,964 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 12/100 (ID: 18067)
+2025-09-03 17:37:28,431 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:37:28,432 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:37:28,432 - model_comparison_experiment - INFO - ✅ gemma - 메시지 18067 추출 완료
+2025-09-03 17:37:29,438 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 13/100 (ID: 20517)
+2025-09-03 17:37:36,364 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:37:36,366 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:37:36,366 - model_comparison_experiment - INFO - ✅ gemma - 메시지 20517 추출 완료
+2025-09-03 17:37:37,371 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 14/100 (ID: 13996)
+2025-09-03 17:37:47,578 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:37:47,582 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:37:47,582 - model_comparison_experiment - INFO - ✅ gemma - 메시지 13996 추출 완료
+2025-09-03 17:37:48,587 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 15/100 (ID: 7657)
+2025-09-03 17:37:54,180 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:37:54,183 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:37:54,183 - model_comparison_experiment - INFO - ✅ gemma - 메시지 7657 추출 완료
+2025-09-03 17:37:55,189 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 16/100 (ID: 3681)
+2025-09-03 17:38:22,497 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:38:22,502 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:38:22,502 - model_comparison_experiment - INFO - ✅ gemma - 메시지 3681 추출 완료
+2025-09-03 17:38:23,505 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 17/100 (ID: 17392)
+2025-09-03 17:38:29,351 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:38:29,355 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:38:29,355 - model_comparison_experiment - INFO - ✅ gemma - 메시지 17392 추출 완료
+2025-09-03 17:38:30,361 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 18/100 (ID: 14482)
+2025-09-03 17:38:37,908 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:38:37,913 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:38:37,913 - model_comparison_experiment - INFO - ✅ gemma - 메시지 14482 추출 완료
+2025-09-03 17:38:38,921 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 19/100 (ID: 6615)
+2025-09-03 17:39:01,362 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:39:01,366 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:39:01,367 - model_comparison_experiment - INFO - ✅ gemma - 메시지 6615 추출 완료
+2025-09-03 17:39:02,372 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 20/100 (ID: 21619)
+2025-09-03 17:39:08,840 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:39:08,843 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:39:08,844 - model_comparison_experiment - INFO - ✅ gemma - 메시지 21619 추출 완료
+2025-09-03 17:39:09,850 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 21/100 (ID: 14676)
+2025-09-03 17:39:18,304 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:39:18,309 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:39:18,310 - model_comparison_experiment - INFO - ✅ gemma - 메시지 14676 추출 완료
+2025-09-03 17:39:19,312 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 22/100 (ID: 11091)
+2025-09-03 17:39:27,631 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:39:27,635 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:39:27,635 - model_comparison_experiment - INFO - ✅ gemma - 메시지 11091 추출 완료
+2025-09-03 17:39:28,641 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 23/100 (ID: 277)
+2025-09-03 17:39:35,084 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:39:35,086 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:39:35,086 - model_comparison_experiment - INFO - ✅ gemma - 메시지 277 추출 완료
+2025-09-03 17:39:36,092 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 24/100 (ID: 9280)
+2025-09-03 17:39:42,934 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:39:42,938 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:39:42,939 - model_comparison_experiment - INFO - ✅ gemma - 메시지 9280 추출 완료
+2025-09-03 17:39:43,940 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 25/100 (ID: 7357)
+2025-09-03 17:39:51,585 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:39:51,589 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:39:51,589 - model_comparison_experiment - INFO - ✅ gemma - 메시지 7357 추출 완료
+2025-09-03 17:39:52,594 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 26/100 (ID: 8306)
+2025-09-03 17:39:57,626 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:39:57,630 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:39:57,631 - model_comparison_experiment - INFO - ✅ gemma - 메시지 8306 추출 완료
+2025-09-03 17:39:58,637 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 27/100 (ID: 19487)
+2025-09-03 17:40:11,554 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:40:11,559 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:40:11,560 - model_comparison_experiment - INFO - ✅ gemma - 메시지 19487 추출 완료
+2025-09-03 17:40:12,562 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 28/100 (ID: 18194)
+2025-09-03 17:40:17,640 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:40:17,642 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:40:17,642 - model_comparison_experiment - INFO - ✅ gemma - 메시지 18194 추출 완료
+2025-09-03 17:40:18,650 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 29/100 (ID: 11505)
+2025-09-03 17:40:24,042 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:40:24,045 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:40:24,045 - model_comparison_experiment - INFO - ✅ gemma - 메시지 11505 추출 완료
+2025-09-03 17:40:25,047 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 30/100 (ID: 15359)
+2025-09-03 17:40:34,901 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:40:34,908 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:40:34,908 - model_comparison_experiment - INFO - ✅ gemma - 메시지 15359 추출 완료
+2025-09-03 17:40:35,913 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 31/100 (ID: 11745)
+2025-09-03 17:40:47,497 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:40:47,502 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:40:47,502 - model_comparison_experiment - INFO - ✅ gemma - 메시지 11745 추출 완료
+2025-09-03 17:40:48,506 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 32/100 (ID: 3298)
+2025-09-03 17:40:55,402 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:40:55,406 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:40:55,407 - model_comparison_experiment - INFO - ✅ gemma - 메시지 3298 추출 완료
+2025-09-03 17:40:56,412 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 33/100 (ID: 2727)
+2025-09-03 17:41:12,287 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:41:12,291 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:41:12,292 - model_comparison_experiment - INFO - ✅ gemma - 메시지 2727 추출 완료
+2025-09-03 17:41:13,298 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 34/100 (ID: 6067)
+2025-09-03 17:41:22,348 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:41:22,352 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:41:22,352 - model_comparison_experiment - INFO - ✅ gemma - 메시지 6067 추출 완료
+2025-09-03 17:41:23,358 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 35/100 (ID: 19782)
+2025-09-03 17:41:34,630 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:41:34,635 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:41:34,635 - model_comparison_experiment - INFO - ✅ gemma - 메시지 19782 추출 완료
+2025-09-03 17:41:35,641 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 36/100 (ID: 1979)
+2025-09-03 17:41:41,736 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:41:41,739 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:41:41,740 - model_comparison_experiment - INFO - ✅ gemma - 메시지 1979 추출 완료
+2025-09-03 17:41:42,744 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 37/100 (ID: 19105)
+2025-09-03 17:41:51,503 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:41:51,508 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:41:51,508 - model_comparison_experiment - INFO - ✅ gemma - 메시지 19105 추출 완료
+2025-09-03 17:41:52,514 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 38/100 (ID: 697)
+2025-09-03 17:41:58,665 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:41:58,669 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:41:58,669 - model_comparison_experiment - INFO - ✅ gemma - 메시지 697 추출 완료
+2025-09-03 17:41:59,673 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 39/100 (ID: 17690)
+2025-09-03 17:42:05,570 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:42:05,571 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:42:05,571 - model_comparison_experiment - INFO - ✅ gemma - 메시지 17690 추출 완료
+2025-09-03 17:42:06,576 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 40/100 (ID: 6542)
+2025-09-03 17:42:15,197 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:42:15,198 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:42:15,198 - model_comparison_experiment - INFO - ✅ gemma - 메시지 6542 추출 완료
+2025-09-03 17:42:16,201 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 41/100 (ID: 15485)
+2025-09-03 17:42:23,190 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:42:23,191 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:42:23,191 - model_comparison_experiment - INFO - ✅ gemma - 메시지 15485 추출 완료
+2025-09-03 17:42:24,197 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 42/100 (ID: 815)
+2025-09-03 17:42:46,841 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:42:46,842 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:42:46,842 - model_comparison_experiment - INFO - ✅ gemma - 메시지 815 추출 완료
+2025-09-03 17:42:47,843 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 43/100 (ID: 15525)
+2025-09-03 17:42:57,318 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:42:57,320 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:42:57,320 - model_comparison_experiment - INFO - ✅ gemma - 메시지 15525 추출 완료
+2025-09-03 17:42:58,323 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 44/100 (ID: 5828)
+2025-09-03 17:43:05,481 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:43:05,484 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:43:05,485 - model_comparison_experiment - INFO - ✅ gemma - 메시지 5828 추출 완료
+2025-09-03 17:43:06,490 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 45/100 (ID: 18057)
+2025-09-03 17:43:12,217 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:43:12,220 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:43:12,220 - model_comparison_experiment - INFO - ✅ gemma - 메시지 18057 추출 완료
+2025-09-03 17:43:13,222 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 46/100 (ID: 12534)
+2025-09-03 17:43:20,216 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:43:20,220 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:43:20,221 - model_comparison_experiment - INFO - ✅ gemma - 메시지 12534 추출 완료
+2025-09-03 17:43:21,225 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 47/100 (ID: 241)
+2025-09-03 17:43:28,271 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:43:28,276 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:43:28,276 - model_comparison_experiment - INFO - ✅ gemma - 메시지 241 추출 완료
+2025-09-03 17:43:29,280 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 48/100 (ID: 5220)
+2025-09-03 17:43:37,230 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:43:37,234 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:43:37,234 - model_comparison_experiment - INFO - ✅ gemma - 메시지 5220 추출 완료
+2025-09-03 17:43:38,240 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 49/100 (ID: 3780)
+2025-09-03 17:43:48,955 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:43:48,959 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:43:48,959 - model_comparison_experiment - INFO - ✅ gemma - 메시지 3780 추출 완료
+2025-09-03 17:43:49,965 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 50/100 (ID: 14990)
+2025-09-03 17:43:57,800 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:43:57,805 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:43:57,806 - model_comparison_experiment - INFO - ✅ gemma - 메시지 14990 추출 완료
+2025-09-03 17:43:58,812 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 51/100 (ID: 7306)
+2025-09-03 17:44:04,694 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:44:04,697 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:44:04,698 - model_comparison_experiment - INFO - ✅ gemma - 메시지 7306 추출 완료
+2025-09-03 17:44:05,700 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 52/100 (ID: 9728)
+2025-09-03 17:44:17,707 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:44:17,711 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:44:17,712 - model_comparison_experiment - INFO - ✅ gemma - 메시지 9728 추출 완료
+2025-09-03 17:44:18,718 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 53/100 (ID: 9747)
+2025-09-03 17:44:29,988 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:44:29,989 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:44:29,989 - model_comparison_experiment - INFO - ✅ gemma - 메시지 9747 추출 완료
+2025-09-03 17:44:30,995 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 54/100 (ID: 7665)
+2025-09-03 17:44:36,558 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:44:36,560 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:44:36,560 - model_comparison_experiment - INFO - ✅ gemma - 메시지 7665 추출 완료
+2025-09-03 17:44:37,566 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 55/100 (ID: 15885)
+2025-09-03 17:44:42,279 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:44:42,280 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:44:42,280 - model_comparison_experiment - INFO - ✅ gemma - 메시지 15885 추출 완료
+2025-09-03 17:44:43,285 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 56/100 (ID: 10219)
+2025-09-03 17:44:53,564 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:44:53,565 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:44:53,565 - model_comparison_experiment - INFO - ✅ gemma - 메시지 10219 추출 완료
+2025-09-03 17:44:54,568 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 57/100 (ID: 5760)
+2025-09-03 17:45:13,286 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:45:13,292 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:45:13,292 - model_comparison_experiment - INFO - ✅ gemma - 메시지 5760 추출 완료
+2025-09-03 17:45:14,298 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 58/100 (ID: 17237)
+2025-09-03 17:45:31,026 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:45:31,031 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:45:31,031 - model_comparison_experiment - INFO - ✅ gemma - 메시지 17237 추출 완료
+2025-09-03 17:45:32,035 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 59/100 (ID: 22077)
+2025-09-03 17:45:38,629 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:45:38,633 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:45:38,634 - model_comparison_experiment - INFO - ✅ gemma - 메시지 22077 추출 완료
+2025-09-03 17:45:39,636 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 60/100 (ID: 9798)
+2025-09-03 17:45:50,638 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:45:50,643 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:45:50,643 - model_comparison_experiment - INFO - ✅ gemma - 메시지 9798 추출 완료
+2025-09-03 17:45:51,645 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 61/100 (ID: 8278)
+2025-09-03 17:45:57,792 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:45:57,797 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:45:57,797 - model_comparison_experiment - INFO - ✅ gemma - 메시지 8278 추출 완료
+2025-09-03 17:45:58,803 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 62/100 (ID: 16531)
+2025-09-03 17:46:06,527 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:46:06,534 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:46:06,534 - model_comparison_experiment - INFO - ✅ gemma - 메시지 16531 추출 완료
+2025-09-03 17:46:07,536 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 63/100 (ID: 13942)
+2025-09-03 17:46:18,467 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:46:18,472 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:46:18,472 - model_comparison_experiment - INFO - ✅ gemma - 메시지 13942 추출 완료
+2025-09-03 17:46:19,478 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 64/100 (ID: 1478)
+2025-09-03 17:46:24,774 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:46:24,778 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:46:24,779 - model_comparison_experiment - INFO - ✅ gemma - 메시지 1478 추출 완료
+2025-09-03 17:46:25,780 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 65/100 (ID: 21046)
+2025-09-03 17:46:31,149 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:46:31,153 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:46:31,153 - model_comparison_experiment - INFO - ✅ gemma - 메시지 21046 추출 완료
+2025-09-03 17:46:32,157 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 66/100 (ID: 9639)
+2025-09-03 17:46:45,159 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:46:45,164 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:46:45,164 - model_comparison_experiment - INFO - ✅ gemma - 메시지 9639 추출 완료
+2025-09-03 17:46:46,165 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 67/100 (ID: 4638)
+2025-09-03 17:46:54,190 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:46:54,195 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:46:54,195 - model_comparison_experiment - INFO - ✅ gemma - 메시지 4638 추출 완료
+2025-09-03 17:46:55,200 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 68/100 (ID: 10664)
+2025-09-03 17:47:01,769 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:47:01,774 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:47:01,774 - model_comparison_experiment - INFO - ✅ gemma - 메시지 10664 추출 완료
+2025-09-03 17:47:02,777 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 69/100 (ID: 14018)
+2025-09-03 17:47:10,474 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:47:10,478 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:47:10,479 - model_comparison_experiment - INFO - ✅ gemma - 메시지 14018 추출 완료
+2025-09-03 17:47:11,482 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 70/100 (ID: 22205)
+2025-09-03 17:47:17,867 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:47:17,871 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:47:17,871 - model_comparison_experiment - INFO - ✅ gemma - 메시지 22205 추출 완료
+2025-09-03 17:47:18,877 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 71/100 (ID: 6564)
+2025-09-03 17:47:26,044 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:47:26,047 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:47:26,047 - model_comparison_experiment - INFO - ✅ gemma - 메시지 6564 추출 완료
+2025-09-03 17:47:27,049 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 72/100 (ID: 6007)
+2025-09-03 17:47:35,398 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:47:35,403 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:47:35,403 - model_comparison_experiment - INFO - ✅ gemma - 메시지 6007 추출 완료
+2025-09-03 17:47:36,404 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 73/100 (ID: 12718)
+2025-09-03 17:48:01,023 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:48:01,028 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:48:01,028 - model_comparison_experiment - INFO - ✅ gemma - 메시지 12718 추출 완료
+2025-09-03 17:48:02,034 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 74/100 (ID: 2453)
+2025-09-03 17:48:06,997 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:48:07,002 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:48:07,002 - model_comparison_experiment - INFO - ✅ gemma - 메시지 2453 추출 완료
+2025-09-03 17:48:08,007 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 75/100 (ID: 5991)
+2025-09-03 17:48:33,502 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:48:33,506 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:48:33,506 - model_comparison_experiment - INFO - ✅ gemma - 메시지 5991 추출 완료
+2025-09-03 17:48:34,509 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 76/100 (ID: 20794)
+2025-09-03 17:48:42,048 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:48:42,049 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:48:42,049 - model_comparison_experiment - INFO - ✅ gemma - 메시지 20794 추출 완료
+2025-09-03 17:48:43,055 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 77/100 (ID: 9883)
+2025-09-03 17:48:51,236 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:48:51,237 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:48:51,237 - model_comparison_experiment - INFO - ✅ gemma - 메시지 9883 추출 완료
+2025-09-03 17:48:52,240 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 78/100 (ID: 6120)
+2025-09-03 17:49:03,596 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:49:03,597 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:49:03,597 - model_comparison_experiment - INFO - ✅ gemma - 메시지 6120 추출 완료
+2025-09-03 17:49:04,598 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 79/100 (ID: 1929)
+2025-09-03 17:49:12,478 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:49:12,481 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:49:12,482 - model_comparison_experiment - INFO - ✅ gemma - 메시지 1929 추출 완료
+2025-09-03 17:49:13,488 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 80/100 (ID: 10787)
+2025-09-03 17:49:19,702 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:49:19,703 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:49:19,703 - model_comparison_experiment - INFO - ✅ gemma - 메시지 10787 추출 완료
+2025-09-03 17:49:20,709 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 81/100 (ID: 15801)
+2025-09-03 17:49:29,332 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:49:29,334 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:49:29,335 - model_comparison_experiment - INFO - ✅ gemma - 메시지 15801 추출 완료
+2025-09-03 17:49:30,336 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 82/100 (ID: 18236)
+2025-09-03 17:49:35,725 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:49:35,728 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:49:35,728 - model_comparison_experiment - INFO - ✅ gemma - 메시지 18236 추출 완료
+2025-09-03 17:49:36,730 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 83/100 (ID: 1044)
+2025-09-03 17:49:42,360 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:49:42,361 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:49:42,362 - model_comparison_experiment - INFO - ✅ gemma - 메시지 1044 추출 완료
+2025-09-03 17:49:43,367 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 84/100 (ID: 6880)
+2025-09-03 17:49:50,699 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:49:50,702 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:49:50,702 - model_comparison_experiment - INFO - ✅ gemma - 메시지 6880 추출 완료
+2025-09-03 17:49:51,708 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 85/100 (ID: 7428)
+2025-09-03 17:50:02,192 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:50:02,197 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:50:02,198 - model_comparison_experiment - INFO - ✅ gemma - 메시지 7428 추출 완료
+2025-09-03 17:50:03,204 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 86/100 (ID: 8925)
+2025-09-03 17:50:11,440 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:50:11,441 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:50:11,441 - model_comparison_experiment - INFO - ✅ gemma - 메시지 8925 추출 완료
+2025-09-03 17:50:12,443 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 87/100 (ID: 9770)
+2025-09-03 17:50:18,015 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:50:18,023 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:50:18,024 - model_comparison_experiment - INFO - ✅ gemma - 메시지 9770 추출 완료
+2025-09-03 17:50:19,028 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 88/100 (ID: 1206)
+2025-09-03 17:50:27,343 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:50:27,347 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:50:27,347 - model_comparison_experiment - INFO - ✅ gemma - 메시지 1206 추출 완료
+2025-09-03 17:50:28,348 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 89/100 (ID: 20646)
+2025-09-03 17:50:39,084 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:50:39,088 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:50:39,089 - model_comparison_experiment - INFO - ✅ gemma - 메시지 20646 추출 완료
+2025-09-03 17:50:40,094 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 90/100 (ID: 13004)
+2025-09-03 17:50:46,218 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:50:46,222 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:50:46,223 - model_comparison_experiment - INFO - ✅ gemma - 메시지 13004 추출 완료
+2025-09-03 17:50:47,228 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 91/100 (ID: 5291)
+2025-09-03 17:50:54,143 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:50:54,147 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:50:54,147 - model_comparison_experiment - INFO - ✅ gemma - 메시지 5291 추출 완료
+2025-09-03 17:50:55,149 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 92/100 (ID: 2834)
+2025-09-03 17:51:15,949 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:51:15,952 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:51:15,952 - model_comparison_experiment - INFO - ✅ gemma - 메시지 2834 추출 완료
+2025-09-03 17:51:16,957 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 93/100 (ID: 16164)
+2025-09-03 17:51:24,091 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:51:24,096 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:51:24,096 - model_comparison_experiment - INFO - ✅ gemma - 메시지 16164 추출 완료
+2025-09-03 17:51:25,099 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 94/100 (ID: 18246)
+2025-09-03 17:51:29,602 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:51:29,603 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:51:29,603 - model_comparison_experiment - INFO - ✅ gemma - 메시지 18246 추출 완료
+2025-09-03 17:51:30,608 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 95/100 (ID: 6635)
+2025-09-03 17:52:10,403 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:52:10,404 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:52:10,404 - model_comparison_experiment - INFO - ✅ gemma - 메시지 6635 추출 완료
+2025-09-03 17:52:11,409 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 96/100 (ID: 22028)
+2025-09-03 17:52:14,649 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:52:14,651 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:52:14,651 - model_comparison_experiment - INFO - ✅ gemma - 메시지 22028 추출 완료
+2025-09-03 17:52:15,656 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 97/100 (ID: 7516)
+2025-09-03 17:52:22,459 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:52:22,462 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:52:22,462 - model_comparison_experiment - INFO - ✅ gemma - 메시지 7516 추출 완료
+2025-09-03 17:52:23,467 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 98/100 (ID: 2654)
+2025-09-03 17:52:30,882 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:52:30,884 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:52:30,884 - model_comparison_experiment - INFO - ✅ gemma - 메시지 2654 추출 완료
+2025-09-03 17:52:31,887 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 99/100 (ID: 7454)
+2025-09-03 17:52:40,976 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:52:40,977 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:52:40,978 - model_comparison_experiment - INFO - ✅ gemma - 메시지 7454 추출 완료
+2025-09-03 17:52:41,983 - model_comparison_experiment - INFO - 처리 중: gemma - 메시지 100/100 (ID: 15624)
+2025-09-03 17:52:52,266 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:52:52,267 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:52:52,267 - model_comparison_experiment - INFO - ✅ gemma - 메시지 15624 추출 완료
+2025-09-03 17:52:53,272 - model_comparison_experiment - INFO - === gemma 모델 추출 완료 ===
+2025-09-03 17:52:53,316 - model_comparison_experiment - INFO - ✅ gemma 모델 완료: 100/100 성공, 1083.71초 소요
+2025-09-03 17:52:53,316 - model_comparison_experiment - INFO - === gemini 모델 추출 시작 (gcp/gemini-2.5-flash) ===
+2025-09-03 17:52:53,316 - mms_extractor - INFO - MMSExtractor 초기화 시작
+2025-09-03 17:52:53,316 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-09-03 17:52:53,326 - mms_extractor - INFO - Using device: mps
+2025-09-03 17:52:53,326 - mms_extractor - INFO - _initialize_device 실행완료: 0.00초
+2025-09-03 17:52:53,326 - mms_extractor - INFO - LLM 초기화 완료: gcp/gemini-2.5-flash (skt/ax4)
+2025-09-03 17:52:53,326 - mms_extractor - INFO - _initialize_llm 실행완료: 0.00초
+2025-09-03 17:52:53,326 - mms_extractor - INFO - Loading model from ./models/ko-sbert-nli...
+2025-09-03 17:52:53,328 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:52:53,329 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-09-03 17:52:53,329 - mms_extractor - ERROR - 임베딩 모델 초기화 실패: Path ./models/ko-sbert-nli not found
+2025-09-03 17:52:53,329 - mms_extractor - INFO - 기본 모델로 fallback 시도
+2025-09-03 17:52:53,329 - mms_extractor - INFO - Loading model from jhgan/ko-sroberta-multitask...
+2025-09-03 17:52:53,329 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-09-03 17:52:53,329 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: jhgan/ko-sroberta-multitask
+2025-09-03 17:52:57,017 - mms_extractor - INFO - Model loaded on mps
+2025-09-03 17:52:57,017 - mms_extractor - INFO - _initialize_embedding_model 실행완료: 3.69초
+2025-09-03 17:52:57,536 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-09-03 17:52:57,536 - mms_extractor - INFO - _initialize_kiwi 실행완료: 0.52초
+2025-09-03 17:52:57,536 - mms_extractor - INFO - ============================================================
+2025-09-03 17:52:57,536 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-09-03 17:52:57,536 - mms_extractor - INFO - ============================================================
+2025-09-03 17:52:57,536 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-09-03 17:52:57,536 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 중...
+2025-09-03 17:52:57,536 - mms_extractor - INFO - === 상품 정보 로드 시작 (모드: local) ===
+2025-09-03 17:52:57,536 - mms_extractor - INFO - 로컬 CSV 파일에서 상품 정보 로드 중...
+2025-09-03 17:52:57,536 - mms_extractor - INFO - CSV 파일 경로: ./data/item_info_all_250527.csv
+2025-09-03 17:52:57,537 - mms_extractor - ERROR - 상품 정보 로드 실패: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+2025-09-03 17:52:57,538 - mms_extractor - ERROR - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 797, in _load_item_data
+    def _load_item_data(self):
+                               
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/item_info_all_250527.csv'
+
+2025-09-03 17:52:57,539 - mms_extractor - WARNING - 빈 DataFrame으로 fallback 설정됨
+2025-09-03 17:52:57,539 - mms_extractor - INFO - 상품 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:52:57,539 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_nm', 'item_id', 'item_desc', 'item_dmn']
+2025-09-03 17:52:57,539 - mms_extractor - INFO - 2️⃣ 별칭 규칙 적용 중...
+2025-09-03 17:52:57,539 - mms_extractor - INFO - === 별칭 규칙 적용 시작 ===
+2025-09-03 17:52:57,539 - mms_extractor - INFO - 별칭 규칙 적용 전 상품 데이터 크기: (0, 4)
+2025-09-03 17:52:57,539 - mms_extractor - WARNING - 별칭 규칙 적용 실패: [Errno 2] No such file or directory: './data/alias_rules.csv'
+2025-09-03 17:52:57,540 - mms_extractor - WARNING - 오류 상세: Traceback (most recent call last):
+  File "/Users/1110566/workspace/AgenticWorkflow/mms_extractor_unified/mms_extractor.py", line 1005, in _apply_alias_rules
+    logger.error(f"오류 상세: {traceback.format_exc()}")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/opt/homebrew/Caskroom/miniforge/base/lib/python3.12/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './data/alias_rules.csv'
+
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 원본 상품명을 별칭으로 사용합니다
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 별칭 규칙 적용 후 데이터 크기: (0, 5)
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 3️⃣ 정지어 로드 중...
+2025-09-03 17:52:57,540 - mms_extractor - WARNING - 정지어 로드 실패: [Errno 2] No such file or directory: './data/stop_words.csv'
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 로드된 정지어 수: 0개
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 4️⃣ Kiwi에 상품명 등록 중...
+2025-09-03 17:52:57,540 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 등록할 고유 별칭 수: 0개
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 유효한 별칭 수: 0개
+2025-09-03 17:52:57,540 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 0개 성공, 0개 실패
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 5️⃣ 프로그램 분류 정보 로드 중...
+2025-09-03 17:52:57,540 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-09-03 17:52:57,540 - mms_extractor - ERROR - 프로그램 데이터 로드 실패: [Errno 2] No such file or directory: './data/pgm_tag_ext_250516.csv'
+2025-09-03 17:52:57,541 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (0, 3)
+2025-09-03 17:52:57,541 - mms_extractor - INFO - 6️⃣ 조직 정보 로드 중...
+2025-09-03 17:52:57,541 - mms_extractor - WARNING - 조직 정보 로드 실패: [Errno 2] No such file or directory: './data/org_info_all_250605.csv'
+2025-09-03 17:52:57,541 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (0, 4)
+2025-09-03 17:52:57,541 - mms_extractor - INFO - ============================================================
+2025-09-03 17:52:57,541 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-09-03 17:52:57,541 - mms_extractor - INFO - ============================================================
+2025-09-03 17:52:57,541 - mms_extractor - INFO - ✅ 상품 데이터: (0, 5)
+2025-09-03 17:52:57,541 - mms_extractor - INFO - ✅ 프로그램 데이터: (0, 3)
+2025-09-03 17:52:57,541 - mms_extractor - INFO - ✅ 조직 데이터: (0, 4)
+2025-09-03 17:52:57,541 - mms_extractor - INFO - ✅ 정지어: 0개
+2025-09-03 17:52:57,541 - mms_extractor - INFO - _load_data 실행완료: 0.00초
+2025-09-03 17:52:57,541 - mms_extractor - INFO - MMSExtractor 초기화 완료
+2025-09-03 17:52:57,541 - model_comparison_experiment - INFO - gemini 추출기 초기화 완료
+2025-09-03 17:52:57,541 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 1/100 (ID: 3707)
+2025-09-03 17:53:18,289 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:53:18,293 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:53:18,293 - model_comparison_experiment - INFO - ✅ gemini - 메시지 3707 추출 완료
+2025-09-03 17:53:19,296 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 2/100 (ID: 2158)
+2025-09-03 17:53:38,363 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:53:38,367 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:53:38,367 - model_comparison_experiment - INFO - ✅ gemini - 메시지 2158 추출 완료
+2025-09-03 17:53:39,371 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 3/100 (ID: 11712)
+2025-09-03 17:53:46,613 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:53:46,619 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:53:46,619 - model_comparison_experiment - INFO - ✅ gemini - 메시지 11712 추출 완료
+2025-09-03 17:53:47,625 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 4/100 (ID: 21514)
+2025-09-03 17:53:54,947 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:53:54,951 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:53:54,951 - model_comparison_experiment - INFO - ✅ gemini - 메시지 21514 추출 완료
+2025-09-03 17:53:55,955 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 5/100 (ID: 21099)
+2025-09-03 17:54:04,804 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:54:04,808 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:54:04,808 - model_comparison_experiment - INFO - ✅ gemini - 메시지 21099 추출 완료
+2025-09-03 17:54:05,814 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 6/100 (ID: 19464)
+2025-09-03 17:54:13,181 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:54:13,185 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:54:13,186 - model_comparison_experiment - INFO - ✅ gemini - 메시지 19464 추출 완료
+2025-09-03 17:54:14,188 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 7/100 (ID: 11793)
+2025-09-03 17:54:19,943 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:54:19,947 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:54:19,947 - model_comparison_experiment - INFO - ✅ gemini - 메시지 11793 추출 완료
+2025-09-03 17:54:20,951 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 8/100 (ID: 4190)
+2025-09-03 17:54:28,685 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:54:28,689 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:54:28,689 - model_comparison_experiment - INFO - ✅ gemini - 메시지 4190 추출 완료
+2025-09-03 17:54:29,695 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 9/100 (ID: 18983)
+2025-09-03 17:54:38,553 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:54:38,555 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:54:38,555 - model_comparison_experiment - INFO - ✅ gemini - 메시지 18983 추출 완료
+2025-09-03 17:54:39,561 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 10/100 (ID: 9932)
+2025-09-03 17:54:50,849 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:54:50,854 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:54:50,855 - model_comparison_experiment - INFO - ✅ gemini - 메시지 9932 추출 완료
+2025-09-03 17:54:51,859 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 11/100 (ID: 12204)
+2025-09-03 17:54:58,893 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:54:58,896 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:54:58,896 - model_comparison_experiment - INFO - ✅ gemini - 메시지 12204 추출 완료
+2025-09-03 17:54:59,902 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 12/100 (ID: 18067)
+2025-09-03 17:55:04,792 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:55:04,796 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:55:04,796 - model_comparison_experiment - INFO - ✅ gemini - 메시지 18067 추출 완료
+2025-09-03 17:55:05,801 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 13/100 (ID: 20517)
+2025-09-03 17:55:12,251 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:55:12,257 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:55:12,257 - model_comparison_experiment - INFO - ✅ gemini - 메시지 20517 추출 완료
+2025-09-03 17:55:13,258 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 14/100 (ID: 13996)
+2025-09-03 17:55:22,978 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:55:22,980 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:55:22,981 - model_comparison_experiment - INFO - ✅ gemini - 메시지 13996 추출 완료
+2025-09-03 17:55:23,986 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 15/100 (ID: 7657)
+2025-09-03 17:55:29,563 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:55:29,567 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:55:29,567 - model_comparison_experiment - INFO - ✅ gemini - 메시지 7657 추출 완료
+2025-09-03 17:55:30,573 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 16/100 (ID: 3681)
+2025-09-03 17:55:38,173 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:55:38,178 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:55:38,178 - model_comparison_experiment - INFO - ✅ gemini - 메시지 3681 추출 완료
+2025-09-03 17:55:39,184 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 17/100 (ID: 17392)
+2025-09-03 17:55:45,261 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:55:45,262 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:55:45,262 - model_comparison_experiment - INFO - ✅ gemini - 메시지 17392 추출 완료
+2025-09-03 17:55:46,268 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 18/100 (ID: 14482)
+2025-09-03 17:55:54,509 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-09-03 17:55:54,513 - model_comparison_experiment - INFO - JSON 객체 추출 완료 - 키: ['title', 'purpose', 'product', 'channel', 'pgm']
+2025-09-03 17:55:54,514 - model_comparison_experiment - INFO - ✅ gemini - 메시지 14482 추출 완료
+2025-09-03 17:55:55,519 - model_comparison_experiment - INFO - 처리 중: gemini - 메시지 19/100 (ID: 6615)
