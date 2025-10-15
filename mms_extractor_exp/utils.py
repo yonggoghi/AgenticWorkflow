@@ -167,12 +167,34 @@ def create_dag_diagram(G, filename='dag_diagram', wrap_method='record', output_d
         os.makedirs(output_dir, exist_ok=True)
         
         logger.info("🖼️ DAG 이미지 렌더링 중...")
-        output_path = dot.render(filename, directory=output_dir, cleanup=True)
+        
+        # Graphviz 실행 파일을 찾을 수 있도록 PATH에 /usr/local/bin 추가
+        original_path = os.environ.get('PATH', '')
+        if '/usr/local/bin' not in original_path:
+            os.environ['PATH'] = f"/usr/local/bin:{original_path}"
+            logger.info("📍 PATH에 /usr/local/bin 추가됨")
+        
+        # pipe() 메서드를 사용하여 PNG 바이너리 직접 생성
+        png_data = dot.pipe(format='png')
+        
+        # 파일명에 .png 확장자 추가 (없는 경우)
+        if not filename.endswith('.png'):
+            filename = f"{filename}.png"
+        
+        # 출력 경로 생성
+        output_path = os.path.join(output_dir, filename)
+        
+        # PNG 데이터를 파일로 저장
+        with open(output_path, 'wb') as f:
+            f.write(png_data)
+        
         logger.info(f"✅ DAG 다이어그램 생성 완료: {output_path}")
         return output_path
     except Exception as e:
         logger.error(f"❌ DAG 렌더링 중 오류 발생: {e}")
         print(f"❌ Error rendering: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return None
 
 def format_node_label(text, wrap_method):

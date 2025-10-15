@@ -4,6 +4,7 @@ This module contains all configuration settings for the MMS Extractor system,
 organized into logical groups using dataclasses.
 """
 import os
+import socket
 from dataclasses import dataclass
 from typing import List
 from pathlib import Path
@@ -20,6 +21,29 @@ try:
 except ImportError:
     # dotenv not available, skip loading .env file
     pass
+
+
+def get_server_ip() -> str:
+    """Get the server's IP address dynamically.
+    
+    Returns:
+        str: Server's IP address (e.g., '192.168.1.100')
+    """
+    try:
+        # Create a socket connection to get the actual network IP
+        # We don't actually connect, just use it to determine the IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # Google DNS, doesn't actually send data
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        # Fallback to hostname-based resolution
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            # Ultimate fallback
+            return "127.0.0.1"
 
 
 @dataclass
@@ -119,32 +143,64 @@ class StorageConfig:
     """Storage configuration for DAG images and other files."""
     
     # DAG image storage mode: 'local' or 'nas'
-    dag_storage_mode: str = os.getenv("DAG_STORAGE_MODE", "local")  # 'local' = local disk, 'nas' = NAS server
+    # This controls URL generation, not file storage location
+    dag_storage_mode: str = "local"  # Will be overridden in __post_init__
     
-    # Storage paths
-    dag_local_dir: str = "dag_images_local"  # Local storage directory
-    dag_nas_dir: str = "dag_images"  # NAS storage directory (can be symlink)
+    # Storage path (single directory for all modes)
+    dag_images_dir: str = "dag_images"  # DAG images directory (can be symlink to NAS)
+    
+    # Server URL configuration
+    local_base_url: str = ""  # Will be overridden in __post_init__
+    local_port: int = 8000  # Will be overridden in __post_init__
+    nas_base_url: str = "http://172.27.7.58"  # Will be overridden in __post_init__
+    nas_url_path: str = "/dag_images"  # Will be overridden in __post_init__
     
     def __post_init__(self):
-        """Validate storage mode after initialization."""
+        """Validate storage mode and auto-detect server IP if needed."""
+        # 환경변수에서 값을 읽어서 덮어쓰기 (런타임 결정)
+        self.dag_storage_mode = os.getenv("DAG_STORAGE_MODE", "local")
+        self.local_base_url = os.getenv("LOCAL_BASE_URL", "")
+        self.local_port = int(os.getenv("LOCAL_PORT", "8000"))
+        self.nas_base_url = os.getenv("NAS_BASE_URL", "http://172.27.7.58")
+        self.nas_url_path = os.getenv("NAS_URL_PATH", "/dag_images")
+        
+        # Validate storage mode
         valid_modes = ['local', 'nas']
         if self.dag_storage_mode not in valid_modes:
             raise ValueError(f"dag_storage_mode must be one of {valid_modes}, got: {self.dag_storage_mode}")
+        
+        # Auto-detect local server IP if LOCAL_BASE_URL not set
+        if not self.local_base_url:
+            server_ip = get_server_ip()
+            self.local_base_url = f"http://{server_ip}:{self.local_port}"
     
     def get_dag_images_dir(self) -> str:
-        """Get the current DAG images directory based on storage mode."""
-        if self.dag_storage_mode == 'local':
-            return self.dag_local_dir
-        else:
-            return self.dag_nas_dir
+        """Get the DAG images directory (same for all storage modes)."""
+        return self.dag_images_dir
     
     def get_storage_description(self) -> str:
         """Get human-readable description of current storage mode."""
         descriptions = {
-            'local': 'Local disk storage (no NAS required)',
-            'nas': 'NAS server storage (requires NAS mount)'
+            'local': 'API server provides images (URL: API server IP)',
+            'nas': 'NAS server provides images (URL: NAS server IP)'
         }
         return descriptions.get(self.dag_storage_mode, 'Unknown mode')
+    
+    def get_dag_image_url(self, filename: str) -> str:
+        """Get the DAG image URL based on storage mode.
+        
+        Args:
+            filename: DAG image filename (e.g., 'dag_xxx.png')
+        
+        Returns:
+            str: Full URL to access the DAG image
+        """
+        if self.dag_storage_mode == 'nas':
+            # Use NAS server absolute URL (NAS IP address)
+            return f"{self.nas_base_url.rstrip('/')}{self.nas_url_path.rstrip('/')}/{filename}"
+        else:
+            # Use API server absolute URL (fixed server address)
+            return f"{self.local_base_url.rstrip('/')}/dag_images/{filename}"
 
 @dataclass
 class ProcessingConfig:
