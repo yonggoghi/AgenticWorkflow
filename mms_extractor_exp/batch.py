@@ -640,7 +640,7 @@ def main():
     parser = argparse.ArgumentParser(description='Batch MMS Message Processing')
     
     # Batch processing arguments
-    parser.add_argument('--batch-size', '-b', type=int, default=10,
+    parser.add_argument('--batch-size', '-b', type=int, default=100,
                        help='Number of messages to process (default: 10)')
     parser.add_argument('--output-file', '-o', type=str, default='./data/batch_results.csv',
                        help='Output CSV file for results (default: batch_results.csv)')
@@ -664,7 +664,7 @@ def main():
                        help='엔티티 DAG 추출 활성화 - 메시지에서 엔티티 간 관계를 그래프로 추출하고 시각화 (default: False)')
     
     # MongoDB arguments
-    parser.add_argument('--save-to-mongodb', action='store_true', default=False,
+    parser.add_argument('--save-to-mongodb', action='store_true', default=True,
                        help='추출 결과를 MongoDB에 저장 (mongodb_utils.py 필요)')
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')

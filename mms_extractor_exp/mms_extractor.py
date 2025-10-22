@@ -1563,18 +1563,22 @@ class MMSExtractor:
             
             # 결과 합치기
             if not sim_s1.empty and not sim_s2.empty:
-                combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
-                combined = combined.query("sim_s1>=0.5 and sim_s2>=0.5") # 임계값 필터링. '충전' 문제 해결
+                try:
+                    combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
+                    combined = combined.query("sim_s1>=0.5 and sim_s2>=0.5") # 임계값 필터링. '충전' 문제 해결
 
-                # print('--------------------------------')
-                # print(combined
-                # .query("item_nm_alias.str.contains('에이닷 전화')")
-                # )
-                # print('--------------------------------')
+                    # print('--------------------------------')
+                    # print(combined
+                    # .query("item_nm_alias.str.contains('에이닷 전화')")
+                    # )
+                    # print('--------------------------------')
 
-                combined = combined.groupby(['item_name_in_msg', 'item_nm_alias'])[
-                    ['sim_s1', 'sim_s2']
-                ].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
+                    combined = combined.groupby(['item_name_in_msg', 'item_nm_alias'])[
+                        ['sim_s1', 'sim_s2']
+                    ].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
+                except Exception as e:
+                    logger.error(f"결합 유사도 계산 실패: {e}")
+                    return pd.DataFrame()
                 return combined
             else:
                 return pd.DataFrame()
@@ -2265,7 +2269,7 @@ class MMSExtractor:
                 default_llm_models = self._initialize_multiple_llm_models(['cld'])
                 similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models)
 
-            similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '') in x['item_name_in_msg'].replace(' ', '') or x['item_name_in_msg'].replace(' ', '') in x['item_nm_alias'].replace(' ', '')) , axis=1)]
+            similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
 
             # 상품 정보 매핑
             if not similarities_fuzzy.empty:
@@ -2677,7 +2681,7 @@ def main():
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
-    parser.add_argument('--save-to-mongodb', action='store_true', default=False, 
+    parser.add_argument('--save-to-mongodb', action='store_true', default=True, 
                        help='추출 결과를 MongoDB에 저장 (mongodb_utils.py 필요)')
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')
@@ -2782,7 +2786,8 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-[SK텔레콤] A. (에이닷)에서 알람을 설정하면 선물을 드려요!\n(광고)[SKT] A. (에이닷)에서 알람을 설정하면 선물을 드려요!__#04 고객님, 안녕하세요.__모닝콜, 영양제 먹기, 애견 산책 등  매일 반복되는 일상을 최애 음악으로 알람 설정 해보세요~!__A.(에이닷)에서 알람을 등록하고 권한 설정하면 선물을 드립니다!__▶ 이벤트 자세히 보기: http://t-mms.kr/t.do?m=#61&s=19398&a=&u=https://my-adot.onelink.me/MAbS/u44wyymr__■ 이벤트 일정: 2023년 4월 25일(화)~5월 16일(화)__■ 참여 방법:_1. A. 알람 챌린지 도전을 위한 개인정보 등록(URL)_2. A.앱> 메뉴> ’알람’> 선택 후 ‘다른 앱 위에 표시’ 권한 설정 팝업에서 “설정하기” 선택_3. 휴대폰 설정> 애플리케이션> 앱 목록 중 A.(에이닷)앱의  “다른 앱 위에 표시” 권한 ON_4. 이벤트 기간 동안 \"A.알람” 서비스를 이용하면 자동 응모 완료!__■ 경품: CU 빙그레 바나나우유 기프티콘 (5만명, 이벤트 참여 고객님 대상으로 랜덤 추첨하여 증정)__■ 당첨자 발표일: 2023년 5월 31일(수)__■ 문의: (주)이든앤앨리스 02-542-4920 (평일 오전 9시~오후 6시, 점심시간 낮 12시~오후1시, 유료)__무료 수신거부 1504
+'[SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요!\n' +
+    '(광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지!_30만편의 콘텐츠를 무제한 감상해보세요!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.__SKT와 함께해주셔서 감사합니다.__무료 수신거부 1504',
 """
             
             # 단일 메시지 처리 (멀티스레드)
