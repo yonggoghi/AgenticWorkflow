@@ -65,7 +65,6 @@ import re
 import ast
 import glob
 import os
-from bson import raw_bson
 import copy
 import pandas as pd
 import numpy as np
@@ -91,7 +90,7 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from rapidfuzz import fuzz, process
 from kiwipiepy import Kiwi
 from joblib import Parallel, delayed
-from entity_dag_extractor import DAGParser, extract_dag, create_dag_diagram, sha256_hash
+from entity_dag_extractor import DAGParser, extract_dag
 
 # 프롬프트 모듈 임포트
 from prompts import (
@@ -101,6 +100,40 @@ from prompts import (
     build_entity_extraction_prompt,
     DEFAULT_ENTITY_EXTRACTION_PROMPT,
     DETAILED_ENTITY_EXTRACTION_PROMPT
+)
+
+# 유틸리티 함수 모듈 임포트
+from utils import (
+    log_performance,
+    safe_execute,
+    validate_text_input,
+    safe_check_empty,
+    dataframe_to_markdown_prompt,
+    clean_segment,
+    split_key_value,
+    split_outside_quotes,
+    clean_ill_structured_json,
+    repair_json,
+    extract_json_objects,
+    preprocess_text,
+    fuzzy_similarities,
+    get_fuzzy_similarities,
+    parallel_fuzzy_similarity,
+    longest_common_subsequence_ratio,
+    sequence_matcher_similarity,
+    substring_aware_similarity,
+    token_sequence_similarity,
+    combined_sequence_similarity,
+    calculate_seq_similarity,
+    parallel_seq_similarity,
+    load_sentence_transformer,
+    Token,
+    Sentence,
+    filter_text_by_exc_patterns,
+    filter_specific_terms,
+    convert_df_to_json_list,
+    create_dag_diagram,
+    sha256_hash
 )
 
 # 설정 및 의존성 임포트 (원본 코드에서 가져옴)
@@ -136,524 +169,6 @@ if __name__ == '__main__':
 # pandas 출력 설정
 pd.set_option('display.max_colwidth', 500)
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
-
-# ===== 데코레이터 및 유틸리티 함수들 =====
-
-def log_performance(func):
-    """함수 실행 시간을 로깅하는 데코레이터"""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        try:
-            result = func(*args, **kwargs)
-            elapsed = time.time() - start_time
-            logger.info(f"{func.__name__} 실행완료: {elapsed:.2f}초")
-            return result
-        except Exception as e:
-            elapsed = time.time() - start_time
-            logger.error(f"{func.__name__} 실행실패 ({elapsed:.2f}초): {e}")
-            raise
-    return wrapper
-
-def safe_execute(func, *args, default_return=None, max_retries=2, **kwargs):
-    """
-    안전한 함수 실행을 위한 유틸리티 함수
-    
-    이 함수는 네트워크 오류, API 호출 실패 등의 일시적 오류에 대해
-    지수 백오프(exponential backoff)를 사용하여 재시도합니다.
-    
-    Args:
-        func: 실행할 함수
-        *args: 함수에 전달할 위치 인수
-        default_return: 모든 재시도 실패 시 반환할 기본값
-        max_retries: 최대 재시도 횟수 (default: 2)
-        **kwargs: 함수에 전달할 키워드 인수
-        
-    Returns:
-        함수 실행 결과 또는 default_return
-        
-    Example:
-        result = safe_execute(api_call, data, default_return={}, max_retries=3)
-    """
-    for attempt in range(max_retries + 1):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            if attempt == max_retries:
-                # 모든 재시도 실패 시 에러 로깅 및 기본값 반환
-                logger.error(f"{func.__name__} 최종 실패: {e}")
-                return default_return
-            else:
-                # 재시도 전 대기 시간: 1초, 2초, 4초, 8초... (지수 백오프)
-                logger.warning(f"{func.__name__} 재시도 {attempt + 1}/{max_retries}: {e}")
-                time.sleep(2 ** attempt)
-    return default_return
-
-def validate_text_input(text: str) -> str:
-    """
-    텍스트 입력 검증 및 정리 함수
-    
-    MMS 텍스트 처리 전에 입력된 텍스트의 유효성을 검증하고
-    처리에 적합한 형태로 정리합니다.
-    
-    Args:
-        text (str): 검증할 입력 텍스트
-        
-    Returns:
-        str: 정리된 텍스트
-        
-    Raises:
-        ValueError: 비어있거나 잘못된 형식의 입력
-        
-    Example:
-        clean_text = validate_text_input("  [SK텔레콤] 혜택 안내  ")
-    """
-    # 타입 검증: 문자열이 아닌 경우 에러 발생
-    if not isinstance(text, str):
-        raise ValueError(f"텍스트 입력이 문자열이 아닙니다: {type(text)}")
-    
-    # 앞뒤 공백 제거
-    text = text.strip()
-    
-    # 빈 문자열 검사
-    if not text:
-        raise ValueError("빈 텍스트는 처리할 수 없습니다")
-    
-    # 최대 길이 제한 (LLM 토큰 제한 및 성능 고려)
-    if len(text) > 10000:
-        logger.warning(f"텍스트가 너무 깁니다 ({len(text)} 문자). 처음 10000자만 사용합니다.")
-        text = text[:10000]
-    
-    return text
-
-def safe_check_empty(obj) -> bool:
-    """다양한 타입의 객체가 비어있는지 안전하게 확인"""
-    try:
-        if hasattr(obj, '__len__'):
-            return len(obj) == 0
-        elif hasattr(obj, 'size'):  # numpy 배열
-            return obj.size == 0
-        elif hasattr(obj, 'empty'):  # pandas DataFrame/Series
-            return obj.empty
-        else:
-            return not bool(obj)
-    except (ValueError, TypeError):
-        # numpy 배열의 truth value 에러 등을 처리
-        try:
-            return getattr(obj, 'size', 1) == 0
-        except:
-            return True  # 안전을 위해 비어있다고 가정
-
-# ===== 원본 유틸리티 함수들 (유지) =====
-
-def dataframe_to_markdown_prompt(df, max_rows=None):
-    """DataFrame을 마크다운 형식의 프롬프트로 변환"""
-    if max_rows is not None and len(df) > max_rows:
-        display_df = df.head(max_rows)
-        truncation_note = f"\n[Note: Only showing first {max_rows} of {len(df)} rows]"
-    else:
-        display_df = df
-        truncation_note = ""
-    df_markdown = display_df.to_markdown()
-    prompt = f"\n\n    {df_markdown}\n    {truncation_note}\n\n    "
-    return prompt
-
-def clean_segment(segment):
-    """따옴표로 둘러싸인 문자열에서 내부의 동일한 따옴표 제거"""
-    segment = segment.strip()
-    if len(segment) >= 2 and segment[0] in ['"', "'"] and segment[-1] == segment[0]:
-        q = segment[0]
-        inner = segment[1:-1].replace(q, '')
-        return q + inner + q
-    return segment
-
-def split_key_value(text):
-    """따옴표 외부의 첫 번째 콜론을 기준으로 키-값 분리"""
-    in_quote = False
-    quote_char = ''
-    for i, char in enumerate(text):
-        if char in ['"', "'"]:
-            if in_quote:
-                if char == quote_char:
-                    in_quote = False
-                    quote_char = ''
-            else:
-                in_quote = True
-                quote_char = char
-        elif char == ':' and not in_quote:
-            return text[:i], text[i+1:]
-    return text, ''
-
-def split_outside_quotes(text, delimiter=','):
-    """따옴표 외부의 구분자로만 텍스트 분리"""
-    parts = []
-    current = []
-    in_quote = False
-    quote_char = ''
-    for char in text:
-        if char in ['"', "'"]:
-            if in_quote:
-                if char == quote_char:
-                    in_quote = False
-                    quote_char = ''
-            else:
-                in_quote = True
-                quote_char = char
-            current.append(char)
-        elif char == delimiter and not in_quote:
-            parts.append(''.join(current).strip())
-            current = []
-        else:
-            current.append(char)
-    if current:
-        parts.append(''.join(current).strip())
-    return parts
-
-def clean_ill_structured_json(text):
-    """잘못 구조화된 JSON 형식의 텍스트 정리"""
-    parts = split_outside_quotes(text, delimiter=',')
-    cleaned_parts = []
-    for part in parts:
-        key, value = split_key_value(part)
-        key_clean = clean_segment(key)
-        value_clean = clean_segment(value) if value.strip() != "" else ""
-        if value_clean:
-            cleaned_parts.append(f"{key_clean}: {value_clean}")
-        else:
-            cleaned_parts.append(key_clean)
-    return ', '.join(cleaned_parts)
-
-def repair_json(broken_json):
-    """손상된 JSON 문자열 복구"""
-    json_str = broken_json
-    # 따옴표 없는 키에 따옴표 추가
-    json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1 "\2":', json_str)
-    # 따옴표 없는 값 처리
-    parts = json_str.split('"')
-    for i in range(0, len(parts), 2):
-        parts[i] = re.sub(r':\s*([a-zA-Z0-9_]+)(?=\s*[,\]\}])', r': "\1"', parts[i])
-    json_str = '"'.join(parts)
-    # 후행 쉼표 제거
-    json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
-    return json_str
-
-def extract_json_objects(text):
-    """텍스트에서 JSON 객체 추출"""
-    pattern = r'(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})'
-    result = []
-    for match in re.finditer(pattern, text):
-        potential_json = match.group(0)
-        try:
-            json_obj = ast.literal_eval(clean_ill_structured_json(repair_json(potential_json)))
-            result.append(json_obj)
-        except (json.JSONDecodeError, SyntaxError, ValueError):
-            pass
-    return result
-
-def preprocess_text(text):
-    """텍스트 전처리 (특수문자 제거, 공백 정규화)"""
-    text = re.sub(r'[^\w\s]', ' ', text)
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
-
-# ===== 유사도 계산 함수들 (원본 유지) =====
-
-def fuzzy_similarities(text, entities):
-    """퍼지 매칭을 사용한 유사도 계산"""
-    results = []
-    for entity in entities:
-        scores = {
-            'ratio': fuzz.ratio(text, entity) / 100,
-            'partial_ratio': fuzz.partial_ratio(text, entity) / 100,
-            'token_sort_ratio': fuzz.token_sort_ratio(text, entity) / 100,
-            'token_set_ratio': fuzz.token_set_ratio(text, entity) / 100
-        }
-        max_score = max(scores.values())
-        results.append((entity, max_score))
-    return results
-
-def get_fuzzy_similarities(args_dict):
-    """배치 처리를 위한 퍼지 유사도 계산 함수"""
-    text = args_dict['text']
-    entities = args_dict['entities']
-    threshold = args_dict['threshold']
-    text_col_nm = args_dict['text_col_nm']
-    item_col_nm = args_dict['item_col_nm']
-    
-    text_processed = preprocess_text(text.lower())
-    similarities = fuzzy_similarities(text_processed, entities)
-    
-    filtered_results = [
-        {
-            text_col_nm: text,
-            item_col_nm: entity, 
-            "sim": score
-        } 
-        for entity, score in similarities 
-        if score >= threshold
-    ]
-    return filtered_results
-
-def parallel_fuzzy_similarity(texts, entities, threshold=0.5, text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=None, batch_size=None):
-    """병렬 처리를 통한 퍼지 유사도 계산"""
-    if n_jobs is None:
-        n_jobs = min(os.cpu_count()-1, 8)
-    if batch_size is None:
-        batch_size = max(1, len(entities) // (n_jobs * 2))
-    
-    batches = []
-    for text in texts:
-        for i in range(0, len(entities), batch_size):
-            batch = entities[i:i + batch_size]
-            batches.append({"text": text, "entities": batch, "threshold": threshold, "text_col_nm": text_col_nm, "item_col_nm": item_col_nm})
-    
-    with Parallel(n_jobs=n_jobs) as parallel:
-        batch_results = parallel(delayed(get_fuzzy_similarities)(args) for args in batches)
-    
-    return pd.DataFrame(sum(batch_results, []))
-
-def longest_common_subsequence_ratio(s1, s2, normalizaton_value):
-    """최장 공통 부분수열 비율 계산"""
-    def lcs_length(x, y):
-        m, n = len(x), len(y)
-        dp = [[0] * (n + 1) for _ in range(m + 1)]
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                if x[i-1] == y[j-1]:
-                    dp[i][j] = dp[i-1][j-1] + 1
-                else:
-                    dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-        return dp[m][n]
-    
-    lcs_len = lcs_length(s1, s2)
-    if normalizaton_value == 'max':
-        max_len = max(len(s1), len(s2))
-        return lcs_len / max_len if max_len > 0 else 1.0
-    elif normalizaton_value == 'min':
-        min_len = min(len(s1), len(s2))
-        return lcs_len / min_len if min_len > 0 else 1.0
-    elif normalizaton_value == 's1':
-        return lcs_len / len(s1) if len(s1) > 0 else 1.0
-    elif normalizaton_value == 's2':
-        return lcs_len / len(s2) if len(s2) > 0 else 1.0
-    else:
-        raise ValueError(f"Invalid normalization value: {normalizaton_value}")
-
-def sequence_matcher_similarity(s1, s2, normalizaton_value):
-    """SequenceMatcher를 사용한 유사도 계산"""
-    matcher = difflib.SequenceMatcher(None, s1, s2)
-    matches = sum(triple.size for triple in matcher.get_matching_blocks())
-    
-    normalization_length = min(len(s1), len(s2))
-    if normalizaton_value == 'max':
-        normalization_length = max(len(s1), len(s2))
-    elif normalizaton_value == 's1':
-        normalization_length = len(s1)
-    elif normalizaton_value == 's2':
-        normalization_length = len(s2)
-        
-    if normalization_length == 0: 
-        return 0.0
-    
-    return matches / normalization_length
-
-def substring_aware_similarity(s1, s2, normalizaton_value):
-    """부분문자열 관계를 고려한 유사도 계산"""
-    if s1 in s2 or s2 in s1:
-        shorter = min(s1, s2, key=len)
-        longer = max(s1, s2, key=len)
-        base_score = len(shorter) / len(longer)
-        return min(0.95 + base_score * 0.05, 1.0)
-    return longest_common_subsequence_ratio(s1, s2, normalizaton_value)
-
-def token_sequence_similarity(s1, s2, normalizaton_value, separator_pattern=r'[\s_\-]+'):
-    """토큰 시퀀스 기반 유사도 계산"""
-    tokens1 = [t for t in re.split(separator_pattern, s1.strip()) if t]
-    tokens2 = [t for t in re.split(separator_pattern, s2.strip()) if t]
-    
-    if not tokens1 or not tokens2:
-        return 0.0
-    
-    def token_lcs_length(t1, t2):
-        m, n = len(t1), len(t2)
-        dp = [[0] * (n + 1) for _ in range(m + 1)]
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                if t1[i-1] == t2[j-1]:
-                    dp[i][j] = dp[i-1][j-1] + 1
-                else:
-                    dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-        return dp[m][n]
-    
-    lcs_tokens = token_lcs_length(tokens1, tokens2)
-    normalization_tokens = max(len(tokens1), len(tokens2))
-    if normalizaton_value == 'min':
-        normalization_tokens = min(len(tokens1), len(tokens2))
-    elif normalizaton_value == 's1':
-        normalization_tokens = len(tokens1)
-    elif normalizaton_value == 's2':
-        normalization_tokens = len(tokens2)
-    
-    return lcs_tokens / normalization_tokens  
-
-def combined_sequence_similarity(s1, s2, weights=None, normalizaton_value='max'):
-    """여러 유사도 메트릭을 결합한 종합 유사도 계산"""
-    if weights is None:
-        weights = {'substring': 0.4, 'sequence_matcher': 0.4, 'token_sequence': 0.2}
-    
-    similarities = {
-        'substring': substring_aware_similarity(s1, s2, normalizaton_value),
-        'sequence_matcher': sequence_matcher_similarity(s1, s2, normalizaton_value),
-        'token_sequence': token_sequence_similarity(s1, s2, normalizaton_value)
-    }
-    
-    return sum(similarities[key] * weights[key] for key in weights), similarities
-
-def calculate_seq_similarity(args_dict):
-    """배치 처리를 위한 시퀀스 유사도 계산"""
-    sent_item_batch = args_dict['sent_item_batch']
-    text_col_nm = args_dict['text_col_nm']
-    item_col_nm = args_dict['item_col_nm']
-    normalizaton_value = args_dict['normalizaton_value']
-    
-    results = []
-    for sent_item in sent_item_batch:
-        sent = sent_item[text_col_nm]
-        item = sent_item[item_col_nm]
-        try:
-            sent_processed = preprocess_text(sent.lower())
-            item_processed = preprocess_text(item.lower())
-            similarity = combined_sequence_similarity(sent_processed, item_processed, normalizaton_value=normalizaton_value)[0]
-            results.append({text_col_nm:sent, item_col_nm:item, "sim":similarity})
-        except Exception as e:
-            logger.error(f"Error processing {item}: {e}")
-            results.append({text_col_nm:sent, item_col_nm:item, "sim":0.0})
-    
-    return results
-
-def parallel_seq_similarity(sent_item_pdf, text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=None, batch_size=None, normalizaton_value='s2'):
-    """병렬 처리를 통한 시퀀스 유사도 계산"""
-    if n_jobs is None:
-        n_jobs = min(os.cpu_count()-1, 8)
-    if batch_size is None:
-        batch_size = max(1, sent_item_pdf.shape[0] // (n_jobs * 2))
-    
-    batches = []
-    for i in range(0, sent_item_pdf.shape[0], batch_size):
-        batch = sent_item_pdf.iloc[i:i + batch_size].to_dict(orient='records')
-        batches.append({"sent_item_batch": batch, 'text_col_nm': text_col_nm, 'item_col_nm': item_col_nm, 'normalizaton_value': normalizaton_value})
-    
-    with Parallel(n_jobs=n_jobs) as parallel:
-        batch_results = parallel(delayed(calculate_seq_similarity)(args) for args in batches)
-    
-    return pd.DataFrame(sum(batch_results, []))
-
-def load_sentence_transformer(model_path, device=None):
-    """SentenceTransformer 모델 로드"""
-    if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logger.info(f"Loading model from {model_path}...")
-    model = SentenceTransformer(model_path).to(device)
-    logger.info(f"Model loaded on {device}")
-    return model
-
-# ===== Kiwi 형태소 분석 관련 클래스들 (원본 유지) =====
-
-class Token:
-    """형태소 분석 토큰 클래스"""
-    def __init__(self, form, tag, start, length):
-        self.form = form      # 토큰 형태
-        self.tag = tag        # 품사 태그
-        self.start = start    # 시작 위치
-        self.len = length     # 길이
-
-class Sentence:
-    """형태소 분석 문장 클래스"""
-    def __init__(self, text, start, end, tokens, subs=None):
-        self.text = text      # 문장 텍스트
-        self.start = start    # 시작 위치
-        self.end = end        # 끝 위치
-        self.tokens = tokens  # 토큰 리스트
-        self.subs = subs or []  # 하위 문장들
-
-def filter_text_by_exc_patterns(sentence, exc_tag_patterns):
-    """제외할 품사 패턴에 따라 텍스트 필터링"""
-    # 개별 태그와 시퀀스 패턴 분리
-    individual_tags = set()
-    sequences = []
-    
-    for pattern in exc_tag_patterns:
-        if isinstance(pattern, list):
-            if len(pattern) == 1:
-                individual_tags.add(pattern[0])
-            else:
-                sequences.append(pattern)
-        else:
-            individual_tags.add(pattern)
-    
-    # 제외할 토큰 인덱스 수집
-    tokens_to_exclude = set()
-    
-    # 개별 태그 매칭 확인
-    for i, token in enumerate(sentence.tokens):
-        if token.tag in individual_tags:
-            tokens_to_exclude.add(i)
-    
-    # 시퀀스 패턴 매칭 확인
-    for sequence in sequences:
-        seq_len = len(sequence)
-        for i in range(len(sentence.tokens) - seq_len + 1):
-            if all(sentence.tokens[i + j].tag == sequence[j] for j in range(seq_len)):
-                for j in range(seq_len):
-                    tokens_to_exclude.add(i + j)
-    
-    # 원본 텍스트에서 제외할 토큰 부분을 공백으로 대체
-    result_chars = list(sentence.text)
-    for i, token in enumerate(sentence.tokens):
-        if i in tokens_to_exclude:
-            start_pos = token.start - sentence.start
-            end_pos = start_pos + token.len
-            for j in range(start_pos, end_pos):
-                if j < len(result_chars) and result_chars[j] != ' ':
-                    result_chars[j] = ' '
-    
-    filtered_text = ''.join(result_chars)
-    return re.sub(r'\s+', ' ', filtered_text)
-
-def filter_specific_terms(strings: List[str]) -> List[str]:
-    """중복되거나 포함 관계에 있는 용어들 필터링"""
-    unique_strings = list(set(strings))
-    unique_strings.sort(key=len, reverse=True)
-    
-    filtered = []
-    for s in unique_strings:
-        if not any(s in other for other in filtered):
-            filtered.append(s)
-    
-    return filtered
-
-def convert_df_to_json_list(df):
-    """DataFrame을 특정 JSON 구조로 변환"""
-    result = []
-    grouped = df.groupby('item_name_in_msg')
-    
-    for item_name_in_msg, group in grouped:
-        item_dict = {
-            'item_name_in_msg': item_name_in_msg,
-            'item_in_voca': []
-        }
-        
-        item_nm_groups = group.groupby('item_nm')
-        for item_nm, item_group in item_nm_groups:
-            item_ids = list(item_group['item_id'].unique())
-            voca_item = {
-                'item_nm': item_nm,
-                'item_id': item_ids
-            }
-            item_dict['item_in_voca'].append(voca_item)
-        result.append(item_dict)
-    
-    return result
 
 # ===== 추상 클래스 및 전략 패턴 =====
 
@@ -1988,7 +1503,7 @@ class MMSExtractor:
             # 안전한 기본값 반환 - 빈 리스트와 빈 DataFrame
             return [], pd.DataFrame()
 
-    def extract_entities_by_logic(self, cand_entities: List[str], threshold_for_fuzzy: float = 0.8) -> pd.DataFrame:
+    def extract_entities_by_logic(self, cand_entities: List[str], threshold_for_fuzzy: float = 0.5) -> pd.DataFrame:
         """로직 기반 엔티티 추출"""
         try:
             if not cand_entities:
@@ -2049,6 +1564,14 @@ class MMSExtractor:
             # 결과 합치기
             if not sim_s1.empty and not sim_s2.empty:
                 combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
+                combined = combined.query("sim_s1>=0.5 and sim_s2>=0.5") # 임계값 필터링. '충전' 문제 해결
+
+                # print('--------------------------------')
+                # print(combined
+                # .query("item_nm_alias.str.contains('에이닷 전화')")
+                # )
+                # print('--------------------------------')
+
                 combined = combined.groupby(['item_name_in_msg', 'item_nm_alias'])[
                     ['sim_s1', 'sim_s2']
                 ].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
@@ -2080,53 +1603,9 @@ class MMSExtractor:
             if llm_models is None:
                 llm_models = [self.llm_model]
             
-            # 로직 기반 방식으로 후보 엔티티 먼저 추출
-            logger.info("=== 후보 엔티티 추출 시작 ===")
-            fuzzy_threshold = getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.4)
-            logger.info(f"퍼지 매칭 임계값: {fuzzy_threshold}")
-            
-            # 로직 기반 엔티티 추출
-            logic_result = self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=fuzzy_threshold)
-            raw_entities = logic_result['item_nm_alias'].unique()
-            logger.info(f"로직 기반 추출 원본 엔티티 수: {len(raw_entities)}개")
-            
-            # 필터링 전 엔티티 샘플 확인
-            if len(raw_entities) > 0:
-                sample_raw = raw_entities[:10] if len(raw_entities) > 10 else raw_entities
-                logger.info(f"원본 엔티티 샘플 (최대 10개): {list(sample_raw)}")
-            
-            # 필터링 적용
-            filtered_entities = [
-                e.strip() for e in raw_entities
-                if e.strip() not in self.stop_item_names and len(e.strip()) >= 2
-            ]
-            logger.info(f"필터링 후 엔티티 수: {len(filtered_entities)}개")
-            logger.info(f"제거된 엔티티 수: {len(raw_entities) - len(filtered_entities)}개")
-            
-            # 정렬
-            cand_entities_by_sim = sorted(filtered_entities)
-            logger.info(f"최종 후보 엔티티 수: {len(cand_entities_by_sim)}개")
-            
-            # 후보 엔티티가 너무 많은 경우 경고
-            if len(cand_entities_by_sim) > 100:
-                logger.warning(f"⚠️ 후보 엔티티가 매우 많습니다: {len(cand_entities_by_sim)}개")
-                logger.warning("이는 프롬프트 길이를 크게 증가시킬 수 있습니다.")
-                
-                # 상위 100개만 사용하도록 제한
-                original_count = len(cand_entities_by_sim)
-                cand_entities_by_sim = cand_entities_by_sim[:100]
-                logger.warning(f"성능을 위해 상위 {len(cand_entities_by_sim)}개만 사용합니다. (원본: {original_count}개)")
-            
-            # 최종 후보 엔티티 샘플 표시
-            if len(cand_entities_by_sim) > 0:
-                sample_final = cand_entities_by_sim[:10] if len(cand_entities_by_sim) > 10 else cand_entities_by_sim
-                logger.info(f"최종 후보 엔티티 샘플 (최대 10개): {sample_final}")
-            
-            logger.info("=== 후보 엔티티 추출 완료 ===")
-            
             def get_entities_by_llm(args_dict):
                 """단일 LLM으로 엔티티 추출하는 내부 함수"""
-                llm_model, msg_text, cand_entities_list = args_dict['llm_model'], args_dict['msg_text'], args_dict['cand_entities_list']
+                llm_model, msg_text = args_dict['llm_model'], args_dict['msg_text']
                 
                 try:
                     # 프롬프트 구성 - 기존 로직과 동일
@@ -2137,28 +1616,11 @@ class MMSExtractor:
                     else:
                         logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
                     
-                    # 후보 엔티티 리스트 크기 디버깅
-                    logger.info(f"🔍 프롬프트 구성 중 - LLM 모델: {llm_model}")
-                    logger.info(f"🔍 후보 엔티티 개수: {len(cand_entities_list)}개")
-                    
-                    # 후보 엔티티를 문자열로 변환
-                    cand_entities_str = '\n'.join([f"- {entity}" for entity in cand_entities_list])
-                    cand_entities_str_length = len(cand_entities_str)
-                    logger.info(f"🔍 후보 엔티티 문자열 길이: {cand_entities_str_length:,} 문자")
-                    
                     # 베이스 프롬프트 길이 확인
                     base_prompt_length = len(base_prompt)
                     msg_length = len(msg_text)
                     logger.info(f"🔍 베이스 프롬프트 길이: {base_prompt_length:,} 문자")
                     logger.info(f"🔍 메시지 길이: {msg_length:,} 문자")
-                    
-                    # 전체 예상 프롬프트 길이 계산
-                    estimated_total_length = base_prompt_length + msg_length + cand_entities_str_length + 100  # 템플릿 여백
-                    logger.info(f"🔍 예상 전체 프롬프트 길이: {estimated_total_length:,} 문자")
-                    
-                    if estimated_total_length > 50000:  # 50K 문자 이상인 경우 경고
-                        logger.warning(f"⚠️ 프롬프트가 매우 깁니다: {estimated_total_length:,} 문자")
-                        logger.warning("LLM 토큰 제한에 도달할 수 있습니다.")
                     
                     # PromptTemplate 사용 (langchain 방식)
                     from langchain.prompts import PromptTemplate
@@ -2169,9 +1631,6 @@ class MMSExtractor:
                         
                         ## message:                
                         {msg}
-
-                        ## Candidate entities:
-                        {cand_entities}
                         """
                     )
                     
@@ -2179,7 +1638,6 @@ class MMSExtractor:
                     cand_entities = chain.invoke({
                         "entity_extraction_prompt": base_prompt, 
                         "msg": msg_text, 
-                        "cand_entities": cand_entities_list
                     }).content
                     
                     # LLM 응답 파싱 및 정리
@@ -2198,16 +1656,6 @@ class MMSExtractor:
                 base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
             preview_prompt = build_entity_extraction_prompt(msg_text, base_prompt)
             
-            # 후보 엔티티 섹션 추가 전 디버깅
-            entities_section = f"""
-
-            ## Candidate entities:
-            {cand_entities_by_sim}
-            """
-            logger.info(f"🔍 프롬프트에 추가될 엔티티 섹션 길이: {len(entities_section):,} 문자")
-            
-            preview_prompt += entities_section
-            
             # 최종 프롬프트 길이 확인
             final_prompt_length = len(preview_prompt)
             logger.info(f"🔍 최종 엔티티 추출 프롬프트 길이: {final_prompt_length:,} 문자")
@@ -2220,7 +1668,6 @@ class MMSExtractor:
                 batches.append({
                     "msg_text": msg_text, 
                     "llm_model": llm_model, 
-                    "cand_entities_list": cand_entities_by_sim
                 })
             
             logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
@@ -2815,7 +2262,7 @@ class MMSExtractor:
                 similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
             else:
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
-                default_llm_models = self._initialize_multiple_llm_models(['ax', 'cld'])
+                default_llm_models = self._initialize_multiple_llm_models(['cld'])
                 similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models)
 
             similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '') in x['item_name_in_msg'].replace(' ', '') or x['item_name_in_msg'].replace(' ', '') in x['item_nm_alias'].replace(' ', '')) , axis=1)]
@@ -3221,7 +2668,7 @@ def main():
     parser.add_argument('--max-workers', type=int, help='배치 처리 시 최대 워커 수 (기본값: CPU 코어 수)')
     parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
                        help='데이터 소스 (local: CSV 파일, db: 데이터베이스)')
-    parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm', 'rag'], default='nlp',
+    parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm', 'rag'], default='llm',
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
@@ -3335,31 +2782,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-[Web발신]
-(광고)[SKT (을지로점)] 신용욱 단골고객님
-9월은 SKT 직영점에서 혜택받9, 구매하9
-
-【갤럭시 마지막 특가】
-① 와이드8 ▶기기값 5만원
-② A36 ▶기기값 10만원
-③ S24 FE ▶기기값 20만원
-☞ 제휴카드 사용 시 최대 72만원 추가할인
-
-【SK로 통신사 이동 시】
-① 쓰던 폰 그대로 이동시 상품권 20만원
-② 인터넷+TV 가입 최대 70만원
-
-★9/9 까지 선착순 행사 (조건에 따라 할인금액 상이)
-
-♥아이폰17 사전예약♥
-고용량 전색상 바로 개통가능☞ https://naver.me/FTM8rdfj
-
-☞ 을지로입구역 5번출구 하나은행 명동사옥 맞은편
-https://naver.me/GipIR3Lg
-☎ 0507-1399-6011
-
-(무료ARS)수신거부 및 단골해지 : 
-080-801-0011            
+[SK텔레콤] A. (에이닷)에서 알람을 설정하면 선물을 드려요!\n(광고)[SKT] A. (에이닷)에서 알람을 설정하면 선물을 드려요!__#04 고객님, 안녕하세요.__모닝콜, 영양제 먹기, 애견 산책 등  매일 반복되는 일상을 최애 음악으로 알람 설정 해보세요~!__A.(에이닷)에서 알람을 등록하고 권한 설정하면 선물을 드립니다!__▶ 이벤트 자세히 보기: http://t-mms.kr/t.do?m=#61&s=19398&a=&u=https://my-adot.onelink.me/MAbS/u44wyymr__■ 이벤트 일정: 2023년 4월 25일(화)~5월 16일(화)__■ 참여 방법:_1. A. 알람 챌린지 도전을 위한 개인정보 등록(URL)_2. A.앱> 메뉴> ’알람’> 선택 후 ‘다른 앱 위에 표시’ 권한 설정 팝업에서 “설정하기” 선택_3. 휴대폰 설정> 애플리케이션> 앱 목록 중 A.(에이닷)앱의  “다른 앱 위에 표시” 권한 ON_4. 이벤트 기간 동안 \"A.알람” 서비스를 이용하면 자동 응모 완료!__■ 경품: CU 빙그레 바나나우유 기프티콘 (5만명, 이벤트 참여 고객님 대상으로 랜덤 추첨하여 증정)__■ 당첨자 발표일: 2023년 5월 31일(수)__■ 문의: (주)이든앤앨리스 02-542-4920 (평일 오전 9시~오후 6시, 점심시간 낮 12시~오후1시, 유료)__무료 수신거부 1504
 """
             
             # 단일 메시지 처리 (멀티스레드)
