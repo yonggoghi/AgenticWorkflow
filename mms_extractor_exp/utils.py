@@ -395,10 +395,27 @@ def token_sequence_similarity(s1, s2, normalizaton_value, separator_pattern=r'[\
     
     return lcs_tokens / normalization_tokens  
 
+def replace_special_chars_with_space(text):
+    """
+    문자열에서 특수 문자를 공백으로 변환하는 함수
+    
+    Args:
+        text (str): 변환할 문자열
+        
+    Returns:
+        str: 특수 문자가 공백으로 변환된 문자열
+    """
+    # 영문자, 숫자, 한글을 제외한 모든 문자를 공백으로 변환
+    return re.sub(r'[^a-zA-Z0-9가-힣\s]', ' ', text)
+ 
 def combined_sequence_similarity(s1, s2, weights=None, normalizaton_value='max'):
     """여러 유사도 메트릭을 결합한 종합 유사도 계산"""
+
+    s1 = replace_special_chars_with_space(s1)
+    s2 = replace_special_chars_with_space(s2)
+    
     if weights is None:
-        weights = {'substring': 0.4, 'sequence_matcher': 0.4, 'token_sequence': 0.2}
+        weights = {'substring': 0.1, 'sequence_matcher': 0.7, 'token_sequence': 0.2}
     
     similarities = {
         'substring': substring_aware_similarity(s1, s2, normalizaton_value),
