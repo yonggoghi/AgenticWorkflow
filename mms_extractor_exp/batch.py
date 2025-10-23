@@ -640,7 +640,7 @@ def main():
     parser = argparse.ArgumentParser(description='Batch MMS Message Processing')
     
     # Batch processing arguments
-    parser.add_argument('--batch-size', '-b', type=int, default=100,
+    parser.add_argument('--batch-size', '-b', type=int, default=10,
                        help='Number of messages to process (default: 10)')
     parser.add_argument('--output-file', '-o', type=str, default='./data/batch_results.csv',
                        help='Output CSV file for results (default: batch_results.csv)')

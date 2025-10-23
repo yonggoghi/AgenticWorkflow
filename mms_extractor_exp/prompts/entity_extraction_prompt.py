@@ -22,6 +22,18 @@ Ensure that extracted names are presented exactly as they appear in the original
 Just return a list with matched entities where the entities are separated by commas without any other text.
 """
 
+SIMPLE_ENTITY_EXTRACTION_PROMPT = """
+아래 광고 메시지에서 수신자에게 offer하는 개체명을 추출해라. 
+entities in messages는 메시지 내에서 있는 후보 개체명들이다.
+candidate entities in vocabulairy는 entities in messages를 바탕으로 추출한 사전에 있는 후보 개체명들이다.
+메시지와 entities in messages를 참고해서 candidate entities in vocabulary 중에서 유력한 것들을 선택해라.
+
+다음과 같은 포맷으로 결과를 반환해라.
+
+REASON: 선택 이유
+ENTITY: 제공하는 결과는 candidate entities in vocabulary 값들을 ,(콤마)로 연결해라. 없다고 판단하면, 공백으로 결과를 반환해라.
+"""
+
 # LLM 기반 엔티티 추출 프롬프트 템플릿
 LLM_ENTITY_EXTRACTION_PROMPT_TEMPLATE = """
 {base_prompt}
