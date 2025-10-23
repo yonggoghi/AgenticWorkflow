@@ -70,7 +70,8 @@ from .dag_extraction_prompt import (
 from .entity_extraction_prompt import (
     build_entity_extraction_prompt,
     DEFAULT_ENTITY_EXTRACTION_PROMPT,
-    DETAILED_ENTITY_EXTRACTION_PROMPT
+    DETAILED_ENTITY_EXTRACTION_PROMPT,
+    SIMPLE_ENTITY_EXTRACTION_PROMPT
 )
 
 # 외부에서 사용 가능한 모든 함수와 상수들을 명시적으로 정의

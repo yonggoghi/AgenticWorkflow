@@ -68,6 +68,7 @@ import os
 import copy
 import pandas as pd
 import numpy as np
+from langchain.prompts import PromptTemplate
 
 # joblib과 multiprocessing 경고 억제
 warnings.filterwarnings("ignore", category=UserWarning, module="joblib")
@@ -99,8 +100,9 @@ from prompts import (
     get_fallback_result,
     build_entity_extraction_prompt,
     DEFAULT_ENTITY_EXTRACTION_PROMPT,
-    DETAILED_ENTITY_EXTRACTION_PROMPT
-)
+    DETAILED_ENTITY_EXTRACTION_PROMPT,
+    SIMPLE_ENTITY_EXTRACTION_PROMPT
+    )
 
 # 유틸리티 함수 모듈 임포트
 from utils import (
@@ -1565,7 +1567,7 @@ class MMSExtractor:
             if not sim_s1.empty and not sim_s2.empty:
                 try:
                     combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
-                    combined = combined.query("sim_s1>=0.5 and sim_s2>=0.5") # 임계값 필터링. '충전' 문제 해결
+                    combined = combined.query("sim_s1>=0.4 and sim_s2>=0.4") # 임계값 필터링. '충전' 문제 해결
 
                     # print('--------------------------------')
                     # print(combined
@@ -1588,7 +1590,7 @@ class MMSExtractor:
             return pd.DataFrame()
 
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 5, llm_models: List = None) -> pd.DataFrame:
+    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 200, llm_models: List = None) -> pd.DataFrame:
         """
         LLM 기반 엔티티 추출 (복수 모델 병렬 처리 지원)
         
@@ -1627,7 +1629,6 @@ class MMSExtractor:
                     logger.info(f"🔍 메시지 길이: {msg_length:,} 문자")
                     
                     # PromptTemplate 사용 (langchain 방식)
-                    from langchain.prompts import PromptTemplate
                     zero_shot_prompt = PromptTemplate(
                         input_variables=["entity_extraction_prompt", "msg", "cand_entities"],
                         template="""
@@ -1647,7 +1648,7 @@ class MMSExtractor:
                     # LLM 응답 파싱 및 정리
                     cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
                     cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e) >= 2]
-                    
+
                     return cand_entity_list
                     
                 except Exception as e:
@@ -1689,8 +1690,39 @@ class MMSExtractor:
                 logger.warning("LLM 추출에서 유효한 엔티티를 찾지 못함")
                 return pd.DataFrame()
 
+            cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
+
             # 후보 엔티티들과 상품 DB 매칭
-            return self._match_entities_with_products(cand_entity_list, rank_limit)
+            zero_shot_prompt = PromptTemplate(
+            input_variables=["msg","entities_msg","cand_entities_voca"],
+            template="""
+            {entity_extraction_prompt}
+            
+            ## message:                
+            {msg}
+
+            ## entities in message:
+            {entities_msg}
+
+            ## candidate entities in vocabulary:
+            {cand_entities_voca}
+
+            """
+            )
+                        
+            chain = zero_shot_prompt | self.llm_model
+            cand_entities = chain.invoke({"entity_extraction_prompt": SIMPLE_ENTITY_EXTRACTION_PROMPT, "msg": msg_text, "entities_msg":cand_entities_sim['item_name_in_msg'].unique(), "cand_entities_voca":cand_entities_sim['item_nm_alias'].unique()}).content
+
+            # print('--------------------------------')
+            # print(cand_entities)
+            # print('--------------------------------')
+
+            cand_entity_list = [e.strip() for e in cand_entities.split("\n")[-1].replace("ENTITY: ","").split(',') if e.strip()]
+            cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e)>=2]
+
+            cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list")
+
+            return cand_entities_sim
             
         except Exception as e:
             logger.error(f"LLM 기반 엔티티 추출 실패: {e}")
@@ -2786,8 +2818,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-'[SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요!\n' +
-    '(광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지!_30만편의 콘텐츠를 무제한 감상해보세요!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.__SKT와 함께해주셔서 감사합니다.__무료 수신거부 1504',
+'[SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요! '(광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지!_30만편의 콘텐츠를 무제한 감상해보세요!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.__SKT와 함께해주셔서 감사합니다.__무료 수신거부 1504',
 """
             
             # 단일 메시지 처리 (멀티스레드)
