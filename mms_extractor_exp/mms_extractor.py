@@ -927,6 +927,14 @@ class MMSExtractor:
             logger.info(f"별칭 규칙 적용 전 상품 데이터 크기: {self.item_pdf_all.shape}")
             
             alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+            # 외부 별칭 규칙 적용
+            alias_list_ext = alias_pdf.query("description=='voca'")[['alias_1','category']].to_dict('records')
+            for alias in alias_list_ext:
+                adf = self.item_pdf_all.query("item_nm.str.contains(@alias['alias_1']) and item_dmn==@alias['category']")[['item_nm','item_desc','item_dmn']].rename(columns={'item_nm':'alias_2','item_desc':'description','item_dmn':'category'}).drop_duplicates()
+                adf['alias_1'] = alias['alias_1']
+                adf = adf[alias_pdf.columns]
+                alias_pdf = pd.concat([alias_pdf.query(f"alias_1!='{alias['alias_1']}'"), adf])
+
             alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2']))
             logger.info(f"로드된 별칭 규칙 수: {len(alias_rule_set)}개")
 
@@ -937,10 +945,10 @@ class MMSExtractor:
                 item_nm_list = [item_nm]
                 for r in alias_rule_set:
                     if r[0] in item_nm:
-                        item_nm_list.append(item_nm.replace(r[0], r[1]))
+                        item_nm_list.extend(item_nm.replace(r[0], r[1]).split("&&"))
                     if r[1] in item_nm:
-                        item_nm_list.append(item_nm.replace(r[1], r[0]))
-                return item_nm_list
+                        item_nm_list.extend(item_nm.replace(r[1], r[0]).split("&&"))
+                return list(set(item_nm_list))
 
             # 별칭 규칙 적용 전 데이터 상태 확인
             if 'item_nm' in self.item_pdf_all.columns:
@@ -2298,7 +2306,7 @@ class MMSExtractor:
                 similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
             else:
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
-                default_llm_models = self._initialize_multiple_llm_models(['cld'])
+                default_llm_models = self._initialize_multiple_llm_models(['ax'])
                 similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models)
 
             similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
@@ -2818,7 +2826,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-'[SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요! '(광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지!_30만편의 콘텐츠를 무제한 감상해보세요!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.__SKT와 함께해주셔서 감사합니다.__무료 수신거부 1504',
+  message: '"[T 우주] 투썸플레이스 매일 20% 할인받아 보세요.\t(광고)[SKT] 투썸플레이스 매일 20% 할인 안내__#04 고객님, 안녕하세요._자주 이용하는 투썸플레이스에서 매일 할인 혜택을 누려 보세요.__T 우주에서는 월 1,900원으로 최대 2만 원까지 할인받으실 수 있습니다.__■ 투썸플레이스 20% 할인 안내_- 이용요금: 월 1,900원 _- 혜택: 투썸플레이스 매장에서 구매 시 최대 20% 할인_(1일 1회 최대 4천 원/월 최대 2만 원 할인) __▶ 가입하기: https://t-mms.kr/aL9/#74__■ 문의: T 우주 고객센터(1505, 무료)__구독 마켓, T 우주__무료 수신거부 080-848-0515"',
 """
             
             # 단일 메시지 처리 (멀티스레드)
@@ -2861,3 +2869,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+# %%
