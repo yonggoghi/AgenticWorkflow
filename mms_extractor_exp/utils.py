@@ -645,3 +645,40 @@ def create_dag_diagram(dag: nx.DiGraph, filename: str = "dag", save_dir: str = "
     except Exception as e:
         logger.error(f"DAG 다이어그램 생성 실패: {e}")
         raise
+
+def select_most_comprehensive(strings):
+    """
+    Select the most comprehensive string from a list of overlapping strings.
+    Returns the longest string that contains other strings as substrings.
+    
+    Args:
+        strings: List of strings to filter
+        
+    Returns:
+        List of most comprehensive strings (usually one, but could be multiple if no containment)
+    """
+    if not strings:
+        return []
+    
+    # Remove duplicates and sort by length (longest first)
+    unique_strings = list(set(strings))
+    unique_strings.sort(key=len, reverse=True)
+    
+    result = []
+    
+    for current in unique_strings:
+        # Check if current string contains any of the strings already in result
+        is_contained = any(current in existing for existing in result)
+        
+        # Check if current string contains other strings not yet in result
+        contains_others = any(other in current for other in unique_strings if other != current and other not in result)
+        
+        # If current is not contained by existing results and either:
+        # 1. It contains other strings, or 
+        # 2. No strings contain each other (keep all unique)
+        if not is_contained:
+            # Remove any strings from result that are contained in current
+            result = [r for r in result if r not in current]
+            result.append(current)
+    
+    return result

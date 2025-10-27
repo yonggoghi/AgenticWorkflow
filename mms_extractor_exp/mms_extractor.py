@@ -106,6 +106,7 @@ from prompts import (
 
 # 유틸리티 함수 모듈 임포트
 from utils import (
+    select_most_comprehensive,
     log_performance,
     safe_execute,
     validate_text_input,
@@ -928,12 +929,21 @@ class MMSExtractor:
             
             alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
             # 외부 별칭 규칙 적용
+            alias_pdf['alias_1'] = alias_pdf['alias_1'].str.split("&&")
+            alias_pdf['alias_2'] = alias_pdf['alias_2'].str.split("&&")
+            alias_pdf = alias_pdf.explode('alias_1')
+            alias_pdf = alias_pdf.explode('alias_2')
+
+            alias_pdf = pd.concat([alias_pdf, alias_pdf.rename(columns={'alias_1':'alias_2', 'alias_2':'alias_1'})[alias_pdf.columns]])
+
             alias_list_ext = alias_pdf.query("description=='voca'")[['alias_1','category']].to_dict('records')
             for alias in alias_list_ext:
                 adf = self.item_pdf_all.query("item_nm.str.contains(@alias['alias_1']) and item_dmn==@alias['category']")[['item_nm','item_desc','item_dmn']].rename(columns={'item_nm':'alias_2','item_desc':'description','item_dmn':'category'}).drop_duplicates()
                 adf['alias_1'] = alias['alias_1']
                 adf = adf[alias_pdf.columns]
                 alias_pdf = pd.concat([alias_pdf.query(f"alias_1!='{alias['alias_1']}'"), adf])
+
+            alias_pdf = alias_pdf.drop_duplicates()
 
             alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2']))
             logger.info(f"로드된 별칭 규칙 수: {len(alias_rule_set)}개")
@@ -942,13 +952,14 @@ class MMSExtractor:
                 if pd.isna(item_nm) or not isinstance(item_nm, str):
                     return [item_nm] if not pd.isna(item_nm) else []
                     
-                item_nm_list = [item_nm]
+                item_nm_list = [{'item_nm':item_nm, 'alias':'#'*len(item_nm)}]
                 for r in alias_rule_set:
                     if r[0] in item_nm:
-                        item_nm_list.extend(item_nm.replace(r[0], r[1]).split("&&"))
-                    if r[1] in item_nm:
-                        item_nm_list.extend(item_nm.replace(r[1], r[0]).split("&&"))
-                return list(set(item_nm_list))
+                        item_nm_list.append({'item_nm':item_nm.replace(r[0].strip(), r[1].strip()), 'alias':r[0].strip()})
+                adf = pd.DataFrame(item_nm_list)
+
+                selected_alias = select_most_comprehensive(adf['alias'].tolist())
+                return list(adf.query("alias in @selected_alias")['item_nm'].unique())
 
             # 별칭 규칙 적용 전 데이터 상태 확인
             if 'item_nm' in self.item_pdf_all.columns:
