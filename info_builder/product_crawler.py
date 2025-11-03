@@ -40,6 +40,13 @@ except ImportError:
     CONFIG_AVAILABLE = False
     print("Warning: config.py not found. Using default settings.")
 
+try:
+    from page_type_detector import PageTypeDetector
+    PAGE_DETECTOR_AVAILABLE = True
+except ImportError:
+    PAGE_DETECTOR_AVAILABLE = False
+    print("Warning: page_type_detector.py not found. Using manual scroll settings.")
+
 
 class ProductCrawler:
     """상품/서비스 정보를 크롤링하고 추출하는 클래스"""
@@ -558,7 +565,8 @@ HTML:
     
     def extract_detail_urls_from_browser(self, url: str, product_ids: List[str], 
                                          infinite_scroll: bool = True, 
-                                         scroll_count: int = 10) -> Dict[str, str]:
+                                         scroll_count: int = 10,
+                                         need_rescroll_after_back: bool = True) -> Dict[str, str]:
         """
         Playwright로 실제 브라우저에서 상품 링크를 클릭해서 detail_url을 캡처합니다.
         
@@ -567,6 +575,7 @@ HTML:
             product_ids: 상품 ID 리스트
             infinite_scroll: 무한 스크롤 여부
             scroll_count: 스크롤 횟수
+            need_rescroll_after_back: 뒤로 가기 후 재스크롤 필요 여부 (무한 스크롤 페이지만 True)
             
         Returns:
             {product_id: detail_url} 매핑 딕셔너리
@@ -705,16 +714,18 @@ HTML:
                                 list_page.go_back()
                                 list_page.wait_for_timeout(1000)
                                 
-                                # 🔧 무한 스크롤 페이지: 뒤로 가기 후 다시 스크롤 필요
-                                if infinite_scroll and idx < len(product_ids) - 1:
+                                # 🔧 무한 스크롤 페이지만: 뒤로 가기 후 다시 스크롤 필요
+                                if need_rescroll_after_back and infinite_scroll and idx < len(product_ids) - 1:
                                     if VERBOSE:
-                                        print(f"    무한 스크롤 재실행...")
+                                        print(f"    무한 스크롤 재실행 (need_rescroll_after_back=True)...")
                                     for i in range(scroll_count):
                                         list_page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
                                         list_page.wait_for_timeout(500)
                                     list_page.wait_for_timeout(1000)
                                     if VERBOSE:
                                         print(f"    ✅ 스크롤 재실행 완료")
+                                elif not need_rescroll_after_back and VERBOSE:
+                                    print(f"    재스크롤 생략 (need_rescroll_after_back=False)")
                             else:
                                 failed_count += 1
                                 failed_reasons['url_not_changed'] = failed_reasons.get('url_not_changed', 0) + 1
@@ -754,19 +765,52 @@ HTML:
         return url_mapping
     
     def crawl_list_page(self, url: str, infinite_scroll: bool = True, 
-                       scroll_count: int = 10) -> List[Dict]:
+                       scroll_count: int = 10, auto_detect: bool = True) -> List[Dict]:
         """
         목록 페이지를 크롤링하고 상품 정보를 추출합니다.
         
         Args:
             url: 목록 페이지 URL
-            infinite_scroll: 무한 스크롤 여부
+            infinite_scroll: 무한 스크롤 여부 (auto_detect=False일 때만 사용)
             scroll_count: 스크롤 횟수
+            auto_detect: 페이지 타입 자동 감지 여부
             
         Returns:
             상품 정보 리스트
         """
         print(f"\n[1단계] 목록 페이지 크롤링")
+        
+        # 페이지 타입 자동 감지
+        page_type_info = None
+        scroll_strategy = None
+        
+        if auto_detect and PAGE_DETECTOR_AVAILABLE and PLAYWRIGHT_AVAILABLE:
+            print(f"  🔍 페이지 타입 자동 감지 중...")
+            try:
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(headless=True)
+                    page = browser.new_page()
+                    page.goto(url, wait_until='networkidle', timeout=30000)
+                    page.wait_for_timeout(2000)
+                    
+                    # 페이지 타입 감지
+                    page_type_info = PageTypeDetector.detect(page, verbose=False)
+                    scroll_strategy = PageTypeDetector.get_scroll_strategy(page_type_info['type'])
+                    
+                    print(f"  ✅ 감지 결과: {page_type_info['type']} (확신도: {page_type_info['confidence']:.2f})")
+                    print(f"     {scroll_strategy['description']}")
+                    
+                    page.close()
+                    browser.close()
+            except Exception as e:
+                print(f"  ⚠️ 자동 감지 실패, 수동 설정 사용: {str(e)[:50]}")
+        
+        # 스크롤 전략 적용
+        if scroll_strategy:
+            infinite_scroll = scroll_strategy['should_scroll']
+            if scroll_strategy['scroll_count'] > 0:
+                scroll_count = scroll_strategy['scroll_count']
+        
         result = self.crawl_page(url, infinite_scroll=infinite_scroll, scroll_count=scroll_count)
         
         if not result['success']:
@@ -793,8 +837,11 @@ HTML:
         if products:
             product_ids = [p.get('id') for p in products if p.get('id')]
             if product_ids:
+                # 페이지 타입에 따라 재스크롤 필요 여부 결정
+                need_rescroll = scroll_strategy['need_rescroll_after_back'] if scroll_strategy else True
+                
                 url_mapping = self.extract_detail_urls_from_browser(
-                    url, product_ids, infinite_scroll, scroll_count
+                    url, product_ids, infinite_scroll, scroll_count, need_rescroll
                 )
                 
                 # products에 실제 URL 매핑
@@ -928,17 +975,18 @@ HTML:
     
     def run(self, url: str, infinite_scroll: bool = True, scroll_count: int = 10,
             crawl_details: bool = True, max_detail_pages: Optional[int] = None,
-            output_path: str = None) -> pd.DataFrame:
+            output_path: str = None, auto_detect: bool = True) -> pd.DataFrame:
         """
         전체 크롤링 프로세스를 실행합니다.
         
         Args:
             url: 시작 URL
-            infinite_scroll: 무한 스크롤 여부
+            infinite_scroll: 무한 스크롤 여부 (auto_detect=False일 때만 사용)
             scroll_count: 스크롤 횟수
             crawl_details: 상세 페이지 크롤링 여부
             max_detail_pages: 최대 상세 페이지 수
             output_path: 출력 파일 경로
+            auto_detect: 페이지 타입 자동 감지 여부 (기본값: True)
             
         Returns:
             결과 DataFrame
@@ -948,13 +996,13 @@ HTML:
         print("="*80)
         print(f"URL: {url}")
         print(f"LLM: {'활성화 (' + self.model_name + ')' if self.use_llm else '비활성화'}")
-        print(f"무한 스크롤: {infinite_scroll}")
+        print(f"페이지 타입: {'자동 감지' if auto_detect else '수동 설정 (무한 스크롤: ' + str(infinite_scroll) + ')'}")
         print(f"상세 페이지: {crawl_details}")
         print("="*80)
         
         # 1. 목록 페이지 크롤링
         products = self.crawl_list_page(url, infinite_scroll=infinite_scroll, 
-                                       scroll_count=scroll_count)
+                                       scroll_count=scroll_count, auto_detect=auto_detect)
         
         if not products:
             print("\n상품 정보를 찾을 수 없습니다.")
@@ -1016,6 +1064,8 @@ def main():
                        help='LLM 모델 (기본값: ax)')
     parser.add_argument('--output', '-o', default='product_data',
                        help='출력 파일 경로 (확장자 제외, 기본값: product_data)')
+    parser.add_argument('--no-auto-detect', action='store_true',
+                       help='페이지 타입 자동 감지 비활성화 (수동 설정 사용)')
     
     args = parser.parse_args()
     
@@ -1037,7 +1087,8 @@ def main():
         scroll_count=args.scroll_count,
         crawl_details=args.details,
         max_detail_pages=args.max_details,
-        output_path=args.output
+        output_path=args.output,
+        auto_detect=not args.no_auto_detect
     )
     
     # 결과 미리보기
