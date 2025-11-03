@@ -222,115 +222,79 @@ class ProductCrawler:
         
         return chunks
     
-    def _extract_product_ids_from_html(self, html_content: str) -> Dict[str, str]:
+    def _chunk_html(self, html_content: str, chunk_size: int = 10000) -> List[str]:
         """
-        HTML에서 상품 ID와 이름 매핑 추출
+        HTML을 청크로 나누기 (너무 크면 LLM이 처리 못함)
         
         Args:
             html_content: HTML 내용
+            chunk_size: 각 청크의 최대 크기 (문자 수)
             
         Returns:
-            {상품명: 상품ID} 딕셔너리
+            HTML 청크 리스트
         """
-        product_map = {}
+        if len(html_content) <= chunk_size:
+            return [html_content]
+        
+        # HTML을 큰 단위로 분할 (상품 컨테이너 단위로)
+        from bs4 import BeautifulSoup
         
         try:
-            import re
-            from bs4 import BeautifulSoup
-            
             soup = BeautifulSoup(html_content, 'html.parser')
             
-            # prdid 속성이 있는 상품 컨테이너 찾기
-            product_containers = soup.find_all(attrs={'prdid': True})
+            # 상품 컨테이너로 보이는 요소들 찾기 (일반적인 패턴)
+            containers = []
             
-            for container in product_containers:
-                prd_id = container.get('prdid')
-                if not prd_id:
-                    continue
-                
-                # 상품명 찾기 (여러 패턴 시도)
-                product_name = None
-                
-                # 패턴 1: txt-product 클래스 내 strong 태그
-                txt_product = container.find(class_=re.compile(r'txt-product'))
-                if txt_product:
-                    strong_tag = txt_product.find('strong')
-                    if strong_tag:
-                        product_name = strong_tag.get_text(strip=True)
-                
-                # 패턴 2: title 또는 name 클래스
-                if not product_name:
-                    for class_name in ['title', 'name', 'product-name', 'prod-name']:
-                        elem = container.find(class_=re.compile(class_name, re.I))
-                        if elem:
-                            product_name = elem.get_text(strip=True)
-                            break
-                
-                # 패턴 3: strong, em, b 태그 (가격이 아닌 것)
-                if not product_name:
-                    for tag_name in ['strong', 'em', 'b', 'h1', 'h2', 'h3', 'h4']:
-                        for elem in container.find_all(tag_name):
-                            text = elem.get_text(strip=True)
-                            # 가격이 아니고, 충분히 긴 텍스트
-                            if text and len(text) >= 3 and not re.match(r'^[\d,]+원', text):
-                                product_name = text
-                                break
-                        if product_name:
-                            break
-                
-                # 패턴 4: 컨테이너 전체 텍스트에서 첫 번째 의미있는 텍스트
-                if not product_name:
-                    all_text = container.get_text(separator='|', strip=True)
-                    parts = [p.strip() for p in all_text.split('|') if p.strip()]
-                    for part in parts:
-                        # 가격, 할인율, 배지 등이 아닌 텍스트
-                        if (len(part) >= 3 and 
-                            not re.match(r'^[\d,]+원', part) and
-                            not re.match(r'^\d+%', part) and
-                            part not in ['SKT 할인', '할인', '신규', '인기', 'NEW', 'BEST']):
-                            product_name = part
-                            break
-                
-                if product_name and len(product_name) >= 2:
-                    # 상품명 정리
-                    product_name = re.sub(r'\d+,?\d*원.*', '', product_name).strip()
-                    product_name = re.sub(r'\d+%\s*(할인|OFF).*', '', product_name).strip()
-                    product_name = product_name[:100]  # 최대 100자
-                    
-                    if product_name and len(product_name) >= 2:
-                        # 중복 방지: 같은 이름이 여러 개면 ID 리스트로 저장
-                        if product_name in product_map:
-                            # 이미 있으면 더 짧은 ID 또는 리스트로 관리
-                            existing_id = product_map[product_name]
-                            if isinstance(existing_id, str):
-                                # 첫 번째 것 유지 (보통 첫 번째가 대표 상품)
-                                pass
-                        else:
-                            product_map[product_name] = prd_id
+            # 다양한 패턴으로 상품 컨테이너 찾기
+            for pattern in [
+                {'class': lambda x: x and any(word in str(x).lower() for word in ['product', 'item', 'card'])},
+                {'attrs': lambda x: any(k for k in x.keys() if 'prd' in k.lower() or 'product' in k.lower())},
+                {'name': ['article', 'li', 'div']},
+            ]:
+                found = soup.find_all(**pattern, limit=200)  # 최대 200개
+                if found and len(found) > len(containers):
+                    containers = found
+                    break
             
-            print(f"  HTML에서 {len(product_map)}개의 상품 ID 추출")
+            if not containers:
+                # 컨테이너를 못 찾으면 단순 분할
+                chunks = []
+                for i in range(0, len(html_content), chunk_size):
+                    chunks.append(html_content[i:i+chunk_size])
+                return chunks
             
-            # 샘플 출력 (디버깅용)
-            if product_map and len(product_map) > 0:
-                sample_items = list(product_map.items())[:3]
-                print(f"  샘플: ", end="")
-                for name, pid in sample_items:
-                    print(f"[{name[:20]}→{pid}] ", end="")
-                print()
+            # 컨테이너를 청크 크기에 맞게 그룹화
+            chunks = []
+            current_chunk = ""
             
-        except Exception as e:
-            print(f"  HTML 파싱 오류 (무시): {str(e)}")
-        
-        return product_map
+            for container in containers:
+                container_html = str(container)
+                if len(current_chunk) + len(container_html) > chunk_size and current_chunk:
+                    chunks.append(current_chunk)
+                    current_chunk = container_html
+                else:
+                    current_chunk += container_html
+            
+            if current_chunk:
+                chunks.append(current_chunk)
+            
+            return chunks if chunks else [html_content]
+            
+        except:
+            # 파싱 실패 시 단순 분할
+            chunks = []
+            for i in range(0, len(html_content), chunk_size):
+                chunks.append(html_content[i:i+chunk_size])
+            return chunks
     
     def extract_products_with_llm(self, html_content: str, text_content: str) -> List[Dict]:
         """
         LLM을 사용하여 상품/서비스 정보를 추출합니다.
-        텍스트가 길면 청크로 나눠서 처리합니다.
+        HTML을 직접 LLM에게 전달하여 ID, 이름, 가격 등을 추출합니다.
         
         Args:
             html_content: HTML 내용
-            text_content: 텍스트 내용
+            text_content: 텍스트 내용 (사용 안 함)
             
         Returns:
             상품 정보 리스트
@@ -338,49 +302,44 @@ class ProductCrawler:
         if not self.use_llm or not self.llm_client:
             return []
         
-        # HTML에서 실제 상품 ID 추출
-        product_id_map = self._extract_product_ids_from_html(html_content)
+        # HTML을 청크로 나누기 (상품 컨테이너 단위로)
+        html_chunks = self._chunk_html(html_content, chunk_size=8000)
         
-        # 텍스트를 청크로 나누기 (청크 크기: 4000자, 오버랩: 500자)
-        # 청크 크기를 작게 하면 LLM이 완전한 응답을 생성할 확률이 높아집니다
-        chunks = self._chunk_text(text_content, chunk_size=4000, overlap=500)
-        
-        print(f"  텍스트를 {len(chunks)}개 청크로 분할")
+        print(f"  HTML을 {len(html_chunks)}개 청크로 분할")
         
         all_products = []
-        seen_products = set()  # 중복 제거용 (상품명 기준)
+        seen_products = set()  # 중복 제거용 (상품명+ID 기준)
         
-        # 각 청크마다 LLM 호출
-        for idx, chunk in enumerate(chunks):
-            print(f"  청크 {idx+1}/{len(chunks)} 처리 중... ({len(chunk)} 문자)")
+        # 각 HTML 청크마다 LLM 호출
+        for idx, html_chunk in enumerate(html_chunks):
+            print(f"  청크 {idx+1}/{len(html_chunks)} 처리 중... ({len(html_chunk)} 문자)")
             
-            prompt = f"""다음은 웹 페이지의 일부 내용입니다. 이 페이지에서 상품 또는 서비스 정보를 추출해주세요.
+            prompt = f"""다음은 웹 페이지의 HTML입니다. 이 HTML에서 상품 또는 서비스 정보를 추출해주세요.
 
-각 상품/서비스에 대해 다음 정보를 JSON 배열 형식으로 반환해주세요:
-- id: 상품 식별자 (빈 문자열 "")
-- name: 상품/서비스 이름 (정확하게, 최대 50자)
-- description: 상품/서비스 설명 (최대 10자, 핵심만)
+HTML 구조에서 다음 정보를 찾아 JSON 배열로 반환해주세요:
+- id: HTML 속성이나 URL에 있는 상품 고유 식별자 (prdid, product-id, data-id, sku 등)
+- name: 상품/서비스 이름
+- description: 간단한 설명 (최대 15자)
 - price: 가격
-- detail_url: 상세 페이지 URL (있으면 사용, 없으면 빈 문자열)
+- detail_url: 상세 페이지 링크 (상대 경로 또는 절대 경로)
 
-웹 페이지 내용 (일부):
+HTML:
 ---
-{chunk}
+{html_chunk}
 ---
 
-응답 형식 (JSON만, 설명 없이):
+응답 형식 (JSON만):
 [
-  {{"id": "", "name": "상품명", "description": "할인", "price": "가격", "detail_url": ""}},
-  {{"id": "", "name": "상품명2", "description": "쿠폰", "price": "가격2", "detail_url": ""}}
+  {{"id": "PRD123", "name": "상품명", "description": "할인쿠폰", "price": "9,900원", "detail_url": "/detail?id=123"}},
+  {{"id": "PRD456", "name": "상품명2", "description": "무료배송", "price": "5,500원", "detail_url": ""}}
 ]
 
-중요 규칙:
-1. 완전한 JSON 배열만 반환 (마지막 ] 필수)
-2. id는 빈 문자열로 (나중에 자동으로 매칭됨)
-3. name은 정확하게 (ID 매칭에 사용됨)
-4. description은 10자 이내 (예: "할인", "쿠폰", "배송")
-5. 모든 상품 추출 (빠뜨리지 말 것)
-6. JSON 외 다른 텍스트 금지
+중요:
+1. 완전한 JSON 배열 반환 (마지막 ] 필수)
+2. id는 HTML에서 찾은 실제 값 사용 (없으면 "")
+3. name은 HTML의 상품명 그대로
+4. 모든 상품 추출
+5. JSON만 반환, 설명 금지
 """
             
             try:
@@ -412,9 +371,11 @@ class ProductCrawler:
                 
                 products = json.loads(response_text)
                 
-                # 중복 제거하면서 추가
+                # 중복 제거하면서 추가 (ID + 이름으로 중복 체크)
                 for product in products:
-                    product_key = product.get('name', '') + product.get('price', '')
+                    product_key = (product.get('id', '') + '|||' + 
+                                  product.get('name', '') + '|||' + 
+                                  product.get('price', ''))
                     if product_key and product_key not in seen_products:
                         seen_products.add(product_key)
                         all_products.append(product)
@@ -436,7 +397,9 @@ class ProductCrawler:
                         
                         # 중복 제거하면서 추가
                         for product in products:
-                            product_key = product.get('name', '') + product.get('price', '')
+                            product_key = (product.get('id', '') + '|||' + 
+                                          product.get('name', '') + '|||' + 
+                                          product.get('price', ''))
                             if product_key and product_key not in seen_products:
                                 seen_products.add(product_key)
                                 all_products.append(product)
@@ -456,73 +419,10 @@ class ProductCrawler:
         
         print(f"  총 {len(all_products)}개의 고유 상품/서비스를 추출했습니다.")
         
-        # 실제 상품 ID 매칭
-        if product_id_map:
-            from rapidfuzz import fuzz, process
-            
-            matched_count = 0
-            unmatched_products = []
-            
-            for product in all_products:
-                product_name = product.get('name', '').strip()
-                if not product_name:
-                    continue
-                
-                matched = False
-                
-                # 방법 1: 정확히 일치
-                if product_name in product_id_map:
-                    product['id'] = product_id_map[product_name]
-                    matched_count += 1
-                    matched = True
-                
-                # 방법 2: 부분 문자열 포함 (양방향)
-                if not matched:
-                    for html_name, prd_id in product_id_map.items():
-                        # LLM 이름이 HTML 이름에 포함되거나, 그 반대
-                        if product_name in html_name or html_name in product_name:
-                            product['id'] = prd_id
-                            matched_count += 1
-                            matched = True
-                            break
-                
-                # 방법 3: Fuzzy matching (부분 일치 우선)
-                if not matched:
-                    # partial_ratio: 부분 문자열 매칭에 강함
-                    best_match = process.extractOne(
-                        product_name, 
-                        product_id_map.keys(), 
-                        scorer=fuzz.partial_ratio,
-                        score_cutoff=85
-                    )
-                    if best_match:
-                        matched_name, score, _ = best_match
-                        product['id'] = product_id_map[matched_name]
-                        matched_count += 1
-                        matched = True
-                
-                # 방법 4: Token sort ratio (단어 순서가 다른 경우)
-                if not matched:
-                    best_match = process.extractOne(
-                        product_name, 
-                        product_id_map.keys(), 
-                        scorer=fuzz.token_sort_ratio,
-                        score_cutoff=85
-                    )
-                    if best_match:
-                        matched_name, score, _ = best_match
-                        product['id'] = product_id_map[matched_name]
-                        matched_count += 1
-                        matched = True
-                
-                if not matched:
-                    unmatched_products.append(product_name[:30])
-            
-            print(f"  {matched_count}/{len(all_products)}개 상품에 실제 ID 매칭 완료")
-            
-            if unmatched_products and len(unmatched_products) <= 10:
-                print(f"  매칭 실패: {', '.join(unmatched_products[:5])}" + 
-                      (f" 외 {len(unmatched_products)-5}개" if len(unmatched_products) > 5 else ""))
+        # ID가 있는 상품 개수 확인
+        products_with_id = sum(1 for p in all_products if p.get('id'))
+        if products_with_id > 0:
+            print(f"  {products_with_id}개 상품에 ID가 포함되어 있습니다.")
         
         return all_products
     
