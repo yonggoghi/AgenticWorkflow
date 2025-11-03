@@ -21,6 +21,7 @@
 상품/서비스 정보를 자동으로 추출하고 정리하는 지능형 크롤러
 
 **주요 기능:**
+- ✅ **페이지 타입 자동 감지** 🆕 (무한 스크롤/페이지네이션/정적 페이지)
 - ✅ LLM 기반 지능형 정보 추출 (Claude/GPT/Gemini/AX)
 - ✅ 긴 텍스트 자동 청킹 처리 (중복 제거)
 - ✅ 상품 목록 자동 파싱
@@ -28,7 +29,9 @@
 - ✅ 구조화된 데이터 생성 (CSV, JSON, Excel)
 - ✅ pandas DataFrame 지원
 
-**가이드:** [PRODUCT_CRAWLER_GUIDE.md](PRODUCT_CRAWLER_GUIDE.md)
+**가이드:** 
+- [PRODUCT_CRAWLER_GUIDE.md](PRODUCT_CRAWLER_GUIDE.md) - 전체 가이드
+- [AUTO_DETECT_GUIDE.md](AUTO_DETECT_GUIDE.md) 🆕 - 페이지 타입 자동 감지
 
 ## 빠른 시작
 
@@ -73,11 +76,14 @@ python web_crawler.py "https://m.shop.com/products" --scroll --scroll-count 20
 #### 상품/서비스 크롤러 ⭐️
 
 ```bash
-# 기본 사용 (LLM으로 자동 추출 - AX 사용)
+# 기본 사용 (자동 감지 + LLM 추출 - AX 사용) 🆕
 python product_crawler.py "https://m.shop.com/products"
 
-# 무한 스크롤 + 상세 페이지 크롤링
-python product_crawler.py "https://m.shop.com/products" --scroll --details
+# 페이지 타입 자동 감지 + 상세 페이지 크롤링 🆕
+python product_crawler.py "https://m.shop.com/products" --details
+
+# 수동 설정 (자동 감지 비활성화)
+python product_crawler.py "https://m.shop.com/products" --no-auto-detect --scroll --details
 
 # 상세 페이지는 최대 10개만
 python product_crawler.py "https://m.shop.com/products" --details --max-details 10
