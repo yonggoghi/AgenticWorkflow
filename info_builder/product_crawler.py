@@ -582,23 +582,25 @@ HTML:
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
-                page = browser.new_page()
+                
+                # 목록 페이지 (계속 유지)
+                list_page = browser.new_page()
                 
                 # 목록 페이지 접속
                 print(f"  페이지 로딩: {url}")
-                page.goto(url, wait_until='networkidle', timeout=30000)
-                page.wait_for_timeout(2000)
+                list_page.goto(url, wait_until='networkidle', timeout=30000)
+                list_page.wait_for_timeout(2000)
                 
                 # 무한 스크롤 처리
                 if infinite_scroll:
                     for i in range(scroll_count):
-                        previous_height = page.evaluate('document.body.scrollHeight')
-                        page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-                        page.wait_for_timeout(2000)
-                        new_height = page.evaluate('document.body.scrollHeight')
+                        previous_height = list_page.evaluate('document.body.scrollHeight')
+                        list_page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                        list_page.wait_for_timeout(2000)
+                        new_height = list_page.evaluate('document.body.scrollHeight')
                         if new_height == previous_height:
                             break
-                    page.wait_for_timeout(3000)
+                    list_page.wait_for_timeout(3000)
                 
                 # 각 상품 ID에 대해 링크 클릭 시도
                 captured_count = 0
@@ -617,7 +619,7 @@ HTML:
                         f'[prdid="{first_id}"]',  # 모든 요소
                     ]
                     for sel in test_selectors:
-                        count = page.locator(sel).count()
+                        count = list_page.locator(sel).count()
                         print(f"  [디버깅] {sel}: {count}개 발견")
                 
                 for idx, prd_id in enumerate(product_ids):
@@ -639,12 +641,12 @@ HTML:
                         selected_selector = None
                         for sel_idx, selector in enumerate(selectors):
                             try:
-                                count = page.locator(selector).count()
+                                count = list_page.locator(selector).count()
                                 if VERBOSE:
                                     print(f"    selector {sel_idx+1}: {count}개 발견")
                                 
                                 if count > 0:
-                                    link = page.locator(selector).first
+                                    link = list_page.locator(selector).first
                                     selected_selector = selector
                                     if VERBOSE:
                                         print(f"    ✅ selector {sel_idx+1} 선택됨")
@@ -666,112 +668,69 @@ HTML:
                             if VERBOSE:
                                 print(f"    스크롤 시도...")
                             link.scroll_into_view_if_needed(timeout=2000)
-                            page.wait_for_timeout(300)
+                            list_page.wait_for_timeout(300)
                             if VERBOSE:
                                 print(f"    ✅ 스크롤 완료")
                         except Exception as e:
                             if VERBOSE:
                                 print(f"    ⚠️ 스크롤 실패: {str(e)[:50]}")
                         
-                        # 클릭 전 URL 저장
-                        original_url = page.url
-                        if VERBOSE:
-                            print(f"    클릭 전 URL: {original_url[:80]}...")
-                        
-                        # 링크 클릭 (force=True로 보이지 않아도 클릭 시도)
-                        click_success = False
+                        # 🔧 단순화된 방식: 목록 페이지 유지, 클릭 후 뒤로 가기
                         try:
                             if VERBOSE:
-                                print(f"    클릭 시도 (Playwright)...")
-                            link.click(timeout=3000)
-                            click_success = True
-                            if VERBOSE:
-                                print(f"    ✅ 클릭 성공")
-                        except Exception as e:
-                            if VERBOSE:
-                                print(f"    ⚠️ Playwright 클릭 실패: {str(e)[:50]}")
-                            # 클릭 실패 시 JavaScript로 강제 클릭
-                            try:
+                                print(f"    클릭 시도...")
+                            
+                            # 클릭 전 URL 저장
+                            original_list_url = list_page.url
+                            
+                            # 링크 클릭
+                            link.click()
+                            list_page.wait_for_timeout(2000)  # URL 변경 대기
+                            
+                            # URL이 변경되었다면 성공
+                            if list_page.url != original_list_url:
+                                detail_url = list_page.url
                                 if VERBOSE:
-                                    print(f"    JavaScript 클릭 시도...")
-                                page.evaluate(f'document.querySelector("{selected_selector}").click()')
-                                click_success = True
+                                    print(f"    ✅ 상세 페이지 URL: {detail_url[:80]}...")
+                                
+                                # URL 저장
+                                url_mapping[prd_id] = detail_url
+                                captured_count += 1
                                 if VERBOSE:
-                                    print(f"    ✅ JavaScript 클릭 성공")
-                            except Exception as e2:
+                                    print(f"    ✅ URL 캡처 성공!")
+                                
+                                # 목록 페이지로 돌아가기
+                                if VERBOSE:
+                                    print(f"    뒤로 가기...")
+                                list_page.go_back()
+                                list_page.wait_for_timeout(1000)
+                                
+                                # 🔧 무한 스크롤 페이지: 뒤로 가기 후 다시 스크롤 필요
+                                if infinite_scroll and idx < len(product_ids) - 1:
+                                    if VERBOSE:
+                                        print(f"    무한 스크롤 재실행...")
+                                    for i in range(scroll_count):
+                                        list_page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                                        list_page.wait_for_timeout(500)
+                                    list_page.wait_for_timeout(1000)
+                                    if VERBOSE:
+                                        print(f"    ✅ 스크롤 재실행 완료")
+                            else:
                                 failed_count += 1
-                                failed_reasons['click_failed'] = failed_reasons.get('click_failed', 0) + 1
+                                failed_reasons['url_not_changed'] = failed_reasons.get('url_not_changed', 0) + 1
                                 if VERBOSE:
-                                    print(f"    ❌ JavaScript 클릭도 실패: {str(e2)[:50]}")
-                                continue
-                        
-                        # 페이지 이동 대기 (URL 변경 또는 네트워크 안정)
-                        try:
-                            if VERBOSE:
-                                print(f"    URL 변경 대기...")
-                            page.wait_for_url(lambda url: url != original_url, timeout=5000)
-                            if VERBOSE:
-                                print(f"    ✅ URL 변경 감지")
-                        except:
-                            if VERBOSE:
-                                print(f"    ⚠️ URL 변경 없음, 1.5초 대기...")
-                            page.wait_for_timeout(1500)  # URL 안 변해도 1.5초 대기
-                        
-                        # 새 URL 캡처
-                        detail_url = page.url
-                        if VERBOSE:
-                            print(f"    클릭 후 URL: {detail_url[:80]}...")
-                        
-                        # 원래 URL과 다르면 저장
-                        if detail_url != original_url:
-                            url_mapping[prd_id] = detail_url
-                            captured_count += 1
-                            if VERBOSE:
-                                print(f"    ✅ URL 캡처 성공!")
+                                    print(f"    ❌ URL 변경 없음 - url_not_changed")
                             
                             # 진행률 출력 (매 20개마다)
                             if (idx + 1) % 20 == 0:
                                 print(f"    진행: {idx + 1}/{len(product_ids)} ({captured_count}개 성공, {failed_count}개 실패)")
-                        else:
-                            failed_count += 1
-                            failed_reasons['url_not_changed'] = failed_reasons.get('url_not_changed', 0) + 1
-                            if VERBOSE:
-                                print(f"    ❌ URL 변경 없음 - url_not_changed")
-                        
-                        # 뒤로 가기
-                        try:
-                            if VERBOSE:
-                                print(f"    뒤로 가기...")
-                            page.go_back()
-                            page.wait_for_timeout(1000)  # 충분한 대기
-                            
-                            # 🔧 무한 스크롤 페이지: 뒤로 가기 후 다시 스크롤 필요
-                            if infinite_scroll and idx < len(product_ids) - 1:  # 마지막 상품 아니면
-                                if VERBOSE:
-                                    print(f"    무한 스크롤 재실행...")
-                                # 빠르게 스크롤 (모든 상품 다시 로드)
-                                for i in range(scroll_count):
-                                    page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-                                    page.wait_for_timeout(500)  # 빠르게
-                                page.wait_for_timeout(1000)  # 최종 대기
-                                if VERBOSE:
-                                    print(f"    ✅ 스크롤 재실행 완료")
-                            
-                            if VERBOSE:
-                                print(f"    ✅ 뒤로 가기 완료")
+                                
                         except Exception as e:
+                            failed_count += 1
+                            error_type = type(e).__name__
+                            failed_reasons[error_type] = failed_reasons.get(error_type, 0) + 1
                             if VERBOSE:
-                                print(f"    ⚠️ 뒤로 가기 실패, 목록 페이지 재접속: {str(e)[:50]}")
-                            # 뒤로가기 실패 시 다시 목록 페이지로
-                            page.goto(url, wait_until='networkidle', timeout=30000)
-                            page.wait_for_timeout(2000)
-                            
-                            # 무한 스크롤 다시 실행
-                            if infinite_scroll:
-                                for i in range(scroll_count):
-                                    page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-                                    page.wait_for_timeout(500)
-                                page.wait_for_timeout(1000)
+                                print(f"    ❌ URL 캡처 실패: {str(e)[:50]}")
                             
                     except Exception as e:
                         # 개별 상품 오류 카운트
