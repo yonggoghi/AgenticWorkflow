@@ -337,7 +337,7 @@ class ProductCrawler:
             prompt = f"""다음은 웹 페이지의 HTML입니다. 이 HTML에서 상품 또는 서비스 정보를 추출해주세요.
 
 HTML 구조에서 다음 정보를 찾아 JSON 배열로 반환해주세요:
-- id: HTML 속성이나 URL에 있는 상품 고유 식별자 (prdid, product-id, data-id, sku 등)
+- id: HTML 속성이나 URL에 있는 상품 고유 식별자 (NA, NM, PR 등 알파벳 대문자 2자로 시작할 가능성이 높음)
 - name: 상품/서비스 이름
 - description: 상세한 설명 (최대 50자)
 - detail_url: 상세 페이지 링크 (상대 경로 또는 절대 경로)
@@ -349,8 +349,8 @@ HTML:
 
 응답 형식 (JSON만):
 [
-  {{"id": "PRD123", "name": "상품명", "description": "할인쿠폰", "detail_url": "/detail?id=123"}},
-  {{"id": "PRD456", "name": "상품명2", "description": "무료배송", "detail_url": ""}}
+  {{"id": "PR123", "name": "상품명", "description": "할인쿠폰", "detail_url": "/detail?id=123"}},
+  {{"id": "PR456", "name": "상품명", "description": "무료배송", "detail_url": ""}}
 ]
 
 중요:
@@ -474,7 +474,6 @@ HTML:
 {{
   "name": "상품/서비스 이름",
   "description": "상세 설명 (200자 이내로 요약)",
-  "price": "가격",
   "category": "카테고리",
   "features": ["주요 특징1", "주요 특징2", ...],
   "specifications": {{"스펙키": "스펙값", ...}}
@@ -616,6 +615,11 @@ HTML:
         for product in tqdm(products_with_detail, desc="  상세 페이지"):
             detail_url = product['detail_url']
             
+            # 상대 경로를 절대 경로로 변환
+            if detail_url and not detail_url.startswith('http'):
+                from urllib.parse import urljoin
+                detail_url = urljoin(self.base_url, detail_url)
+            
             # 상세 페이지 크롤링
             result = self.crawl_page(detail_url, infinite_scroll=False)
             
@@ -630,7 +634,6 @@ HTML:
                 if details:
                     product['name'] = details.get('name', product['name'])
                     product['description'] = details.get('description', product.get('description', ''))
-                    product['price'] = details.get('price', product.get('price', ''))
                     product['category'] = details.get('category', '')
                     product['features'] = details.get('features', [])
                     product['specifications'] = details.get('specifications', {})
