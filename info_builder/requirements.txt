@@ -4,7 +4,6 @@ beautifulsoup4>=4.12.0
 
 # 데이터 처리
 pandas>=2.0.0
-rapidfuzz>=3.0.0
 
 # 진행률 표시
 tqdm>=4.65.0
