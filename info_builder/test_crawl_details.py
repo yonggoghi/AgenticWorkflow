@@ -66,18 +66,9 @@ def test_crawl_details():
     print("테스트 완료!")
     print("="*80)
     
-    # 결과 비교
+    # 결과 비교 (df1은 주석 처리되어 생략)
     print("\n[비교 결과]")
-    print(f"crawl_details=False: {len(df1)}개 상품")
     print(f"crawl_details=True:  {len(df2)}개 상품")
-    
-    # detail_url 비교
-    if not df1.empty and not df2.empty:
-        url_count1 = (df1['detail_url'].notna() & (df1['detail_url'] != '')).sum()
-        url_count2 = (df2['detail_url'].notna() & (df2['detail_url'] != '')).sum()
-        print(f"\ndetail_url 개수:")
-        print(f"  False: {url_count1}개")
-        print(f"  True:  {url_count2}개")
     
     if not df2.empty:
         # 상세 정보가 추가되었는지 확인
