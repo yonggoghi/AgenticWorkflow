@@ -20,25 +20,25 @@ def test_crawl_details():
         model_name="ax"
     )
     
-    print("\n[테스트 1] crawl_details=False")
-    print("-" * 80)
-    df1 = crawler.run(
-        url=url,
-        infinite_scroll=True,
-        scroll_count=5,          # 빠른 테스트를 위해 5회만
-        crawl_details=False,     # ❌ 상세 페이지 크롤링 안 함
-        output_path="output/test_no_details"
-    )
+    # print("\n[테스트 1] crawl_details=False")
+    # print("-" * 80)
+    # df1 = crawler.run(
+    #     url=url,
+    #     infinite_scroll=True,
+    #     scroll_count=5,          # 빠른 테스트를 위해 5회만
+    #     crawl_details=False,     # ❌ 상세 페이지 크롤링 안 함
+    #     output_path="output/test_no_details"
+    # )
     
-    print(f"\n추출된 상품: {len(df1)}개")
-    print(f"컬럼: {list(df1.columns)}")
-    if not df1.empty:
-        print("\n첫 번째 상품:")
-        print(df1.iloc[0].to_dict())
+    # print(f"\n추출된 상품: {len(df1)}개")
+    # print(f"컬럼: {list(df1.columns)}")
+    # if not df1.empty:
+    #     print("\n첫 번째 상품:")
+    #     print(df1.iloc[0].to_dict())
         
-        # detail_url 통계
-        has_detail_url = df1['detail_url'].notna() & (df1['detail_url'] != '')
-        print(f"\ndetail_url 통계: {has_detail_url.sum()}/{len(df1)}개 상품에 URL 있음")
+    #     # detail_url 통계
+    #     has_detail_url = df1['detail_url'].notna() & (df1['detail_url'] != '')
+    #     print(f"\ndetail_url 통계: {has_detail_url.sum()}/{len(df1)}개 상품에 URL 있음")
     
     print("\n" + "="*80)
     print("\n[테스트 2] crawl_details=True (최대 2개)")
