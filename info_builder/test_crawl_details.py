@@ -35,6 +35,10 @@ def test_crawl_details():
     if not df1.empty:
         print("\n첫 번째 상품:")
         print(df1.iloc[0].to_dict())
+        
+        # detail_url 통계
+        has_detail_url = df1['detail_url'].notna() & (df1['detail_url'] != '')
+        print(f"\ndetail_url 통계: {has_detail_url.sum()}/{len(df1)}개 상품에 URL 있음")
     
     print("\n" + "="*80)
     print("\n[테스트 2] crawl_details=True (최대 2개)")
@@ -53,6 +57,10 @@ def test_crawl_details():
     if not df2.empty:
         print("\n첫 번째 상품:")
         print(df2.iloc[0].to_dict())
+        
+        # detail_url 통계
+        has_detail_url = df2['detail_url'].notna() & (df2['detail_url'] != '')
+        print(f"\ndetail_url 통계: {has_detail_url.sum()}/{len(df2)}개 상품에 URL 있음")
     
     print("\n" + "="*80)
     print("테스트 완료!")
@@ -62,6 +70,14 @@ def test_crawl_details():
     print("\n[비교 결과]")
     print(f"crawl_details=False: {len(df1)}개 상품")
     print(f"crawl_details=True:  {len(df2)}개 상품")
+    
+    # detail_url 비교
+    if not df1.empty and not df2.empty:
+        url_count1 = (df1['detail_url'].notna() & (df1['detail_url'] != '')).sum()
+        url_count2 = (df2['detail_url'].notna() & (df2['detail_url'] != '')).sum()
+        print(f"\ndetail_url 개수:")
+        print(f"  False: {url_count1}개")
+        print(f"  True:  {url_count2}개")
     
     if not df2.empty:
         # 상세 정보가 추가되었는지 확인
