@@ -66,21 +66,21 @@ def test_crawl_details():
     print("테스트 완료!")
     print("="*80)
     
-    # 결과 비교 (df1은 주석 처리되어 생략)
-    print("\n[비교 결과]")
-    print(f"crawl_details=True:  {len(df2)}개 상품")
+    # # 결과 비교 (df1은 주석 처리되어 생략)
+    # print("\n[비교 결과]")
+    # print(f"crawl_details=True:  {len(df2)}개 상품")
     
-    if not df2.empty:
-        # 상세 정보가 추가되었는지 확인
-        detail_fields = ['category', 'features', 'specifications']
-        has_details = any(field in df2.columns for field in detail_fields)
-        print(f"\n상세 정보 추가 여부: {'✅ 있음' if has_details else '❌ 없음'}")
+    # if not df2.empty:
+    #     # 상세 정보가 추가되었는지 확인
+    #     detail_fields = ['category', 'features', 'specifications']
+    #     has_details = any(field in df2.columns for field in detail_fields)
+    #     print(f"\n상세 정보 추가 여부: {'✅ 있음' if has_details else '❌ 없음'}")
         
-        if has_details:
-            for field in detail_fields:
-                if field in df2.columns:
-                    non_empty = df2[field].notna().sum()
-                    print(f"  - {field}: {non_empty}/{len(df2)}개 상품에 데이터 있음")
+    #     if has_details:
+    #         for field in detail_fields:
+    #             if field in df2.columns:
+    #                 non_empty = df2[field].notna().sum()
+    #                 print(f"  - {field}: {non_empty}/{len(df2)}개 상품에 데이터 있음")
 
 
 if __name__ == '__main__':

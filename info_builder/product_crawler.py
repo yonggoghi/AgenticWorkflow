@@ -320,6 +320,12 @@ class ProductCrawler:
         # HTML을 청크로 나누기 (상품 컨테이너 단위로)
         html_chunks = self._chunk_html(html_content, chunk_size=15000)
         
+        # 🔧 디버깅: 첫 번째 청크만 처리
+        DEBUG_MODE = True
+        if DEBUG_MODE:
+            print(f"  🔧 [디버깅 모드] 첫 번째 청크만 처리합니다")
+            html_chunks = html_chunks[:1]
+        
         print(f"  HTML을 {len(html_chunks)}개 청크로 분할")
         
         # 디버깅: 청크 크기 분포 출력
@@ -616,6 +622,12 @@ HTML:
                 
                 for idx, prd_id in enumerate(product_ids):
                     try:
+                        # 🔧 디버깅: 처음 3개 상품은 상세 로그
+                        VERBOSE = idx < 3
+                        
+                        if VERBOSE:
+                            print(f"\n  [상품 {idx+1}] ID: {prd_id}")
+                        
                         # 여러 selector 패턴 시도 (우선순위 순)
                         selectors = [
                             f'a.inner-link[prdid="{prd_id}"][godetailyn="Y"]',  # 원래 조건
@@ -624,55 +636,98 @@ HTML:
                         ]
                         
                         link = None
-                        for selector in selectors:
+                        selected_selector = None
+                        for sel_idx, selector in enumerate(selectors):
                             try:
-                                link = page.locator(selector).first
-                                # 요소가 존재하는지만 체크 (is_visible 대신 count 사용)
-                                if page.locator(selector).count() > 0:
+                                count = page.locator(selector).count()
+                                if VERBOSE:
+                                    print(f"    selector {sel_idx+1}: {count}개 발견")
+                                
+                                if count > 0:
+                                    link = page.locator(selector).first
+                                    selected_selector = selector
+                                    if VERBOSE:
+                                        print(f"    ✅ selector {sel_idx+1} 선택됨")
                                     break
-                            except:
+                            except Exception as e:
+                                if VERBOSE:
+                                    print(f"    ❌ selector {sel_idx+1} 오류: {str(e)[:50]}")
                                 continue
                         
-                        if not link or page.locator(selector).count() == 0:
+                        if not link or not selected_selector:
                             failed_count += 1
                             failed_reasons['not_found'] = failed_reasons.get('not_found', 0) + 1
+                            if VERBOSE:
+                                print(f"    ❌ 모든 selector 실패 - not_found")
                             continue
                         
                         # 요소로 스크롤해서 viewport에 표시
                         try:
+                            if VERBOSE:
+                                print(f"    스크롤 시도...")
                             link.scroll_into_view_if_needed(timeout=2000)
                             page.wait_for_timeout(300)
-                        except:
-                            pass
+                            if VERBOSE:
+                                print(f"    ✅ 스크롤 완료")
+                        except Exception as e:
+                            if VERBOSE:
+                                print(f"    ⚠️ 스크롤 실패: {str(e)[:50]}")
                         
                         # 클릭 전 URL 저장
                         original_url = page.url
+                        if VERBOSE:
+                            print(f"    클릭 전 URL: {original_url[:80]}...")
                         
                         # 링크 클릭 (force=True로 보이지 않아도 클릭 시도)
+                        click_success = False
                         try:
+                            if VERBOSE:
+                                print(f"    클릭 시도 (Playwright)...")
                             link.click(timeout=3000)
-                        except:
+                            click_success = True
+                            if VERBOSE:
+                                print(f"    ✅ 클릭 성공")
+                        except Exception as e:
+                            if VERBOSE:
+                                print(f"    ⚠️ Playwright 클릭 실패: {str(e)[:50]}")
                             # 클릭 실패 시 JavaScript로 강제 클릭
                             try:
-                                page.evaluate(f'document.querySelector("{selector}").click()')
-                            except:
+                                if VERBOSE:
+                                    print(f"    JavaScript 클릭 시도...")
+                                page.evaluate(f'document.querySelector("{selected_selector}").click()')
+                                click_success = True
+                                if VERBOSE:
+                                    print(f"    ✅ JavaScript 클릭 성공")
+                            except Exception as e2:
                                 failed_count += 1
                                 failed_reasons['click_failed'] = failed_reasons.get('click_failed', 0) + 1
+                                if VERBOSE:
+                                    print(f"    ❌ JavaScript 클릭도 실패: {str(e2)[:50]}")
                                 continue
                         
                         # 페이지 이동 대기 (URL 변경 또는 네트워크 안정)
                         try:
+                            if VERBOSE:
+                                print(f"    URL 변경 대기...")
                             page.wait_for_url(lambda url: url != original_url, timeout=5000)
+                            if VERBOSE:
+                                print(f"    ✅ URL 변경 감지")
                         except:
+                            if VERBOSE:
+                                print(f"    ⚠️ URL 변경 없음, 1.5초 대기...")
                             page.wait_for_timeout(1500)  # URL 안 변해도 1.5초 대기
                         
                         # 새 URL 캡처
                         detail_url = page.url
+                        if VERBOSE:
+                            print(f"    클릭 후 URL: {detail_url[:80]}...")
                         
                         # 원래 URL과 다르면 저장
                         if detail_url != original_url:
                             url_mapping[prd_id] = detail_url
                             captured_count += 1
+                            if VERBOSE:
+                                print(f"    ✅ URL 캡처 성공!")
                             
                             # 진행률 출력 (매 20개마다)
                             if (idx + 1) % 20 == 0:
@@ -680,12 +735,20 @@ HTML:
                         else:
                             failed_count += 1
                             failed_reasons['url_not_changed'] = failed_reasons.get('url_not_changed', 0) + 1
+                            if VERBOSE:
+                                print(f"    ❌ URL 변경 없음 - url_not_changed")
                         
                         # 뒤로 가기
                         try:
+                            if VERBOSE:
+                                print(f"    뒤로 가기...")
                             page.go_back()
                             page.wait_for_timeout(500)
-                        except:
+                            if VERBOSE:
+                                print(f"    ✅ 뒤로 가기 완료")
+                        except Exception as e:
+                            if VERBOSE:
+                                print(f"    ⚠️ 뒤로 가기 실패, 목록 페이지 재접속: {str(e)[:50]}")
                             # 뒤로가기 실패 시 다시 목록 페이지로
                             page.goto(url, wait_until='networkidle', timeout=30000)
                             page.wait_for_timeout(2000)
