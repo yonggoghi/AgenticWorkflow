@@ -600,6 +600,20 @@ HTML:
                 failed_reasons = {}
                 print(f"  {len(product_ids)}개 상품의 detail_url 캡처 시작...")
                 
+                # 디버깅: 첫 번째 상품 ID로 selector 테스트
+                if product_ids:
+                    first_id = product_ids[0]
+                    print(f"  [디버깅] 첫 번째 상품 ID: {first_id}")
+                    test_selectors = [
+                        f'a.inner-link[prdid="{first_id}"][godetailyn="Y"]',
+                        f'a.inner-link[prdid="{first_id}"]',
+                        f'a[prdid="{first_id}"]',
+                        f'[prdid="{first_id}"]',  # 모든 요소
+                    ]
+                    for sel in test_selectors:
+                        count = page.locator(sel).count()
+                        print(f"  [디버깅] {sel}: {count}개 발견")
+                
                 for idx, prd_id in enumerate(product_ids):
                     try:
                         # 여러 selector 패턴 시도 (우선순위 순)
