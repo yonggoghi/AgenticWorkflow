@@ -334,6 +334,10 @@ class ProductCrawler:
         for idx, html_chunk in enumerate(html_chunks):
             print(f"  청크 {idx+1}/{len(html_chunks)} 처리 중... ({len(html_chunk)} 문자)")
             
+            # 디버깅: 첫 번째 청크의 HTML 샘플 출력
+            if idx == 0 and len(html_chunk) > 200:
+                print(f"    [DEBUG] HTML 샘플: {html_chunk[:500]}...")
+            
             prompt = f"""다음은 웹 페이지의 HTML입니다. 이 HTML에서 상품 또는 서비스 정보를 추출해주세요.
 
 HTML 구조에서 다음 정보를 찾아 JSON 배열로 반환해주세요:
@@ -370,6 +374,11 @@ HTML:
                 response = self.llm_client.invoke(messages)
                 response_text = response.content
                 
+                # 디버깅: 첫 번째 청크의 LLM 응답 출력
+                if idx == 0:
+                    print(f"    [DEBUG] LLM 응답 (처음 500자):")
+                    print(f"    {response_text[:500]}...")
+                
                 # 응답이 잘렸는지 확인 (디버깅용)
                 if hasattr(response, 'response_metadata'):
                     finish_reason = response.response_metadata.get('finish_reason', '')
@@ -392,6 +401,18 @@ HTML:
                     response_text = json_match.group(0)
                 
                 products = json.loads(response_text)
+                
+                # 디버깅: 첫 번째 청크의 파싱된 상품 정보 출력
+                if idx == 0 and products:
+                    print(f"    [DEBUG] 첫 번째 상품 정보:")
+                    first_product = products[0]
+                    for key, value in first_product.items():
+                        display_value = str(value)[:50] if value else "(빈 값)"
+                        print(f"      {key}: {display_value}")
+                    
+                    # detail_url 통계
+                    urls_count = sum(1 for p in products if p.get('detail_url'))
+                    print(f"    [DEBUG] 이 청크에서 detail_url 있는 상품: {urls_count}/{len(products)}개")
                 
                 # 중복 제거하면서 추가 (ID + 이름으로 중복 체크)
                 for product in products:
