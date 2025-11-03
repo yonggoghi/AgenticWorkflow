@@ -12,19 +12,21 @@ product_crawler는 HTML을 직접 LLM에게 전달하여 상품 정보를 추출
 
 ```python
 # 기본 설정
-chunk_size = 8000    # 청크 크기 (문자 수)
-# HTML을 상품 단위로 스마트하게 분할
+chunk_size = 15000    # 청크 크기 (문자 수)
+# HTML을 상품 단위로 확실하게 분할
 ```
 
-### 2. 스마트 분할
+### 2. 확실한 분할
 
-HTML을 상품 컨테이너 단위로 지능적으로 분할합니다:
+HTML을 상품 컨테이너 단위로 확실하게 분할합니다:
 
-1. `product`, `item`, `card` 클래스 찾기
-2. `prdid`, `product-id` 등의 속성 찾기
-3. `article`, `li` 태그 찾기
+1. **우선순위 1**: `prdid` 속성이 있는 요소 찾기
+2. **우선순위 2**: `product`, `item`, `pass`, `card` 클래스 찾기
+3. **Fallback**: 상품 컨테이너를 못 찾으면 단순 15,000자 단위 분할
 
-상품 단위로 분할하여 LLM이 완전한 상품 정보를 볼 수 있도록 합니다.
+**중요**: 각 청크가 15,000자를 초과하지 않도록 강제 제한
+- 단일 상품 HTML이 15,000자 초과 시 → 강제 분할
+- 청크 크기 초과 감지 시 → 경고 출력
 
 ### 3. LLM이 직접 추출
 
@@ -85,13 +87,13 @@ product_key = product.get('id', '') + '|||' + product.get('name', '') + '|||' + 
 # product_crawler.py, extract_products_with_llm 메서드
 
 # 기본값 (권장)
-html_chunks = self._chunk_html(html_content, chunk_size=8000)
+html_chunks = self._chunk_html(html_content, chunk_size=15000)
 
 # 더 작은 청크 (더 안전하지만 느림)
-html_chunks = self._chunk_html(html_content, chunk_size=5000)
+html_chunks = self._chunk_html(html_content, chunk_size=10000)
 
 # 더 큰 청크 (빠르지만 응답이 잘릴 위험)
-html_chunks = self._chunk_html(html_content, chunk_size=12000)
+html_chunks = self._chunk_html(html_content, chunk_size=20000)
 ```
 
 ## 비용 고려사항
@@ -161,9 +163,9 @@ product_key = (
    ```
 
 2. **청크 크기 조정**
-   - 일반 페이지: 8,000자 (기본값, 권장)
-   - 짧은 페이지: 12,000자 (빠름)
-   - 복잡하거나 JSON 오류 발생 시: 5,000자 (안전)
+   - 일반 페이지: 15,000자 (기본값, 권장)
+   - 짧은 페이지: 20,000자 (빠름)
+   - 복잡하거나 JSON 오류 발생 시: 10,000자 (안전)
 
 3. **모니터링**
    - 청크 수가 너무 많으면 (5개 이상) chunk_size 증가

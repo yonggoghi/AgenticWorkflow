@@ -222,9 +222,9 @@ class ProductCrawler:
         
         return chunks
     
-    def _chunk_html(self, html_content: str, chunk_size: int = 10000) -> List[str]:
+    def _chunk_html(self, html_content: str, chunk_size: int = 15000) -> List[str]:
         """
-        HTML을 청크로 나누기 (너무 크면 LLM이 처리 못함)
+        HTML을 청크로 나누기 - 단순하고 확실한 방식
         
         Args:
             html_content: HTML 내용
@@ -236,51 +236,66 @@ class ProductCrawler:
         if len(html_content) <= chunk_size:
             return [html_content]
         
-        # HTML을 큰 단위로 분할 (상품 컨테이너 단위로)
         from bs4 import BeautifulSoup
         
         try:
             soup = BeautifulSoup(html_content, 'html.parser')
             
-            # 상품 컨테이너로 보이는 요소들 찾기 (일반적인 패턴)
-            containers = []
+            # prdid 속성이 있는 요소들 찾기 (상품 컨테이너)
+            product_elements = soup.find_all(attrs={'prdid': True})
             
-            # 다양한 패턴으로 상품 컨테이너 찾기
-            for pattern in [
-                {'class': lambda x: x and any(word in str(x).lower() for word in ['product', 'item', 'card'])},
-                {'attrs': lambda x: any(k for k in x.keys() if 'prd' in k.lower() or 'product' in k.lower())},
-                {'name': ['article', 'li', 'div']},
-            ]:
-                found = soup.find_all(**pattern, limit=200)  # 최대 200개
-                if found and len(found) > len(containers):
-                    containers = found
-                    break
+            if not product_elements or len(product_elements) < 5:
+                # prdid가 없으면 class에 'product', 'item' 포함된 요소 찾기
+                product_elements = soup.find_all(class_=lambda x: x and 
+                    any(word in str(x).lower() for word in ['product', 'item', 'pass', 'card']))
             
-            if not containers:
-                # 컨테이너를 못 찾으면 단순 분할
+            if not product_elements or len(product_elements) < 5:
+                # 그래도 없으면 단순 분할
+                print(f"  ⚠️ 상품 컨테이너를 찾지 못해 단순 분할합니다")
                 chunks = []
                 for i in range(0, len(html_content), chunk_size):
                     chunks.append(html_content[i:i+chunk_size])
                 return chunks
             
-            # 컨테이너를 청크 크기에 맞게 그룹화
+            # 각 상품 요소를 HTML 문자열로 변환
+            product_htmls = [str(elem) for elem in product_elements]
+            
+            # 청크 크기에 맞게 그룹화 (각 청크가 chunk_size를 초과하지 않도록)
             chunks = []
             current_chunk = ""
             
-            for container in containers:
-                container_html = str(container)
-                if len(current_chunk) + len(container_html) > chunk_size and current_chunk:
-                    chunks.append(current_chunk)
-                    current_chunk = container_html
+            for prod_html in product_htmls:
+                # 단일 상품 HTML이 chunk_size보다 크면 강제로 잘라서 별도 청크로
+                if len(prod_html) > chunk_size:
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                        current_chunk = ""
+                    # 큰 HTML을 여러 청크로 분할
+                    for i in range(0, len(prod_html), chunk_size):
+                        chunks.append(prod_html[i:i+chunk_size])
+                    continue
+                
+                # 현재 청크에 추가하면 chunk_size 초과하는지 체크
+                if len(current_chunk) + len(prod_html) > chunk_size:
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                    current_chunk = prod_html
                 else:
-                    current_chunk += container_html
+                    current_chunk += "\n" + prod_html
             
+            # 마지막 청크 추가
             if current_chunk:
                 chunks.append(current_chunk)
             
+            # 디버깅: 청크 크기 확인
+            max_chunk_size = max(len(c) for c in chunks) if chunks else 0
+            if max_chunk_size > chunk_size * 1.5:
+                print(f"  ⚠️ 청크 크기 초과 감지: {max_chunk_size:,}자 (목표: {chunk_size:,}자)")
+            
             return chunks if chunks else [html_content]
             
-        except:
+        except Exception as e:
+            print(f"  ⚠️ HTML 파싱 오류, 단순 분할: {str(e)[:50]}")
             # 파싱 실패 시 단순 분할
             chunks = []
             for i in range(0, len(html_content), chunk_size):
@@ -303,9 +318,14 @@ class ProductCrawler:
             return []
         
         # HTML을 청크로 나누기 (상품 컨테이너 단위로)
-        html_chunks = self._chunk_html(html_content, chunk_size=8000)
+        html_chunks = self._chunk_html(html_content, chunk_size=15000)
         
         print(f"  HTML을 {len(html_chunks)}개 청크로 분할")
+        
+        # 디버깅: 청크 크기 분포 출력
+        chunk_sizes = [len(c) for c in html_chunks]
+        if chunk_sizes:
+            print(f"  청크 크기: 최소 {min(chunk_sizes):,}자, 최대 {max(chunk_sizes):,}자, 평균 {sum(chunk_sizes)//len(chunk_sizes):,}자")
         
         all_products = []
         seen_products = set()  # 중복 제거용 (상품명+ID 기준)
