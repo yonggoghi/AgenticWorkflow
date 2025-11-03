@@ -596,48 +596,100 @@ HTML:
                 
                 # 각 상품 ID에 대해 링크 클릭 시도
                 captured_count = 0
+                failed_count = 0
+                failed_reasons = {}
                 print(f"  {len(product_ids)}개 상품의 detail_url 캡처 시작...")
                 
                 for idx, prd_id in enumerate(product_ids):
                     try:
-                        # godetailyn="Y"인 링크 찾기
-                        link_selector = f'a.inner-link[prdid="{prd_id}"][godetailyn="Y"]'
-                        link = page.locator(link_selector).first
+                        # 여러 selector 패턴 시도 (우선순위 순)
+                        selectors = [
+                            f'a.inner-link[prdid="{prd_id}"][godetailyn="Y"]',  # 원래 조건
+                            f'a.inner-link[prdid="{prd_id}"]',  # godetailyn 없어도 OK
+                            f'a[prdid="{prd_id}"]',  # inner-link 클래스 없어도 OK
+                        ]
                         
-                        if link.is_visible(timeout=1000):
-                            # 클릭 전 URL 저장
-                            original_url = page.url
-                            
-                            # 링크 클릭
-                            link.click()
-                            
-                            # 페이지 이동 대기 (URL 변경 또는 네트워크 안정)
+                        link = None
+                        for selector in selectors:
                             try:
-                                page.wait_for_url(lambda url: url != original_url, timeout=3000)
+                                link = page.locator(selector).first
+                                # 요소가 존재하는지만 체크 (is_visible 대신 count 사용)
+                                if page.locator(selector).count() > 0:
+                                    break
                             except:
-                                page.wait_for_timeout(1000)  # URL 안 변해도 1초 대기
+                                continue
+                        
+                        if not link or page.locator(selector).count() == 0:
+                            failed_count += 1
+                            failed_reasons['not_found'] = failed_reasons.get('not_found', 0) + 1
+                            continue
+                        
+                        # 요소로 스크롤해서 viewport에 표시
+                        try:
+                            link.scroll_into_view_if_needed(timeout=2000)
+                            page.wait_for_timeout(300)
+                        except:
+                            pass
+                        
+                        # 클릭 전 URL 저장
+                        original_url = page.url
+                        
+                        # 링크 클릭 (force=True로 보이지 않아도 클릭 시도)
+                        try:
+                            link.click(timeout=3000)
+                        except:
+                            # 클릭 실패 시 JavaScript로 강제 클릭
+                            try:
+                                page.evaluate(f'document.querySelector("{selector}").click()')
+                            except:
+                                failed_count += 1
+                                failed_reasons['click_failed'] = failed_reasons.get('click_failed', 0) + 1
+                                continue
+                        
+                        # 페이지 이동 대기 (URL 변경 또는 네트워크 안정)
+                        try:
+                            page.wait_for_url(lambda url: url != original_url, timeout=5000)
+                        except:
+                            page.wait_for_timeout(1500)  # URL 안 변해도 1.5초 대기
+                        
+                        # 새 URL 캡처
+                        detail_url = page.url
+                        
+                        # 원래 URL과 다르면 저장
+                        if detail_url != original_url:
+                            url_mapping[prd_id] = detail_url
+                            captured_count += 1
                             
-                            # 새 URL 캡처
-                            detail_url = page.url
-                            
-                            # 원래 URL과 다르면 저장
-                            if detail_url != original_url:
-                                url_mapping[prd_id] = detail_url
-                                captured_count += 1
-                                
-                                # 진행률 출력 (매 10개마다)
-                                if (idx + 1) % 10 == 0:
-                                    print(f"    진행: {idx + 1}/{len(product_ids)} ({captured_count}개 성공)")
-                            
-                            # 뒤로 가기
+                            # 진행률 출력 (매 20개마다)
+                            if (idx + 1) % 20 == 0:
+                                print(f"    진행: {idx + 1}/{len(product_ids)} ({captured_count}개 성공, {failed_count}개 실패)")
+                        else:
+                            failed_count += 1
+                            failed_reasons['url_not_changed'] = failed_reasons.get('url_not_changed', 0) + 1
+                        
+                        # 뒤로 가기
+                        try:
                             page.go_back()
-                            page.wait_for_timeout(800)
+                            page.wait_for_timeout(500)
+                        except:
+                            # 뒤로가기 실패 시 다시 목록 페이지로
+                            page.goto(url, wait_until='networkidle', timeout=30000)
+                            page.wait_for_timeout(2000)
                             
                     except Exception as e:
-                        # 개별 상품 오류는 무시하고 계속
-                        pass
+                        # 개별 상품 오류 카운트
+                        failed_count += 1
+                        error_type = type(e).__name__
+                        failed_reasons[error_type] = failed_reasons.get(error_type, 0) + 1
                 
                 print(f"  ✅ {captured_count}/{len(product_ids)}개 상품의 detail_url 캡처 완료")
+                
+                # 실패 원인 통계 출력
+                if failed_count > 0 and failed_reasons:
+                    print(f"  ❌ 실패 원인 분석:")
+                    for reason, count in sorted(failed_reasons.items(), key=lambda x: -x[1]):
+                        print(f"     - {reason}: {count}개")
+                
                 browser.close()
                 
         except Exception as e:
