@@ -743,7 +743,20 @@ HTML:
                             if VERBOSE:
                                 print(f"    뒤로 가기...")
                             page.go_back()
-                            page.wait_for_timeout(500)
+                            page.wait_for_timeout(1000)  # 충분한 대기
+                            
+                            # 🔧 무한 스크롤 페이지: 뒤로 가기 후 다시 스크롤 필요
+                            if infinite_scroll and idx < len(product_ids) - 1:  # 마지막 상품 아니면
+                                if VERBOSE:
+                                    print(f"    무한 스크롤 재실행...")
+                                # 빠르게 스크롤 (모든 상품 다시 로드)
+                                for i in range(scroll_count):
+                                    page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                                    page.wait_for_timeout(500)  # 빠르게
+                                page.wait_for_timeout(1000)  # 최종 대기
+                                if VERBOSE:
+                                    print(f"    ✅ 스크롤 재실행 완료")
+                            
                             if VERBOSE:
                                 print(f"    ✅ 뒤로 가기 완료")
                         except Exception as e:
@@ -752,6 +765,13 @@ HTML:
                             # 뒤로가기 실패 시 다시 목록 페이지로
                             page.goto(url, wait_until='networkidle', timeout=30000)
                             page.wait_for_timeout(2000)
+                            
+                            # 무한 스크롤 다시 실행
+                            if infinite_scroll:
+                                for i in range(scroll_count):
+                                    page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                                    page.wait_for_timeout(500)
+                                page.wait_for_timeout(1000)
                             
                     except Exception as e:
                         # 개별 상품 오류 카운트
