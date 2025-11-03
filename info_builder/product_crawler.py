@@ -339,8 +339,7 @@ class ProductCrawler:
 HTML 구조에서 다음 정보를 찾아 JSON 배열로 반환해주세요:
 - id: HTML 속성이나 URL에 있는 상품 고유 식별자 (prdid, product-id, data-id, sku 등)
 - name: 상품/서비스 이름
-- description: 간단한 설명 (최대 15자)
-- price: 가격
+- description: 상세한 설명 (최대 50자)
 - detail_url: 상세 페이지 링크 (상대 경로 또는 절대 경로)
 
 HTML:
@@ -350,8 +349,8 @@ HTML:
 
 응답 형식 (JSON만):
 [
-  {{"id": "PRD123", "name": "상품명", "description": "할인쿠폰", "price": "9,900원", "detail_url": "/detail?id=123"}},
-  {{"id": "PRD456", "name": "상품명2", "description": "무료배송", "price": "5,500원", "detail_url": ""}}
+  {{"id": "PRD123", "name": "상품명", "description": "할인쿠폰", "detail_url": "/detail?id=123"}},
+  {{"id": "PRD456", "name": "상품명2", "description": "무료배송", "detail_url": ""}}
 ]
 
 중요:
@@ -394,8 +393,7 @@ HTML:
                 # 중복 제거하면서 추가 (ID + 이름으로 중복 체크)
                 for product in products:
                     product_key = (product.get('id', '') + '|||' + 
-                                  product.get('name', '') + '|||' + 
-                                  product.get('price', ''))
+                                  product.get('name', ''))
                     if product_key and product_key not in seen_products:
                         seen_products.add(product_key)
                         all_products.append(product)
@@ -418,8 +416,7 @@ HTML:
                         # 중복 제거하면서 추가
                         for product in products:
                             product_key = (product.get('id', '') + '|||' + 
-                                          product.get('name', '') + '|||' + 
-                                          product.get('price', ''))
+                                          product.get('name', ''))
                             if product_key and product_key not in seen_products:
                                 seen_products.add(product_key)
                                 all_products.append(product)
@@ -662,6 +659,10 @@ HTML:
         
         # DataFrame 생성
         df = pd.DataFrame(products)
+        
+        # price 컬럼 제거 (필요 없음)
+        if 'price' in df.columns:
+            df = df.drop(columns=['price'])
         
         # 기본 컬럼 확인
         base_columns = ['id', 'name', 'description']
