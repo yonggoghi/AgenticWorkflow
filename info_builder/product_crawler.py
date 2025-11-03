@@ -240,39 +240,83 @@ class ProductCrawler:
             
             soup = BeautifulSoup(html_content, 'html.parser')
             
-            # prdid 속성이 있는 모든 요소 찾기
-            elements_with_prdid = soup.find_all(attrs={'prdid': re.compile(r'PR\d+')})
+            # prdid 속성이 있는 상품 컨테이너 찾기
+            product_containers = soup.find_all(attrs={'prdid': True})
             
-            for element in elements_with_prdid:
-                prd_id = element.get('prdid')
-                if not prd_id or not prd_id.startswith('PR'):
+            for container in product_containers:
+                prd_id = container.get('prdid')
+                if not prd_id:
                     continue
                 
-                # 해당 요소 주변에서 상품명 찾기
+                # 상품명 찾기 (여러 패턴 시도)
                 product_name = None
                 
-                # 1. 같은 요소 내 텍스트
-                text = element.get_text(strip=True)
-                if text and len(text) > 2:
-                    product_name = text[:100]
+                # 패턴 1: txt-product 클래스 내 strong 태그
+                txt_product = container.find(class_=re.compile(r'txt-product'))
+                if txt_product:
+                    strong_tag = txt_product.find('strong')
+                    if strong_tag:
+                        product_name = strong_tag.get_text(strip=True)
                 
-                # 2. 자식 요소들에서 찾기
-                if not product_name or len(product_name) < 5:
-                    for child in element.find_all(['span', 'p', 'div', 'strong', 'em']):
-                        child_text = child.get_text(strip=True)
-                        if child_text and len(child_text) > 5:
-                            product_name = child_text[:100]
+                # 패턴 2: title 또는 name 클래스
+                if not product_name:
+                    for class_name in ['title', 'name', 'product-name', 'prod-name']:
+                        elem = container.find(class_=re.compile(class_name, re.I))
+                        if elem:
+                            product_name = elem.get_text(strip=True)
                             break
                 
-                if product_name:
-                    # 상품명 정리 (가격 정보 등 제거)
+                # 패턴 3: strong, em, b 태그 (가격이 아닌 것)
+                if not product_name:
+                    for tag_name in ['strong', 'em', 'b', 'h1', 'h2', 'h3', 'h4']:
+                        for elem in container.find_all(tag_name):
+                            text = elem.get_text(strip=True)
+                            # 가격이 아니고, 충분히 긴 텍스트
+                            if text and len(text) >= 3 and not re.match(r'^[\d,]+원', text):
+                                product_name = text
+                                break
+                        if product_name:
+                            break
+                
+                # 패턴 4: 컨테이너 전체 텍스트에서 첫 번째 의미있는 텍스트
+                if not product_name:
+                    all_text = container.get_text(separator='|', strip=True)
+                    parts = [p.strip() for p in all_text.split('|') if p.strip()]
+                    for part in parts:
+                        # 가격, 할인율, 배지 등이 아닌 텍스트
+                        if (len(part) >= 3 and 
+                            not re.match(r'^[\d,]+원', part) and
+                            not re.match(r'^\d+%', part) and
+                            part not in ['SKT 할인', '할인', '신규', '인기', 'NEW', 'BEST']):
+                            product_name = part
+                            break
+                
+                if product_name and len(product_name) >= 2:
+                    # 상품명 정리
                     product_name = re.sub(r'\d+,?\d*원.*', '', product_name).strip()
-                    product_name = re.sub(r'^\d+$', '', product_name).strip()
+                    product_name = re.sub(r'\d+%\s*(할인|OFF).*', '', product_name).strip()
+                    product_name = product_name[:100]  # 최대 100자
                     
-                    if product_name and len(product_name) > 3:
-                        product_map[product_name] = prd_id
+                    if product_name and len(product_name) >= 2:
+                        # 중복 방지: 같은 이름이 여러 개면 ID 리스트로 저장
+                        if product_name in product_map:
+                            # 이미 있으면 더 짧은 ID 또는 리스트로 관리
+                            existing_id = product_map[product_name]
+                            if isinstance(existing_id, str):
+                                # 첫 번째 것 유지 (보통 첫 번째가 대표 상품)
+                                pass
+                        else:
+                            product_map[product_name] = prd_id
             
             print(f"  HTML에서 {len(product_map)}개의 상품 ID 추출")
+            
+            # 샘플 출력 (디버깅용)
+            if product_map and len(product_map) > 0:
+                sample_items = list(product_map.items())[:3]
+                print(f"  샘플: ", end="")
+                for name, pid in sample_items:
+                    print(f"[{name[:20]}→{pid}] ", end="")
+                print()
             
         except Exception as e:
             print(f"  HTML 파싱 오류 (무시): {str(e)}")
@@ -313,11 +357,11 @@ class ProductCrawler:
             prompt = f"""다음은 웹 페이지의 일부 내용입니다. 이 페이지에서 상품 또는 서비스 정보를 추출해주세요.
 
 각 상품/서비스에 대해 다음 정보를 JSON 배열 형식으로 반환해주세요:
-- id: 실제 상품 ID (PR로 시작하는 코드, 상품코드, SKU 등을 찾아서 사용. 정말 없을 때만 빈 문자열 "")
-- name: 상품/서비스 이름 (최대 30자)
+- id: 상품 식별자 (빈 문자열 "")
+- name: 상품/서비스 이름 (정확하게, 최대 50자)
 - description: 상품/서비스 설명 (최대 10자, 핵심만)
 - price: 가격
-- detail_url: 상세 페이지 URL (없으면 빈 문자열)
+- detail_url: 상세 페이지 URL (있으면 사용, 없으면 빈 문자열)
 
 웹 페이지 내용 (일부):
 ---
@@ -326,16 +370,17 @@ class ProductCrawler:
 
 응답 형식 (JSON만, 설명 없이):
 [
-  {{"id": "PR001", "name": "상품명", "description": "할인쿠폰", "price": "가격", "detail_url": ""}},
-  {{"id": "PR002", "name": "상품명2", "description": "정기배송", "price": "가격2", "detail_url": ""}}
+  {{"id": "", "name": "상품명", "description": "할인", "price": "가격", "detail_url": ""}},
+  {{"id": "", "name": "상품명2", "description": "쿠폰", "price": "가격2", "detail_url": ""}}
 ]
 
 중요 규칙:
 1. 완전한 JSON 배열만 반환 (마지막 ] 필수)
-2. id는 텍스트에서 실제 상품코드를 찾아 사용 (PR, SKU, 코드 등)
-3. description은 10자 이내 (예: "할인", "쿠폰", "배송")
-4. 모든 상품 추출 (빠뜨리지 말 것)
-5. JSON 외 다른 텍스트 금지
+2. id는 빈 문자열로 (나중에 자동으로 매칭됨)
+3. name은 정확하게 (ID 매칭에 사용됨)
+4. description은 10자 이내 (예: "할인", "쿠폰", "배송")
+5. 모든 상품 추출 (빠뜨리지 말 것)
+6. JSON 외 다른 텍스트 금지
 """
             
             try:
@@ -413,29 +458,71 @@ class ProductCrawler:
         
         # 실제 상품 ID 매칭
         if product_id_map:
+            from rapidfuzz import fuzz, process
+            
             matched_count = 0
+            unmatched_products = []
+            
             for product in all_products:
-                product_name = product.get('name', '')
+                product_name = product.get('name', '').strip()
+                if not product_name:
+                    continue
                 
-                # 정확히 일치하는 상품명 찾기
+                matched = False
+                
+                # 방법 1: 정확히 일치
                 if product_name in product_id_map:
                     product['id'] = product_id_map[product_name]
                     matched_count += 1
-                else:
-                    # 부분 일치 검색 (상품명이 포함된 경우)
-                    from rapidfuzz import fuzz, process
+                    matched = True
+                
+                # 방법 2: 부분 문자열 포함 (양방향)
+                if not matched:
+                    for html_name, prd_id in product_id_map.items():
+                        # LLM 이름이 HTML 이름에 포함되거나, 그 반대
+                        if product_name in html_name or html_name in product_name:
+                            product['id'] = prd_id
+                            matched_count += 1
+                            matched = True
+                            break
+                
+                # 방법 3: Fuzzy matching (부분 일치 우선)
+                if not matched:
+                    # partial_ratio: 부분 문자열 매칭에 강함
                     best_match = process.extractOne(
                         product_name, 
                         product_id_map.keys(), 
-                        scorer=fuzz.ratio,
-                        score_cutoff=80
+                        scorer=fuzz.partial_ratio,
+                        score_cutoff=85
                     )
                     if best_match:
                         matched_name, score, _ = best_match
                         product['id'] = product_id_map[matched_name]
                         matched_count += 1
+                        matched = True
+                
+                # 방법 4: Token sort ratio (단어 순서가 다른 경우)
+                if not matched:
+                    best_match = process.extractOne(
+                        product_name, 
+                        product_id_map.keys(), 
+                        scorer=fuzz.token_sort_ratio,
+                        score_cutoff=85
+                    )
+                    if best_match:
+                        matched_name, score, _ = best_match
+                        product['id'] = product_id_map[matched_name]
+                        matched_count += 1
+                        matched = True
+                
+                if not matched:
+                    unmatched_products.append(product_name[:30])
             
-            print(f"  {matched_count}개 상품에 실제 ID 매칭 완료")
+            print(f"  {matched_count}/{len(all_products)}개 상품에 실제 ID 매칭 완료")
+            
+            if unmatched_products and len(unmatched_products) <= 10:
+                print(f"  매칭 실패: {', '.join(unmatched_products[:5])}" + 
+                      (f" 외 {len(unmatched_products)-5}개" if len(unmatched_products) > 5 else ""))
         
         return all_products
     
