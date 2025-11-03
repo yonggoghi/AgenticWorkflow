@@ -337,13 +337,13 @@ class ProductCrawler:
             prompt = f"""다음은 웹 페이지의 HTML입니다. 이 HTML에서 상품 또는 서비스 정보를 추출해주세요.
 
 HTML 구조에서 다음 정보를 찾아 JSON 배열로 반환해주세요:
-- id: HTML 속성이나 URL에 있는 상품 고유 식별자 (NA, NM, PR 등 알파벳 대문자 2자로 시작할 가능성이 높음)
+- id: HTML 속성이나 URL에 있는 상품 고유 식별자 (prdid, data-id, product-id 등의 속성에서 찾기)
 - name: 상품/서비스 이름
 - description: 상세한 설명 (최대 50자)
 - detail_url: 상세 페이지 링크
-  * href 속성의 실제 URL 사용
-  * javascript:void(0)인 경우: godetailyn="Y" 속성이 있으면 id를 사용해 "/product/detail?id={{id}}" 형식으로 생성
-  * 링크가 없으면 빈 문자열
+  * <a> 태그의 href 속성에서 실제 URL 찾기
+  * 상대 경로도 그대로 반환 (/detail, ./product 등)
+  * javascript:void(0)이거나 링크가 없으면 빈 문자열 ""
 
 HTML:
 ---
@@ -352,14 +352,14 @@ HTML:
 
 응답 형식 (JSON만):
 [
-  {{"id": "PR00000123", "name": "상품명", "description": "할인쿠폰", "detail_url": "/product/detail?id=PR00000123"}},
+  {{"id": "PR00000123", "name": "상품명", "description": "할인쿠폰", "detail_url": "/detail?id=PR00000123"}},
   {{"id": "PR00000456", "name": "상품명2", "description": "무료배송", "detail_url": ""}}
 ]
 
 중요:
 1. 완전한 JSON 배열 반환 (마지막 ] 필수)
-2. id는 HTML에서 찾은 실제 값 사용 (prdid 속성 등)
-3. detail_url은 godetailyn="Y"가 있으면 id로 URL 생성
+2. id는 HTML 속성에서 찾은 실제 값 사용
+3. detail_url은 href에 실제 URL이 있을 때만 사용
 4. 모든 상품 추출
 5. JSON만 반환, 설명 금지
 """
@@ -395,10 +395,6 @@ HTML:
                 
                 # 중복 제거하면서 추가 (ID + 이름으로 중복 체크)
                 for product in products:
-                    # detail_url 후처리: 비어있고 id가 있으면 자동 생성
-                    if not product.get('detail_url') and product.get('id'):
-                        product['detail_url'] = f"/product/detail?id={product['id']}"
-                    
                     product_key = (product.get('id', '') + '|||' + 
                                   product.get('name', ''))
                     if product_key and product_key not in seen_products:
@@ -422,10 +418,6 @@ HTML:
                         
                         # 중복 제거하면서 추가
                         for product in products:
-                            # detail_url 후처리: 비어있고 id가 있으면 자동 생성
-                            if not product.get('detail_url') and product.get('id'):
-                                product['detail_url'] = f"/product/detail?id={product['id']}"
-                            
                             product_key = (product.get('id', '') + '|||' + 
                                           product.get('name', ''))
                             if product_key and product_key not in seen_products:
