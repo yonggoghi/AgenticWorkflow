@@ -334,10 +334,6 @@ class ProductCrawler:
         for idx, html_chunk in enumerate(html_chunks):
             print(f"  청크 {idx+1}/{len(html_chunks)} 처리 중... ({len(html_chunk)} 문자)")
             
-            # 디버깅: 첫 번째 청크의 HTML 샘플 출력
-            if idx == 0 and len(html_chunk) > 200:
-                print(f"    [DEBUG] HTML 샘플: {html_chunk[:500]}...")
-            
             prompt = f"""다음은 웹 페이지의 HTML입니다. 이 HTML에서 상품 또는 서비스 정보를 추출해주세요.
 
 HTML 구조에서 다음 정보를 찾아 JSON 배열로 반환해주세요:
@@ -374,12 +370,7 @@ HTML:
                 response = self.llm_client.invoke(messages)
                 response_text = response.content
                 
-                # 디버깅: 첫 번째 청크의 LLM 응답 출력
-                if idx == 0:
-                    print(f"    [DEBUG] LLM 응답 (처음 500자):")
-                    print(f"    {response_text[:500]}...")
-                
-                # 응답이 잘렸는지 확인 (디버깅용)
+                # 응답이 잘렸는지 확인
                 if hasattr(response, 'response_metadata'):
                     finish_reason = response.response_metadata.get('finish_reason', '')
                     if finish_reason == 'length':
@@ -401,18 +392,6 @@ HTML:
                     response_text = json_match.group(0)
                 
                 products = json.loads(response_text)
-                
-                # 디버깅: 첫 번째 청크의 파싱된 상품 정보 출력
-                if idx == 0 and products:
-                    print(f"    [DEBUG] 첫 번째 상품 정보:")
-                    first_product = products[0]
-                    for key, value in first_product.items():
-                        display_value = str(value)[:50] if value else "(빈 값)"
-                        print(f"      {key}: {display_value}")
-                    
-                    # detail_url 통계
-                    urls_count = sum(1 for p in products if p.get('detail_url'))
-                    print(f"    [DEBUG] 이 청크에서 detail_url 있는 상품: {urls_count}/{len(products)}개")
                 
                 # 중복 제거하면서 추가 (ID + 이름으로 중복 체크)
                 for product in products:
@@ -571,6 +550,101 @@ HTML:
         print(f"  규칙 기반으로 {len(products)}개의 상품 링크를 찾았습니다.")
         return products
     
+    def extract_detail_urls_from_browser(self, url: str, product_ids: List[str], 
+                                         infinite_scroll: bool = True, 
+                                         scroll_count: int = 10) -> Dict[str, str]:
+        """
+        Playwright로 실제 브라우저에서 상품 링크를 클릭해서 detail_url을 캡처합니다.
+        
+        Args:
+            url: 목록 페이지 URL
+            product_ids: 상품 ID 리스트
+            infinite_scroll: 무한 스크롤 여부
+            scroll_count: 스크롤 횟수
+            
+        Returns:
+            {product_id: detail_url} 매핑 딕셔너리
+        """
+        print(f"\n[추가] 브라우저에서 실제 detail_url 캡처 중...")
+        
+        url_mapping = {}
+        
+        if not PLAYWRIGHT_AVAILABLE:
+            print("  ⚠️ Playwright 없음, URL 캡처 생략")
+            return url_mapping
+        
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                
+                # 목록 페이지 접속
+                print(f"  페이지 로딩: {url}")
+                page.goto(url, wait_until='networkidle', timeout=30000)
+                page.wait_for_timeout(2000)
+                
+                # 무한 스크롤 처리
+                if infinite_scroll:
+                    for i in range(scroll_count):
+                        previous_height = page.evaluate('document.body.scrollHeight')
+                        page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                        page.wait_for_timeout(2000)
+                        new_height = page.evaluate('document.body.scrollHeight')
+                        if new_height == previous_height:
+                            break
+                    page.wait_for_timeout(3000)
+                
+                # 각 상품 ID에 대해 링크 클릭 시도
+                captured_count = 0
+                print(f"  {len(product_ids)}개 상품의 detail_url 캡처 시작...")
+                
+                for idx, prd_id in enumerate(product_ids):
+                    try:
+                        # godetailyn="Y"인 링크 찾기
+                        link_selector = f'a.inner-link[prdid="{prd_id}"][godetailyn="Y"]'
+                        link = page.locator(link_selector).first
+                        
+                        if link.is_visible(timeout=1000):
+                            # 클릭 전 URL 저장
+                            original_url = page.url
+                            
+                            # 링크 클릭
+                            link.click()
+                            
+                            # 페이지 이동 대기 (URL 변경 또는 네트워크 안정)
+                            try:
+                                page.wait_for_url(lambda url: url != original_url, timeout=3000)
+                            except:
+                                page.wait_for_timeout(1000)  # URL 안 변해도 1초 대기
+                            
+                            # 새 URL 캡처
+                            detail_url = page.url
+                            
+                            # 원래 URL과 다르면 저장
+                            if detail_url != original_url:
+                                url_mapping[prd_id] = detail_url
+                                captured_count += 1
+                                
+                                # 진행률 출력 (매 10개마다)
+                                if (idx + 1) % 10 == 0:
+                                    print(f"    진행: {idx + 1}/{len(product_ids)} ({captured_count}개 성공)")
+                            
+                            # 뒤로 가기
+                            page.go_back()
+                            page.wait_for_timeout(800)
+                            
+                    except Exception as e:
+                        # 개별 상품 오류는 무시하고 계속
+                        pass
+                
+                print(f"  ✅ {captured_count}/{len(product_ids)}개 상품의 detail_url 캡처 완료")
+                browser.close()
+                
+        except Exception as e:
+            print(f"  ⚠️ URL 캡처 오류: {e}")
+        
+        return url_mapping
+    
     def crawl_list_page(self, url: str, infinite_scroll: bool = True, 
                        scroll_count: int = 10) -> List[Dict]:
         """
@@ -606,6 +680,20 @@ HTML:
                 result['html_content'], 
                 result['links']
             )
+        
+        # [추가] 브라우저에서 실제 detail_url 캡처
+        if products:
+            product_ids = [p.get('id') for p in products if p.get('id')]
+            if product_ids:
+                url_mapping = self.extract_detail_urls_from_browser(
+                    url, product_ids, infinite_scroll, scroll_count
+                )
+                
+                # products에 실제 URL 매핑
+                for product in products:
+                    prd_id = product.get('id')
+                    if prd_id and prd_id in url_mapping:
+                        product['detail_url'] = url_mapping[prd_id]
         
         # 상대 URL을 절대 URL로 변환
         for product in products:
