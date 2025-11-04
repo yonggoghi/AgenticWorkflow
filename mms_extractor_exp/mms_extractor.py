@@ -1586,7 +1586,7 @@ class MMSExtractor:
             if not sim_s1.empty and not sim_s2.empty:
                 try:
                     combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
-                    combined = combined.query("sim_s1>=0.4 and sim_s2>=0.4") # 임계값 필터링. '충전' 문제 해결
+                    combined = combined.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)") # 임계값 필터링. '충전' 문제 해결
 
                     # print('--------------------------------')
                     # print(combined
@@ -1787,7 +1787,7 @@ class MMSExtractor:
 
             # 순위 매기기 및 결과 제한
             cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(
-                method='first', ascending=False
+                method='dense', ascending=False
             )
             cand_entities_sim = cand_entities_sim.query(f"rank <= {rank_limit}").sort_values(
                 ['item_name_in_msg', 'rank'], ascending=[True, True]
@@ -2324,7 +2324,7 @@ class MMSExtractor:
             else:
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
                 default_llm_models = self._initialize_multiple_llm_models(['ax'])
-                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=primary_llm_extracted_entities)
+                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=[])
 
             similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
 
@@ -2843,7 +2843,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-[SK텔레콤] A. (에이닷)에서 알람을 설정하면 선물을 드려요!\n(광고)[SKT] A. (에이닷)에서 알람을 설정하면 선물을 드려요!__#04 고객님, 안녕하세요.__모닝콜, 영양제 먹기, 애견 산책 등  매일 반복되는 일상을 최애 음악으로 알람 설정 해보세요~!__A.(에이닷)에서 알람을 등록하고 권한 설정하면 선물을 드립니다!__▶ 이벤트 자세히 보기: http://t-mms.kr/t.do?m=#61&s=19398&a=&u=https://my-adot.onelink.me/MAbS/u44wyymr__■ 이벤트 일정: 2023년 4월 25일(화)~5월 16일(화)__■ 참여 방법:_1. A. 알람 챌린지 도전을 위한 개인정보 등록(URL)_2. A.앱> 메뉴> ’알람’> 선택 후 ‘다른 앱 위에 표시’ 권한 설정 팝업에서 “설정하기” 선택_3. 휴대폰 설정> 애플리케이션> 앱 목록 중 A.(에이닷)앱의  “다른 앱 위에 표시” 권한 ON_4. 이벤트 기간 동안 \"A.알람” 서비스를 이용하면 자동 응모 완료!__■ 경품: CU 빙그레 바나나우유 기프티콘 (5만명, 이벤트 참여 고객님 대상으로 랜덤 추첨하여 증정)__■ 당첨자 발표일: 2023년 5월 31일(수)__■ 문의: (주)이든앤앨리스 02-542-4920 (평일 오전 9시~오후 6시, 점심시간 낮 12시~오후1시, 유료)__무료 수신거부 1504
+[SK텔레콤] 공식인증대리점 혜택 안내드립니다.	(광고)[SKT] 공식인증대리점 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점에서 상담받고 다양한 혜택을 누려 보세요.__■ 공식인증대리점 혜택_- T끼리 온가족할인, 선택약정으로 통신 요금 최대 55% 할인_- 갤럭시 폴더블/퀀텀, 아이폰 등 기기 할인 상담__■ T 멤버십 고객 감사제 안내_- 2025년 12월까지 매달 Big 3 제휴사 릴레이 할인(10일 단위)__궁금한 점이 있으면 가까운 T 월드 매장에 방문하거나 전화로 문의해 주세요.__▶ 가까운 매장 찾기: https://tworldfriends.co.kr/h/B11109__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
 
 
 """
