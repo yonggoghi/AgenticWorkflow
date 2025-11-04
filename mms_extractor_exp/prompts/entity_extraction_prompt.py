@@ -23,10 +23,12 @@ Just return a list with matched entities where the entities are separated by com
 """
 
 SIMPLE_ENTITY_EXTRACTION_PROMPT = """
-아래 광고 메시지에서 수신자에게 offer하는 개체명을 추출해라. 
-entities in messages는 메시지 내에서 있는 후보 개체명들이다.
-candidate entities in vocabulairy는 entities in messages를 바탕으로 추출한 사전에 있는 후보 개체명들이다.
-메시지와 entities in messages를 참고해서 candidate entities in vocabulary 중에서 유력한 것들을 선택해라.
+아래 광고 메시지에서 수신자에게 offer하거나, 사용 유도, 구매, 가입, 응모, 접속하기를 원하는 개체명을 추출해라. 
+'entities in messages'는 메시지 내에서 있는 후보 개체명들이다.
+'candidate entities in vocabulairy'는 'entities in message's'를 바탕으로 추출한 사전에 있는 후보 개체명들이다.
+메시지와 'entities in messages'를 참고해서 'candidate entities in vocabulary' 중에서 유력한 것들을 선택해라.
+메시지 맥락을 파악해서 개체명들의 분류도 고려해라. (요금제, 부가서비스, 단말기, 앱, 이벤트, 쿠폰 등)
+"아이폰", "갤럭시" 같은 일반적인 개체명인 경우, 'candidate entities in vocabulary'에서 가장 최신의 것들을 선택해라.
 
 다음과 같은 포맷으로 결과를 반환해라.
 
