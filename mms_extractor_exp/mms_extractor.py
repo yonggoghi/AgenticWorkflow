@@ -934,7 +934,7 @@ class MMSExtractor:
             alias_pdf = alias_pdf.explode('alias_1')
             alias_pdf = alias_pdf.explode('alias_2')
 
-            alias_pdf = pd.concat([alias_pdf, alias_pdf.rename(columns={'alias_1':'alias_2', 'alias_2':'alias_1'})[alias_pdf.columns]])
+            alias_pdf = pd.concat([alias_pdf, alias_pdf.query("direction=='B'").rename(columns={'alias_1':'alias_2', 'alias_2':'alias_1'})[alias_pdf.columns]]).drop(columns=['direction'])
 
             alias_list_ext = alias_pdf.query("description=='voca'")[['alias_1','category']].to_dict('records')
             for alias in alias_list_ext:
@@ -1609,7 +1609,7 @@ class MMSExtractor:
             return pd.DataFrame()
 
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 200, llm_models: List = None) -> pd.DataFrame:
+    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 200, llm_models: List = None, external_cand_entities: List = None) -> pd.DataFrame:
         """
         LLM 기반 엔티티 추출 (복수 모델 병렬 처리 지원)
         
@@ -1663,7 +1663,7 @@ class MMSExtractor:
                         "entity_extraction_prompt": base_prompt, 
                         "msg": msg_text, 
                     }).content
-                    
+
                     # LLM 응답 파싱 및 정리
                     cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
                     cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e) >= 2]
@@ -1685,29 +1685,34 @@ class MMSExtractor:
             logger.info(f"🔍 최종 엔티티 추출 프롬프트 길이: {final_prompt_length:,} 문자")
             
             self._store_prompt_for_preview(preview_prompt, "entity_extraction")
-            
-            # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
-            batches = []
-            for llm_model in llm_models:
-                batches.append({
-                    "msg_text": msg_text, 
-                    "llm_model": llm_model, 
-                })
-            
-            logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
-            
-            # 병렬 작업 실행
-            n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
-            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
-            
-            # 모든 결과를 합치고 중복 제거
-            cand_entity_list = list(set(sum(batch_results, [])))
-            logger.info(f"✅ LLM 추출 완료: {cand_entity_list}")
 
-            if not cand_entity_list:
-                logger.warning("LLM 추출에서 유효한 엔티티를 찾지 못함")
-                return pd.DataFrame()
+            if len(external_cand_entities) == 0:
+                # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
+                batches = []
+                for llm_model in llm_models:
+                    batches.append({
+                        "msg_text": msg_text, 
+                        "llm_model": llm_model, 
+                    })
+                
+                logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
+                
+                # 병렬 작업 실행
+                n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
+                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                    batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
+                
+                # 모든 결과를 합치고 중복 제거
+                cand_entity_list = list(set(sum(batch_results, [])))
+                logger.info(f"✅ LLM 추출 완료: {cand_entity_list}")
+
+                if not cand_entity_list:
+                    logger.warning("LLM 추출에서 유효한 엔티티를 찾지 못함")
+                    return pd.DataFrame()
+            else:
+                cand_entity_list = external_cand_entities
+                logger.info(f"✅ Primary LLM 추출 엔티티 사용: {cand_entity_list}")
+        
 
             cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
 
@@ -2307,8 +2312,9 @@ class MMSExtractor:
             product_items = json_objects.get('product', [])
             if isinstance(product_items, dict):
                 product_items = product_items.get('items', [])
-            
-            logger.info(f"LLM 추출 엔티티: {[x.get('name', '') for x in product_items]}")
+
+            primary_llm_extracted_entities = [x.get('name', '') for x in product_items]
+            logger.info(f"Primary LLM 추출 엔티티: {primary_llm_extracted_entities}")
 
             # 엔티티 매칭 모드에 따른 처리
             if self.entity_extraction_mode == 'logic':
@@ -2318,7 +2324,7 @@ class MMSExtractor:
             else:
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
                 default_llm_models = self._initialize_multiple_llm_models(['ax'])
-                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models)
+                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=primary_llm_extracted_entities)
 
             similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
 
@@ -2837,7 +2843,9 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '"[T 우주] 투썸플레이스 매일 20% 할인받아 보세요.\t(광고)[SKT] 투썸플레이스 매일 20% 할인 안내__#04 고객님, 안녕하세요._자주 이용하는 투썸플레이스에서 매일 할인 혜택을 누려 보세요.__T 우주에서는 월 1,900원으로 최대 2만 원까지 할인받으실 수 있습니다.__■ 투썸플레이스 20% 할인 안내_- 이용요금: 월 1,900원 _- 혜택: 투썸플레이스 매장에서 구매 시 최대 20% 할인_(1일 1회 최대 4천 원/월 최대 2만 원 할인) __▶ 가입하기: https://t-mms.kr/aL9/#74__■ 문의: T 우주 고객센터(1505, 무료)__구독 마켓, T 우주__무료 수신거부 080-848-0515"',
+[SK텔레콤] A. (에이닷)에서 알람을 설정하면 선물을 드려요!\n(광고)[SKT] A. (에이닷)에서 알람을 설정하면 선물을 드려요!__#04 고객님, 안녕하세요.__모닝콜, 영양제 먹기, 애견 산책 등  매일 반복되는 일상을 최애 음악으로 알람 설정 해보세요~!__A.(에이닷)에서 알람을 등록하고 권한 설정하면 선물을 드립니다!__▶ 이벤트 자세히 보기: http://t-mms.kr/t.do?m=#61&s=19398&a=&u=https://my-adot.onelink.me/MAbS/u44wyymr__■ 이벤트 일정: 2023년 4월 25일(화)~5월 16일(화)__■ 참여 방법:_1. A. 알람 챌린지 도전을 위한 개인정보 등록(URL)_2. A.앱> 메뉴> ’알람’> 선택 후 ‘다른 앱 위에 표시’ 권한 설정 팝업에서 “설정하기” 선택_3. 휴대폰 설정> 애플리케이션> 앱 목록 중 A.(에이닷)앱의  “다른 앱 위에 표시” 권한 ON_4. 이벤트 기간 동안 \"A.알람” 서비스를 이용하면 자동 응모 완료!__■ 경품: CU 빙그레 바나나우유 기프티콘 (5만명, 이벤트 참여 고객님 대상으로 랜덤 추첨하여 증정)__■ 당첨자 발표일: 2023년 5월 31일(수)__■ 문의: (주)이든앤앨리스 02-542-4920 (평일 오전 9시~오후 6시, 점심시간 낮 12시~오후1시, 유료)__무료 수신거부 1504
+
+
 """
             
             # 단일 메시지 처리 (멀티스레드)
