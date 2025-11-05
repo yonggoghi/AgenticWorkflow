@@ -370,7 +370,7 @@ class MMSExtractor:
                 "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'gpt-4')
             }
             
-            model_name = model_mapping.get(self.llm_model_name, getattr(MODEL_CONFIG, 'llm_model', 'ax-4'))
+            model_name = model_mapping.get(self.llm_model_name, getattr(MODEL_CONFIG, 'llm_model', 'gemini-pro'))
             
             # LLM 모델별 일관성 설정
             model_kwargs = {
@@ -431,7 +431,8 @@ class MMSExtractor:
         model_mapping = {
             "cld": getattr(MODEL_CONFIG, 'anthropic_model', 'amazon/anthropic/claude-sonnet-4-20250514'),
             "ax": getattr(MODEL_CONFIG, 'ax_model', 'skt/ax4'),
-            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06')
+            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06'),
+            "gen": getattr(MODEL_CONFIG, 'gemini_model', 'gcp/gemini-2.5-flash')
         }
         
         for model_name in model_names:
@@ -1663,6 +1664,10 @@ class MMSExtractor:
                         {msg}
                         """
                     )
+
+                    # print('--------------------------------')
+                    # print(llm_model)
+                    # print('--------------------------------')
                     
                     chain = zero_shot_prompt | llm_model
                     cand_entities = chain.invoke({
@@ -1709,7 +1714,7 @@ class MMSExtractor:
                     batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
                 
                 # 모든 결과를 합치고 중복 제거
-                cand_entity_list = select_most_comprehensive(list(set(sum(batch_results, []))))
+                cand_entity_list = list(set(sum(batch_results, [])))
                 logger.info(f"✅ LLM 추출 완료: {cand_entity_list}")
 
                 if not cand_entity_list:
@@ -1719,7 +1724,7 @@ class MMSExtractor:
                 cand_entity_list = external_cand_entities
                 logger.info(f"✅ Primary LLM 추출 엔티티 사용: {cand_entity_list}")
         
-
+            # cand_entity_list = select_most_comprehensive(cand_entity_list)
             cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
 
             # 후보 엔티티들과 상품 DB 매칭
@@ -2329,7 +2334,7 @@ class MMSExtractor:
                 similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
             else:
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
-                default_llm_models = self._initialize_multiple_llm_models(['ax','ax','cld'])
+                default_llm_models = self._initialize_multiple_llm_models(['ax','gen'])
                 similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=[])
 
             # similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
@@ -2755,7 +2760,7 @@ def main():
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
+    parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='gen',
                        help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
