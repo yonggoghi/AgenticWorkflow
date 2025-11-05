@@ -953,18 +953,64 @@ class MMSExtractor:
 
             logger.info(f"로드된 별칭 규칙 수: {len(alias_rule_set)}개")
 
-            def apply_alias_rule(item_nm):
+            def apply_alias_rule_cascade_parallel(args_dict):
+                """
+                별칭 규칙을 연쇄적으로 적용 (최대 깊이 제한)
+                """
+                item_nm = args_dict['item_nm']
+                max_depth = args_dict['max_depth']
+                
                 if pd.isna(item_nm) or not isinstance(item_nm, str):
-                    return [item_nm] if not pd.isna(item_nm) else []
+                    return {'item_nm': item_nm, 'item_nm_alias': [item_nm] if not pd.isna(item_nm) else []}
+                
+                processed = set()
+                result_dict = {item_nm: '#' * len(item_nm)}
+                to_process = [(item_nm, 0)]  # (item_nm, depth)
+                
+                while to_process:
+                    current_item, depth = to_process.pop(0)
                     
-                item_nm_list = [{'item_nm':item_nm, 'alias':'#'*len(item_nm)}]
-                for r in alias_rule_set:
-                    if r[0] in item_nm:
-                        item_nm_list.append({'item_nm':item_nm.replace(r[0].strip(), r[1].strip()), 'alias':r[0].strip()})
+                    # 최대 깊이 체크
+                    if depth >= max_depth:
+                        continue
+                        
+                    if current_item in processed:
+                        continue
+                    
+                    processed.add(current_item)
+                    
+                    for r in alias_rule_set:
+                        if r[0] in current_item:
+                            new_item = current_item.replace(r[0].strip(), r[1].strip())
+                            
+                            if new_item not in result_dict:
+                                result_dict[new_item] = r[0].strip()
+                                to_process.append((new_item, depth + 1))
+                
+                item_nm_list = [{'item_nm': k, 'item_nm_alias': v} for k, v in result_dict.items()]
                 adf = pd.DataFrame(item_nm_list)
+                selected_alias = select_most_comprehensive(adf['item_nm_alias'].tolist())
+                return {'item_nm': item_nm, 'item_nm_alias': list(adf.query("item_nm_alias in @selected_alias")['item_nm'].unique())}
 
-                selected_alias = select_most_comprehensive(adf['alias'].tolist())
-                return list(adf.query("alias in @selected_alias")['item_nm'].unique())
+            def parallel_alias_rule_cascade(texts, max_depth=5, n_jobs=None):
+                """
+                Batched version for better performance with large datasets.
+                """
+                if n_jobs is None:
+                    n_jobs = min(os.cpu_count()-1, 4)  # Limit to 4 jobs max
+                
+                # Create batches
+                batches = []
+                for text in texts:
+                    batches.append({"item_nm": text, "max_depth": max_depth})
+                
+                logger.info(f"병렬 별칭 규칙 적용 시작: {len(batches)}개 아이템, {n_jobs}개 작업")
+                
+                # Run parallel jobs
+                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                    batch_results = parallel(delayed(apply_alias_rule_cascade_parallel)(args) for args in batches)
+                
+                return pd.DataFrame(batch_results)
 
             # 별칭 규칙 적용 전 데이터 상태 확인
             if 'item_nm' in self.item_pdf_all.columns:
@@ -987,32 +1033,34 @@ class MMSExtractor:
                 # 기존 alias 데이터를 별도 컴럼으로 보존
                 self.item_pdf_all['original_item_alias'] = self.item_pdf_all['item_nm_alias']
                 
-                # item_nm에 별칭 규칙을 적용한 다음 기존 alias와 병합
-                generated_aliases = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
+                # item_nm에 별칭 규칙을 연쇄 적용 (max_depth=3)
+                item_alias_pdf = parallel_alias_rule_cascade(self.item_pdf_all['item_nm'].unique(), max_depth=3)
+                generated_aliases_df = self.item_pdf_all[['item_nm']].merge(item_alias_pdf, on='item_nm', how='left')
                 
                 # 기존 alias와 생성된 alias를 병합
                 def combine_aliases(row):
-                    generated = row['generated_aliases'] if isinstance(row['generated_aliases'], list) else [row['generated_aliases']]
+                    generated = row['item_nm_alias_new'] if isinstance(row['item_nm_alias_new'], list) else [row['item_nm_alias_new']]
                     original = [row['original_item_alias']] if pd.notna(row['original_item_alias']) else []
                     combined = list(set(generated + original))  # 중복 제거
                     return combined
                 
-                self.item_pdf_all['generated_aliases'] = generated_aliases
+                self.item_pdf_all['item_nm_alias_new'] = generated_aliases_df['item_nm_alias']
                 self.item_pdf_all['item_nm_alias'] = self.item_pdf_all.apply(combine_aliases, axis=1)
                 
                 # 임시 컴럼 삭제
-                self.item_pdf_all = self.item_pdf_all.drop(['original_item_alias', 'generated_aliases'], axis=1)
+                self.item_pdf_all = self.item_pdf_all.drop(['original_item_alias', 'item_nm_alias_new'], axis=1)
                 
                 logger.info("기존 ITEM_ALS 데이터와 별칭 규칙이 성공적으로 병합되었습니다.")
                 
             else:
-                # 기존 alias 데이터가 없는 경우 기존 방식 사용
+                # 기존 alias 데이터가 없는 경우 연쇄 별칭 적용
                 logger.info("기존 item_nm_alias 데이터가 없어 item_nm에서 별칭을 생성합니다.")
-                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
+                item_alias_pdf = parallel_alias_rule_cascade(self.item_pdf_all['item_nm'].unique(), max_depth=3)
+                self.item_pdf_all = self.item_pdf_all.merge(item_alias_pdf, on='item_nm', how='left')
             
             # explode 전후 크기 비교
             before_explode_size = len(self.item_pdf_all)
-            self.item_pdf_all = self.item_pdf_all.explode('item_nm_alias')
+            self.item_pdf_all = self.item_pdf_all.explode('item_nm_alias').drop_duplicates()
             after_explode_size = len(self.item_pdf_all)
             
             logger.info(f"별칭 규칙 적용 후 데이터 크기: {before_explode_size} -> {after_explode_size}")
