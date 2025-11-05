@@ -431,7 +431,7 @@ def calculate_seq_similarity(args_dict):
     text_col_nm = args_dict['text_col_nm']
     item_col_nm = args_dict['item_col_nm']
     normalizaton_value = args_dict['normalizaton_value']
-    
+    weights = args_dict.get('weights', None)
     results = []
     for sent_item in sent_item_batch:
         sent = sent_item[text_col_nm]
@@ -439,7 +439,7 @@ def calculate_seq_similarity(args_dict):
         try:
             sent_processed = preprocess_text(sent.lower())
             item_processed = preprocess_text(item.lower())
-            similarity = combined_sequence_similarity(sent_processed, item_processed, normalizaton_value=normalizaton_value)[0]
+            similarity = combined_sequence_similarity(sent_processed, item_processed, weights=weights, normalizaton_value=normalizaton_value)[0]
             results.append({text_col_nm:sent, item_col_nm:item, "sim":similarity})
         except Exception as e:
             logger.error(f"Error processing {item}: {e}")
@@ -447,7 +447,7 @@ def calculate_seq_similarity(args_dict):
     
     return results
 
-def parallel_seq_similarity(sent_item_pdf, text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=None, batch_size=None, normalizaton_value='s2'):
+def parallel_seq_similarity(sent_item_pdf, text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=None, batch_size=None, weights=None, normalizaton_value='s2'):
     """병렬 처리를 통한 시퀀스 유사도 계산"""
     if n_jobs is None:
         n_jobs = min(os.cpu_count()-1, 8)
@@ -457,7 +457,7 @@ def parallel_seq_similarity(sent_item_pdf, text_col_nm='sent', item_col_nm='item
     batches = []
     for i in range(0, sent_item_pdf.shape[0], batch_size):
         batch = sent_item_pdf.iloc[i:i + batch_size].to_dict(orient='records')
-        batches.append({"sent_item_batch": batch, 'text_col_nm': text_col_nm, 'item_col_nm': item_col_nm, 'normalizaton_value': normalizaton_value})
+        batches.append({"sent_item_batch": batch, 'text_col_nm': text_col_nm, 'item_col_nm': item_col_nm, 'weights': weights, 'normalizaton_value': normalizaton_value})
     
     with Parallel(n_jobs=n_jobs) as parallel:
         batch_results = parallel(delayed(calculate_seq_similarity)(args) for args in batches)

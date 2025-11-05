@@ -136,7 +136,8 @@ from utils import (
     filter_specific_terms,
     convert_df_to_json_list,
     create_dag_diagram,
-    sha256_hash
+    sha256_hash,
+    replace_special_chars_with_space
 )
 
 # 설정 및 의존성 임포트 (원본 코드에서 가져옴)
@@ -927,25 +928,28 @@ class MMSExtractor:
             logger.info("=== 별칭 규칙 적용 시작 ===")
             logger.info(f"별칭 규칙 적용 전 상품 데이터 크기: {self.item_pdf_all.shape}")
             
-            alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
-            # 외부 별칭 규칙 적용
+            self.alias_pdf_raw = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+            alias_pdf = self.alias_pdf_raw.copy()
             alias_pdf['alias_1'] = alias_pdf['alias_1'].str.split("&&")
             alias_pdf['alias_2'] = alias_pdf['alias_2'].str.split("&&")
             alias_pdf = alias_pdf.explode('alias_1')
             alias_pdf = alias_pdf.explode('alias_2')
 
-            alias_pdf = pd.concat([alias_pdf, alias_pdf.query("direction=='B'").rename(columns={'alias_1':'alias_2', 'alias_2':'alias_1'})[alias_pdf.columns]]).drop(columns=['direction'])
-
-            alias_list_ext = alias_pdf.query("description=='voca'")[['alias_1','category']].to_dict('records')
+            alias_list_ext = alias_pdf.query("type=='build'")[['alias_1','category','direction','type']].to_dict('records')
             for alias in alias_list_ext:
                 adf = self.item_pdf_all.query("item_nm.str.contains(@alias['alias_1']) and item_dmn==@alias['category']")[['item_nm','item_desc','item_dmn']].rename(columns={'item_nm':'alias_2','item_desc':'description','item_dmn':'category'}).drop_duplicates()
                 adf['alias_1'] = alias['alias_1']
+                adf['direction'] = alias['direction']
+                adf['type'] = alias['type']
                 adf = adf[alias_pdf.columns]
                 alias_pdf = pd.concat([alias_pdf.query(f"alias_1!='{alias['alias_1']}'"), adf])
 
             alias_pdf = alias_pdf.drop_duplicates()
 
+            alias_pdf = pd.concat([alias_pdf, alias_pdf.query("direction=='B'").rename(columns={'alias_1':'alias_2', 'alias_2':'alias_1'})[alias_pdf.columns]])
+
             alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2']))
+
             logger.info(f"로드된 별칭 규칙 수: {len(alias_rule_set)}개")
 
             def apply_alias_rule(item_nm):
@@ -1555,7 +1559,7 @@ class MMSExtractor:
             logger.error(f"로직 기반 엔티티 추출 실패: {e}")
             return pd.DataFrame()
 
-    def _calculate_combined_similarity(self, similarities_fuzzy: pd.DataFrame) -> pd.DataFrame:
+    def _calculate_combined_similarity(self, similarities_fuzzy: pd.DataFrame, weights: dict = None) -> pd.DataFrame:
         """s1, s2 정규화 방식으로 각각 계산 후 합산"""
         try:
             # s1 정규화
@@ -1567,6 +1571,7 @@ class MMSExtractor:
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=30,
                 normalizaton_value='s1',
+                weights=weights,
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s1'})
             
@@ -1579,6 +1584,7 @@ class MMSExtractor:
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=30,
                 normalizaton_value='s2',
+                weights=weights,
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s2'})
             
@@ -1703,7 +1709,7 @@ class MMSExtractor:
                     batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
                 
                 # 모든 결과를 합치고 중복 제거
-                cand_entity_list = list(set(sum(batch_results, [])))
+                cand_entity_list = select_most_comprehensive(list(set(sum(batch_results, []))))
                 logger.info(f"✅ LLM 추출 완료: {cand_entity_list}")
 
                 if not cand_entity_list:
@@ -1777,7 +1783,7 @@ class MMSExtractor:
             ]
 
             # 시퀀스 유사도 매칭
-            cand_entities_sim = self._calculate_combined_similarity(similarities_fuzzy)
+            cand_entities_sim = self._calculate_combined_similarity(similarities_fuzzy, weights={'sequence_matcher': 0.8, 'token_sequence': 0.1, 'substring': 0.1})
             
             if cand_entities_sim.empty:
                 return pd.DataFrame()
@@ -2326,7 +2332,23 @@ class MMSExtractor:
                 default_llm_models = self._initialize_multiple_llm_models(['ax','ax','cld'])
                 similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=[])
 
-            similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
+            # similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
+            merged_df = similarities_fuzzy.merge(
+                self.alias_pdf_raw[['alias_1','type']].drop_duplicates(), 
+                left_on='item_name_in_msg', 
+                right_on='alias_1', 
+                how='left'
+            )
+
+            filtered_df = merged_df[merged_df.apply(
+                lambda x: (
+                    replace_special_chars_with_space(x['item_nm_alias']) in replace_special_chars_with_space(x['item_name_in_msg']) or 
+                    replace_special_chars_with_space(x['item_name_in_msg']) in replace_special_chars_with_space(x['item_nm_alias'])
+                ) if x['type'] != 'expansion' else True, 
+                axis=1
+            )]
+
+            similarities_fuzzy = filtered_df[similarities_fuzzy.columns]
 
             # 상품 정보 매핑
             if not similarities_fuzzy.empty:
@@ -2843,7 +2865,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-[SK텔레콤] 공식인증대리점 혜택 안내드립니다.	(광고)[SKT] 공식인증대리점 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점에서 상담받고 다양한 혜택을 누려 보세요.__■ 공식인증대리점 혜택_- T끼리 온가족할인, 선택약정으로 통신 요금 최대 55% 할인_- 갤럭시 폴더블/퀀텀, 아이폰 등 기기 할인 상담__■ T 멤버십 고객 감사제 안내_- 2025년 12월까지 매달 Big 3 제휴사 릴레이 할인(10일 단위)__궁금한 점이 있으면 가까운 T 월드 매장에 방문하거나 전화로 문의해 주세요.__▶ 가까운 매장 찾기: https://tworldfriends.co.kr/h/B11109__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
+  message: '(광고)[SKT] 준대리점 다산테라타워점 9월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 준대리점 다산테라타워점에서 아이폰 신제품 사전예약 및 9월 혜택을 안내드립니다.__■ 아이폰 신제품 사전예약 안내_- 기간: 2025년 9월 18일(목)까지_- 혜택: 사은품 증정__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료되신 고객님이 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담 _- 시니어 전용 요금제로 통신비 절약 가능__■ 준대리점 다산테라타워점_- 주소: 경기도 남양주시 다산지금로 202(다산동) C동 135호_- 연락처: 031-516-3321_- 찾아오시는 길: 다산금강펜테리움리버테라스2차아파트 맞은편 다산테라타워 상가 1층__▶ 매장 홈페이지 예약/상담: https://t-mms.kr/t.do?m=#61&s=33744&a=&u=http://tworldfriends.co.kr/D153190002__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
 
 
 """

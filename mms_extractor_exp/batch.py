@@ -138,6 +138,22 @@ class BatchProcessor:
         try:
             # Load the CSV file
             self.mms_pdf = pd.read_csv(METADATA_CONFIG.mms_msg_path)
+            
+            # Handle different column name formats
+            # If 'mms_phrs' exists but 'msg' doesn't, rename it
+            if 'mms_phrs' in self.mms_pdf.columns and 'msg' not in self.mms_pdf.columns:
+                self.mms_pdf['msg'] = self.mms_pdf['mms_phrs']
+                logger.info("Renamed 'mms_phrs' column to 'msg'")
+            elif 'msg' not in self.mms_pdf.columns:
+                raise ValueError("CSV file must have either 'msg' or 'mms_phrs' column")
+            
+            # Filter out rows with empty or NaN messages before converting to string
+            original_count = len(self.mms_pdf)
+            self.mms_pdf = self.mms_pdf[self.mms_pdf['msg'].notna() & (self.mms_pdf['msg'].astype(str).str.strip() != '')]
+            filtered_count = original_count - len(self.mms_pdf)
+            if filtered_count > 0:
+                logger.info(f"Filtered out {filtered_count} empty messages")
+            
             self.mms_pdf = self.mms_pdf.astype('str')
             
             # Add msg_id column if it doesn't exist
@@ -224,6 +240,12 @@ class BatchProcessor:
         for idx, row in sampled_messages.iterrows():
             msg = row.get('msg', '')
             msg_id = row.get('msg_id', str(idx))
+            
+            # Skip empty messages (safety check)
+            if not msg or msg.strip() == '' or msg == 'nan':
+                logger.warning(f"Skipping empty message with ID: {msg_id}")
+                continue
+                
             messages_list.append({'msg': msg, 'msg_id': msg_id})
         
         if self.enable_multiprocessing and len(messages_list) > 1:
