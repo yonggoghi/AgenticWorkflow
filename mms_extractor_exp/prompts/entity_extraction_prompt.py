@@ -31,8 +31,9 @@ SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 'entities in messages'는 메시지 내에서 있는 후보 개체명들이다.
 'candidate entities in vocabulairy'는 'entities in messages'를 바탕으로 추출한 사전에 있는 후보 개체명들이다.
 메시지와 'entities in messages'를 참고해서 'candidate entities in vocabulary' 중에서 유력한 것들을 선택해라.
+만약, 적합한 것들이 없으면 그나마 가까운 것들을 골라라.
 메시지 맥락을 파악해서 개체명들의 분류도 고려해라. (요금제, 부가서비스, 단말기, 앱, 이벤트, 쿠폰 등)
-"아이폰", "갤럭시" 같은 일반적인 개체명인 경우, 'candidate entities in vocabulary'에서 가장 최신의 것들을 선택해라.
+'entities in messages'에 있는 개체명들이 반드시 독립적이지는 않으니 상호 관계도 고려해라.
 
 다음과 같은 포맷으로 결과를 반환해라.
 
