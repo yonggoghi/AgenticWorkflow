@@ -949,13 +949,17 @@ class MMSExtractor:
 
             alias_pdf = pd.concat([alias_pdf, alias_pdf.query("direction=='B'").rename(columns={'alias_1':'alias_2', 'alias_2':'alias_1'})[alias_pdf.columns]])
 
-            alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2']))
+            alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2'], alias_pdf['type']))
 
             logger.info(f"로드된 별칭 규칙 수: {len(alias_rule_set)}개")
 
             def apply_alias_rule_cascade_parallel(args_dict):
                 """
                 별칭 규칙을 연쇄적으로 적용 (최대 깊이 제한)
+                - partial: 부분 매칭 (alias_1 in item_nm)
+                - exact: 완전 매칭 (alias_1 == item_nm)
+                - 각 변환 경로에서 동일 규칙은 한 번만 적용 (중복 방지)
+                - 다른 경로에서는 동일 규칙도 적용 가능 (조합 허용)
                 """
                 item_nm = args_dict['item_nm']
                 max_depth = args_dict['max_depth']
@@ -965,10 +969,10 @@ class MMSExtractor:
                 
                 processed = set()
                 result_dict = {item_nm: '#' * len(item_nm)}
-                to_process = [(item_nm, 0)]  # (item_nm, depth)
+                to_process = [(item_nm, 0, frozenset())]  # (item_nm, depth, applied_rules_in_this_path)
                 
                 while to_process:
-                    current_item, depth = to_process.pop(0)
+                    current_item, depth, path_applied_rules = to_process.pop(0)
                     
                     # 최대 깊이 체크
                     if depth >= max_depth:
@@ -980,17 +984,56 @@ class MMSExtractor:
                     processed.add(current_item)
                     
                     for r in alias_rule_set:
-                        if r[0] in current_item:
-                            new_item = current_item.replace(r[0].strip(), r[1].strip())
+                        alias_from = r[0]
+                        alias_to = r[1]
+                        alias_type = r[2]
+                        
+                        # 이 경로에서 이미 적용된 규칙은 스킵 (중복 적용 방지)
+                        rule_key = (alias_from, alias_to, alias_type)
+                        if rule_key in path_applied_rules:
+                            continue
+                        
+                        # 타입에 따라 다른 매칭 로직 적용
+                        matched = False
+                        if alias_type == 'exact':
+                            # 정확히 일치하는 경우만 매칭
+                            matched = (current_item == alias_from)
+                        elif alias_type == 'partial':
+                            # 부분 문자열 포함 시 매칭 (기존 방식)
+                            matched = (alias_from in current_item)
+                        elif alias_type == 'expansion':
+                            # expansion 타입은 partial처럼 처리
+                            matched = (alias_from in current_item)
+                        elif alias_type == 'build':
+                            # build 타입은 partial처럼 처리
+                            matched = (alias_from in current_item)
+                        else:
+                            # 알 수 없는 타입은 기본적으로 partial 방식 사용
+                            matched = (alias_from in current_item)
+                        
+                        if matched:
+                            # exact 타입은 전체 교체, partial 타입은 부분 교체
+                            if alias_type == 'exact':
+                                new_item = alias_to.strip()
+                            else:
+                                new_item = current_item.replace(alias_from.strip(), alias_to.strip())
                             
                             if new_item not in result_dict:
-                                result_dict[new_item] = r[0].strip()
-                                to_process.append((new_item, depth + 1))
+                                result_dict[new_item] = alias_from.strip()
+                                # 새로운 경로에 현재 규칙 추가
+                                new_path_applied_rules = path_applied_rules | {rule_key}
+                                to_process.append((new_item, depth + 1, new_path_applied_rules))
                 
                 item_nm_list = [{'item_nm': k, 'item_nm_alias': v} for k, v in result_dict.items()]
                 adf = pd.DataFrame(item_nm_list)
                 selected_alias = select_most_comprehensive(adf['item_nm_alias'].tolist())
-                return {'item_nm': item_nm, 'item_nm_alias': list(adf.query("item_nm_alias in @selected_alias")['item_nm'].unique())}
+                result_aliases = list(adf.query("item_nm_alias in @selected_alias")['item_nm'].unique())
+                
+                # 원본 item_nm이 결과에 없으면 추가
+                if item_nm not in result_aliases:
+                    result_aliases.append(item_nm)
+                
+                return {'item_nm': item_nm, 'item_nm_alias': result_aliases}
 
             def parallel_alias_rule_cascade(texts, max_depth=5, n_jobs=None):
                 """
