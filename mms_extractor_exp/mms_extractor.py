@@ -1271,7 +1271,7 @@ class MMSExtractor:
                    len(token.form) >= 2 and 
                    not token.form.lower() in self.stop_item_names
             ]
-            entities_from_kiwi = filter_specific_terms(entities_from_kiwi)
+            entities_from_kiwi = [e for e in filter_specific_terms(entities_from_kiwi) if e in unique_aliases]
             
             logger.info(f"필터링 후 Kiwi 추출 엔티티: {list(set(entities_from_kiwi))}")
 
@@ -1380,13 +1380,13 @@ class MMSExtractor:
                 cand_item_list = []
                 extra_item_pdf = pd.DataFrame()
 
-            return cand_item_list, extra_item_pdf
+            return entities_from_kiwi, cand_item_list, extra_item_pdf
             
         except Exception as e:
             logger.error(f"Kiwi 엔티티 추출 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
             # 안전한 기본값 반환 - 빈 리스트와 빈 DataFrame
-            return [], pd.DataFrame()
+            return [], [], pd.DataFrame()
 
     def extract_entities_by_logic(self, cand_entities: List[str], threshold_for_fuzzy: float = 0.5) -> pd.DataFrame:
         """로직 기반 엔티티 추출"""
@@ -1473,7 +1473,7 @@ class MMSExtractor:
             return pd.DataFrame()
 
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 200, llm_models: List = None, external_cand_entities: List = None) -> pd.DataFrame:
+    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 200, llm_models: List = None, external_cand_entities: List[str] = []) -> pd.DataFrame:
         """
         LLM 기반 엔티티 추출 (복수 모델 병렬 처리 지원)
         
@@ -1613,49 +1613,46 @@ class MMSExtractor:
             self._store_prompt_for_preview(preview_prompt, "entity_extraction")
             logger.info("✅ 프롬프트 미리보기 저장 완료")
 
-            if external_cand_entities is None or len(external_cand_entities) == 0:
-                logger.info("🔄 LLM 직접 추출 모드")
-                # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
-                batches = []
-                for llm_model in llm_models:
-                    batches.append({
-                        "msg_text": msg_text, 
-                        "llm_model": llm_model, 
-                    })
-                
-                logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
-                logger.info(f"🔄 병렬 작업 수: {len(batches)}개 배치")
-                
-                # 병렬 작업 실행
-                n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
-                logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
-                
-                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                    batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
-                
-                logger.info(f"✅ 모든 LLM 모델 처리 완료")
-                logger.info(f"📊 모델별 결과:")
-                for idx, (model, result) in enumerate(zip(llm_models, batch_results)):
-                    model_name = getattr(model, 'model_name', 'Unknown')
-                    logger.info(f"   [{idx+1}] {model_name}: {len(result)}개 엔티티 추출")
-                
-                # 모든 결과를 합치고 중복 제거
-                all_entities = sum(batch_results, [])
-                logger.info(f"📊 병합 전 총 엔티티 수: {len(all_entities)}개")
-                cand_entity_list = list(set(all_entities))
-                logger.info(f"📊 중복 제거 후 엔티티 수: {len(cand_entity_list)}개")
-                logger.info(f"✅ LLM 추출 완료: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"✅ LLM 추출 완료: {cand_entity_list}")
+            
+            logger.info("🔄 LLM 직접 추출 모드")
+            # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
+            batches = []
+            for llm_model in llm_models:
+                batches.append({
+                    "msg_text": msg_text, 
+                    "llm_model": llm_model, 
+                })
+            
+            logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
+            logger.info(f"🔄 병렬 작업 수: {len(batches)}개 배치")
+            
+            # 병렬 작업 실행
+            n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
+            logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
+            
+            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
+            
+            logger.info(f"✅ 모든 LLM 모델 처리 완료")
+            logger.info(f"📊 모델별 결과:")
+            for idx, (model, result) in enumerate(zip(llm_models, batch_results)):
+                model_name = getattr(model, 'model_name', 'Unknown')
+                logger.info(f"   [{idx+1}] {model_name}: {len(result)}개 엔티티 추출")
+            
+            # 모든 결과를 합치고 중복 제거
+            all_entities = sum(batch_results, [])
+            if external_cand_entities is not None and len(external_cand_entities)>0:
+                all_entities = list(set(all_entities+external_cand_entities))
+            logger.info(f"📊 병합 전 총 엔티티 수: {len(all_entities)}개")
+            cand_entity_list = list(set(all_entities))
+            logger.info(f"📊 중복 제거 후 엔티티 수: {len(cand_entity_list)}개")
+            logger.info(f"✅ LLM 추출 완료: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"✅ LLM 추출 완료: {cand_entity_list}")
 
-                if not cand_entity_list:
-                    logger.warning("⚠️  LLM 추출에서 유효한 엔티티를 찾지 못함")
-                    logger.info("=" * 80)
-                    return pd.DataFrame()
-            else:
-                logger.info("🔄 외부 엔티티 사용 모드")
-                cand_entity_list = external_cand_entities
-                logger.info(f"✅ Primary LLM 추출 엔티티 사용: {len(cand_entity_list)}개")
-                logger.info(f"   엔티티 목록: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"   엔티티 목록: {cand_entity_list}")
-        
+            if not cand_entity_list:
+                logger.warning("⚠️  LLM 추출에서 유효한 엔티티를 찾지 못함")
+                logger.info("=" * 80)
+                return pd.DataFrame()
+            
             # cand_entity_list = select_most_comprehensive(cand_entity_list)
             logger.info("🔍 엔티티-상품 매칭 시작...")
             logger.info(f"   입력 엔티티 수: {len(cand_entity_list)}개")
@@ -1937,7 +1934,7 @@ class MMSExtractor:
             logger.error(f"   ❌ [매칭] 오류 상세: {traceback.format_exc()}")
             return pd.DataFrame()
 
-    def _extract_entities(self, mms_msg: str) -> Tuple[List[str], pd.DataFrame]:
+    def _extract_entities(self, mms_msg: str) -> Tuple[List[str], List[str], pd.DataFrame]:
         """엔티티 추출 (Kiwi 또는 LLM 방식)"""
         try:
             if self.entity_extraction_mode == 'logic':
@@ -1945,14 +1942,14 @@ class MMSExtractor:
                 return self.extract_entities_from_kiwi(mms_msg)
             else:
                 # LLM 기반 추출을 위해 먼저 Kiwi로 기본 추출
-                cand_item_list, extra_item_pdf = self.extract_entities_from_kiwi(mms_msg)
-                return cand_item_list, extra_item_pdf
+                entities_from_kiwi, cand_item_list, extra_item_pdf = self.extract_entities_from_kiwi(mms_msg)
+                return entities_from_kiwi, cand_item_list, extra_item_pdf
                 
         except Exception as e:
             logger.error(f"엔티티 추출 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
             # 안전한 기본값 반환
-            return [], pd.DataFrame()
+            return [], [], pd.DataFrame()
 
     def _classify_programs(self, mms_msg: str) -> Dict[str, Any]:
         """프로그램 분류"""
@@ -2160,7 +2157,8 @@ class MMSExtractor:
                     total_aliases = len(self.item_pdf_all)
                     logger.info(f"DB 모드 별칭 데이터 품질: {total_aliases - null_aliases}/{total_aliases} 유효")
             
-            cand_item_list, extra_item_pdf = self._extract_entities(msg)
+            entities_from_kiwi, cand_item_list, extra_item_pdf = self._extract_entities(msg)
+            logger.info(f"추출된 Kiwi 엔티티: {entities_from_kiwi}")
             logger.info(f"추출된 후보 엔티티: {cand_item_list}")
             logger.info(f"매칭된 상품 정보: {extra_item_pdf.shape}")
             
@@ -2265,7 +2263,7 @@ class MMSExtractor:
             
             # 7단계: 엔티티 매칭 및 최종 결과 구성
             logger.info("=" * 30 + " 7단계: 최종 결과 구성 " + "=" * 30)
-            final_result = self._build_final_result(json_objects, msg, pgm_info)
+            final_result = self._build_final_result(json_objects, msg, pgm_info, entities_from_kiwi)
             
             # 8단계: 결과 검증
             logger.info("=" * 30 + " 8단계: 결과 검증 " + "=" * 30)
@@ -2441,7 +2439,7 @@ class MMSExtractor:
             "pgm": []
         }
 
-    def _build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict) -> Dict[str, Any]:
+    def _build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str]) -> Dict[str, Any]:
         """최종 결과 구성"""
         try:
             final_result = json_objects.copy()
@@ -2453,16 +2451,17 @@ class MMSExtractor:
 
             primary_llm_extracted_entities = [x.get('name', '') for x in product_items]
             logger.info(f"Primary LLM 추출 엔티티: {primary_llm_extracted_entities}")
+            logger.info(f"Kiwi 엔티티: {entities_from_kiwi}")
 
             # 엔티티 매칭 모드에 따른 처리
             if self.entity_extraction_mode == 'logic':
                 # 로직 기반: 퍼지 + 시퀀스 유사도
-                cand_entities = [item.get('name', '') for item in product_items if item.get('name')]
+                cand_entities = list(set(entities_from_kiwi+[item.get('name', '') for item in product_items if item.get('name')]))
                 similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
             else:
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
                 default_llm_models = self._initialize_multiple_llm_models(['ax','gen'])
-                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=[])
+                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=entities_from_kiwi)
 
             # similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
             merged_df = similarities_fuzzy.merge(
