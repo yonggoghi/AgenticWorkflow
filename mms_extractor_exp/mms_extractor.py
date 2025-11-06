@@ -490,33 +490,28 @@ class MMSExtractor:
             logger.info("=" * 60)
             logger.info(f"데이터 소스 모드: {self.offer_info_data_src}")
             
-            # 상품 정보 로드
-            logger.info("1️⃣ 상품 정보 로드 중...")
-            self._load_item_data()
-            logger.info(f"상품 정보 로드 후 데이터 크기: {self.item_pdf_all.shape}")
+            # 상품 정보 로드 및 준비 (별칭 규칙 적용 포함)
+            logger.info("1️⃣ 상품 정보 로드 및 준비 중...")
+            self._load_and_prepare_item_data()
+            logger.info(f"상품 정보 최종 데이터 크기: {self.item_pdf_all.shape}")
             logger.info(f"상품 정보 컬럼들: {list(self.item_pdf_all.columns)}")
             
-            # 별칭 규칙 적용
-            logger.info("2️⃣ 별칭 규칙 적용 중...")
-            self._apply_alias_rules()
-            logger.info(f"별칭 규칙 적용 후 데이터 크기: {self.item_pdf_all.shape}")
-            
             # 정지어 로드
-            logger.info("3️⃣ 정지어 로드 중...")
+            logger.info("2️⃣ 정지어 로드 중...")
             self._load_stop_words()
             logger.info(f"로드된 정지어 수: {len(self.stop_item_names)}개")
             
             # Kiwi에 상품명 등록
-            logger.info("4️⃣ Kiwi에 상품명 등록 중...")
+            logger.info("3️⃣ Kiwi에 상품명 등록 중...")
             self._register_items_to_kiwi()
             
             # 프로그램 분류 정보 로드
-            logger.info("5️⃣ 프로그램 분류 정보 로드 중...")
+            logger.info("4️⃣ 프로그램 분류 정보 로드 중...")
             self._load_program_data()
             logger.info(f"프로그램 분류 정보 로드 후 데이터 크기: {self.pgm_pdf.shape}")
             
             # 조직 정보 로드
-            logger.info("6️⃣ 조직 정보 로드 중...")
+            logger.info("5️⃣ 조직 정보 로드 중...")
             self._load_organization_data()
             logger.info(f"조직 정보 로드 후 데이터 크기: {self.org_pdf.shape}")
             
@@ -547,136 +542,203 @@ class MMSExtractor:
             logger.error(f"오류 상세: {traceback.format_exc()}")
             raise
 
-    def _load_item_data(self):
-        """상품 정보 로드"""
+    def _load_and_prepare_item_data(self):
+        """상품 정보 로드 및 준비 (ipynb 코드 기준으로 통합)"""
         try:
-            logger.info(f"=== 상품 정보 로드 시작 (모드: {self.offer_info_data_src}) ===")
+            logger.info(f"=== 상품 정보 로드 및 준비 시작 (모드: {self.offer_info_data_src}) ===")
             
+            # ===== 1단계: 데이터 소스에서 원본 데이터 로드 =====
             if self.offer_info_data_src == "local":
-                # 로컬 CSV 파일에서 로드
-                logger.info("로컬 CSV 파일에서 상품 정보 로드 중...")
+                logger.info("📁 로컬 CSV 파일에서 로드")
                 csv_path = getattr(METADATA_CONFIG, 'offer_data_path', './data/items.csv')
-                logger.info(f"CSV 파일 경로: {csv_path}")
-                
                 item_pdf_raw = pd.read_csv(csv_path)
-
-                # 단말기인 경우, 설명을 상품명으로 사용
-                item_pdf_raw['ITEM_NM'] = item_pdf_raw.apply(lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1)
-                logger.info(f"로컬 CSV에서 로드된 원본 데이터 크기: {item_pdf_raw.shape}")
-                logger.info(f"로컬 CSV 원본 컬럼들: {list(item_pdf_raw.columns)}")
-                
-                # 스키마 호환성 처리: 대문자/소문자 컬럼명 모두 지원
-                available_columns = list(item_pdf_raw.columns)
-                
-                # 필요한 컬럼명 매핑 (대문자 우선, 소문자 폴백)
-                column_mapping = {}
-                required_cols = ['item_nm', 'item_id', 'item_desc', 'item_dmn']
-                
-                for req_col in required_cols:
-                    if req_col.upper() in available_columns:
-                        column_mapping[req_col.upper()] = req_col
-                    elif req_col in available_columns:
-                        column_mapping[req_col] = req_col
-                    else:
-                        logger.warning(f"필수 컬럼 '{req_col}' 또는 '{req_col.upper()}'를 찾을 수 없습니다.")
-                
-                # ITEM_ALS -> item_nm_alias 매핑 처리
-                if 'ITEM_ALS' in available_columns:
-                    column_mapping['ITEM_ALS'] = 'item_nm_alias'
-                elif 'item_als' in available_columns:
-                    column_mapping['item_als'] = 'item_nm_alias'
-                elif 'item_nm_alias' in available_columns:
-                    column_mapping['item_nm_alias'] = 'item_nm_alias'
-                else:
-                    logger.info("ITEM_ALS/item_nm_alias 컬럼을 찾을 수 없습니다. 나중에 생성됩니다.")
-                
-                logger.info(f"컬럼 매핑: {column_mapping}")
-                
-                # 데이터 추출 및 중복 제거
-                mapped_columns = list(column_mapping.keys())
-                if len(mapped_columns) >= 2:  # 최소 2개 컬럼은 있어야 함
-                    # 대문자 컬럼명으로 중복 제거
-                    dedup_cols = [col for col in ['ITEM_NM', 'ITEM_ID'] if col in available_columns]
-                    if not dedup_cols:  # 대문자가 없으르 소문자 사용
-                        dedup_cols = [col for col in ['item_nm', 'item_id'] if col in available_columns]
-                    
-                    self.item_pdf_all = item_pdf_raw.drop_duplicates(dedup_cols)[mapped_columns].copy()
-                    
-                    # 컬럼명을 소문자로 리네임
-                    self.item_pdf_all = self.item_pdf_all.rename(columns=column_mapping)
-                    logger.info(f"중복 제거 후 데이터 크기: {self.item_pdf_all.shape}")
-                else:
-                    logger.error(f"필수 컬럼을 충분히 찾을 수 없습니다. 사용 가능한 컬럼: {available_columns}")
-                    raise ValueError("필수 컬럼 부족")
-                
-                # 추가 컬럼들 생성 (DB 스키마와 호환성을 위해)
-                if 'item_ctg' not in self.item_pdf_all.columns:
-                    self.item_pdf_all['item_ctg'] = None
-                if 'item_emb_vec' not in self.item_pdf_all.columns:
-                    self.item_pdf_all['item_emb_vec'] = None
-                if 'ofer_cd' not in self.item_pdf_all.columns:
-                    self.item_pdf_all['ofer_cd'] = self.item_pdf_all['item_id']
-                if 'oper_dt_hms' not in self.item_pdf_all.columns:
-                    self.item_pdf_all['oper_dt_hms'] = '20250101000000'
-                
-                # item_nm_alias 컬럼이 없으면 item_nm을 기본값으로 사용
-                if 'item_nm_alias' not in self.item_pdf_all.columns:
-                    logger.info("item_nm_alias 컬럼이 없어서 item_nm을 복사하여 생성합니다.")
-                    self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
-                else:
-                    # item_nm_alias가 비어있는 경우 item_nm으로 채우기
-                    null_count = self.item_pdf_all['item_nm_alias'].isnull().sum()
-                    if null_count > 0:
-                        logger.info(f"item_nm_alias에서 {null_count}개 null 값을 item_nm으로 채웁니다.")
-                        self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm_alias'].fillna(self.item_pdf_all['item_nm'])
-                
-                # 컬럼명이 이미 소문자로 되어 있으므로 추가 변환 불필요
-                logger.info(f"로컬 모드 최종 컬럼들: {list(self.item_pdf_all.columns)}")
-                
-                # item_nm_alias 컬럼 확인
-                if 'item_nm_alias' in self.item_pdf_all.columns:
-                    alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
-                    logger.info(f"item_nm_alias 샘플: {alias_sample}")
-                else:
-                    logger.error("item_nm_alias 컬럼 생성에 실패했습니다!")
-                
-                # 로컬 데이터 샘플 확인
-                if not self.item_pdf_all.empty:
-                    sample_items = self.item_pdf_all['item_nm'].dropna().head(5).tolist()
-                    logger.info(f"로컬 모드 상품명 샘플: {sample_items}")
-                    logger.info(f"로컬 모드 데이터 샘플 (5개 행):")
-                    logger.info(f"{self.item_pdf_all.head().to_dict('records')}")
-                
             elif self.offer_info_data_src == "db":
-                # 데이터베이스에서 로드
-                logger.info("데이터베이스에서 상품 정보 로드 중...")
-                self._load_item_from_database()
+                logger.info("🗄️ 데이터베이스에서 로드")
+                with self._database_connection() as conn:
+                    sql = "SELECT * FROM TCAM_RC_OFER_MST"
+                    item_pdf_raw = pd.read_sql(sql, conn)
+            
+            logger.info(f"원본 데이터 크기: {item_pdf_raw.shape}")
+            
+            # ===== 2단계: 공통 전처리 (데이터 소스 무관) =====
+            # ITEM_DESC를 str로 변환
+            item_pdf_raw['ITEM_DESC'] = item_pdf_raw['ITEM_DESC'].astype('str')
+            
+            # 단말기인 경우 설명을 상품명으로 사용
+            item_pdf_raw['ITEM_NM'] = item_pdf_raw.apply(
+                lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1
+            )
+            
+            # 컬럼명을 소문자로 변환
+            item_pdf_all = item_pdf_raw.rename(columns={c: c.lower() for c in item_pdf_raw.columns})
+            logger.info(f"컬럼명 소문자 변환 완료")
+            
+            # 추가 컬럼 생성
+            item_pdf_all['item_ctg'] = None
+            item_pdf_all['item_emb_vec'] = None
+            item_pdf_all['ofer_cd'] = item_pdf_all['item_id']
+            item_pdf_all['oper_dt_hms'] = '20250101000000'
             
             # 제외할 도메인 코드 필터링
             excluded_domains = getattr(PROCESSING_CONFIG, 'excluded_domain_codes_for_items', [])
             if excluded_domains:
-                before_filter_size = len(self.item_pdf_all)
-                self.item_pdf_all = self.item_pdf_all.query("item_dmn not in @excluded_domains")
-                after_filter_size = len(self.item_pdf_all)
-                logger.info(f"도메인 필터링: {before_filter_size} -> {after_filter_size} (제외된 도메인: {excluded_domains})")
-                
-            logger.info(f"=== 상품 정보 로드 최종 완료: {len(self.item_pdf_all)}개 상품 ===")
-            logger.info(f"최종 데이터 스키마: {list(self.item_pdf_all.columns)}")
-            logger.info(f"최종 데이터 타입: {self.item_pdf_all.dtypes.to_dict()}")
+                before_filter = len(item_pdf_all)
+                item_pdf_all = item_pdf_all.query("item_dmn not in @excluded_domains")
+                logger.info(f"도메인 필터링: {before_filter} -> {len(item_pdf_all)}")
             
-            # 중요 컬럼 존재 여부 최종 확인
+            # ===== 3단계: 별칭 규칙 로드 및 처리 (데이터 소스 무관) =====
+            logger.info("🔗 별칭 규칙 로드 중...")
+            self.alias_pdf_raw = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+            alias_pdf = self.alias_pdf_raw.copy()
+            alias_pdf['alias_1'] = alias_pdf['alias_1'].str.split("&&")
+            alias_pdf['alias_2'] = alias_pdf['alias_2'].str.split("&&")
+            alias_pdf = alias_pdf.explode('alias_1')
+            alias_pdf = alias_pdf.explode('alias_2')
+            
+            # build 타입 별칭 확장
+            alias_list_ext = alias_pdf.query("type=='build'")[['alias_1','category','direction','type']].to_dict('records')
+            for alias in alias_list_ext:
+                adf = item_pdf_all.query(
+                    "item_nm.str.contains(@alias['alias_1']) and item_dmn==@alias['category']"
+                )[['item_nm','item_desc','item_dmn']].rename(
+                    columns={'item_nm':'alias_2','item_desc':'description','item_dmn':'category'}
+                ).drop_duplicates()
+                adf['alias_1'] = alias['alias_1']
+                adf['direction'] = alias['direction']
+                adf['type'] = alias['type']
+                adf = adf[alias_pdf.columns]
+                alias_pdf = pd.concat([alias_pdf.query(f"alias_1!='{alias['alias_1']}'"), adf])
+            
+            alias_pdf = alias_pdf.drop_duplicates()
+            
+            # 양방향(B) 별칭 추가
+            alias_pdf = pd.concat([
+                alias_pdf, 
+                alias_pdf.query("direction=='B'").rename(
+                    columns={'alias_1':'alias_2', 'alias_2':'alias_1'}
+                )[alias_pdf.columns]
+            ])
+            
+            alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2'], alias_pdf['type']))
+            logger.info(f"별칭 규칙 수: {len(alias_rule_set)}개")
+            
+            # ===== 4단계: 별칭 규칙 연쇄 적용 (병렬 처리) =====
+            def apply_alias_rule_cascade_parallel(args_dict):
+                """별칭 규칙을 연쇄적으로 적용"""
+                item_nm = args_dict['item_nm']
+                max_depth = args_dict['max_depth']
+                
+                processed = set()
+                result_dict = {item_nm: '#' * len(item_nm)}
+                to_process = [(item_nm, 0, frozenset())]
+                
+                while to_process:
+                    current_item, depth, path_applied_rules = to_process.pop(0)
+                    
+                    if depth >= max_depth or current_item in processed:
+                        continue
+                    
+                    processed.add(current_item)
+                    
+                    for r in alias_rule_set:
+                        alias_from, alias_to, alias_type = r[0], r[1], r[2]
+                        rule_key = (alias_from, alias_to, alias_type)
+                        
+                        if rule_key in path_applied_rules:
+                            continue
+                        
+                        # 타입에 따른 매칭
+                        if alias_type == 'exact':
+                            matched = (current_item == alias_from)
+                        else:
+                            matched = (alias_from in current_item)
+                        
+                        if matched:
+                            new_item = alias_to.strip() if alias_type == 'exact' else current_item.replace(alias_from.strip(), alias_to.strip())
+                            
+                            if new_item not in result_dict:
+                                result_dict[new_item] = alias_from.strip()
+                                to_process.append((new_item, depth + 1, path_applied_rules | {rule_key}))
+                
+                item_nm_list = [{'item_nm': k, 'item_nm_alias': v} for k, v in result_dict.items()]
+                adf = pd.DataFrame(item_nm_list)
+                selected_alias = select_most_comprehensive(adf['item_nm_alias'].tolist())
+                result_aliases = list(adf.query("item_nm_alias in @selected_alias")['item_nm'].unique())
+                
+                if item_nm not in result_aliases:
+                    result_aliases.append(item_nm)
+                
+                return {'item_nm': item_nm, 'item_nm_alias': result_aliases}
+            
+            def parallel_alias_rule_cascade(texts, max_depth=5, n_jobs=None):
+                """병렬 별칭 규칙 적용"""
+                if n_jobs is None:
+                    n_jobs = min(os.cpu_count()-1, 4)
+                
+                batches = [{"item_nm": text, "max_depth": max_depth} for text in texts]
+                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                    batch_results = parallel(delayed(apply_alias_rule_cascade_parallel)(args) for args in batches)
+                
+                return pd.DataFrame(batch_results)
+            
+            logger.info("🔄 별칭 규칙 연쇄 적용 중...")
+            item_alias_pdf = parallel_alias_rule_cascade(item_pdf_all['item_nm'], max_depth=3)
+            
+            # 별칭 병합 및 explode
+            item_pdf_all = item_pdf_all.merge(item_alias_pdf, on='item_nm', how='left')
+            before_explode = len(item_pdf_all)
+            item_pdf_all = item_pdf_all.explode('item_nm_alias').drop_duplicates()
+            logger.info(f"별칭 explode: {before_explode} -> {len(item_pdf_all)}")
+            
+            # ===== 5단계: 사용자 정의 엔티티 추가 =====
+            user_defined_entity = ['AIA Vitality', '부스트 파크 건대입구', 'Boost Park 건대입구']
+            item_pdf_ext = pd.DataFrame([{
+                'item_nm': e, 'item_id': e, 'item_desc': e, 'item_dmn': 'user_defined',
+                'start_dt': 20250101, 'end_dt': 99991231, 'rank': 1, 'item_nm_alias': e
+            } for e in user_defined_entity])
+            item_pdf_all = pd.concat([item_pdf_all, item_pdf_ext])
+            
+            # ===== 6단계: item_dmn_nm 컬럼 추가 =====
+            item_dmn_map = pd.DataFrame([
+                {"item_dmn": 'P', 'item_dmn_nm': '요금제 및 관련 상품'},
+                {"item_dmn": 'E', 'item_dmn_nm': '단말기'},
+                {"item_dmn": 'S', 'item_dmn_nm': '구독 상품'},
+                {"item_dmn": 'C', 'item_dmn_nm': '쿠폰'},
+                {"item_dmn": 'X', 'item_dmn_nm': '가상 상품'}
+            ])
+            item_pdf_all = item_pdf_all.merge(item_dmn_map, on='item_dmn', how='left')
+            item_pdf_all['item_dmn_nm'] = item_pdf_all['item_dmn_nm'].fillna('기타')
+            
+            # ===== 7단계: TEST 필터링 =====
+            before_test = len(item_pdf_all)
+            item_pdf_all = item_pdf_all.query("not item_nm_alias.str.contains('TEST', case=False, na=False)")
+            logger.info(f"TEST 필터링: {before_test} -> {len(item_pdf_all)}")
+            
+            self.item_pdf_all = item_pdf_all
+            
+            # 최종 확인
+            logger.info(f"=== 상품 정보 준비 완료 ===")
+            logger.info(f"최종 데이터 크기: {self.item_pdf_all.shape}")
+            logger.info(f"최종 컬럼들: {list(self.item_pdf_all.columns)}")
+            
+            # 중요 컬럼 확인
             critical_columns = ['item_nm', 'item_id', 'item_nm_alias']
             missing_columns = [col for col in critical_columns if col not in self.item_pdf_all.columns]
             if missing_columns:
-                logger.error(f"중요 컬럼이 누락되었습니다: {missing_columns}")
+                logger.error(f"중요 컬럼 누락: {missing_columns}")
             else:
-                logger.info("모든 중요 컬럼이 존재합니다.")
+                logger.info("✅ 모든 중요 컬럼 존재")
+            
+            # 샘플 데이터 확인
+            if not self.item_pdf_all.empty:
+                logger.info(f"상품명 샘플: {self.item_pdf_all['item_nm'].dropna().head(3).tolist()}")
+                logger.info(f"별칭 샘플: {self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()}")
             
         except Exception as e:
-            logger.error(f"상품 정보 로드 실패: {e}")
+            logger.error(f"상품 정보 로드 및 준비 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
             # 빈 DataFrame으로 fallback
-            self.item_pdf_all = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
+            self.item_pdf_all = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias'])
             logger.warning("빈 DataFrame으로 fallback 설정됨")
 
     def _get_database_connection(self):
@@ -779,95 +841,6 @@ class MMSExtractor:
             else:
                 logger.warning("데이터베이스 연결이 생성되지 않았습니다.")
 
-    def _load_item_from_database(self):
-        """데이터베이스에서 상품 정보 로드"""
-        try:
-            logger.info("=== 데이터베이스에서 상품 정보 로드 시작 ===")
-            
-            with self._database_connection() as conn:
-                sql = "SELECT * FROM TCAM_RC_OFER_MST"
-                logger.info(f"실행할 SQL: {sql}")
-                
-                self.item_pdf_all = pd.read_sql(sql, conn)
-                self.item_pdf_all['ITEM_NM'] = self.item_pdf_all.apply(lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1)
-                logger.info(f"DB에서 로드된 원본 데이터 크기: {self.item_pdf_all.shape}")
-                logger.info(f"DB에서 로드된 컬럼들: {list(self.item_pdf_all.columns)}")
-                
-                # 데이터 타입 정보 로깅
-                logger.info("=== DB 데이터 타입 정보 ===")
-                for col in self.item_pdf_all.columns:
-                    dtype = self.item_pdf_all[col].dtype
-                    null_count = self.item_pdf_all[col].isnull().sum()
-                    logger.info(f"  {col}: {dtype}, null값: {null_count}개")
-                
-                # 컬럼명 소문자 변환 및 ITEM_ALS -> item_nm_alias 매핑
-                original_columns = list(self.item_pdf_all.columns)
-                
-                # ITEM_ALS 컬럼을 item_nm_alias로 매핑
-                column_mapping = {c: c.lower() for c in self.item_pdf_all.columns}
-                if 'ITEM_ALS' in original_columns:
-                    column_mapping['ITEM_ALS'] = 'item_nm_alias'
-                    logger.info("ITEM_ALS 컬럼을 item_nm_alias로 매핑합니다.")
-                
-                self.item_pdf_all = self.item_pdf_all.rename(columns=column_mapping)
-                logger.info(f"컬럼명 변환: {dict(zip(original_columns, self.item_pdf_all.columns))}")
-                
-                # LOB 데이터가 있는 경우를 대비해 데이터 강제 로드
-                if not self.item_pdf_all.empty:
-                    logger.info("DataFrame 데이터 강제 로드 시작...")
-                    try:
-                        # DataFrame의 모든 데이터를 메모리로 강제 로드
-                        _ = self.item_pdf_all.values  # 모든 데이터 접근하여 LOB 로드 유도
-                        logger.info("DataFrame 데이터 강제 로드 완료")
-                        
-                        # 주요 컬럼들의 샘플 데이터 확인
-                        if 'item_nm' in self.item_pdf_all.columns:
-                            sample_items = self.item_pdf_all['item_nm'].dropna().head(5).tolist()
-                            logger.info(f"상품명 샘플: {sample_items}")
-                        
-                        if 'item_id' in self.item_pdf_all.columns:
-                            sample_ids = self.item_pdf_all['item_id'].dropna().head(5).tolist()
-                            logger.info(f"상품ID 샘플: {sample_ids}")
-                        
-                        # item_nm_alias 컬럼 확인 및 생성
-                        if 'item_nm_alias' not in self.item_pdf_all.columns:
-                            logger.info("item_nm_alias 컬럼이 없어서 item_nm에서 생성합니다.")
-                            if 'item_nm' in self.item_pdf_all.columns:
-                                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
-                            else:
-                                logger.error("item_nm 컬럼도 없어 item_nm_alias를 생성할 수 없습니다!")
-                                self.item_pdf_all['item_nm_alias'] = None
-                        else:
-                            # item_nm_alias가 비어있는 경우 item_nm으로 채우기
-                            null_count = self.item_pdf_all['item_nm_alias'].isnull().sum()
-                            if null_count > 0:
-                                logger.info(f"DB 모드: item_nm_alias에서 {null_count}개 null 값을 item_nm으로 채웁니다.")
-                                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm_alias'].fillna(self.item_pdf_all['item_nm'])
-                        
-                        # item_nm_alias 샘플 확인
-                        if 'item_nm_alias' in self.item_pdf_all.columns:
-                            alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
-                            logger.info(f"DB 모드 item_nm_alias 샘플: {alias_sample}")
-                            
-                        logger.info(f"최종 상품 정보 로드 완료: {len(self.item_pdf_all)}개 상품")
-                        logger.info(f"DB 모드 최종 컬럼들: {list(self.item_pdf_all.columns)}")
-                    except Exception as load_error:
-                        logger.error(f"데이터 강제 로드 중 오류: {load_error}")
-                        raise
-                else:
-                    logger.warning("로드된 상품 데이터가 비어있습니다!")
-            
-        except Exception as e:
-            logger.error(f"상품 정보 데이터베이스 로드 실패: {e}")
-            logger.error(f"오류 상세: {traceback.format_exc()}")
-            # 비상 상황에서 빈 데이터프레임 생성 (item_nm_alias 컬럼 포함)
-            logger.warning("상품 정보 DB 로드 실패로 빈 데이터프레임을 생성합니다.")
-            self.item_pdf_all = pd.DataFrame(columns=[
-                'item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 
-                'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias'
-            ])
-            raise
-
     def _load_program_from_database(self):
         """데이터베이스에서 프로그램 분류 정보 로드"""
         try:
@@ -922,211 +895,6 @@ class MMSExtractor:
             # 빈 데이터로 fallback
             self.pgm_pdf = pd.DataFrame(columns=['pgm_nm', 'clue_tag', 'pgm_id'])
             raise
-
-    def _apply_alias_rules(self):
-        """별칭 규칙 적용"""
-        try:
-            logger.info("=== 별칭 규칙 적용 시작 ===")
-            logger.info(f"별칭 규칙 적용 전 상품 데이터 크기: {self.item_pdf_all.shape}")
-            
-            self.alias_pdf_raw = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
-            alias_pdf = self.alias_pdf_raw.copy()
-            alias_pdf['alias_1'] = alias_pdf['alias_1'].str.split("&&")
-            alias_pdf['alias_2'] = alias_pdf['alias_2'].str.split("&&")
-            alias_pdf = alias_pdf.explode('alias_1')
-            alias_pdf = alias_pdf.explode('alias_2')
-
-            alias_list_ext = alias_pdf.query("type=='build'")[['alias_1','category','direction','type']].to_dict('records')
-            for alias in alias_list_ext:
-                adf = self.item_pdf_all.query("item_nm.str.contains(@alias['alias_1']) and item_dmn==@alias['category']")[['item_nm','item_desc','item_dmn']].rename(columns={'item_nm':'alias_2','item_desc':'description','item_dmn':'category'}).drop_duplicates()
-                adf['alias_1'] = alias['alias_1']
-                adf['direction'] = alias['direction']
-                adf['type'] = alias['type']
-                adf = adf[alias_pdf.columns]
-                alias_pdf = pd.concat([alias_pdf.query(f"alias_1!='{alias['alias_1']}'"), adf])
-
-            alias_pdf = alias_pdf.drop_duplicates()
-
-            alias_pdf = pd.concat([alias_pdf, alias_pdf.query("direction=='B'").rename(columns={'alias_1':'alias_2', 'alias_2':'alias_1'})[alias_pdf.columns]])
-
-            alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2'], alias_pdf['type']))
-
-            logger.info(f"로드된 별칭 규칙 수: {len(alias_rule_set)}개")
-
-            def apply_alias_rule_cascade_parallel(args_dict):
-                """
-                별칭 규칙을 연쇄적으로 적용 (최대 깊이 제한)
-                - partial: 부분 매칭 (alias_1 in item_nm)
-                - exact: 완전 매칭 (alias_1 == item_nm)
-                - 각 변환 경로에서 동일 규칙은 한 번만 적용 (중복 방지)
-                - 다른 경로에서는 동일 규칙도 적용 가능 (조합 허용)
-                """
-                item_nm = args_dict['item_nm']
-                max_depth = args_dict['max_depth']
-                
-                if pd.isna(item_nm) or not isinstance(item_nm, str):
-                    return {'item_nm': item_nm, 'item_nm_alias': [item_nm] if not pd.isna(item_nm) else []}
-                
-                processed = set()
-                result_dict = {item_nm: '#' * len(item_nm)}
-                to_process = [(item_nm, 0, frozenset())]  # (item_nm, depth, applied_rules_in_this_path)
-                
-                while to_process:
-                    current_item, depth, path_applied_rules = to_process.pop(0)
-                    
-                    # 최대 깊이 체크
-                    if depth >= max_depth:
-                        continue
-                        
-                    if current_item in processed:
-                        continue
-                    
-                    processed.add(current_item)
-                    
-                    for r in alias_rule_set:
-                        alias_from = r[0]
-                        alias_to = r[1]
-                        alias_type = r[2]
-                        
-                        # 이 경로에서 이미 적용된 규칙은 스킵 (중복 적용 방지)
-                        rule_key = (alias_from, alias_to, alias_type)
-                        if rule_key in path_applied_rules:
-                            continue
-                        
-                        # 타입에 따라 다른 매칭 로직 적용
-                        matched = False
-                        if alias_type == 'exact':
-                            # 정확히 일치하는 경우만 매칭
-                            matched = (current_item == alias_from)
-                        elif alias_type == 'partial':
-                            # 부분 문자열 포함 시 매칭 (기존 방식)
-                            matched = (alias_from in current_item)
-                        elif alias_type == 'expansion':
-                            # expansion 타입은 partial처럼 처리
-                            matched = (alias_from in current_item)
-                        elif alias_type == 'build':
-                            # build 타입은 partial처럼 처리
-                            matched = (alias_from in current_item)
-                        else:
-                            # 알 수 없는 타입은 기본적으로 partial 방식 사용
-                            matched = (alias_from in current_item)
-                        
-                        if matched:
-                            # exact 타입은 전체 교체, partial 타입은 부분 교체
-                            if alias_type == 'exact':
-                                new_item = alias_to.strip()
-                            else:
-                                new_item = current_item.replace(alias_from.strip(), alias_to.strip())
-                            
-                            if new_item not in result_dict:
-                                result_dict[new_item] = alias_from.strip()
-                                # 새로운 경로에 현재 규칙 추가
-                                new_path_applied_rules = path_applied_rules | {rule_key}
-                                to_process.append((new_item, depth + 1, new_path_applied_rules))
-                
-                item_nm_list = [{'item_nm': k, 'item_nm_alias': v} for k, v in result_dict.items()]
-                adf = pd.DataFrame(item_nm_list)
-                selected_alias = select_most_comprehensive(adf['item_nm_alias'].tolist())
-                result_aliases = list(adf.query("item_nm_alias in @selected_alias")['item_nm'].unique())
-                
-                # 원본 item_nm이 결과에 없으면 추가
-                if item_nm not in result_aliases:
-                    result_aliases.append(item_nm)
-                
-                return {'item_nm': item_nm, 'item_nm_alias': result_aliases}
-
-            def parallel_alias_rule_cascade(texts, max_depth=5, n_jobs=None):
-                """
-                Batched version for better performance with large datasets.
-                """
-                if n_jobs is None:
-                    n_jobs = min(os.cpu_count()-1, 4)  # Limit to 4 jobs max
-                
-                # Create batches
-                batches = []
-                for text in texts:
-                    batches.append({"item_nm": text, "max_depth": max_depth})
-                
-                logger.info(f"병렬 별칭 규칙 적용 시작: {len(batches)}개 아이템, {n_jobs}개 작업")
-                
-                # Run parallel jobs
-                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                    batch_results = parallel(delayed(apply_alias_rule_cascade_parallel)(args) for args in batches)
-                
-                return pd.DataFrame(batch_results)
-
-            # 별칭 규칙 적용 전 데이터 상태 확인
-            if 'item_nm' in self.item_pdf_all.columns:
-                non_null_items = self.item_pdf_all['item_nm'].dropna()
-                logger.info(f"null이 아닌 상품명 수: {len(non_null_items)}개")
-                if len(non_null_items) > 0:
-                    sample_before = non_null_items.head(3).tolist()
-                    logger.info(f"별칭 적용 전 상품명 샘플: {sample_before}")
-            
-            # 중요: 기존 item_nm_alias 데이터 보존 여부 확인
-            existing_alias_data = None
-            has_existing_alias = 'item_nm_alias' in self.item_pdf_all.columns and not self.item_pdf_all['item_nm_alias'].isnull().all()
-            
-            if has_existing_alias:
-                # 기존 ITEM_ALS 데이터가 있는 경우 보존
-                logger.info("기존 item_nm_alias 데이터를 발견했습니다. 별칭 규칙과 병합합니다.")
-                existing_alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
-                logger.info(f"기존 alias 샘플: {existing_alias_sample}")
-                
-                # 기존 alias 데이터를 별도 컴럼으로 보존
-                self.item_pdf_all['original_item_alias'] = self.item_pdf_all['item_nm_alias']
-                
-                # item_nm에 별칭 규칙을 연쇄 적용 (max_depth=3)
-                item_alias_pdf = parallel_alias_rule_cascade(self.item_pdf_all['item_nm'].unique(), max_depth=3)
-                generated_aliases_df = self.item_pdf_all[['item_nm']].merge(item_alias_pdf, on='item_nm', how='left')
-                
-                # 기존 alias와 생성된 alias를 병합
-                def combine_aliases(row):
-                    generated = row['item_nm_alias_new'] if isinstance(row['item_nm_alias_new'], list) else [row['item_nm_alias_new']]
-                    original = [row['original_item_alias']] if pd.notna(row['original_item_alias']) else []
-                    combined = list(set(generated + original))  # 중복 제거
-                    return combined
-                
-                self.item_pdf_all['item_nm_alias_new'] = generated_aliases_df['item_nm_alias']
-                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all.apply(combine_aliases, axis=1)
-                
-                # 임시 컴럼 삭제
-                self.item_pdf_all = self.item_pdf_all.drop(['original_item_alias', 'item_nm_alias_new'], axis=1)
-                
-                logger.info("기존 ITEM_ALS 데이터와 별칭 규칙이 성공적으로 병합되었습니다.")
-                
-            else:
-                # 기존 alias 데이터가 없는 경우 연쇄 별칭 적용
-                logger.info("기존 item_nm_alias 데이터가 없어 item_nm에서 별칭을 생성합니다.")
-                item_alias_pdf = parallel_alias_rule_cascade(self.item_pdf_all['item_nm'].unique(), max_depth=3)
-                self.item_pdf_all = self.item_pdf_all.merge(item_alias_pdf, on='item_nm', how='left')
-            
-            # explode 전후 크기 비교
-            before_explode_size = len(self.item_pdf_all)
-            self.item_pdf_all = self.item_pdf_all.explode('item_nm_alias').drop_duplicates()
-            after_explode_size = len(self.item_pdf_all)
-            
-            logger.info(f"별칭 규칙 적용 후 데이터 크기: {before_explode_size} -> {after_explode_size}")
-            
-            # 별칭 적용 후 샘플 확인
-            if 'item_nm_alias' in self.item_pdf_all.columns:
-                non_null_aliases = self.item_pdf_all['item_nm_alias'].dropna()
-                if len(non_null_aliases) > 0:
-                    sample_after = non_null_aliases.head(5).tolist()
-                    logger.info(f"별칭 적용 후 샘플: {sample_after}")
-            
-            logger.info(f"별칭 규칙 적용 완료: {len(alias_rule_set)}개 규칙")
-            
-        except Exception as e:
-            logger.warning(f"별칭 규칙 적용 실패: {e}")
-            logger.warning(f"오류 상세: {traceback.format_exc()}")
-            # 예외 발생 시 기존 item_nm_alias 데이터 보존 또는 원본 이름 사용
-            if 'item_nm_alias' not in self.item_pdf_all.columns or self.item_pdf_all['item_nm_alias'].isnull().all():
-                if 'item_nm' in self.item_pdf_all.columns:
-                    self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
-                    logger.info("예외 발생으로 원본 상품명을 별칭으로 사용합니다")
-            else:
-                logger.info("기존 item_nm_alias 데이터를 유지합니다")
 
     def _load_stop_words(self):
         """정지어 목록 로드"""
@@ -1663,7 +1431,7 @@ class MMSExtractor:
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=30,
                 normalizaton_value='s1',
-                weights=weights,
+                # weights=weights,
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s1'})
             
@@ -1676,25 +1444,23 @@ class MMSExtractor:
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=30,
                 normalizaton_value='s2',
-                weights=weights,
+                # weights=weights,
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s2'})
             
             # 결과 합치기
             if not sim_s1.empty and not sim_s2.empty:
                 try:
+                    # ipynb와 동일하게 merge 후 쿼리 조건 적용
                     combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
-                    combined = combined.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)") # 임계값 필터링. '충전' 문제 해결
-
-                    # print('--------------------------------')
-                    # print(combined
-                    # .query("item_nm_alias.str.contains('에이닷 전화')")
-                    # )
-                    # print('--------------------------------')
-
-                    combined = combined.groupby(['item_name_in_msg', 'item_nm_alias'])[
-                        ['sim_s1', 'sim_s2']
-                    ].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
+                    # ipynb와 동일한 필터링 조건: (sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)
+                    filtered = combined.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+                    # sim_s1과 sim_s2를 각각 합산한 후 더하기 (ipynb와 동일)
+                    combined = filtered.groupby(['item_name_in_msg', 'item_nm_alias']).agg({
+                        'sim_s1': 'sum',
+                        'sim_s2': 'sum'
+                    }).reset_index()
+                    combined['sim'] = combined['sim_s1'] + combined['sim_s2']
                 except Exception as e:
                     logger.error(f"결합 유사도 계산 실패: {e}")
                     return pd.DataFrame()
@@ -1720,30 +1486,57 @@ class MMSExtractor:
             pd.DataFrame: 추출된 엔티티와 유사도 정보
         """
         try:
+            logger.info("=" * 80)
+            logger.info("🔍 [LLM 엔티티 추출] 함수 시작")
+            logger.info(f"📝 입력 파라미터:")
+            logger.info(f"   - rank_limit: {rank_limit}")
+            logger.info(f"   - external_cand_entities 제공 여부: {external_cand_entities is not None}")
+            if external_cand_entities is not None:
+                logger.info(f"   - external_cand_entities 개수: {len(external_cand_entities)}")
+            
             msg_text = validate_text_input(msg_text)
+            logger.info(f"📄 메시지 텍스트 길이: {len(msg_text):,} 문자")
+            logger.info(f"📄 메시지 텍스트 미리보기: {msg_text[:100]}..." if len(msg_text) > 100 else f"📄 메시지 텍스트: {msg_text}")
             
             # LLM 모델이 지정되지 않은 경우 기본 모델 사용
             if llm_models is None:
                 llm_models = [self.llm_model]
+                logger.info(f"🤖 LLM 모델 자동 선택: 기본 모델 사용 (1개)")
+            else:
+                logger.info(f"🤖 LLM 모델 지정됨: {len(llm_models)}개 모델 사용")
+            
+            for idx, model in enumerate(llm_models):
+                model_name = getattr(model, 'model_name', 'Unknown')
+                logger.info(f"   [{idx+1}] 모델: {model_name}")
             
             def get_entities_by_llm(args_dict):
                 """단일 LLM으로 엔티티 추출하는 내부 함수"""
                 llm_model, msg_text = args_dict['llm_model'], args_dict['msg_text']
+                model_name = getattr(llm_model, 'model_name', 'Unknown')
                 
                 try:
+                    logger.info(f"   ⚙️  [{model_name}] 엔티티 추출 시작")
+                    
                     # 프롬프트 구성 - 기존 로직과 동일
                     base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
                     if base_prompt is None:
                         base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
-                        logger.info("엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
+                        logger.info(f"   📋 [{model_name}] 엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
                     else:
-                        logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
+                        logger.info(f"   📋 [{model_name}] 엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
                     
                     # 베이스 프롬프트 길이 확인
                     base_prompt_length = len(base_prompt)
                     msg_length = len(msg_text)
-                    logger.info(f"🔍 베이스 프롬프트 길이: {base_prompt_length:,} 문자")
-                    logger.info(f"🔍 메시지 길이: {msg_length:,} 문자")
+                    logger.info(f"   📏 [{model_name}] 베이스 프롬프트 길이: {base_prompt_length:,} 문자")
+                    logger.info(f"   📏 [{model_name}] 메시지 길이: {msg_length:,} 문자")
+                    
+                    # 프롬프트 내용 로깅 (전체)
+                    logger.info(f"   📝 [{model_name}] 베이스 프롬프트 내용 (전체):")
+                    logger.info(f"   {'-' * 75}")
+                    for line in base_prompt.split('\n'):
+                        logger.info(f"   {line}")
+                    logger.info(f"   {'-' * 75}")
                     
                     # PromptTemplate 사용 (langchain 방식)
                     zero_shot_prompt = PromptTemplate(
@@ -1755,28 +1548,54 @@ class MMSExtractor:
                         {msg}
                         """
                     )
-
-                    # print('--------------------------------')
-                    # print(llm_model)
-                    # print('--------------------------------')
                     
+                    # 최종 프롬프트 생성 (실제로 LLM에 전달되는 프롬프트)
+                    final_prompt_for_llm = zero_shot_prompt.format(
+                        entity_extraction_prompt=base_prompt,
+                        msg=msg_text
+                    )
+                    final_prompt_length = len(final_prompt_for_llm)
+                    logger.info(f"   📏 [{model_name}] 최종 프롬프트 길이: {final_prompt_length:,} 문자")
+                    logger.info(f"   📝 [{model_name}] 최종 프롬프트 내용 (전체):")
+                    logger.info(f"   {'-' * 75}")
+                    for line in final_prompt_for_llm.split('\n'):
+                        logger.info(f"   {line}")
+                    logger.info(f"   {'-' * 75}")
+
+                    logger.info(f"   🚀 [{model_name}] LLM 호출 시작...")
                     chain = zero_shot_prompt | llm_model
                     cand_entities = chain.invoke({
                         "entity_extraction_prompt": base_prompt, 
                         "msg": msg_text, 
                     }).content
+                    logger.info(f"   ✅ [{model_name}] LLM 호출 완료")
+                    logger.info(f"   📥 [{model_name}] LLM 응답 길이: {len(cand_entities):,} 문자")
+                    logger.info(f"   📥 [{model_name}] LLM 응답 미리보기: {cand_entities[:200]}..." if len(cand_entities) > 200 else f"   📥 [{model_name}] LLM 응답: {cand_entities}")
 
                     # LLM 응답 파싱 및 정리
-                    cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
-                    cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e) >= 2]
+                    logger.info(f"   🔧 [{model_name}] 엔티티 파싱 시작...")
+                    cand_entity_list_raw = [e.strip() for e in cand_entities.split(',') if e.strip()]
+                    logger.info(f"   📊 [{model_name}] 콤마로 분할 후 엔티티 수: {len(cand_entity_list_raw)}개")
+                    
+                    before_filter = len(cand_entity_list_raw)
+                    cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
+                    after_filter = len(cand_entity_list)
+                    filtered_count = before_filter - after_filter
+                    
+                    logger.info(f"   🎯 [{model_name}] 필터링 결과:")
+                    logger.info(f"      - 필터링 전: {before_filter}개")
+                    logger.info(f"      - 필터링 후: {after_filter}개 (제거: {filtered_count}개)")
+                    logger.info(f"      - 최종 엔티티: {cand_entity_list[:10]}..." if len(cand_entity_list) > 10 else f"      - 최종 엔티티: {cand_entity_list}")
 
                     return cand_entity_list
                     
                 except Exception as e:
-                    logger.error(f"LLM 모델에서 엔티티 추출 실패: {e}")
+                    logger.error(f"   ❌ [{model_name}] LLM 모델에서 엔티티 추출 실패: {e}")
+                    logger.error(f"   ❌ [{model_name}] 오류 상세: {traceback.format_exc()}")
                     return []
             
             # 프롬프트 미리보기 저장 (디버깅용) - 복수 모델이어도 프롬프트는 동일하므로 항상 저장
+            logger.info("📋 프롬프트 미리보기 저장 중...")
             base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
             if base_prompt is None:
                 base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
@@ -1784,11 +1603,18 @@ class MMSExtractor:
             
             # 최종 프롬프트 길이 확인
             final_prompt_length = len(preview_prompt)
-            logger.info(f"🔍 최종 엔티티 추출 프롬프트 길이: {final_prompt_length:,} 문자")
+            logger.info(f"📏 최종 엔티티 추출 프롬프트 길이: {final_prompt_length:,} 문자")
+            logger.info(f"📝 프롬프트 미리보기 내용 (전체):")
+            logger.info("-" * 80)
+            for line in preview_prompt.split('\n'):
+                logger.info(f"   {line}")
+            logger.info("-" * 80)
             
             self._store_prompt_for_preview(preview_prompt, "entity_extraction")
+            logger.info("✅ 프롬프트 미리보기 저장 완료")
 
-            if len(external_cand_entities) == 0:
+            if external_cand_entities is None or len(external_cand_entities) == 0:
+                logger.info("🔄 LLM 직접 추출 모드")
                 # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
                 batches = []
                 for llm_model in llm_models:
@@ -1798,27 +1624,80 @@ class MMSExtractor:
                     })
                 
                 logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
+                logger.info(f"🔄 병렬 작업 수: {len(batches)}개 배치")
                 
                 # 병렬 작업 실행
                 n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
+                logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
+                
                 with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
                     batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
                 
+                logger.info(f"✅ 모든 LLM 모델 처리 완료")
+                logger.info(f"📊 모델별 결과:")
+                for idx, (model, result) in enumerate(zip(llm_models, batch_results)):
+                    model_name = getattr(model, 'model_name', 'Unknown')
+                    logger.info(f"   [{idx+1}] {model_name}: {len(result)}개 엔티티 추출")
+                
                 # 모든 결과를 합치고 중복 제거
-                cand_entity_list = list(set(sum(batch_results, [])))
-                logger.info(f"✅ LLM 추출 완료: {cand_entity_list}")
+                all_entities = sum(batch_results, [])
+                logger.info(f"📊 병합 전 총 엔티티 수: {len(all_entities)}개")
+                cand_entity_list = list(set(all_entities))
+                logger.info(f"📊 중복 제거 후 엔티티 수: {len(cand_entity_list)}개")
+                logger.info(f"✅ LLM 추출 완료: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"✅ LLM 추출 완료: {cand_entity_list}")
 
                 if not cand_entity_list:
-                    logger.warning("LLM 추출에서 유효한 엔티티를 찾지 못함")
+                    logger.warning("⚠️  LLM 추출에서 유효한 엔티티를 찾지 못함")
+                    logger.info("=" * 80)
                     return pd.DataFrame()
             else:
+                logger.info("🔄 외부 엔티티 사용 모드")
                 cand_entity_list = external_cand_entities
-                logger.info(f"✅ Primary LLM 추출 엔티티 사용: {cand_entity_list}")
+                logger.info(f"✅ Primary LLM 추출 엔티티 사용: {len(cand_entity_list)}개")
+                logger.info(f"   엔티티 목록: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"   엔티티 목록: {cand_entity_list}")
         
             # cand_entity_list = select_most_comprehensive(cand_entity_list)
+            logger.info("🔍 엔티티-상품 매칭 시작...")
+            logger.info(f"   입력 엔티티 수: {len(cand_entity_list)}개")
             cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
+            logger.info(f"   매칭 결과: {len(cand_entities_sim)}개 행")
+            
+            if cand_entities_sim.empty:
+                logger.warning("⚠️  엔티티-상품 매칭 결과가 비어있음")
+                logger.info("=" * 80)
+                return pd.DataFrame()
+            
+            # [단계 1] 매칭 완료 직후 item_name_in_msg 로깅
+            logger.info(f"   [단계 1] 매칭 완료 직후 item_name_in_msg:")
+            logger.info(f"      - 고유 개수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
+            logger.info(f"      - 전체 개수: {len(cand_entities_sim)}개")
+            item_name_list_1 = list(cand_entities_sim['item_name_in_msg'].unique())
+            logger.info(f"      - 고유 item_name_in_msg 목록: {item_name_list_1}")
+            
+            logger.info(f"   매칭된 고유 item_name_in_msg 수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
+            logger.info(f"   매칭된 고유 item_nm_alias 수: {cand_entities_sim['item_nm_alias'].nunique()}개")
 
             # 후보 엔티티들과 상품 DB 매칭
+            logger.info("🔍 2단계 LLM 필터링 시작...")
+            logger.info(f"   입력 메시지 엔티티 수: {len(cand_entities_sim['item_name_in_msg'].unique())}개")
+            logger.info(f"   후보 상품 별칭 수: {len(cand_entities_sim['item_nm_alias'].unique())}개")
+            
+            # [단계 2] 2단계 LLM 필터링 시작 전 item_name_in_msg 로깅
+            logger.info(f"   [단계 2] 2단계 LLM 필터링 시작 전 item_name_in_msg:")
+            logger.info(f"      - 고유 개수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
+            logger.info(f"      - 전체 개수: {len(cand_entities_sim)}개")
+            item_name_list_2 = list(cand_entities_sim['item_name_in_msg'].unique())
+            logger.info(f"      - 고유 item_name_in_msg 목록: {item_name_list_2}")
+            
+            # SIMPLE_ENTITY_EXTRACTION_PROMPT 로깅
+            simple_prompt_length = len(SIMPLE_ENTITY_EXTRACTION_PROMPT)
+            logger.info(f"   📏 SIMPLE_ENTITY_EXTRACTION_PROMPT 길이: {simple_prompt_length:,} 문자")
+            logger.info(f"   📝 SIMPLE_ENTITY_EXTRACTION_PROMPT 내용 (전체):")
+            logger.info(f"   {'-' * 75}")
+            for line in SIMPLE_ENTITY_EXTRACTION_PROMPT.split('\n'):
+                logger.info(f"   {line}")
+            logger.info(f"   {'-' * 75}")
+            
             zero_shot_prompt = PromptTemplate(
             input_variables=["msg","entities_msg","cand_entities_voca"],
             template="""
@@ -1835,70 +1714,227 @@ class MMSExtractor:
 
             """
             )
+            
+            # 2단계 최종 프롬프트 생성
+            entities_msg_list = list(cand_entities_sim['item_name_in_msg'].unique())
+            cand_entities_voca_list = list(cand_entities_sim['item_nm_alias'].unique())
+            
+            logger.info(f"   📝 입력 엔티티 리스트 (처음 20개): {entities_msg_list[:20]}..." if len(entities_msg_list) > 20 else f"   📝 입력 엔티티 리스트: {entities_msg_list}")
+            logger.info(f"   📝 후보 상품 별칭 리스트 (처음 20개): {cand_entities_voca_list[:20]}..." if len(cand_entities_voca_list) > 20 else f"   📝 후보 상품 별칭 리스트: {cand_entities_voca_list}")
+            
+            final_prompt_2nd = zero_shot_prompt.format(
+                entity_extraction_prompt=SIMPLE_ENTITY_EXTRACTION_PROMPT,
+                msg=msg_text,
+                entities_msg=entities_msg_list,
+                cand_entities_voca=cand_entities_voca_list
+            )
+            final_prompt_2nd_length = len(final_prompt_2nd)
+            logger.info(f"   📏 2단계 최종 프롬프트 길이: {final_prompt_2nd_length:,} 문자")
+            logger.info(f"   📝 2단계 최종 프롬프트 내용 (전체):")
+            logger.info(f"   {'-' * 75}")
+            for line in final_prompt_2nd.split('\n'):
+                logger.info(f"   {line}")
+            logger.info(f"   {'-' * 75}")
                         
+            logger.info("🚀 2단계 LLM 호출 시작...")
             chain = zero_shot_prompt | self.llm_model
             cand_entities = chain.invoke({"entity_extraction_prompt": SIMPLE_ENTITY_EXTRACTION_PROMPT, "msg": msg_text, "entities_msg":cand_entities_sim['item_name_in_msg'].unique(), "cand_entities_voca":cand_entities_sim['item_nm_alias'].unique()}).content
+            logger.info("✅ 2단계 LLM 호출 완료")
+            logger.info(f"📥 2단계 LLM 응답 길이: {len(cand_entities):,} 문자")
+            logger.info(f"📥 2단계 LLM 응답: {cand_entities}")
 
-            # print('--------------------------------')
-            # print(cand_entities)
-            # print('--------------------------------')
-
+            logger.info("🔧 2단계 엔티티 파싱 시작...")
             cand_entity_list = [e.strip() for e in cand_entities.split("\n")[-1].replace("ENTITY: ","").split(',') if e.strip()]
+            logger.info(f"   파싱 직후 엔티티 수: {len(cand_entity_list)}개")
+            
+            before_filter = len(cand_entity_list)
             cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e)>=2]
+            after_filter = len(cand_entity_list)
+            
+            logger.info(f"   필터링 결과:")
+            logger.info(f"      - 필터링 전: {before_filter}개")
+            logger.info(f"      - 필터링 후: {after_filter}개 (제거: {before_filter - after_filter}개)")
+            logger.info(f"   최종 선택된 엔티티: {cand_entity_list}")
 
+            logger.info(f"🔍 최종 엔티티로 필터링 중...")
+            logger.info(f"   필터링 전 행 수: {len(cand_entities_sim)}개")
+            
+            # [단계 3] 최종 필터링 전 item_name_in_msg 로깅
+            logger.info(f"   [단계 3] 최종 필터링 전 item_name_in_msg:")
+            logger.info(f"      - 고유 개수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
+            logger.info(f"      - 전체 개수: {len(cand_entities_sim)}개")
+            item_name_list_3 = list(cand_entities_sim['item_name_in_msg'].unique())
+            logger.info(f"      - 고유 item_name_in_msg 목록: {item_name_list_3}")
+            
             cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list")
+            logger.info(f"   필터링 후 행 수: {len(cand_entities_sim)}개")
+            
+            # [단계 4] 최종 필터링 후 item_name_in_msg 로깅
+            logger.info(f"   [단계 4] 최종 필터링 후 item_name_in_msg:")
+            logger.info(f"      - 고유 개수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
+            logger.info(f"      - 전체 개수: {len(cand_entities_sim)}개")
+            if not cand_entities_sim.empty:
+                item_name_list_4 = list(cand_entities_sim['item_name_in_msg'].unique())
+                logger.info(f"      - 고유 item_name_in_msg 목록: {item_name_list_4}")
+            else:
+                logger.info(f"      - 고유 item_name_in_msg 목록: [] (비어있음)")
+            
+            logger.info("=" * 80)
+            logger.info("✅ [LLM 엔티티 추출] 함수 완료")
+            logger.info(f"📊 최종 결과: {len(cand_entities_sim)}개 행 반환")
+            logger.info("=" * 80)
 
             return cand_entities_sim
             
         except Exception as e:
-            logger.error(f"LLM 기반 엔티티 추출 실패: {e}")
+            logger.error("=" * 80)
+            logger.error("❌ [LLM 엔티티 추출] 함수 실패")
+            logger.error(f"오류 메시지: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
+            logger.error("=" * 80)
             return pd.DataFrame()
 
     def _match_entities_with_products(self, cand_entity_list: List[str], rank_limit: int) -> pd.DataFrame:
-        """후보 엔티티들을 상품 DB와 매칭"""
+        """후보 엔티티들을 상품 DB와 매칭 (ipynb 로직과 동일)"""
         try:
-            # 퍼지 유사도 매칭
-            similarities_fuzzy = safe_execute(
-                parallel_fuzzy_similarity,
+            logger.info("   🔍 [매칭] 퍼지 유사도 매칭 시작...")
+            logger.info(f"   📝 입력 엔티티 수: {len(cand_entity_list)}개")
+            logger.info(f"   📝 상품 DB 별칭 수: {len(self.item_pdf_all['item_nm_alias'].unique()):,}개")
+            logger.info(f"   ⚙️  퍼지 유사도 임계값: 0.6")
+            logger.info(f"   ⚙️  n_jobs: 6, batch_size: 30")
+            
+            # 퍼지 유사도 매칭 (ipynb와 동일하게 직접 호출)
+            similarities_fuzzy = parallel_fuzzy_similarity(
                 cand_entity_list,
                 self.item_pdf_all['item_nm_alias'].unique(),
                 threshold=0.6,
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
-                n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
-                batch_size=30,
-                default_return=pd.DataFrame()
+                n_jobs=6,
+                batch_size=30
             )
             
+            logger.info(f"   ✅ 퍼지 유사도 매칭 완료: {len(similarities_fuzzy)}개 행")
+            
             if similarities_fuzzy.empty:
+                logger.warning("   ⚠️  퍼지 유사도 매칭 결과가 비어있음")
                 return pd.DataFrame()
             
+            logger.info(f"   📊 퍼지 매칭 고유 엔티티 수: {similarities_fuzzy['item_name_in_msg'].nunique()}개")
+            logger.info(f"   📊 퍼지 매칭 고유 별칭 수: {similarities_fuzzy['item_nm_alias'].nunique()}개")
+            
             # 정지어 필터링
+            logger.info("   🔍 [매칭] 정지어 필터링...")
+            before_stopwords = len(similarities_fuzzy)
             similarities_fuzzy = similarities_fuzzy[
                 ~similarities_fuzzy['item_nm_alias'].isin(self.stop_item_names)
             ]
+            after_stopwords = len(similarities_fuzzy)
+            logger.info(f"   📊 정지어 필터링 결과: {before_stopwords}개 → {after_stopwords}개 (제거: {before_stopwords - after_stopwords}개)")
 
-            # 시퀀스 유사도 매칭
-            cand_entities_sim = self._calculate_combined_similarity(similarities_fuzzy, weights={'sequence_matcher': 0.8, 'token_sequence': 0.1, 'substring': 0.1})
+            # 시퀀스 유사도 매칭 (ipynb와 동일하게 두 번 호출)
+            logger.info("   🔍 [매칭] 시퀀스 유사도 계산 시작 (s1, s2 각각)...")
+            logger.info(f"   ⚙️  ipynb와 동일하게 weights=None, n_jobs=6, batch_size=30 사용")
+            
+            # s1 정규화
+            sim_s1 = parallel_seq_similarity(
+                sent_item_pdf=similarities_fuzzy,
+                text_col_nm='item_name_in_msg',
+                item_col_nm='item_nm_alias',
+                n_jobs=6,
+                batch_size=30,
+                # weights=None,  # ipynb와 동일하게 weights 없음
+                normalizaton_value='s1'
+            ).rename(columns={'sim': 'sim_s1'})
+            
+            # s2 정규화
+            sim_s2 = parallel_seq_similarity(
+                sent_item_pdf=similarities_fuzzy,
+                text_col_nm='item_name_in_msg',
+                item_col_nm='item_nm_alias',
+                n_jobs=6,
+                batch_size=30,
+                # weights=None,  # ipynb와 동일하게 weights 없음
+                normalizaton_value='s2'
+            ).rename(columns={'sim': 'sim_s2'})
+            
+            logger.info(f"   ✅ 시퀀스 유사도 계산 완료: sim_s1={len(sim_s1)}개, sim_s2={len(sim_s2)}개")
+            
+            # merge로 합치기 (ipynb와 동일)
+            logger.info("   🔍 [매칭] sim_s1과 sim_s2 병합 중...")
+            cand_entities_sim = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
+            logger.info(f"   ✅ 병합 완료: {len(cand_entities_sim)}개 행")
             
             if cand_entities_sim.empty:
+                logger.warning("   ⚠️  시퀀스 유사도 계산 결과가 비어있음")
                 return pd.DataFrame()
             
-            high_sim_threshold = getattr(PROCESSING_CONFIG, 'high_similarity_threshold', 1.5)
-            cand_entities_sim = cand_entities_sim.query("sim >= @high_sim_threshold").copy()
+            logger.info(f"   📊 유사도 통계:")
+            logger.info(f"      - sim_s1 최소: {cand_entities_sim['sim_s1'].min():.4f}")
+            logger.info(f"      - sim_s1 최대: {cand_entities_sim['sim_s1'].max():.4f}")
+            logger.info(f"      - sim_s2 최소: {cand_entities_sim['sim_s2'].min():.4f}")
+            logger.info(f"      - sim_s2 최대: {cand_entities_sim['sim_s2'].max():.4f}")
+            
+            # ipynb와 동일한 필터링 조건 적용
+            logger.info(f"   🔍 [매칭] 쿼리 조건 필터링...")
+            logger.info(f"   ⚙️  조건: (sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+            before_query = len(cand_entities_sim)
+            cand_entities_sim = cand_entities_sim.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+            after_query = len(cand_entities_sim)
+            logger.info(f"   📊 쿼리 필터링 결과: {before_query}개 → {after_query}개 (제거: {before_query - after_query}개)")
+
+            # ipynb와 동일하게 groupby로 합산
+            logger.info(f"   🔍 [매칭] sim_s1과 sim_s2 합산 중...")
+            cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg', 'item_nm_alias'])[['sim_s1', 'sim_s2']].apply(
+                lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()
+            ).reset_index(name='sim')
+            logger.info(f"   ✅ 합산 완료: {len(cand_entities_sim)}개 행")
+            
+            # ipynb와 동일하게 sim>=1.1 필터링
+            logger.info(f"   🔍 [매칭] 유사도 필터링 (임계값: sim>=1.1)...")
+            before_sim_filter = len(cand_entities_sim)
+            cand_entities_sim = cand_entities_sim.query("sim >= 1.1").copy()
+            after_sim_filter = len(cand_entities_sim)
+            logger.info(f"   📊 유사도 필터링 결과: {before_sim_filter}개 → {after_sim_filter}개 (제거: {before_sim_filter - after_sim_filter}개)")
+            
+            logger.info(f"   📊 합산 sim 통계:")
+            logger.info(f"      - 최소: {cand_entities_sim['sim'].min():.4f}")
+            logger.info(f"      - 최대: {cand_entities_sim['sim'].max():.4f}")
+            logger.info(f"      - 평균: {cand_entities_sim['sim'].mean():.4f}")
+            logger.info(f"      - 중앙값: {cand_entities_sim['sim'].median():.4f}")
 
             # 순위 매기기 및 결과 제한
+            logger.info(f"   🔍 [매칭] 순위 매기기 및 결과 제한 (rank_limit: {rank_limit})...")
             cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(
                 method='dense', ascending=False
             )
+            before_rank_limit = len(cand_entities_sim)
             cand_entities_sim = cand_entities_sim.query(f"rank <= {rank_limit}").sort_values(
                 ['item_name_in_msg', 'rank'], ascending=[True, True]
             )
+            after_rank_limit = len(cand_entities_sim)
+            logger.info(f"   📊 순위 제한 결과: {before_rank_limit}개 → {after_rank_limit}개 (제거: {before_rank_limit - after_rank_limit}개)")
+            
+            # ipynb와 동일하게 rank 제한 후 item_dmn_nm 병합
+            logger.info(f"   🔍 [매칭] item_dmn_nm 병합 중...")
+            if 'item_dmn_nm' in self.item_pdf_all.columns:
+                cand_entities_sim = cand_entities_sim.merge(
+                    self.item_pdf_all[['item_nm_alias', 'item_dmn_nm']].drop_duplicates(),
+                    on='item_nm_alias',
+                    how='left'
+                )
+                logger.info(f"   ✅ item_dmn_nm 병합 완료")
+            else:
+                logger.warning(f"   ⚠️  item_dmn_nm 컬럼이 없어 병합을 건너뜁니다.")
+                logger.warning(f"   ⚠️  item_pdf_all 컬럼 목록: {list(self.item_pdf_all.columns)}")
+            
+            logger.info(f"   ✅ [매칭] 최종 결과: {len(cand_entities_sim)}개 행, {cand_entities_sim['item_name_in_msg'].nunique()}개 고유 엔티티")
 
             return cand_entities_sim
             
         except Exception as e:
-            logger.error(f"엔티티-상품 매칭 실패: {e}")
+            logger.error(f"   ❌ [매칭] 엔티티-상품 매칭 실패: {e}")
+            logger.error(f"   ❌ [매칭] 오류 상세: {traceback.format_exc()}")
             return pd.DataFrame()
 
     def _extract_entities(self, mms_msg: str) -> Tuple[List[str], pd.DataFrame]:
@@ -2961,7 +2997,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '(광고)[SKT] 준대리점 다산테라타워점 9월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 준대리점 다산테라타워점에서 아이폰 신제품 사전예약 및 9월 혜택을 안내드립니다.__■ 아이폰 신제품 사전예약 안내_- 기간: 2025년 9월 18일(목)까지_- 혜택: 사은품 증정__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료되신 고객님이 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담 _- 시니어 전용 요금제로 통신비 절약 가능__■ 준대리점 다산테라타워점_- 주소: 경기도 남양주시 다산지금로 202(다산동) C동 135호_- 연락처: 031-516-3321_- 찾아오시는 길: 다산금강펜테리움리버테라스2차아파트 맞은편 다산테라타워 상가 1층__▶ 매장 홈페이지 예약/상담: https://t-mms.kr/t.do?m=#61&s=33744&a=&u=http://tworldfriends.co.kr/D153190002__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
+  message: '[SK텔레콤] 반가워요 5G 아이폰17/ 17 Pro 사전예약 안내\\n(광고)[SKT] 아이폰 17/17 Pro 사전예약 안내  #04 고객님, 안녕하세요. 최고의 스마트폰 칩과 카메라, 견고한 세라믹 실드에 5G 기술까지! 이 모든 것을 갖춘 아이폰 17/17 Pro를 만나 보세요.  ▶ 혜택받고 사전예약하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx   ■ 사전예약 기간 - 2020년 10월 23일(금)~10월 29일(목) * 2020년 10월 30일(금)부터 순서대로 배송 후 개통 진행  ■ 아이폰 17/17 Pro 스펙 - Hi, Speed. 아이폰 최초의 5G 지원 - 스마트폰 사상 가장 빠른 A14 Bionic 칩 - 매끈하고 강화된 내구성을 가진 세라믹 글라스 적용 디자인 - 저조도 사진의 품질을 한 차원 끌어올려 주는 카메라 시스템 - 최초의 Dolby Vision 영상 카메라 탑재   ■ T다이렉트샵 특별 사은품(택1) ① [사죠영] 죠르디 한정판 기프트 ② [프리디] 멀티 무선 충전기 ③ [에이프릴스톤] 보조배터리+멀티백 ④ [크레앙] 3in1 무선 충전 살균기  ※ 이 외에도 더 많은 T기프트가 있습니다. .  ▶ T다이렉트샵 카카오톡 상담하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA  ■ 문의: SKT 고객센터(1558, 무료)   ※ 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.  SKT와 함께해주셔서 감사합니다. 무료 수신거부 1504',
 
 
 """
