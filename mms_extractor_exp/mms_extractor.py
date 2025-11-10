@@ -1646,7 +1646,7 @@ class MMSExtractor:
                 all_entities = list(set(all_entities+external_cand_entities))
             logger.info(f"📊 병합 전 총 엔티티 수: {len(all_entities)}개")
             cand_entity_list = list(set(all_entities))
-            cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=1] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
+            cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
             logger.info(f"📊 중복 제거 후 엔티티 수: {len(cand_entity_list)}개")
             logger.info(f"✅ LLM 추출 완료: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"✅ LLM 추출 완료: {cand_entity_list}")
 
