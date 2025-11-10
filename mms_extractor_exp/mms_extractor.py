@@ -137,7 +137,8 @@ from utils import (
     convert_df_to_json_list,
     create_dag_diagram,
     sha256_hash,
-    replace_special_chars_with_space
+    replace_special_chars_with_space,
+    extract_ngram_candidates
 )
 
 # 설정 및 의존성 임포트 (원본 코드에서 가져옴)
@@ -1645,6 +1646,7 @@ class MMSExtractor:
                 all_entities = list(set(all_entities+external_cand_entities))
             logger.info(f"📊 병합 전 총 엔티티 수: {len(all_entities)}개")
             cand_entity_list = list(set(all_entities))
+            cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=1] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
             logger.info(f"📊 중복 제거 후 엔티티 수: {len(cand_entity_list)}개")
             logger.info(f"✅ LLM 추출 완료: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"✅ LLM 추출 완료: {cand_entity_list}")
 
@@ -1888,9 +1890,9 @@ class MMSExtractor:
             logger.info(f"   ✅ 합산 완료: {len(cand_entities_sim)}개 행")
             
             # ipynb와 동일하게 sim>=1.1 필터링
-            logger.info(f"   🔍 [매칭] 유사도 필터링 (임계값: sim>=1.1)...")
+            logger.info(f"   🔍 [매칭] 유사도 필터링 (임계값: sim>=1.0)...")
             before_sim_filter = len(cand_entities_sim)
-            cand_entities_sim = cand_entities_sim.query("sim >= 1.1").copy()
+            cand_entities_sim = cand_entities_sim.query("sim >= 1.0").copy()
             after_sim_filter = len(cand_entities_sim)
             logger.info(f"   📊 유사도 필터링 결과: {before_sim_filter}개 → {after_sim_filter}개 (제거: {before_sim_filter - after_sim_filter}개)")
             
@@ -2479,7 +2481,7 @@ class MMSExtractor:
                 axis=1
             )]
 
-            similarities_fuzzy = filtered_df[similarities_fuzzy.columns]
+            # similarities_fuzzy = filtered_df[similarities_fuzzy.columns]
 
             # 상품 정보 매핑
             if not similarities_fuzzy.empty:
@@ -2996,7 +2998,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '[SK텔레콤] 반가워요 5G 아이폰17/ 17 Pro 사전예약 안내\\n(광고)[SKT] 아이폰 17/17 Pro 사전예약 안내  #04 고객님, 안녕하세요. 최고의 스마트폰 칩과 카메라, 견고한 세라믹 실드에 5G 기술까지! 이 모든 것을 갖춘 아이폰 17/17 Pro를 만나 보세요.  ▶ 혜택받고 사전예약하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx   ■ 사전예약 기간 - 2020년 10월 23일(금)~10월 29일(목) * 2020년 10월 30일(금)부터 순서대로 배송 후 개통 진행  ■ 아이폰 17/17 Pro 스펙 - Hi, Speed. 아이폰 최초의 5G 지원 - 스마트폰 사상 가장 빠른 A14 Bionic 칩 - 매끈하고 강화된 내구성을 가진 세라믹 글라스 적용 디자인 - 저조도 사진의 품질을 한 차원 끌어올려 주는 카메라 시스템 - 최초의 Dolby Vision 영상 카메라 탑재   ■ T다이렉트샵 특별 사은품(택1) ① [사죠영] 죠르디 한정판 기프트 ② [프리디] 멀티 무선 충전기 ③ [에이프릴스톤] 보조배터리+멀티백 ④ [크레앙] 3in1 무선 충전 살균기  ※ 이 외에도 더 많은 T기프트가 있습니다. .  ▶ T다이렉트샵 카카오톡 상담하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA  ■ 문의: SKT 고객센터(1558, 무료)   ※ 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.  SKT와 함께해주셔서 감사합니다. 무료 수신거부 1504',
+  message: '(광고)[SKT] 8월 0 day 혜택 안내__<8월 10일(일) 혜택>_만 13~34세 고객님이라면_SKT 0 day_[다이소 직영점용 5,000원 금액권 증정]_이게 되네!_(선착순 5천 명)__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=32917&a=&u=http://bit.ly/46qZ9Bs__■ 문의: SKT 고객센터(1558, 무료)__무료 수신거부 1504',
 
 
 """
