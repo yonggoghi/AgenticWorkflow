@@ -37,7 +37,7 @@ SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 
 다음과 같은 포맷으로 결과를 반환해라.
 
-REASON: 선택 이유
+REASON: 30자 이내 선택 이유
 ENTITY: 제공하는 결과는 candidate entities in vocabulary 값들을 ,(콤마)로 연결해라. 없다고 판단하면, 공백으로 결과를 반환해라.
 """
 
