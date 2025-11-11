@@ -112,11 +112,6 @@ from utils import (
     validate_text_input,
     safe_check_empty,
     dataframe_to_markdown_prompt,
-    clean_segment,
-    split_key_value,
-    split_outside_quotes,
-    clean_ill_structured_json,
-    repair_json,
     extract_json_objects,
     preprocess_text,
     fuzzy_similarities,
@@ -2998,7 +2993,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '(광고)[SKT] 8월 0 day 혜택 안내__<8월 10일(일) 혜택>_만 13~34세 고객님이라면_SKT 0 day_[다이소 직영점용 5,000원 금액권 증정]_이게 되네!_(선착순 5천 명)__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=32917&a=&u=http://bit.ly/46qZ9Bs__■ 문의: SKT 고객센터(1558, 무료)__무료 수신거부 1504',
+  message: '(광고)[SKT] 베테랑대리점 송리단점 10월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 베테랑대리점 송리단점에서 10월 혜택을 안내드립니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정이 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담 _- 시니어 전용 요금제로 통신비 절약 가능__■ 베테랑대리점 송리단점_- 주소: 서울특별시 송파구 백제고분로425 1층_- 연락처: 070-8648-2981_- 찾아오시는 길: 송파나루역 1번 출구 올리브영 뒤__▶ 매장 홈페이지 예약/상담: https://t-mms.kr/t.do?m=#61&s=34181&a=&u=http://tworldfriends.co.kr/D153230003__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
 
 
 """
