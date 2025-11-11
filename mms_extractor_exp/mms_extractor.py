@@ -1885,13 +1885,21 @@ class MMSExtractor:
             logger.info(f"   🔍 [매칭] sim_s1과 sim_s2 합산 중...")
             cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg', 'item_nm_alias'])[['sim_s1', 'sim_s2']].apply(
                 lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()
-            ).to_frame('sim').reset_index()
+            )
+            if cand_entities_sim.empty:
+                logger.warning("합산 결과가 비어있음")
+                return pd.DataFrame()
+            
+            cand_entities_sim = cand_entities_sim.reset_index(name='sim')
             logger.info(f"   ✅ 합산 완료: {len(cand_entities_sim)}개 행")
             
             # ipynb와 동일하게 sim>=1.1 필터링
             logger.info(f"   🔍 [매칭] 유사도 필터링 (임계값: sim>=1.0)...")
             before_sim_filter = len(cand_entities_sim)
             cand_entities_sim = cand_entities_sim.query("sim >= 1.0").copy()
+            if cand_entities_sim.empty:
+                logger.warning("필터링 결과가 비어있음")
+                return pd.DataFrame()
             after_sim_filter = len(cand_entities_sim)
             logger.info(f"   📊 유사도 필터링 결과: {before_sim_filter}개 → {after_sim_filter}개 (제거: {before_sim_filter - after_sim_filter}개)")
             
@@ -3119,7 +3127,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '(광고)[SKT] <Table 2025> 이벤트 안내_ _고객님, 안녕하세요._<Table 2025>에 T 멤버십 고객님을 초대합니다.__그랜드 하얏트 제주 <그랜드 키친 뷔페>에서 특별한 시간을 보내 보세요!__■ <Table 2025> 안내_- 일정: 2025년 11월 29일(토) 디너_- 응모 기간: 2025년 10월 20일(월) 오전 10시~11월 2일(일) 오후 11시 50분_- 당첨 인원: 106명(1인 2장 증정)_- 장소: 그랜드 하얏트 제주 <그랜드 키친 뷔페>_- 혜택: Table 2025 초대권(프리미엄 호텔 뷔페 식사 2인 초대 및 아로마티카 헤어&보디 데일리 케어 세트 기프트 1개 증정)__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=34216&a=&u=http://bit.ly/43kZGCr__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
+  message: '(광고)[SKT] ZEM iOS 앱 이용 안내__#04 고객님, 안녕하세요._iPhone을 사용하는 자녀의 실시간 위치도 조회할 수 있는 스마트폰 관리 앱 ZEM!__스마트폰 사용 시간 제한부터 이용 가능한 앱 설정까지,_초등 부모님을 위한 필수 기능을 무료로 이용해 보세요.__▶ ZEM 부모용 앱 다운로드하기(무료): https://t-mms.kr/aSY/#74__■ ZEM 앱 주요 기능_① 자녀 실시간 위치 확인_② 자녀 스마트폰 사용 시간 설정_③ 앱별 허용/차단 설정_④ 유해 사이트 차단_  _■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다._ _무료 수신거부 1504',
 
 
 """
