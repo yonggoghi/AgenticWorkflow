@@ -1451,6 +1451,9 @@ class MMSExtractor:
                     combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
                     # ipynb와 동일한 필터링 조건: (sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)
                     filtered = combined.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+                    if filtered.empty:
+                        logger.warning("결합 유사도 계산 결과가 비어있음")
+                        return pd.DataFrame()
                     # sim_s1과 sim_s2를 각각 합산한 후 더하기 (ipynb와 동일)
                     combined = filtered.groupby(['item_name_in_msg', 'item_nm_alias']).agg({
                         'sim_s1': 'sum',
@@ -1462,6 +1465,7 @@ class MMSExtractor:
                     return pd.DataFrame()
                 return combined
             else:
+                logger.warning("결합 유사도 계산 결과가 비어있음")
                 return pd.DataFrame()
                 
         except Exception as e:
@@ -2078,18 +2082,6 @@ class MMSExtractor:
                     logger.warning(f"필수 필드 누락: {field}")
                     result[field] = [] if field != 'title' else "광고 메시지"
 
-            # 상품명 길이 검증
-            validated_products = []
-            for product in result.get('product', []):
-                if isinstance(product, dict):
-                    item_name = product.get('item_name_in_msg', product.get('name', ''))
-                    if len(item_name) >= 2 and item_name not in self.stop_item_names:
-                        validated_products.append(product)
-                    else:
-                        logger.warning(f"의심스러운 상품명 제외: {item_name}")
-            
-            result['product'] = validated_products
-
             # 채널 정보 검증
             validated_channels = []
             for channel in result.get('channel', []):
@@ -2465,50 +2457,104 @@ class MMSExtractor:
     def _build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str]) -> Dict[str, Any]:
         """최종 결과 구성"""
         try:
+            logger.info("=" * 80)
+            logger.info("🔍 [PRODUCT DEBUG] _build_final_result 시작")
+            logger.info("=" * 80)
+            
             final_result = json_objects.copy()
             
             # 상품 정보에서 엔티티 추출
+            logger.info("📋 [STEP 1] product_items 추출")
             product_items = json_objects.get('product', [])
+            logger.info(f"   - 원본 product 타입: {type(product_items)}")
+            logger.info(f"   - 원본 product 내용: {product_items}")
+            
             if isinstance(product_items, dict):
+                logger.info("   - product가 dict 타입 → 'items' 키로 접근")
                 product_items = product_items.get('items', [])
+                logger.info(f"   - items 추출 후: {product_items}")
+            
+            logger.info(f"   ✅ 최종 product_items 개수: {len(product_items)}개")
+            logger.info(f"   ✅ 최종 product_items 내용: {product_items}")
 
             primary_llm_extracted_entities = [x.get('name', '') for x in product_items]
-            logger.info(f"Primary LLM 추출 엔티티: {primary_llm_extracted_entities}")
-            logger.info(f"Kiwi 엔티티: {entities_from_kiwi}")
+            logger.info(f"📋 [STEP 2] LLM 추출 엔티티: {primary_llm_extracted_entities}")
+            logger.info(f"📋 [STEP 2] Kiwi 엔티티: {entities_from_kiwi}")
+            logger.info(f"📋 [STEP 2] entity_extraction_mode: {self.entity_extraction_mode}")
 
             # 엔티티 매칭 모드에 따른 처리
             if self.entity_extraction_mode == 'logic':
+                logger.info("🔍 [STEP 3] 로직 기반 엔티티 매칭 시작")
                 # 로직 기반: 퍼지 + 시퀀스 유사도
                 cand_entities = list(set(entities_from_kiwi+[item.get('name', '') for item in product_items if item.get('name')]))
+                logger.info(f"   - cand_entities: {cand_entities}")
                 similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
+                logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
             else:
+                logger.info("🔍 [STEP 3] LLM 기반 엔티티 매칭 시작")
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
                 default_llm_models = self._initialize_multiple_llm_models(['ax','gen'])
+                logger.info(f"   - 초기화된 LLM 모델 수: {len(default_llm_models)}개")
                 similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=entities_from_kiwi)
+                logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
+            
+            if not similarities_fuzzy.empty:
+                logger.info(f"   📊 similarities_fuzzy 샘플 (처음 3개):")
+                logger.info(f"{similarities_fuzzy.head(3).to_dict('records')}")
+            else:
+                logger.warning("   ⚠️ similarities_fuzzy가 비어있습니다!")
 
-            # similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '').lower() in x['item_name_in_msg'].replace(' ', '').lower() or x['item_name_in_msg'].replace(' ', '').lower() in x['item_nm_alias'].replace(' ', '').lower()) , axis=1)]
-            merged_df = similarities_fuzzy.merge(
-                self.alias_pdf_raw[['alias_1','type']].drop_duplicates(), 
-                left_on='item_name_in_msg', 
-                right_on='alias_1', 
-                how='left'
-            )
+            if not similarities_fuzzy.empty:
+                logger.info("🔍 [STEP 4] alias_pdf_raw와 merge 시작")
+                logger.info(f"   - alias_pdf_raw 크기: {self.alias_pdf_raw.shape}")
+                merged_df = similarities_fuzzy.merge(
+                    self.alias_pdf_raw[['alias_1','type']].drop_duplicates(), 
+                    left_on='item_name_in_msg', 
+                    right_on='alias_1', 
+                    how='left'
+                )
+                logger.info(f"   ✅ merged_df 크기: {merged_df.shape if not merged_df.empty else '비어있음'}")
+                if not merged_df.empty:
+                    logger.info(f"   📊 merged_df 샘플 (처음 3개):")
+                    logger.info(f"{merged_df.head(3).to_dict('records')}")
 
-            filtered_df = merged_df[merged_df.apply(
-                lambda x: (
-                    replace_special_chars_with_space(x['item_nm_alias']) in replace_special_chars_with_space(x['item_name_in_msg']) or 
-                    replace_special_chars_with_space(x['item_name_in_msg']) in replace_special_chars_with_space(x['item_nm_alias'])
-                ) if x['type'] != 'expansion' else True, 
-                axis=1
-            )]
+                logger.info("🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)")
+                filtered_df = merged_df[merged_df.apply(
+                    lambda x: (
+                        replace_special_chars_with_space(x['item_nm_alias']) in replace_special_chars_with_space(x['item_name_in_msg']) or 
+                        replace_special_chars_with_space(x['item_name_in_msg']) in replace_special_chars_with_space(x['item_nm_alias'])
+                    ) if x['type'] != 'expansion' else True, 
+                    axis=1
+                )]
+                logger.info(f"   ✅ filtered_df 크기: {filtered_df.shape if not filtered_df.empty else '비어있음'}")
+                if not filtered_df.empty:
+                    logger.info(f"   📊 filtered_df 샘플 (처음 3개):")
+                    logger.info(f"{filtered_df.head(3).to_dict('records')}")
 
-            # similarities_fuzzy = filtered_df[similarities_fuzzy.columns]
+                # similarities_fuzzy = filtered_df[similarities_fuzzy.columns]
 
             # 상품 정보 매핑
+            logger.info("🔍 [STEP 6] 상품 정보 매핑 시작")
+            logger.info(f"   - similarities_fuzzy.empty: {similarities_fuzzy.empty}")
+            
             if not similarities_fuzzy.empty:
+                logger.info("   ✅ similarities_fuzzy가 비어있지 않음 → _map_products_with_similarity 호출")
                 final_result['product'] = self._map_products_with_similarity(similarities_fuzzy, json_objects)
+                logger.info(f"   ✅ 최종 product 개수: {len(final_result['product'])}개")
+                logger.info(f"   ✅ 최종 product 내용: {final_result['product']}")
             else:
+                logger.warning("   ⚠️ similarities_fuzzy가 비어있음 → LLM 결과 그대로 사용 (else 브랜치)")
+                logger.info(f"   - product_items 개수: {len(product_items)}개")
+                logger.info(f"   - stop_item_names 개수: {len(self.stop_item_names)}개")
+                
                 # 유사도 결과가 없으면 LLM 결과 그대로 사용 (새 스키마 + expected_action 리스트)
+                filtered_product_items = [
+                    d for d in product_items 
+                    if d.get('name') and d['name'] not in self.stop_item_names
+                ]
+                logger.info(f"   - 필터링 후 product_items 개수: {len(filtered_product_items)}개")
+                logger.info(f"   - 필터링 후 product_items: {filtered_product_items}")
+                
                 final_result['product'] = [
                     {
                         'item_nm': d.get('name', ''), 
@@ -2516,15 +2562,24 @@ class MMSExtractor:
                         'item_name_in_msg': [d.get('name', '')],
                         'expected_action': [d.get('action', '기타')]
                     } 
-                    for d in product_items 
-                    if d.get('name') and d['name'] not in self.stop_item_names
+                    for d in filtered_product_items
                 ]
+                logger.info(f"   ✅ 최종 product 개수: {len(final_result['product'])}개")
+                logger.info(f"   ✅ 최종 product 내용: {final_result['product']}")
 
             # 프로그램 분류 정보 매핑
             final_result['pgm'] = self._map_program_classification(json_objects, pgm_info)
             
             # 채널 정보 처리
             final_result['channel'] = self._extract_channels(json_objects, msg)
+            
+            # entity_dag 초기화 (빈 배열)
+            final_result['entity_dag'] = []
+            
+            logger.info("=" * 80)
+            logger.info("✅ [PRODUCT DEBUG] _build_final_result 완료")
+            logger.info(f"   최종 final_result['product'] 개수: {len(final_result.get('product', []))}개")
+            logger.info("=" * 80)
 
             return final_result
             
@@ -2535,23 +2590,57 @@ class MMSExtractor:
     def _map_products_with_similarity(self, similarities_fuzzy: pd.DataFrame, json_objects: Dict = None) -> List[Dict]:
         """유사도를 기반으로 상품 정보 매핑"""
         try:
+            logger.info("🔍 [_map_products_with_similarity] 시작")
+            logger.info(f"   - 입력 similarities_fuzzy 크기: {similarities_fuzzy.shape}")
+            
             # 높은 유사도 아이템들 필터링
-            high_sim_threshold = getattr(PROCESSING_CONFIG, 'high_similarity_threshold', 1.5)
+            high_sim_threshold = getattr(PROCESSING_CONFIG, 'high_similarity_threshold', 1.0)
+            logger.info(f"   - high_sim_threshold: {high_sim_threshold}")
+            
             high_sim_items = similarities_fuzzy.query('sim >= @high_sim_threshold')['item_nm_alias'].unique()
+            logger.info(f"   - high_sim_items 개수: {len(high_sim_items)}개")
+            logger.info(f"   - high_sim_items: {list(high_sim_items)[:10]}")
+            
+            before_filter = len(similarities_fuzzy)
             filtered_similarities = similarities_fuzzy[
                 (similarities_fuzzy['item_nm_alias'].isin(high_sim_items)) &
                 (~similarities_fuzzy['item_nm_alias'].str.contains('test', case=False)) &
                 (~similarities_fuzzy['item_name_in_msg'].isin(self.stop_item_names))
             ]
+            after_filter = len(filtered_similarities)
+            logger.info(f"   - 필터링: {before_filter}개 → {after_filter}개 (제거: {before_filter - after_filter}개)")
+            
+            if filtered_similarities.empty:
+                logger.warning("   ⚠️ filtered_similarities가 비어있음 → 빈 배열 반환")
+                return []
+            
+            logger.info(f"   📊 filtered_similarities 샘플 (처음 3개):")
+            logger.info(f"{filtered_similarities.head(3).to_dict('records')}")
             
             # 상품 정보와 매핑하여 최종 결과 생성 (새 스키마 + expected_action)
-            product_tag = self.convert_df_to_json_list(
-                self.item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
-            )
+            logger.info("   🔍 item_pdf_all과 merge 시작")
+            logger.info(f"   - item_pdf_all 크기: {self.item_pdf_all.shape}")
+            merged_items = self.item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
+            logger.info(f"   - merged_items 크기: {merged_items.shape}")
+            
+            if merged_items.empty:
+                logger.warning("   ⚠️ merged_items가 비어있음 → 빈 배열 반환")
+                return []
+            
+            logger.info(f"   📊 merged_items 샘플 (처음 3개):")
+            logger.info(f"{merged_items.head(3).to_dict('records')}")
+            
+            logger.info("   🔍 convert_df_to_json_list 호출")
+            product_tag = self.convert_df_to_json_list(merged_items)
+            logger.info(f"   ✅ product_tag 개수: {len(product_tag)}개")
+            logger.info(f"   ✅ product_tag 내용: {product_tag}")
             
             # Add expected_action to each product
             if json_objects:
+                logger.info("   🔍 expected_action 추가 시작")
                 action_mapping = self._create_action_mapping(json_objects)
+                logger.info(f"   - action_mapping: {action_mapping}")
+                
                 for product in product_tag:
                     item_names_in_msg = product.get('item_name_in_msg', [])
                     # 배열의 각 항목에 대해 모든 action 찾기 (리스트로 수집, 중복 제거)
@@ -2561,11 +2650,15 @@ class MMSExtractor:
                             found_actions.append(action_mapping[item_name])
                     # 중복 제거 (순서 유지)
                     product['expected_action'] = list(dict.fromkeys(found_actions)) if found_actions else ['기타']
+                
+                logger.info(f"   ✅ expected_action 추가 완료")
             
+            logger.info(f"✅ [_map_products_with_similarity] 완료 - 반환: {len(product_tag)}개")
             return product_tag
             
         except Exception as e:
-            logger.error(f"상품 정보 매핑 실패: {e}")
+            logger.error(f"❌ [_map_products_with_similarity] 실패: {e}")
+            logger.error(f"   오류 상세: {traceback.format_exc()}")
             return []
 
     def _create_action_mapping(self, json_objects: Dict) -> Dict[str, str]:
@@ -3026,7 +3119,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '[SKT] Netflix 광고형 스탠다드 구독료 변경 안내__고객님, 안녕하세요._2025년 12월 1일(월)부터 Netflix 광고형 스탠다드 구독료가 변경됩니다.__요금제 혜택으로 Netflix 광고형 스탠다드를 추가 요금 없이 이용 중인 경우, 별도 안내 전까지 기존 구독료로 동일하게 즐기실 수 있습니다.__아직 가입하지 않으셨다면, 아래 URL을 통해 가입 가능합니다.__▶ 가입하기: https://m.sktuniverse.co.kr/product/detail?prdId=PR00000501__■ 변경 내용_- 대상: Netflix 광고형 스탠다드_- 변경일: 2025년 12월 1일(월)_- 내용: 월 구독료 변경(5,500원 → 7,000원)_* 2025년 11월 30일(일)까지 Netflix 광고형 스탠다드와 할인 대상 요금제 모두 가입 시, 별도 안내 전까지 기존 구독료로 계속 이용 가능__■ 유의 사항_- 구독료 변경 후에도 <T 우주 Netflix> 광고형 스탠다드 할인 요금제 혜택은 기존과 동일(5,500원 할인)하게 유지됩니다._* 대상 요금제: 5GX 프라임(넷플릭스), 0 청년 89(넷플릭스), 다이렉트5G 62(넷플릭스), 0 청년 다이렉트 62(넷플릭스)_- 2025년 12월 1일(월)부터 할인 대상 요금제 또는 Netflix 광고형 스탠다드 상품 신규가입 시 변경된 구독료로 결제됩니다._ - Wavve와 결합된 <T 우주패스 Netflix>에 가입한 경우, 2025년 12월 1일(월)부터 가격이 인상됩니다.__■ 문의: SKT 고객센터(114)__SKT와 함께해 주셔서 감사합니다.',
+  message: '(광고)[SKT] <Table 2025> 이벤트 안내_ _고객님, 안녕하세요._<Table 2025>에 T 멤버십 고객님을 초대합니다.__그랜드 하얏트 제주 <그랜드 키친 뷔페>에서 특별한 시간을 보내 보세요!__■ <Table 2025> 안내_- 일정: 2025년 11월 29일(토) 디너_- 응모 기간: 2025년 10월 20일(월) 오전 10시~11월 2일(일) 오후 11시 50분_- 당첨 인원: 106명(1인 2장 증정)_- 장소: 그랜드 하얏트 제주 <그랜드 키친 뷔페>_- 혜택: Table 2025 초대권(프리미엄 호텔 뷔페 식사 2인 초대 및 아로마티카 헤어&보디 데일리 케어 세트 기프트 1개 증정)__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=34216&a=&u=http://bit.ly/43kZGCr__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
 
 
 """
