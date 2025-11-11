@@ -365,7 +365,7 @@ def get_fuzzy_similarities(args_dict):
     text_col_nm = args_dict['text_col_nm']
     item_col_nm = args_dict['item_col_nm']
     
-    text_processed = preprocess_text(text.lower())
+    text_processed = preprocess_text(text)
     similarities = fuzzy_similarities(text_processed, entities)
     
     filtered_results = [
