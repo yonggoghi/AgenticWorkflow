@@ -1881,7 +1881,7 @@ class MMSExtractor:
             logger.info(f"   🔍 [매칭] sim_s1과 sim_s2 합산 중...")
             cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg', 'item_nm_alias'])[['sim_s1', 'sim_s2']].apply(
                 lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()
-            ).reset_index(name='sim')
+            ).to_frame('sim').reset_index()
             logger.info(f"   ✅ 합산 완료: {len(cand_entities_sim)}개 행")
             
             # ipynb와 동일하게 sim>=1.1 필터링
@@ -2426,6 +2426,32 @@ class MMSExtractor:
             logger.error(f"스키마 응답 감지 중 오류: {e}")
             return False
 
+    def convert_df_to_json_list(self, df: pd.DataFrame) -> List[Dict]:
+        """
+        DataFrame을 특정 JSON 구조로 변환
+        새로운 스키마: item_nm 기준으로 그룹화하고 모든 item_name_in_msg를 배열로 수집
+        
+        Schema:
+        {
+            "item_nm": "상품명",
+            "item_id": ["ID1", "ID2"],
+            "item_name_in_msg": ["메시지내표현1", "메시지내표현2"]
+        }
+        """
+        result = []
+        # item_nm 기준으로 그룹화
+        grouped = df.groupby('item_nm')
+        for item_nm, group in grouped:
+            # 메인 아이템 딕셔너리 생성
+            item_name_in_msg_raw = list(group['item_name_in_msg'].unique())
+            item_dict = {
+                'item_nm': item_nm,
+                'item_id': list(group['item_id'].unique()),
+                'item_name_in_msg': select_most_comprehensive(item_name_in_msg_raw)
+            }
+            result.append(item_dict)
+        return result
+
     def _create_fallback_result(self, msg: str) -> Dict[str, Any]:
         """처리 실패 시 기본 결과 생성"""
         return {
@@ -2482,12 +2508,13 @@ class MMSExtractor:
             if not similarities_fuzzy.empty:
                 final_result['product'] = self._map_products_with_similarity(similarities_fuzzy, json_objects)
             else:
-                # 유사도 결과가 없으면 LLM 결과 그대로 사용
+                # 유사도 결과가 없으면 LLM 결과 그대로 사용 (새 스키마 + expected_action 리스트)
                 final_result['product'] = [
                     {
-                        'item_name_in_msg': d.get('name', ''), 
-                        'expected_action': d.get('action', '기타'),
-                        'item_in_voca': [{'item_name_in_voca': d.get('name', ''), 'item_id': ['#']}]
+                        'item_nm': d.get('name', ''), 
+                        'item_id': ['#'],
+                        'item_name_in_msg': [d.get('name', '')],
+                        'expected_action': [d.get('action', '기타')]
                     } 
                     for d in product_items 
                     if d.get('name') and d['name'] not in self.stop_item_names
@@ -2517,17 +2544,23 @@ class MMSExtractor:
                 (~similarities_fuzzy['item_name_in_msg'].isin(self.stop_item_names))
             ]
             
-            # 상품 정보와 매핑하여 최종 결과 생성
-            product_tag = convert_df_to_json_list(
+            # 상품 정보와 매핑하여 최종 결과 생성 (새 스키마 + expected_action)
+            product_tag = self.convert_df_to_json_list(
                 self.item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
             )
             
-            # Add action information from original json_objects
+            # Add expected_action to each product
             if json_objects:
                 action_mapping = self._create_action_mapping(json_objects)
                 for product in product_tag:
-                    item_name = product.get('item_name_in_msg', '')
-                    product['expected_action'] = action_mapping.get(item_name, '기타')
+                    item_names_in_msg = product.get('item_name_in_msg', [])
+                    # 배열의 각 항목에 대해 모든 action 찾기 (리스트로 수집, 중복 제거)
+                    found_actions = []
+                    for item_name in item_names_in_msg:
+                        if item_name in action_mapping:
+                            found_actions.append(action_mapping[item_name])
+                    # 중복 제거 (순서 유지)
+                    product['expected_action'] = list(dict.fromkeys(found_actions)) if found_actions else ['기타']
             
             return product_tag
             
@@ -2993,7 +3026,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '(광고)[SKT] 베테랑대리점 송리단점 10월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 베테랑대리점 송리단점에서 10월 혜택을 안내드립니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정이 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담 _- 시니어 전용 요금제로 통신비 절약 가능__■ 베테랑대리점 송리단점_- 주소: 서울특별시 송파구 백제고분로425 1층_- 연락처: 070-8648-2981_- 찾아오시는 길: 송파나루역 1번 출구 올리브영 뒤__▶ 매장 홈페이지 예약/상담: https://t-mms.kr/t.do?m=#61&s=34181&a=&u=http://tworldfriends.co.kr/D153230003__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
+  message: '[SKT] Netflix 광고형 스탠다드 구독료 변경 안내__고객님, 안녕하세요._2025년 12월 1일(월)부터 Netflix 광고형 스탠다드 구독료가 변경됩니다.__요금제 혜택으로 Netflix 광고형 스탠다드를 추가 요금 없이 이용 중인 경우, 별도 안내 전까지 기존 구독료로 동일하게 즐기실 수 있습니다.__아직 가입하지 않으셨다면, 아래 URL을 통해 가입 가능합니다.__▶ 가입하기: https://m.sktuniverse.co.kr/product/detail?prdId=PR00000501__■ 변경 내용_- 대상: Netflix 광고형 스탠다드_- 변경일: 2025년 12월 1일(월)_- 내용: 월 구독료 변경(5,500원 → 7,000원)_* 2025년 11월 30일(일)까지 Netflix 광고형 스탠다드와 할인 대상 요금제 모두 가입 시, 별도 안내 전까지 기존 구독료로 계속 이용 가능__■ 유의 사항_- 구독료 변경 후에도 <T 우주 Netflix> 광고형 스탠다드 할인 요금제 혜택은 기존과 동일(5,500원 할인)하게 유지됩니다._* 대상 요금제: 5GX 프라임(넷플릭스), 0 청년 89(넷플릭스), 다이렉트5G 62(넷플릭스), 0 청년 다이렉트 62(넷플릭스)_- 2025년 12월 1일(월)부터 할인 대상 요금제 또는 Netflix 광고형 스탠다드 상품 신규가입 시 변경된 구독료로 결제됩니다._ - Wavve와 결합된 <T 우주패스 Netflix>에 가입한 경우, 2025년 12월 1일(월)부터 가격이 인상됩니다.__■ 문의: SKT 고객센터(114)__SKT와 함께해 주셔서 감사합니다.',
 
 
 """
