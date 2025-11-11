@@ -1894,9 +1894,9 @@ class MMSExtractor:
             logger.info(f"   ✅ 합산 완료: {len(cand_entities_sim)}개 행")
             
             # ipynb와 동일하게 sim>=1.1 필터링
-            logger.info(f"   🔍 [매칭] 유사도 필터링 (임계값: sim>=1.0)...")
+            logger.info(f"   🔍 [매칭] 유사도 필터링 (임계값: sim>=1.1)...")
             before_sim_filter = len(cand_entities_sim)
-            cand_entities_sim = cand_entities_sim.query("sim >= 1.0").copy()
+            cand_entities_sim = cand_entities_sim.query("sim >= 1.1").copy()
             if cand_entities_sim.empty:
                 logger.warning("필터링 결과가 비어있음")
                 return pd.DataFrame()
@@ -2769,12 +2769,16 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
     except Exception as e:
         logger.error(f"워커 프로세스에서 메시지 처리 실패: {e}")
         return {
-            "title": "처리 실패",
-            "purpose": ["오류"],
-            "product": [],
-            "channel": [],
-            "pgm": [],
-            "entity_dag": [],
+            "extracted_result": {
+                "title": "처리 실패",
+                "purpose": ["오류"],
+                "product": [],
+                "channel": [],
+                "pgm": [],
+                "entity_dag": []
+            },
+            "raw_result": {},
+            "prompts": {},
             "error": str(e)
         }
 
@@ -2815,12 +2819,16 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
             except Exception as e:
                 logger.error(f"배치 처리 중 오류 발생: {e}")
                 results.append({
-                    "title": "처리 실패",
-                    "purpose": ["오류"],
-                    "product": [],
-                    "channel": [],
-                    "pgm": [],
-                    "entity_dag": [],
+                    "extracted_result": {
+                        "title": "처리 실패",
+                        "purpose": ["오류"],
+                        "product": [],
+                        "channel": [],
+                        "pgm": [],
+                        "entity_dag": []
+                    },
+                    "raw_result": {},
+                    "prompts": {},
                     "error": str(e)
                 })
     
@@ -3097,14 +3105,17 @@ def main():
                 print("="*50)
                 
                 for i, result in enumerate(results):
+                    extracted = result.get('extracted_result', {})
                     print(f"\n--- 메시지 {i+1} ---")
-                    print(f"제목: {result.get('title', 'N/A')}")
-                    print(f"상품: {len(result.get('product', []))}개")
+                    print(f"제목: {extracted.get('title', 'N/A')}")
+                    print(f"상품: {len(extracted.get('product', []))}개")
+                    print(f"채널: {len(extracted.get('channel', []))}개")
+                    print(f"프로그램: {len(extracted.get('pgm', []))}개")
                     if result.get('error'):
                         print(f"오류: {result['error']}")
                 
                 # 전체 배치 통계
-                successful = len([r for r in results if not r.get('error')])
+                successful = len([r for r in results if not r.get('error') and r.get('extracted_result')])
                 failed = len(results) - successful
                 print(f"\n📊 배치 처리 통계")
                 print(f"✅ 성공: {successful}개")
