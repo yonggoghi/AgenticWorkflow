@@ -28,16 +28,20 @@ Return only a comma-separated list of matched entities.
 
 SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 아래 광고 메시지에서 수신자에게 offer하거나, 사용 유도, 구매, 가입, 응모, 접속하기를 원하는 개체명을 추출해라. 
+개체명은 반드시 **메시지에서 직접 언급된 특정 상품, 서비스, 이벤트**와 **1:1로 대응**되어야 하며, 광고가 **직접적으로 홍보하는 핵심 내용**이어야 한다.
+**메시지에 명시된 특정 혜택(Offer)과 무관한** 광범위한 상위 개념(예: 전체 T Day 이벤트)이나 다른 제휴사 이벤트는 **제외**한다. 
+
 'entities in messages'는 메시지 내에서 있는 후보 개체명들이다.
 'candidate entities in vocabulairy'는 'entities in messages'를 바탕으로 추출한 사전에 있는 후보 개체명들이다.
-메시지와 'entities in messages'를 참고해서 'candidate entities in vocabulary' 중에서 유력한 것들을 선택해라.
-만약, 적합한 것들이 없으면 그나마 가까운 것들을 골라라.
+메시지와 'entities in messages'를 참고해서 'candidate entities in vocabulary' 중에서 **메시지의 핵심 Offer에 1:1로 직접 대응되는** 유망한 것들을 선택해라.
+**만약, 메시지의 핵심 Offer와 직접 대응되는 개체명이 'candidate entities in vocabulary'에 없으면** 선택할 필요가 없다.
+
 메시지 맥락을 파악해서 개체명들의 분류도 고려해라. (요금제, 부가서비스, 단말기, 앱, 이벤트, 쿠폰 등)
 'entities in messages'에 있는 개체명들이 반드시 독립적이지는 않으니 상호 관계도 고려해라.
 
 다음과 같은 포맷으로 결과를 반환해라.
 
-REASON: 30자 이내 선택 이유
+REASON: 선택 이유. 특히, **메시지의 핵심 Offer와 Candidate Entity가 왜 직접적으로 1:1 대응 관계**에 있는지 설명해야 한다. 적합한 것이 없을 경우 그 이유를 명확히 제시한다.
 ENTITY: 제공하는 결과는 candidate entities in vocabulary 값들을 ,(콤마)로 연결해라. 없다고 판단하면, 공백으로 결과를 반환해라.
 """
 
