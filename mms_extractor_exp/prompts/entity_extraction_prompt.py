@@ -38,11 +38,12 @@ SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 
 메시지 맥락을 파악해서 개체명들의 분류도 고려해라. (요금제, 부가서비스, 단말기, 앱, 이벤트, 쿠폰 등)
 'entities in messages'에 있는 개체명들이 반드시 독립적이지는 않으니 상호 관계도 고려해라.
+즉, 'entities in messages'에 있는 복수의 개체명들이 연결되어 하나의 개체명으로 표현될 수 있으니 이를 고려해라.
 
 다음과 같은 포맷으로 결과를 반환해라.
 
 REASON: 선택 이유. 특히, **메시지의 핵심 Offer와 Candidate Entity가 왜 직접적으로 1:1 대응 관계**에 있는지 설명해야 한다. 적합한 것이 없을 경우 그 이유를 명확히 제시한다.
-ENTITY: 제공하는 결과는 candidate entities in vocabulary 값들을 ,(콤마)로 연결해라. 없다고 판단하면, 공백으로 결과를 반환해라.
+ENTITY: 제공하는 결과는 반드시 'candidate entities in vocabulary' 값들을 ,(콤마)로 연결해라. 없다고 판단하면, 공백으로 결과를 반환해라.
 """
 
 # LLM 기반 엔티티 추출 프롬프트 템플릿
