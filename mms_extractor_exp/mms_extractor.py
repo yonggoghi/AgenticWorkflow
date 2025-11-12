@@ -1528,7 +1528,7 @@ class MMSExtractor:
                     cand_entities = chain.invoke({"prompt": prompt}).content
                     
                     # LLM 응답 파싱 및 정리
-                    cand_entity_list_raw = [e.strip() for e in cand_entities.split("\n")[-1].replace("ENTITY: ","").split(',') if e.strip()]
+                    cand_entity_list_raw = [e.strip() for e in cand_entities.split("\n")[-1].replace("ENTITY:","").split(',') if e.strip()]
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
 
                     return cand_entity_list
@@ -1632,7 +1632,7 @@ class MMSExtractor:
             logger.info(f"   총 후보 상품 별칭: {len(cand_entities_voca_all)}개")
             
             batches = []
-            max_batch_size = len(cand_entities_voca_all)
+            max_batch_size = 50#len(cand_entities_voca_all)
             for i in range(0, len(cand_entities_voca_all), max_batch_size):
                 cand_entities_voca = cand_entities_voca_all[i:i+max_batch_size]
                 prompt = f"""
@@ -3033,7 +3033,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '(광고)[SKT] ZEM iOS 앱 이용 안내__#04 고객님, 안녕하세요._iPhone을 사용하는 자녀의 실시간 위치도 조회할 수 있는 스마트폰 관리 앱 ZEM!__스마트폰 사용 시간 제한부터 이용 가능한 앱 설정까지,_초등 부모님을 위한 필수 기능을 무료로 이용해 보세요.__▶ ZEM 부모용 앱 다운로드하기(무료): https://t-mms.kr/aSY/#74__■ ZEM 앱 주요 기능_① 자녀 실시간 위치 확인_② 자녀 스마트폰 사용 시간 설정_③ 앱별 허용/차단 설정_④ 유해 사이트 차단_  _■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다._ _무료 수신거부 1504',
+  message: '8월 T Day 혜택 안내 (광고)[SKT] 8월 T Day 혜택 안내   8월 3일(월)~7일(금) 원스토어 북스 인기 도서 10종 무료 대여!  ▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob  ★T멤버십만의 5가지 혜택★ ① 매일 찾아오는 행복한 시간 "해피아워" ② 매달 첫 주, 매주 수요일 "T Day" ③ SKT 5GX 고객님을 위한 부스트 파크 특별 혜택 ④ 착한 소비에 할인까지 "열린멤버십" ⑤ 할인 한도는 연간 무제한    무료 수신거부 1504',
 
 
 """
