@@ -1510,82 +1510,26 @@ class MMSExtractor:
                 logger.info(f"   [{idx+1}] 모델: {model_name}")
             
             def get_entities_by_llm(args_dict):
-                """단일 LLM으로 엔티티 추출하는 내부 함수"""
-                llm_model, msg_text = args_dict['llm_model'], args_dict['msg_text']
+                """단일 LLM으로 엔티티 추출하는 일반적인 내부 함수 (prompt 직접 전달)"""
+                llm_model, prompt = args_dict['llm_model'], args_dict['prompt']
                 model_name = getattr(llm_model, 'model_name', 'Unknown')
                 
                 try:
-                    logger.info(f"   ⚙️  [{model_name}] 엔티티 추출 시작")
-                    
-                    # 프롬프트 구성 - 기존 로직과 동일
-                    base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
-                    if base_prompt is None:
-                        base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
-                        logger.info(f"   📋 [{model_name}] 엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
-                    else:
-                        logger.info(f"   📋 [{model_name}] 엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
-                    
-                    # 베이스 프롬프트 길이 확인
-                    base_prompt_length = len(base_prompt)
-                    msg_length = len(msg_text)
-                    logger.info(f"   📏 [{model_name}] 베이스 프롬프트 길이: {base_prompt_length:,} 문자")
-                    logger.info(f"   📏 [{model_name}] 메시지 길이: {msg_length:,} 문자")
-                    
-                    # 프롬프트 내용 로깅 (전체)
-                    logger.info(f"   📝 [{model_name}] 베이스 프롬프트 내용 (전체):")
-                    logger.info(f"   {'-' * 75}")
-                    for line in base_prompt.split('\n'):
-                        logger.info(f"   {line}")
-                    logger.info(f"   {'-' * 75}")
-                    
-                    # PromptTemplate 사용 (langchain 방식)
+                    # PromptTemplate 사용 (단순히 prompt를 그대로 전달)
                     zero_shot_prompt = PromptTemplate(
-                        input_variables=["entity_extraction_prompt", "msg", "cand_entities"],
+                        input_variables=["prompt"],
                         template="""
-                        {entity_extraction_prompt}
-                        
-                        ## message:                
-                        {msg}
+                        {prompt}
                         """
                     )
                     
-                    # 최종 프롬프트 생성 (실제로 LLM에 전달되는 프롬프트)
-                    final_prompt_for_llm = zero_shot_prompt.format(
-                        entity_extraction_prompt=base_prompt,
-                        msg=msg_text
-                    )
-                    final_prompt_length = len(final_prompt_for_llm)
-                    logger.info(f"   📏 [{model_name}] 최종 프롬프트 길이: {final_prompt_length:,} 문자")
-                    logger.info(f"   📝 [{model_name}] 최종 프롬프트 내용 (전체):")
-                    logger.info(f"   {'-' * 75}")
-                    for line in final_prompt_for_llm.split('\n'):
-                        logger.info(f"   {line}")
-                    logger.info(f"   {'-' * 75}")
-
-                    logger.info(f"   🚀 [{model_name}] LLM 호출 시작...")
+                    # LLM 호출
                     chain = zero_shot_prompt | llm_model
-                    cand_entities = chain.invoke({
-                        "entity_extraction_prompt": base_prompt, 
-                        "msg": msg_text, 
-                    }).content
-                    logger.info(f"   ✅ [{model_name}] LLM 호출 완료")
-                    logger.info(f"   📥 [{model_name}] LLM 응답 길이: {len(cand_entities):,} 문자")
-                    logger.info(f"   📥 [{model_name}] LLM 응답 미리보기: {cand_entities[:200]}..." if len(cand_entities) > 200 else f"   📥 [{model_name}] LLM 응답: {cand_entities}")
-
+                    cand_entities = chain.invoke({"prompt": prompt}).content
+                    
                     # LLM 응답 파싱 및 정리
-                    logger.info(f"   🔧 [{model_name}] 엔티티 파싱 시작...")
-                    cand_entity_list_raw = [e.strip() for e in cand_entities.split(',') if e.strip()]
-                    logger.info(f"   📊 [{model_name}] 콤마로 분할 후 엔티티 수: {len(cand_entity_list_raw)}개")
-                    
-                    before_filter = len(cand_entity_list_raw)
+                    cand_entity_list_raw = [e.strip() for e in cand_entities.split("\n")[-1].replace("ENTITY: ","").split(',') if e.strip()]
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
-                    after_filter = len(cand_entity_list)
-                    filtered_count = before_filter - after_filter
-                    
-                    logger.info(f"   🎯 [{model_name}] 필터링 결과:")
-                    logger.info(f"      - 필터링 전: {before_filter}개")
-                    logger.info(f"      - 필터링 후: {after_filter}개 (제거: {filtered_count}개)")
-                    logger.info(f"      - 최종 엔티티: {cand_entity_list[:10]}..." if len(cand_entity_list) > 10 else f"      - 최종 엔티티: {cand_entity_list}")
 
                     return cand_entity_list
                     
@@ -1614,20 +1558,27 @@ class MMSExtractor:
             logger.info("✅ 프롬프트 미리보기 저장 완료")
 
             
-            logger.info("🔄 LLM 직접 추출 모드")
-            # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
+            logger.info("🔄 1단계 LLM 추출 - 메시지에서 직접 엔티티 추출")
+            # 1단계: 각 LLM 모델로 메시지에서 엔티티 추출
+            base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
+            if base_prompt is None:
+                base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
+            
             batches = []
             for llm_model in llm_models:
-                batches.append({
-                    "msg_text": msg_text, 
-                    "llm_model": llm_model, 
-                })
+                prompt = f"""
+                {base_prompt}
+
+                ## message:                
+                {msg_text}
+                """
+                batches.append({"prompt": prompt, "llm_model": llm_model})
             
-            logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
+            logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 1단계 엔티티 추출 시작")
             logger.info(f"🔄 병렬 작업 수: {len(batches)}개 배치")
             
             # 병렬 작업 실행
-            n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
+            n_jobs = min(len(batches), 3)  # 최대 3개 작업으로 제한
             logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
             
             with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
@@ -1665,117 +1616,61 @@ class MMSExtractor:
                 logger.info("=" * 80)
                 return pd.DataFrame()
             
-            # [단계 1] 매칭 완료 직후 item_name_in_msg 로깅
-            logger.info(f"   [단계 1] 매칭 완료 직후 item_name_in_msg:")
-            logger.info(f"      - 고유 개수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
-            logger.info(f"      - 전체 개수: {len(cand_entities_sim)}개")
-            item_name_list_1 = list(cand_entities_sim['item_name_in_msg'].unique())
-            logger.info(f"      - 고유 item_name_in_msg 목록: {item_name_list_1}")
-            
             logger.info(f"   매칭된 고유 item_name_in_msg 수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
             logger.info(f"   매칭된 고유 item_nm_alias 수: {cand_entities_sim['item_nm_alias'].nunique()}개")
 
             # 후보 엔티티들과 상품 DB 매칭
-            logger.info("🔍 2단계 LLM 필터링 시작...")
+            logger.info("🔍 2단계 LLM 필터링 시작 (50개씩 분할 병렬 처리)...")
             logger.info(f"   입력 메시지 엔티티 수: {len(cand_entities_sim['item_name_in_msg'].unique())}개")
             logger.info(f"   후보 상품 별칭 수: {len(cand_entities_sim['item_nm_alias'].unique())}개")
             
-            # [단계 2] 2단계 LLM 필터링 시작 전 item_name_in_msg 로깅
-            logger.info(f"   [단계 2] 2단계 LLM 필터링 시작 전 item_name_in_msg:")
-            logger.info(f"      - 고유 개수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
-            logger.info(f"      - 전체 개수: {len(cand_entities_sim)}개")
-            item_name_list_2 = list(cand_entities_sim['item_name_in_msg'].unique())
-            logger.info(f"      - 고유 item_name_in_msg 목록: {item_name_list_2}")
+            # entities_in_message 추출
+            entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
             
-            # SIMPLE_ENTITY_EXTRACTION_PROMPT 로깅
-            simple_prompt_length = len(SIMPLE_ENTITY_EXTRACTION_PROMPT)
-            logger.info(f"   📏 SIMPLE_ENTITY_EXTRACTION_PROMPT 길이: {simple_prompt_length:,} 문자")
-            logger.info(f"   📝 SIMPLE_ENTITY_EXTRACTION_PROMPT 내용 (전체):")
-            logger.info(f"   {'-' * 75}")
-            for line in SIMPLE_ENTITY_EXTRACTION_PROMPT.split('\n'):
-                logger.info(f"   {line}")
-            logger.info(f"   {'-' * 75}")
+            # 2단계: cand_entities_voca_all을 50개씩 분할해서 병렬 처리
+            cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
+            logger.info(f"   총 후보 상품 별칭: {len(cand_entities_voca_all)}개")
             
-            zero_shot_prompt = PromptTemplate(
-            input_variables=["msg","entities_msg","cand_entities_voca"],
-            template="""
-            {entity_extraction_prompt}
-            
-            ## message:                
-            {msg}
+            batches = []
+            max_batch_size = len(cand_entities_voca_all)
+            for i in range(0, len(cand_entities_voca_all), max_batch_size):
+                cand_entities_voca = cand_entities_voca_all[i:i+max_batch_size]
+                prompt = f"""
+                {SIMPLE_ENTITY_EXTRACTION_PROMPT}
+                
+                ## message:                
+                {msg_text}
 
-            ## entities in message:
-            {entities_msg}
+                ## entities in message:
+                {entities_in_message}
 
-            ## candidate entities in vocabulary:
-            {cand_entities_voca}
+                ## candidate entities in vocabulary:
+                {cand_entities_voca}
 
-            """
-            )
+                """
+                batches.append({"prompt": prompt, "llm_model": self.llm_model})
             
-            # 2단계 최종 프롬프트 생성
-            entities_msg_list = list(cand_entities_sim['item_name_in_msg'].unique())
-            cand_entities_voca_list = list(cand_entities_sim['item_nm_alias'].unique())
+            logger.info(f"🔄 2단계 LLM 필터링: {len(batches)}개 배치로 분할")
             
-            logger.info(f"   📝 입력 엔티티 리스트 (처음 20개): {entities_msg_list[:20]}..." if len(entities_msg_list) > 20 else f"   📝 입력 엔티티 리스트: {entities_msg_list}")
-            logger.info(f"   📝 후보 상품 별칭 리스트 (처음 20개): {cand_entities_voca_list[:20]}..." if len(cand_entities_voca_list) > 20 else f"   📝 후보 상품 별칭 리스트: {cand_entities_voca_list}")
+            # 병렬 작업 실행
+            n_jobs = min(len(batches), 3)
+            logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
             
-            final_prompt_2nd = zero_shot_prompt.format(
-                entity_extraction_prompt=SIMPLE_ENTITY_EXTRACTION_PROMPT,
-                msg=msg_text,
-                entities_msg=entities_msg_list,
-                cand_entities_voca=cand_entities_voca_list
-            )
-            final_prompt_2nd_length = len(final_prompt_2nd)
-            logger.info(f"   📏 2단계 최종 프롬프트 길이: {final_prompt_2nd_length:,} 문자")
-            logger.info(f"   📝 2단계 최종 프롬프트 내용 (전체):")
-            logger.info(f"   {'-' * 75}")
-            for line in final_prompt_2nd.split('\n'):
-                logger.info(f"   {line}")
-            logger.info(f"   {'-' * 75}")
-                        
-            logger.info("🚀 2단계 LLM 호출 시작...")
-            chain = zero_shot_prompt | self.llm_model
-            cand_entities = chain.invoke({"entity_extraction_prompt": SIMPLE_ENTITY_EXTRACTION_PROMPT, "msg": msg_text, "entities_msg":cand_entities_sim['item_name_in_msg'].unique(), "cand_entities_voca":cand_entities_sim['item_nm_alias'].unique()}).content
-            logger.info("✅ 2단계 LLM 호출 완료")
-            logger.info(f"📥 2단계 LLM 응답 길이: {len(cand_entities):,} 문자")
-            logger.info(f"📥 2단계 LLM 응답: {cand_entities}")
-
-            logger.info("🔧 2단계 엔티티 파싱 시작...")
-            cand_entity_list = [e.strip() for e in cand_entities.split("\n")[-1].replace("ENTITY: ","").split(',') if e.strip()]
-            logger.info(f"   파싱 직후 엔티티 수: {len(cand_entity_list)}개")
+            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
             
-            before_filter = len(cand_entity_list)
-            cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e)>=2]
-            after_filter = len(cand_entity_list)
+            # 모든 배치 결과를 합치고 중복 제거
+            cand_entity_list = list(set(sum(batch_results, [])))
             
-            logger.info(f"   필터링 결과:")
-            logger.info(f"      - 필터링 전: {before_filter}개")
-            logger.info(f"      - 필터링 후: {after_filter}개 (제거: {before_filter - after_filter}개)")
-            logger.info(f"   최종 선택된 엔티티: {cand_entity_list}")
+            logger.info(f"✅ 2단계 LLM 필터링 완료")
+            logger.info(f"📊 최종 선택된 엔티티 수: {len(cand_entity_list)}개")
+            logger.info(f"📊 최종 선택된 엔티티: {cand_entity_list}")
 
             logger.info(f"🔍 최종 엔티티로 필터링 중...")
             logger.info(f"   필터링 전 행 수: {len(cand_entities_sim)}개")
             
-            # [단계 3] 최종 필터링 전 item_name_in_msg 로깅
-            logger.info(f"   [단계 3] 최종 필터링 전 item_name_in_msg:")
-            logger.info(f"      - 고유 개수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
-            logger.info(f"      - 전체 개수: {len(cand_entities_sim)}개")
-            item_name_list_3 = list(cand_entities_sim['item_name_in_msg'].unique())
-            logger.info(f"      - 고유 item_name_in_msg 목록: {item_name_list_3}")
-            
             cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list")
             logger.info(f"   필터링 후 행 수: {len(cand_entities_sim)}개")
-            
-            # [단계 4] 최종 필터링 후 item_name_in_msg 로깅
-            logger.info(f"   [단계 4] 최종 필터링 후 item_name_in_msg:")
-            logger.info(f"      - 고유 개수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
-            logger.info(f"      - 전체 개수: {len(cand_entities_sim)}개")
-            if not cand_entities_sim.empty:
-                item_name_list_4 = list(cand_entities_sim['item_name_in_msg'].unique())
-                logger.info(f"      - 고유 item_name_in_msg 목록: {item_name_list_4}")
-            else:
-                logger.info(f"      - 고유 item_name_in_msg 목록: [] (비어있음)")
             
             logger.info("=" * 80)
             logger.info("✅ [LLM 엔티티 추출] 함수 완료")
