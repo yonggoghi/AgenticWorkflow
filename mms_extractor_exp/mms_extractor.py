@@ -1477,9 +1477,10 @@ class MMSExtractor:
         LLM 응답에서 엔티티를 견고하게 파싱
         
         여러 전략을 사용하여 다양한 LLM 응답 형식을 처리:
-        1. 정규식으로 ENTITY: 섹션 찾기 (대소문자 무관)
-        2. 마지막 줄에서 ENTITY: prefix 제거 후 추출
-        3. 빈 결과 반환
+        1. ENTITY: 라인 찾기 (라인 단위)
+        2. 정규식으로 ENTITY: 패턴 찾기
+        3. ENTITY: 키워드 없이 엔티티만 반환된 경우 (마지막 줄)
+        4. 빈 결과 반환
         
         Args:
             response: LLM의 원본 응답 텍스트
@@ -1488,27 +1489,96 @@ class MMSExtractor:
             추출된 엔티티 리스트
         """
         try:
-            # Strategy 1: 정규식으로 ENTITY: 섹션 찾기
-            entity_match = re.search(r'ENTITY:\s*(.+?)(?:\n|$)', response, re.IGNORECASE | re.DOTALL)
-            if entity_match:
-                entity_text = entity_match.group(1).strip()
-                if entity_text:
-                    return [e.strip() for e in entity_text.split(',') if e.strip()]
+            # Strategy 1: ENTITY: 라인을 찾아서 정확하게 추출 (라인 단위)
+            lines = response.split('\n')
+            for line in lines:
+                line_stripped = line.strip()
+                line_upper = line_stripped.upper()
+                
+                # REASON: 라인은 건너뛰기
+                if line_upper.startswith('REASON:'):
+                    continue
+                
+                # ENTITY: 로 시작하는 라인 찾기
+                if line_upper.startswith('ENTITY:'):
+                    # ENTITY: 이후 텍스트 추출
+                    entity_part = line_stripped[line_upper.find('ENTITY:') + 7:].strip()
+                    
+                    # 빈 문자열이거나 의미 없는 값 체크
+                    if not entity_part or entity_part.lower() in ['none', 'empty', '없음', 'null']:
+                        logger.debug("ENTITY 섹션이 비어있음 (정상)")
+                        return []
+                    
+                    # 너무 긴 텍스트는 설명 문장으로 간주
+                    if len(entity_part) > 200:
+                        logger.warning(f"ENTITY 값이 너무 김 ({len(entity_part)}자) - 설명 문장으로 판단")
+                        continue  # 다음 라인 확인
+                    
+                    # 콤마로 구분하여 엔티티 추출
+                    entities = [e.strip() for e in entity_part.split(',') if e.strip()]
+                    
+                    # 개별 엔티티 검증
+                    valid_entities = []
+                    for entity in entities:
+                        if len(entity) > 100:
+                            logger.debug(f"엔티티가 너무 김 ({len(entity)}자): {entity[:50]}...")
+                            continue
+                        # 불완전한 따옴표 구조 제외
+                        if entity.startswith('"') and not entity.endswith('"'):
+                            logger.debug(f"불완전한 따옴표 구조: {entity[:50]}...")
+                            continue
+                        valid_entities.append(entity)
+                    
+                    if valid_entities:
+                        logger.debug(f"파싱된 엔티티: {valid_entities}")
+                        return valid_entities
             
-            # Strategy 2: 마지막 줄에서 추출
-            lines = response.split("\n")
+            # Strategy 2: ENTITY: 패턴을 정규식으로 찾기
+            entity_pattern = r'ENTITY:\s*([^\n]*?)(?:\n|$)'
+            entity_matches = list(re.finditer(entity_pattern, response, re.IGNORECASE))
+            
+            if entity_matches:
+                last_match = entity_matches[-1]
+                entity_text = last_match.group(1).strip()
+                
+                if entity_text and entity_text.lower() not in ['none', 'empty', '없음', 'null']:
+                    if len(entity_text) <= 200:
+                        entities = [e.strip() for e in entity_text.split(',') 
+                                   if e.strip() and len(e.strip()) <= 100]
+                        if entities:
+                            logger.debug(f"정규식으로 파싱된 엔티티: {entities}")
+                            return entities
+            
+            # Strategy 3: ENTITY: 키워드 없이 엔티티만 반환된 경우 (마지막 줄)
+            # REASON이나 설명 없이 바로 엔티티 리스트만 반환하는 경우
             for line in reversed(lines):
                 line_stripped = line.strip()
                 if not line_stripped:
                     continue
-                # ENTITY: prefix 제거
-                line_cleaned = re.sub(r'^(ENTITY:?\s*)', '', line_stripped, flags=re.IGNORECASE)
-                if line_cleaned:
-                    entities = [e.strip() for e in line_cleaned.split(',') if e.strip()]
+                
+                # REASON: 으로 시작하는 라인은 제외
+                if line_stripped.upper().startswith('REASON:'):
+                    continue
+                
+                # 너무 긴 라인은 설명 문장으로 간주
+                if len(line_stripped) > 200:
+                    continue
+                
+                # 콤마가 있으면 엔티티 리스트로 파싱 시도
+                if ',' in line_stripped:
+                    entities = [e.strip() for e in line_stripped.split(',') 
+                               if e.strip() and len(e.strip()) <= 100]
                     if entities:
-                        return entities
+                        # 엔티티처럼 보이는지 확인 (너무 긴 문장이 아닌지)
+                        if all(len(e) <= 100 for e in entities):
+                            logger.debug(f"키워드 없이 파싱된 엔티티: {entities}")
+                            return entities
+                # 단일 엔티티일 수도 있음
+                elif len(line_stripped) <= 100:
+                    logger.debug(f"단일 엔티티: [{line_stripped}]")
+                    return [line_stripped]
             
-            # Strategy 3: 빈 리스트 반환
+            # Strategy 4: 빈 리스트 반환
             logger.debug(f"엔티티를 찾을 수 없음. 응답: {response[:100]}...")
             return []
             
