@@ -1472,15 +1472,92 @@ class MMSExtractor:
             logger.error(f"결합 유사도 계산 실패: {e}")
             return pd.DataFrame()
 
+    def _parse_entity_response(self, response: str) -> List[str]:
+        """
+        LLM 응답에서 엔티티를 견고하게 파싱
+        
+        여러 전략을 사용하여 다양한 LLM 응답 형식을 처리:
+        1. 정규식으로 ENTITY: 섹션 찾기 (대소문자 무관)
+        2. 마지막 줄에서 ENTITY: prefix 제거 후 추출
+        3. 빈 결과 반환
+        
+        Args:
+            response: LLM의 원본 응답 텍스트
+            
+        Returns:
+            추출된 엔티티 리스트
+        """
+        try:
+            # Strategy 1: 정규식으로 ENTITY: 섹션 찾기
+            entity_match = re.search(r'ENTITY:\s*(.+?)(?:\n|$)', response, re.IGNORECASE | re.DOTALL)
+            if entity_match:
+                entity_text = entity_match.group(1).strip()
+                if entity_text:
+                    return [e.strip() for e in entity_text.split(',') if e.strip()]
+            
+            # Strategy 2: 마지막 줄에서 추출
+            lines = response.split("\n")
+            for line in reversed(lines):
+                line_stripped = line.strip()
+                if not line_stripped:
+                    continue
+                # ENTITY: prefix 제거
+                line_cleaned = re.sub(r'^(ENTITY:?\s*)', '', line_stripped, flags=re.IGNORECASE)
+                if line_cleaned:
+                    entities = [e.strip() for e in line_cleaned.split(',') if e.strip()]
+                    if entities:
+                        return entities
+            
+            # Strategy 3: 빈 리스트 반환
+            logger.debug(f"엔티티를 찾을 수 없음. 응답: {response[:100]}...")
+            return []
+            
+        except Exception as e:
+            logger.error(f"엔티티 응답 파싱 실패: {e}")
+            return []
+    
+    def _calculate_optimal_batch_size(self, msg_text: str, base_size: int = 50) -> int:
+        """
+        메시지 길이에 따라 동적으로 배치 크기 계산
+        
+        긴 메시지의 경우 더 작은 배치를 사용하여 LLM 컨텍스트 윈도우 초과 방지
+        
+        Args:
+            msg_text: 분석할 메시지 텍스트
+            base_size: 기본 배치 크기
+            
+        Returns:
+            최적화된 배치 크기
+        """
+        msg_length = len(msg_text)
+        
+        if msg_length < 500:
+            # 짧은 메시지 → 큰 배치
+            return min(base_size * 2, 100)
+        elif msg_length < 1000:
+            # 중간 메시지 → 기본 배치
+            return base_size
+        else:
+            # 긴 메시지 → 작은 배치
+            return max(base_size // 2, 25)
+    
     @log_performance
     def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 200, llm_models: List = None, external_cand_entities: List[str] = []) -> pd.DataFrame:
         """
         LLM 기반 엔티티 추출 (복수 모델 병렬 처리 지원)
         
+        개선 사항:
+        - 견고한 LLM 응답 파싱 (parse_entity_response)
+        - 동적 배치 크기 계산 (메시지 길이 기반)
+        - 병렬 처리 제한 (최대 3 워커)
+        - 개선된 에러 처리
+        - 상세한 로깅
+        
         Args:
             msg_text (str): 분석할 메시지 텍스트
             rank_limit (int): 결과에서 반환할 최대 순위
             llm_models (List, optional): 사용할 LLM 모델 리스트. None이면 기본 모델 사용
+            external_cand_entities (List[str]): 외부에서 제공된 후보 엔티티
             
         Returns:
             pd.DataFrame: 추출된 엔티티와 유사도 정보
@@ -1525,12 +1602,13 @@ class MMSExtractor:
                     
                     # LLM 호출
                     chain = zero_shot_prompt | llm_model
-                    cand_entities = chain.invoke({"prompt": prompt}).content
+                    response = chain.invoke({"prompt": prompt}).content
                     
-                    # LLM 응답 파싱 및 정리
-                    cand_entity_list_raw = [e.strip() for e in cand_entities.split("\n")[-1].replace("ENTITY:","").split(',') if e.strip()]
+                    # 견고한 응답 파싱 사용
+                    cand_entity_list_raw = self._parse_entity_response(response)
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
-
+                    
+                    logger.debug(f"   ✅ [{model_name}] 추출된 엔티티 수: {len(cand_entity_list)}개")
                     return cand_entity_list
                     
                 except Exception as e:
@@ -1620,21 +1698,24 @@ class MMSExtractor:
             logger.info(f"   매칭된 고유 item_nm_alias 수: {cand_entities_sim['item_nm_alias'].nunique()}개")
 
             # 후보 엔티티들과 상품 DB 매칭
-            logger.info("🔍 2단계 LLM 필터링 시작 (50개씩 분할 병렬 처리)...")
+            logger.info("🔍 2단계 LLM 필터링 시작 (동적 배치 크기 사용)...")
             logger.info(f"   입력 메시지 엔티티 수: {len(cand_entities_sim['item_name_in_msg'].unique())}개")
             logger.info(f"   후보 상품 별칭 수: {len(cand_entities_sim['item_nm_alias'].unique())}개")
             
             # entities_in_message 추출
             entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
             
-            # 2단계: cand_entities_voca_all을 50개씩 분할해서 병렬 처리
+            # 2단계: 동적 배치 크기 계산
+            optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=50)
+            logger.info(f"   📏 메시지 길이 기반 최적 배치 크기: {optimal_batch_size}개")
+            
+            # cand_entities_voca_all을 동적 배치 크기로 분할해서 병렬 처리
             cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
             logger.info(f"   총 후보 상품 별칭: {len(cand_entities_voca_all)}개")
             
             batches = []
-            max_batch_size = 50#len(cand_entities_voca_all)
-            for i in range(0, len(cand_entities_voca_all), max_batch_size):
-                cand_entities_voca = cand_entities_voca_all[i:i+max_batch_size]
+            for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
+                cand_entities_voca = cand_entities_voca_all[i:i+optimal_batch_size]
                 prompt = f"""
                 {SIMPLE_ENTITY_EXTRACTION_PROMPT}
                 
@@ -1650,16 +1731,21 @@ class MMSExtractor:
                 """
                 batches.append({"prompt": prompt, "llm_model": self.llm_model})
             
-            logger.info(f"🔄 2단계 LLM 필터링: {len(batches)}개 배치로 분할")
+            logger.info(f"🔄 2단계 LLM 필터링: {len(batches)}개 배치로 분할 (배치당 ~{optimal_batch_size}개)")
             
-            # 병렬 작업 실행
+            # 병렬 작업 실행 (최대 3개 워커로 제한하여 rate limit 방지)
             n_jobs = min(len(batches), 3)
             logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
+            logger.info(f"   💡 Rate limit 방지를 위해 최대 3개 워커로 제한")
             
             with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
                 batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
             
             # 모든 배치 결과를 합치고 중복 제거
+            logger.info(f"📊 배치별 결과 요약:")
+            for idx, batch_result in enumerate(batch_results):
+                logger.info(f"   배치 {idx+1}: {len(batch_result)}개 엔티티")
+            
             cand_entity_list = list(set(sum(batch_results, [])))
             
             logger.info(f"✅ 2단계 LLM 필터링 완료")
