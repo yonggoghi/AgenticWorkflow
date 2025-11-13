@@ -23,7 +23,8 @@ Guidelines:
 6. Preserve exact text as it appears in the original (no translation)
 7. Prioritize recall over precision - capture all relevant products
 
-Return only a comma-separated list of matched entities.
+Return format:
+ENTITY: comma-separated list of matched entities.
 """
 
 SIMPLE_ENTITY_EXTRACTION_PROMPT = """
