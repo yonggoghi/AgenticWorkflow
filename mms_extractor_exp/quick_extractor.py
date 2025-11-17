@@ -457,7 +457,7 @@ class MessageInfoExtractor:
                     'msg_id': int(idx),
                     'title': title,
                     'unsubscribe_phone': unsubscribe_phone,
-                    'message': message_text[:100] + '...' if len(message_text) > 100 else message_text,
+                    'message': message_text,
                     'processing_time_seconds': round(processing_time, 3)
                 }
             else:
@@ -512,7 +512,7 @@ class MessageInfoExtractor:
             'data': {
                 'title': title,
                 'unsubscribe_phone': unsubscribe_phone,
-                'message_preview': message[:100] + '...' if len(message) > 100 else message
+                'message': message
             },
             'metadata': {
                 'method': method,
