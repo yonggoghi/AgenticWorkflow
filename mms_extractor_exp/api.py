@@ -46,6 +46,8 @@ python api.py --test --message "샘플 MMS 텍스트"
 - `POST /extract/batch`: 배치 메시지 분석
 - `POST /dag`: Entity DAG 추출
 - `GET /dag_images/<filename>`: DAG 이미지 파일 제공
+- `POST /quick/extract`: 제목/수신거부 번호 추출 (단일)
+- `POST /quick/extract/batch`: 제목/수신거부 번호 추출 (배치)
 - `GET /health`: 서비스 상태 확인
 - `GET /status`: 상세 성능 지표
 - `GET /models`: 사용 가능한 모델 목록
@@ -101,10 +103,12 @@ try:
     from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
     from entity_dag_extractor import DAGParser, extract_dag, llm_ax, llm_gem, llm_cld, llm_gen, llm_gpt
+    from quick_extractor import MessageInfoExtractor  # Quick Extractor 임포트
 except ImportError as e:
-    print(f"❌ MMSExtractor 임포트 오류: {e}")
+    print(f"❌ 모듈 임포트 오류: {e}")
     print("📝 mms_extractor.py가 같은 디렉토리에 있는지 확인하세요")
     print("📝 config/ 디렉토리와 설정 파일들을 확인하세요")
+    print("📝 quick_extractor.py가 같은 디렉토리에 있는지 확인하세요")
     sys.exit(1)
 
 # Flask 앱 초기화
@@ -189,6 +193,9 @@ mms_logger.propagate = True
 # 전역 추출기 인스턴스 - 서버 시작 시 한 번만 로드
 global_extractor = None
 
+# 전역 Quick Extractor 인스턴스 (제목/수신거부 번호 추출용)
+global_quick_extractor = None
+
 # CLI에서 설정된 데이터 소스 (전역 변수)
 CLI_DATA_SOURCE = 'local'
 
@@ -224,6 +231,54 @@ def initialize_global_extractor(offer_info_data_src='local'):
         logger.info("전역 추출기 초기화 완료")
     
     return global_extractor
+
+def initialize_quick_extractor(use_llm=False, llm_model='ax'):
+    """
+    전역 Quick Extractor 인스턴스를 초기화
+    
+    Args:
+        use_llm: LLM 사용 여부
+        llm_model: 사용할 LLM 모델 ('ax', 'gpt', 'claude', 'gemini' 등)
+    
+    Returns:
+        MessageInfoExtractor: 초기화된 Quick Extractor 인스턴스
+    """
+    global global_quick_extractor
+    
+    if global_quick_extractor is None:
+        logger.info(f"Quick Extractor 초기화 중... (LLM: {use_llm}, 모델: {llm_model})")
+        
+        # Quick Extractor 초기화 (csv_path는 API에서 필요 없음)
+        global_quick_extractor = MessageInfoExtractor(
+            csv_path=None,
+            use_llm=use_llm,
+            llm_model=llm_model
+        )
+        
+        logger.info("Quick Extractor 초기화 완료")
+    
+    return global_quick_extractor
+
+def get_configured_quick_extractor(use_llm=False, llm_model='ax'):
+    """
+    런타임 설정으로 Quick Extractor 구성
+    
+    Args:
+        use_llm: LLM 사용 여부
+        llm_model: 사용할 LLM 모델
+    
+    Returns:
+        MessageInfoExtractor: 구성된 Quick Extractor 인스턴스
+    """
+    if global_quick_extractor is None:
+        return initialize_quick_extractor(use_llm, llm_model)
+    
+    # LLM 설정이 변경된 경우 재초기화
+    if use_llm != global_quick_extractor.use_llm or llm_model != global_quick_extractor.llm_model_name:
+        logger.info(f"Quick Extractor 재설정 중... (LLM: {use_llm}, 모델: {llm_model})")
+        return initialize_quick_extractor(use_llm, llm_model)
+    
+    return global_quick_extractor
 
 def get_configured_extractor(llm_model='ax', product_info_extraction_mode='nlp', entity_matching_mode='logic', extract_entity_dag=False):
     """
@@ -1027,6 +1082,252 @@ def extract_dag_endpoint():
         
     except Exception as e:
         logger.error(f"❌ DAG 추출 중 오류 발생: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }), 500
+
+# =============================================================================
+# Quick Extractor API 엔드포인트 (제목 및 수신거부 번호 추출)
+# =============================================================================
+
+@app.route('/quick/extract', methods=['POST'])
+def quick_extract():
+    """
+    단일 메시지에서 제목과 수신거부 전화번호를 추출하는 API
+    
+    Request Body (JSON):
+    {
+        "message": "메시지 텍스트",
+        "method": "textrank|tfidf|first_bracket|llm",  // 선택사항, 기본값: textrank
+        "llm_model": "ax|gpt|claude|gemini",            // LLM 방법 사용 시 선택사항, 기본값: ax
+        "use_llm": false                                 // LLM 사용 여부, 기본값: false
+    }
+    
+    Response (JSON):
+    {
+        "success": true,
+        "data": {
+            "title": "추출된 제목",
+            "unsubscribe_phone": "1504",
+            "message_preview": "메시지 미리보기..."
+        },
+        "metadata": {
+            "method": "textrank",
+            "message_length": 188,
+            "processing_time_seconds": 0.123
+        }
+    }
+    """
+    try:
+        # 요청 시작 시간
+        start_time = time.time()
+        
+        # 요청 데이터 파싱
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "요청 본문이 비어있습니다. JSON 형식으로 데이터를 전송하세요."
+            }), 400
+        
+        # 필수 파라미터 검증
+        message = data.get('message')
+        if not message:
+            return jsonify({
+                "success": False,
+                "error": "'message' 필드는 필수입니다."
+            }), 400
+        
+        # 선택적 파라미터 (기본값 설정)
+        method = data.get('method', 'textrank')
+        use_llm = data.get('use_llm', method == 'llm')
+        llm_model = data.get('llm_model', 'ax')
+        
+        # 메서드 검증
+        valid_methods = ['textrank', 'tfidf', 'first_bracket', 'llm']
+        if method not in valid_methods:
+            return jsonify({
+                "success": False,
+                "error": f"유효하지 않은 method: {method}. 사용 가능: {', '.join(valid_methods)}"
+            }), 400
+        
+        # Quick Extractor 구성 및 가져오기
+        extractor = get_configured_quick_extractor(use_llm=use_llm, llm_model=llm_model)
+        
+        # 메시지 처리
+        logger.info(f"📝 Quick Extract 시작: method={method}, use_llm={use_llm}, llm_model={llm_model}")
+        result = extractor.process_single_message(message, method=method)
+        
+        # 처리 시간 계산
+        processing_time = time.time() - start_time
+        
+        # 메타데이터에 처리 시간 추가
+        result['metadata']['processing_time_seconds'] = round(processing_time, 3)
+        result['metadata']['timestamp'] = time.time()
+        
+        logger.info(f"✅ Quick Extract 완료: {processing_time:.3f}초, 제목={result['data']['title'][:50]}...")
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"❌ Quick Extract 오류: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }), 500
+
+@app.route('/quick/extract/batch', methods=['POST'])
+def quick_extract_batch():
+    """
+    여러 메시지에서 제목과 수신거부 전화번호를 일괄 추출하는 API
+    
+    Request Body (JSON):
+    {
+        "messages": ["메시지1", "메시지2", ...],
+        "method": "textrank|tfidf|first_bracket|llm",  // 선택사항, 기본값: textrank
+        "llm_model": "ax|gpt|claude|gemini",            // LLM 방법 사용 시 선택사항, 기본값: ax
+        "use_llm": false                                 // LLM 사용 여부, 기본값: false
+    }
+    
+    Response (JSON):
+    {
+        "success": true,
+        "data": {
+            "results": [
+                {
+                    "msg_id": 0,
+                    "title": "추출된 제목",
+                    "unsubscribe_phone": "1504",
+                    "message_preview": "메시지 미리보기..."
+                },
+                ...
+            ],
+            "statistics": {
+                "total_messages": 10,
+                "with_unsubscribe_phone": 8,
+                "extraction_rate": 80.0
+            }
+        },
+        "metadata": {
+            "method": "textrank",
+            "processing_time_seconds": 1.234,
+            "avg_time_per_message": 0.123
+        }
+    }
+    """
+    try:
+        # 요청 시작 시간
+        start_time = time.time()
+        
+        # 요청 데이터 파싱
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "요청 본문이 비어있습니다. JSON 형식으로 데이터를 전송하세요."
+            }), 400
+        
+        # 필수 파라미터 검증
+        messages = data.get('messages')
+        if not messages:
+            return jsonify({
+                "success": False,
+                "error": "'messages' 필드는 필수입니다."
+            }), 400
+        
+        if not isinstance(messages, list):
+            return jsonify({
+                "success": False,
+                "error": "'messages'는 리스트 형식이어야 합니다."
+            }), 400
+        
+        if len(messages) == 0:
+            return jsonify({
+                "success": False,
+                "error": "최소 1개 이상의 메시지가 필요합니다."
+            }), 400
+        
+        # 선택적 파라미터 (기본값 설정)
+        method = data.get('method', 'textrank')
+        use_llm = data.get('use_llm', method == 'llm')
+        llm_model = data.get('llm_model', 'ax')
+        
+        # 메서드 검증
+        valid_methods = ['textrank', 'tfidf', 'first_bracket', 'llm']
+        if method not in valid_methods:
+            return jsonify({
+                "success": False,
+                "error": f"유효하지 않은 method: {method}. 사용 가능: {', '.join(valid_methods)}"
+            }), 400
+        
+        # Quick Extractor 구성 및 가져오기
+        extractor = get_configured_quick_extractor(use_llm=use_llm, llm_model=llm_model)
+        
+        # 배치 메시지 처리
+        logger.info(f"📝 Quick Extract Batch 시작: {len(messages)}개 메시지, method={method}, use_llm={use_llm}")
+        
+        results = []
+        msg_processing_times = []
+        
+        for idx, message in enumerate(messages):
+            msg_start_time = time.time()
+            result = extractor.process_single_message(message, method=method)
+            msg_processing_time = time.time() - msg_start_time
+            
+            # 결과에 메시지 ID와 처리 시간 추가
+            message_result = {
+                'msg_id': idx,
+                'title': result['data']['title'],
+                'unsubscribe_phone': result['data']['unsubscribe_phone'],
+                'message_preview': result['data']['message_preview'],
+                'processing_time_seconds': round(msg_processing_time, 3)
+            }
+            results.append(message_result)
+            msg_processing_times.append(msg_processing_time)
+        
+        # 통계 계산
+        total = len(results)
+        with_phone = sum(1 for r in results if r.get('unsubscribe_phone'))
+        
+        # 처리 시간 계산
+        processing_time = time.time() - start_time
+        avg_time = sum(msg_processing_times) / total if total > 0 else 0
+        min_time = min(msg_processing_times) if msg_processing_times else 0
+        max_time = max(msg_processing_times) if msg_processing_times else 0
+        
+        # 응답 구성
+        response = {
+            'success': True,
+            'data': {
+                'results': results,
+                'statistics': {
+                    'total_messages': total,
+                    'with_unsubscribe_phone': with_phone,
+                    'extraction_rate': round(with_phone / total * 100, 2) if total > 0 else 0,
+                    'total_processing_time_seconds': round(sum(msg_processing_times), 3),
+                    'avg_processing_time_seconds': round(avg_time, 3),
+                    'min_processing_time_seconds': round(min_time, 3),
+                    'max_processing_time_seconds': round(max_time, 3)
+                }
+            },
+            'metadata': {
+                'method': method,
+                'total_time_seconds': round(processing_time, 3),
+                'timestamp': time.time()
+            }
+        }
+        
+        logger.info(f"✅ Quick Extract Batch 완료: {processing_time:.3f}초, {total}개 메시지 처리")
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"❌ Quick Extract Batch 오류: {e}")
         import traceback
         logger.error(traceback.format_exc())
         return jsonify({
