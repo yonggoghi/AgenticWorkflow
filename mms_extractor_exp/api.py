@@ -1113,7 +1113,7 @@ def quick_extract():
         "data": {
             "title": "추출된 제목",
             "unsubscribe_phone": "1504",
-            "message_preview": "메시지 미리보기..."
+            "message": "전체 메시지 내용..."
         },
         "metadata": {
             "method": "textrank",
@@ -1204,7 +1204,7 @@ def quick_extract_batch():
                     "msg_id": 0,
                     "title": "추출된 제목",
                     "unsubscribe_phone": "1504",
-                    "message_preview": "메시지 미리보기..."
+                    "message": "전체 메시지 내용..."
                 },
                 ...
             ],
@@ -1285,7 +1285,7 @@ def quick_extract_batch():
                 'msg_id': idx,
                 'title': result['data']['title'],
                 'unsubscribe_phone': result['data']['unsubscribe_phone'],
-                'message_preview': result['data']['message_preview'],
+                'message': result['data']['message'],
                 'processing_time_seconds': round(msg_processing_time, 3)
             }
             results.append(message_result)
