@@ -2060,8 +2060,8 @@ class MMSExtractor:
             
         return prompt
 
-    def _extract_channels(self, json_objects: Dict, msg: str) -> List[Dict]:
-        """채널 정보 추출 및 매칭"""
+    def _extract_channels(self, json_objects: Dict, msg: str, offer_object: Dict) -> tuple[List[Dict], Dict]:
+        """채널 정보 추출 및 매칭 (offer_object도 함께 반환)"""
         try:
             channel_tag = []
             channel_items = json_objects.get('channel', [])
@@ -2073,15 +2073,29 @@ class MMSExtractor:
                     # 대리점명으로 조직 정보 검색
                     store_info = self._match_store_info(d['value'])
                     d['store_info'] = store_info
+                    
+                    # offer_object를 org 타입으로 변경
+                    if store_info:
+                        offer_object['type'] = 'org'
+                        org_tmp = [
+                            {
+                                'item_nm': o['org_nm'], 
+                                'item_id': o['org_cd'], 
+                                'item_name_in_msg': d['value'], 
+                                'expected_action': ['방문']
+                            } 
+                            for o in store_info
+                        ]
+                        offer_object['value'] = org_tmp
                 else:
                     d['store_info'] = []
                 channel_tag.append(d)
 
-            return channel_tag
+            return channel_tag, offer_object
             
         except Exception as e:
             logger.error(f"채널 정보 추출 실패: {e}")
-            return []
+            return [], offer_object
 
     def _match_store_info(self, store_name: str) -> List[Dict]:
         """대리점 정보 매칭"""
@@ -2135,11 +2149,16 @@ class MMSExtractor:
         """추출 결과 검증 및 정리"""
         try:
             # 필수 필드 확인
-            required_fields = ['title', 'purpose', 'product', 'channel']
+            required_fields = ['title', 'purpose', 'product', 'channel', 'offer']
             for field in required_fields:
                 if field not in result:
                     logger.warning(f"필수 필드 누락: {field}")
-                    result[field] = [] if field != 'title' else "광고 메시지"
+                    if field == 'title':
+                        result[field] = "광고 메시지"
+                    elif field == 'offer':
+                        result[field] = {"type": "product", "value": []}
+                    else:
+                        result[field] = []
 
             # 채널 정보 검증
             validated_channels = []
@@ -2148,6 +2167,14 @@ class MMSExtractor:
                     validated_channels.append(channel)
             
             result['channel'] = validated_channels
+            
+            # offer 정보 검증
+            if not isinstance(result.get('offer'), dict):
+                logger.warning("offer 필드가 딕셔너리가 아님, 기본값으로 설정")
+                result['offer'] = {"type": "product", "value": []}
+            elif 'type' not in result['offer'] or 'value' not in result['offer']:
+                logger.warning("offer 필드에 type 또는 value가 없음, 기본값으로 설정")
+                result['offer'] = {"type": "product", "value": result.get('product', [])}
 
             return result
             
@@ -2360,6 +2387,9 @@ class MMSExtractor:
             logger.info(f"상품 수: {len(final_result.get('product', []))}개")
             logger.info(f"채널 수: {len(final_result.get('channel', []))}개")
             logger.info(f"프로그램 수: {len(final_result.get('pgm', []))}개")
+            offer_info = final_result.get('offer', {})
+            logger.info(f"오퍼 타입: {offer_info.get('type', 'N/A')}")
+            logger.info(f"오퍼 항목 수: {len(offer_info.get('value', []))}개")
 
             actual_prompts = get_stored_prompts_from_thread()
 
@@ -2510,7 +2540,9 @@ class MMSExtractor:
             "purpose": ["정보 제공"],
             "product": [],
             "channel": [],
-            "pgm": []
+            "pgm": [],
+            "offer": {"type": "product", "value": []},
+            "entity_dag": []
         }
 
     def _build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str]) -> Dict[str, Any]:
@@ -2521,6 +2553,9 @@ class MMSExtractor:
             logger.info("=" * 80)
             
             final_result = json_objects.copy()
+            
+            # offer_object 초기화
+            offer_object = {}
             
             # 상품 정보에서 엔티티 추출
             logger.info("📋 [STEP 1] product_items 추출")
@@ -2626,11 +2661,24 @@ class MMSExtractor:
                 logger.info(f"   ✅ 최종 product 개수: {len(final_result['product'])}개")
                 logger.info(f"   ✅ 최종 product 내용: {final_result['product']}")
 
+            # offer_object에 product 타입으로 설정
+            offer_object['type'] = 'product'
+            offer_object['value'] = final_result['product']
+            logger.info(f"🏷️  [STEP 7] offer_object 초기화: type=product, value 개수={len(offer_object['value'])}개")
+
             # 프로그램 분류 정보 매핑
             final_result['pgm'] = self._map_program_classification(json_objects, pgm_info)
             
-            # 채널 정보 처리
-            final_result['channel'] = self._extract_channels(json_objects, msg)
+            # 채널 정보 처리 (offer_object도 함께 전달 및 반환)
+            logger.info("🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트")
+            final_result['channel'], offer_object = self._extract_channels(json_objects, msg, offer_object)
+            logger.info(f"   ✅ 최종 channel 개수: {len(final_result['channel'])}개")
+            logger.info(f"   ✅ 최종 offer_object type: {offer_object.get('type', 'N/A')}")
+            logger.info(f"   ✅ 최종 offer_object value 개수: {len(offer_object.get('value', []))}개")
+            
+            # offer 필드 추가
+            final_result['offer'] = offer_object
+            logger.info(f"✅ [STEP 9] final_result에 offer 필드 추가 완료")
             
             # entity_dag 초기화 (빈 배열)
             final_result['entity_dag'] = []
@@ -2826,6 +2874,7 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
                 "product": [],
                 "channel": [],
                 "pgm": [],
+                "offer": {"type": "product", "value": []},
                 "entity_dag": []
             },
             "raw_result": {},
@@ -2876,6 +2925,7 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
                         "product": [],
                         "channel": [],
                         "pgm": [],
+                        "offer": {"type": "product", "value": []},
                         "entity_dag": []
                     },
                     "raw_result": {},
@@ -3162,6 +3212,9 @@ def main():
                     print(f"상품: {len(extracted.get('product', []))}개")
                     print(f"채널: {len(extracted.get('channel', []))}개")
                     print(f"프로그램: {len(extracted.get('pgm', []))}개")
+                    offer_info = extracted.get('offer', {})
+                    print(f"오퍼 타입: {offer_info.get('type', 'N/A')}")
+                    print(f"오퍼 항목: {len(offer_info.get('value', []))}개")
                     if result.get('error'):
                         print(f"오류: {result['error']}")
                 
@@ -3189,7 +3242,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '8월 T Day 혜택 안내 (광고)[SKT] 8월 T Day 혜택 안내   8월 3일(월)~7일(금) 원스토어 북스 인기 도서 10종 무료 대여!  ▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob  ★T멤버십만의 5가지 혜택★ ① 매일 찾아오는 행복한 시간 "해피아워" ② 매달 첫 주, 매주 수요일 "T Day" ③ SKT 5GX 고객님을 위한 부스트 파크 특별 혜택 ④ 착한 소비에 할인까지 "열린멤버십" ⑤ 할인 한도는 연간 무제한    무료 수신거부 1504',
+[SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세요. _아이폰 신제품 출시 기념 이벤트를 안내드립니다. _매장에 방문해 편하게 상담받고 다양한 혜택도 누려 보세요.__■ 아이폰 신제품 개통 혜택_- T 즉시보상 최대 70% 혜택_- 제휴 카드 추가 할인__■ 갤럭시 Z 플립7/Z 폴드7, 효도폰, 키즈폰_- 최대 할인 제공__■ 매장 방문 혜택_① 액정 보호 필름 무료 교체_② 키친타월 증정__▶ [단골이라서 더 드림] 혜택 자세히 보기: https://t-mms.kr/aiC/#74_* 대리점 공식 홈페이지로 연결__■ 티원대리점 화순점_- 주소: 전라남도 화순군 화순읍 광덕로 187_- 연락처: 061-927-7722__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
 
 
 """
@@ -3223,6 +3276,9 @@ def main():
             print(f"✅ 상품: {len(extracted_result.get('product', []))}개")
             print(f"✅ 채널: {len(extracted_result.get('channel', []))}개")
             print(f"✅ 프로그램: {len(extracted_result.get('pgm', []))}개")
+            offer_info = extracted_result.get('offer', {})
+            print(f"✅ 오퍼 타입: {offer_info.get('type', 'N/A')}")
+            print(f"✅ 오퍼 항목: {len(offer_info.get('value', []))}개")
             if extracted_result.get('error'):
                 print(f"❌ 오류: {extracted_result['error']}")
         
