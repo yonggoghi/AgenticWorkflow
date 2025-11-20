@@ -101,7 +101,8 @@ from prompts import (
     build_entity_extraction_prompt,
     DEFAULT_ENTITY_EXTRACTION_PROMPT,
     DETAILED_ENTITY_EXTRACTION_PROMPT,
-    SIMPLE_ENTITY_EXTRACTION_PROMPT
+    SIMPLE_ENTITY_EXTRACTION_PROMPT,
+    HYBRID_DAG_EXTRACTION_PROMPT
     )
 
 # 유틸리티 함수 모듈 임포트
@@ -1622,6 +1623,7 @@ class MMSExtractor:
         - 병렬 처리 제한 (최대 3 워커)
         - 개선된 에러 처리
         - 상세한 로깅
+        - Step 1에서 DAG 컨텍스트 추출 후 Step 4에서 활용
         
         Args:
             msg_text (str): 분석할 메시지 텍스트
@@ -1656,18 +1658,16 @@ class MMSExtractor:
                 model_name = getattr(model, 'model_name', 'Unknown')
                 logger.info(f"   [{idx+1}] 모델: {model_name}")
             
-            def get_entities_by_llm(args_dict):
-                """단일 LLM으로 엔티티 추출하는 일반적인 내부 함수 (prompt 직접 전달)"""
+            def get_entities_and_dag_by_llm(args_dict):
+                """단일 LLM으로 엔티티와 DAG 추출하는 내부 함수"""
                 llm_model, prompt = args_dict['llm_model'], args_dict['prompt']
                 model_name = getattr(llm_model, 'model_name', 'Unknown')
                 
                 try:
-                    # PromptTemplate 사용 (단순히 prompt를 그대로 전달)
+                    # PromptTemplate 사용
                     zero_shot_prompt = PromptTemplate(
                         input_variables=["prompt"],
-                        template="""
-                        {prompt}
-                        """
+                        template="{prompt}"
                     )
                     
                     # LLM 호출
@@ -1678,44 +1678,43 @@ class MMSExtractor:
                     cand_entity_list_raw = self._parse_entity_response(response)
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
                     
-                    logger.debug(f"   ✅ [{model_name}] 추출된 엔티티 수: {len(cand_entity_list)}개")
-                    return cand_entity_list
+                    # DAG 섹션 추출
+                    dag_text = ""
+                    dag_match = re.search(r'DAG:\s*(.*)', response, re.DOTALL | re.IGNORECASE)
+                    if dag_match:
+                        dag_text = dag_match.group(1).strip()
+                    
+                    logger.debug(f"   ✅ [{model_name}] 추출된 엔티티 수: {len(cand_entity_list)}개, DAG 추출: {'성공' if dag_text else '실패'}")
+                    return {"entities": cand_entity_list, "dag_text": dag_text}
                     
                 except Exception as e:
                     logger.error(f"   ❌ [{model_name}] LLM 모델에서 엔티티 추출 실패: {e}")
                     logger.error(f"   ❌ [{model_name}] 오류 상세: {traceback.format_exc()}")
-                    return []
+                    return {"entities": [], "dag_text": ""}
             
-            # 프롬프트 미리보기 저장 (디버깅용) - 복수 모델이어도 프롬프트는 동일하므로 항상 저장
+            def get_entities_only_by_llm(args_dict):
+                """get_entities_and_dag_by_llm의 래퍼 (엔티티 리스트만 반환)"""
+                result = get_entities_and_dag_by_llm(args_dict)
+                return result['entities']
+            
+            # 프롬프트 미리보기 저장 (디버깅용)
             logger.info("📋 프롬프트 미리보기 저장 중...")
-            base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
-            if base_prompt is None:
-                base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
-            preview_prompt = build_entity_extraction_prompt(msg_text, base_prompt)
-            
-            # 최종 프롬프트 길이 확인
-            final_prompt_length = len(preview_prompt)
-            logger.info(f"📏 최종 엔티티 추출 프롬프트 길이: {final_prompt_length:,} 문자")
-            logger.info(f"📝 프롬프트 미리보기 내용 (전체):")
-            logger.info("-" * 80)
-            for line in preview_prompt.split('\n'):
-                logger.info(f"   {line}")
-            logger.info("-" * 80)
-            
+            preview_prompt = f"""
+            {HYBRID_DAG_EXTRACTION_PROMPT}
+
+            ## message:                
+            {msg_text}
+            """
             self._store_prompt_for_preview(preview_prompt, "entity_extraction")
             logger.info("✅ 프롬프트 미리보기 저장 완료")
 
             
-            logger.info("🔄 1단계 LLM 추출 - 메시지에서 직접 엔티티 추출")
+            logger.info("🔄 1단계 LLM 추출 - 메시지에서 직접 엔티티 및 DAG 추출")
             # 1단계: 각 LLM 모델로 메시지에서 엔티티 추출
-            base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
-            if base_prompt is None:
-                base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
-            
             batches = []
             for llm_model in llm_models:
                 prompt = f"""
-                {base_prompt}
+                {HYBRID_DAG_EXTRACTION_PROMPT}
 
                 ## message:                
                 {msg_text}
@@ -1723,29 +1722,47 @@ class MMSExtractor:
                 batches.append({"prompt": prompt, "llm_model": llm_model})
             
             logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 1단계 엔티티 추출 시작")
-            logger.info(f"🔄 병렬 작업 수: {len(batches)}개 배치")
             
             # 병렬 작업 실행
             n_jobs = min(len(batches), 3)  # 최대 3개 작업으로 제한
             logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
             
             with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
+                # 딕셔너리 반환하는 함수 호출
+                batch_results_dicts = parallel(delayed(get_entities_and_dag_by_llm)(args) for args in batches)
             
             logger.info(f"✅ 모든 LLM 모델 처리 완료")
-            logger.info(f"📊 모델별 결과:")
-            for idx, (model, result) in enumerate(zip(llm_models, batch_results)):
-                model_name = getattr(model, 'model_name', 'Unknown')
-                logger.info(f"   [{idx+1}] {model_name}: {len(result)}개 엔티티 추출")
             
-            # 모든 결과를 합치고 중복 제거
-            all_entities = sum(batch_results, [])
+            # 결과 분리 및 수집
+            all_entities = []
+            all_dags = []
+            
+            for idx, (model, result_dict) in enumerate(zip(llm_models, batch_results_dicts)):
+                model_name = getattr(model, 'model_name', 'Unknown')
+                entities = result_dict['entities']
+                dag_text = result_dict['dag_text']
+                
+                logger.info(f"   [{idx+1}] {model_name}: {len(entities)}개 엔티티 추출")
+                all_entities.extend(entities)
+                if dag_text:
+                    all_dags.append(dag_text)
+            
+            # DAG 컨텍스트 병합
+            combined_dag_context = "\n".join(all_dags)
+            if combined_dag_context:
+                logger.info(f"   📝 캡처된 DAG 컨텍스트 길이: {len(combined_dag_context)}자")
+            
+            # 외부 엔티티 추가 및 중복 제거
             if external_cand_entities is not None and len(external_cand_entities)>0:
-                all_entities = list(set(all_entities+external_cand_entities))
+                all_entities.extend(external_cand_entities)
+            
             logger.info(f"📊 병합 전 총 엔티티 수: {len(all_entities)}개")
             cand_entity_list = list(set(all_entities))
+            
+            # N-gram 확장
             cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
-            logger.info(f"📊 중복 제거 후 엔티티 수: {len(cand_entity_list)}개")
+            
+            logger.info(f"📊 중복 제거 및 확장 후 엔티티 수: {len(cand_entity_list)}개")
             logger.info(f"✅ LLM 추출 완료: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"✅ LLM 추출 완료: {cand_entity_list}")
 
             if not cand_entity_list:
@@ -1753,7 +1770,6 @@ class MMSExtractor:
                 logger.info("=" * 80)
                 return pd.DataFrame()
             
-            # cand_entity_list = select_most_comprehensive(cand_entity_list)
             logger.info("🔍 엔티티-상품 매칭 시작...")
             logger.info(f"   입력 엔티티 수: {len(cand_entity_list)}개")
             cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
@@ -1768,7 +1784,7 @@ class MMSExtractor:
             logger.info(f"   매칭된 고유 item_nm_alias 수: {cand_entities_sim['item_nm_alias'].nunique()}개")
 
             # 후보 엔티티들과 상품 DB 매칭
-            logger.info("🔍 2단계 LLM 필터링 시작 (동적 배치 크기 사용)...")
+            logger.info("🔍 2단계 LLM 필터링 시작 (동적 배치 크기 + DAG 컨텍스트 사용)...")
             logger.info(f"   입력 메시지 엔티티 수: {len(cand_entities_sim['item_name_in_msg'].unique())}개")
             logger.info(f"   후보 상품 별칭 수: {len(cand_entities_sim['item_nm_alias'].unique())}개")
             
@@ -1783,6 +1799,9 @@ class MMSExtractor:
             cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
             logger.info(f"   총 후보 상품 별칭: {len(cand_entities_voca_all)}개")
             
+            # 2단계 필터링에는 첫 번째 모델 사용
+            second_stage_llm = llm_models[0] if llm_models else self.llm_model
+            
             batches = []
             for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
                 cand_entities_voca = cand_entities_voca_all[i:i+optimal_batch_size]
@@ -1792,24 +1811,26 @@ class MMSExtractor:
                 ## message:                
                 {msg_text}
 
+                ## DAG Context (User Action Paths):
+                {combined_dag_context}
+
                 ## entities in message:
                 {entities_in_message}
 
                 ## candidate entities in vocabulary:
                 {cand_entities_voca}
-
                 """
-                batches.append({"prompt": prompt, "llm_model": self.llm_model})
+                batches.append({"prompt": prompt, "llm_model": second_stage_llm})
             
             logger.info(f"🔄 2단계 LLM 필터링: {len(batches)}개 배치로 분할 (배치당 ~{optimal_batch_size}개)")
             
             # 병렬 작업 실행 (최대 3개 워커로 제한하여 rate limit 방지)
             n_jobs = min(len(batches), 3)
             logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
-            logger.info(f"   💡 Rate limit 방지를 위해 최대 3개 워커로 제한")
             
             with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
+                # 엔티티 리스트만 반환하는 래퍼 함수 사용
+                batch_results = parallel(delayed(get_entities_only_by_llm)(args) for args in batches)
             
             # 모든 배치 결과를 합치고 중복 제거
             logger.info(f"📊 배치별 결과 요약:")
@@ -2593,7 +2614,7 @@ class MMSExtractor:
             else:
                 logger.info("🔍 [STEP 3] LLM 기반 엔티티 매칭 시작")
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
-                default_llm_models = self._initialize_multiple_llm_models(['ax','gen'])
+                default_llm_models = self._initialize_multiple_llm_models(['gen','ax'])
                 logger.info(f"   - 초기화된 LLM 모델 수: {len(default_llm_models)}개")
                 similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=entities_from_kiwi)
                 logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
@@ -3253,7 +3274,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-[SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세요. _아이폰 신제품 출시 기념 이벤트를 안내드립니다. _매장에 방문해 편하게 상담받고 다양한 혜택도 누려 보세요.__■ 아이폰 신제품 개통 혜택_- T 즉시보상 최대 70% 혜택_- 제휴 카드 추가 할인__■ 갤럭시 Z 플립7/Z 폴드7, 효도폰, 키즈폰_- 최대 할인 제공__■ 매장 방문 혜택_① 액정 보호 필름 무료 교체_② 키친타월 증정__▶ [단골이라서 더 드림] 혜택 자세히 보기: https://t-mms.kr/aiC/#74_* 대리점 공식 홈페이지로 연결__■ 티원대리점 화순점_- 주소: 전라남도 화순군 화순읍 광덕로 187_- 연락처: 061-927-7722__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
+  message: '(광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌프란시스코 왕복 항공권, 애플 액세서리 팩까지!_Lucky 1717 이벤트 응모하고 경품 당첨의 행운을 누려 보세요.__▶ 이벤트 자세히 보기: https://t-mms.kr/aiN/#74_ _■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
 
 
 """

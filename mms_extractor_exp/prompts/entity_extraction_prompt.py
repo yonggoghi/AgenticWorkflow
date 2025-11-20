@@ -8,37 +8,80 @@ DEFAULT_ENTITY_EXTRACTION_PROMPT = "다음 메시지에서 상품명을 추출�
 
 # 상세한 엔티티 추출 프롬프트 (settings.py에서 이동)
 DETAILED_ENTITY_EXTRACTION_PROMPT = """
-Extract all product names from the advertisement text, including tangible products, services, promotional events, programs, loyalty initiatives, and named campaigns.
+    Analyze the advertisement to extract **ONLY the Root Nodes** of the User's Action Path.
+    Do NOT extract rewards, benefits, or secondary steps.
 
-Guidelines:
-1. Prioritize string matching with the provided candidate entities list, but include additional relevant items if they clearly fit the criteria
-2. Include named offerings such as apps, membership programs, events, branded items, or campaign names (e.g., 'T day', '0 day') when presented as distinct products or services
-3. Extract full, specific product names (e.g., 'FLO 앤 데이터') rather than base brand names (e.g., 'FLO') when they appear as components of longer names
-4. Exclude:
-   - Customer support services (customer centers, helplines)
-   - Descriptive modifiers that are not standalone offerings (e.g., "디지털 전용")
-   - Sales agency names (e.g., '###대리점')
-   - Platform or brand names unless presented as standalone offerings
-5. For related promotional events, include the overarching campaign name plus specific offerings tied to it, unless identical
-6. Preserve exact text as it appears in the original (no translation)
-7. Prioritize recall over precision - capture all relevant products
+    ## Definition of Root Node (Selection Logic)
+    Identify the entity that initiates the flow based on the following priority:
+    1.  **Primary Trigger (Highest Priority):** The specific product or service the user must **purchase, subscribe to, or use** to trigger the benefits (e.g., 'iPhone 신제품' in 'Buy iPhone, Get Cashback').
+    2.  **Entry Channel:** If no purchase is required, the specific **app, store, or website** the user is directed to visit (e.g., 'T World App', 'Offline Store').
+    3.  **Independent Campaign:** A major event name that serves as a standalone entry point (only if it's not a sub-benefit of a purchase).
 
-Return format:
-ENTITY: comma-separated list of matched entities.
-"""
+    ## Strict Exclusions
+    - **Ignore Benefits:** Cashback, Coupons, Airline Tickets, Free Gifts.
+    - **Ignore Enablers:** Payment methods (e.g., 'Hyundai Card', 'Apple Pay') unless they are the sole subject of the ad.
+    - **Ignore Labels:** 'Shortcut', 'Link', 'View Details'.
+
+    ## Return format
+    ENTITY: comma-separated list of Root Nodes only.
+    """
 
 SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 Select product/service names from 'candidate entities' that are directly mentioned and promoted in the message.
 
 Guidelines:
-1. Only include entities explicitly offered/promoted in the message
+1. Only include entities explicitly offered/promoted in the advertisement
 2. Exclude general concepts not tied to specific offerings  
-3. Consider message context and product categories (plan, service, device, app, event, coupon, etc.)
-4. Multiple entities from 'entities in message' may combine into one composite entity - this is also a valid selection
+3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+4. Multiple entities in 'entities in message' may combine into one composite entity
+5. **Refer to the 'DAG Context' which describes the user action flow.** Use it to distinguish between core offerings and navigational/informational elements.
 
 Return format:
-REASON: Brief explanation (max 50 chars Korean) - why the candidate entity directly corresponds to the message's core offer
+REASON: Brief explanation (max 50 chars Korean)
 ENTITY: comma-separated list from candidates, or empty if none match
+"""
+
+HYBRID_DAG_EXTRACTION_PROMPT = """
+Analyze the advertisement to extract **User Action Paths**.
+Output two distinct sections:
+1. **ENTITY**: A list of independent Root Nodes.
+2. **DAG**: A structured graph representing the flow from Root to Benefit.
+
+## Crucial Language Rule
+* **DO NOT TRANSLATE:** Extract entities **exactly as they appear** in the source text.
+* **Preserve Original Script:** If the text says "아이폰 17", output "아이폰 17" (NOT "iPhone 17"). If it says "T Day", output "T Day".
+
+## Part 1: Root Node Selection Hierarchy (Extract ALL Distinct Roots)
+Identify logical starting points based on this priority. If multiple independent offers exist, extract all.
+
+1.  **Physical Store (Highest):** Specific branch names.
+    * *Match:* "새샘대리점 역곡점", "백색대리점 수성직영점"
+2.  **Core Service (Plans/VAS):** Rate plans, Value-Added Services, Internet/IPTV.
+    * *Match:* "5GX 프라임 요금제", "V컬러링", "로밍 baro 요금제"
+3.  **Subscription/Event:** Membership signups or specific campaigns.
+    * *Match:* "T 우주", "T Day", "0 day", "골드번호 프로모션"
+4.  **App/Platform:** Apps requiring action.
+    * *Match:* "A.(에이닷)", "PASS 앱", "T world"
+5.  **Product (Hardware):** Device launches without a specific store focus.
+    * *Match:* "iPhone 17", "갤럭시 Z 플립7"
+
+## Part 2: DAG Construction Rules
+Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
+* **Format:** `(Node:Action) -[Edge]-> (Node:Action)`
+* **Nodes:**
+    * **Root:** The entry point identified above (Original Text).
+    * **Core:** The product/service being used or bought (Original Text).
+    * **Value:** The final reward or benefit (Original Text).
+* **Logic:** Represent the shortest path from the Root action to the Final Benefit.
+
+## Strict Exclusions
+* Ignore navigational labels ('바로 가기', '링크', 'Shortcut').
+* Ignore generic partners ('스타벅스', 'CU') unless they are the main subscription target.
+
+## Output Format
+ENTITY: <comma-separated list of all Nodes in original text>
+DAG:
+<DAG representation line by line in original text>
 """
 
 # LLM 기반 엔티티 추출 프롬프트 템플릿
