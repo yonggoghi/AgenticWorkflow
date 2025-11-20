@@ -2149,12 +2149,14 @@ class MMSExtractor:
         """추출 결과 검증 및 정리"""
         try:
             # 필수 필드 확인
-            required_fields = ['title', 'purpose', 'product', 'channel', 'offer']
+            required_fields = ['title', 'purpose', 'sales_script', 'product', 'channel', 'offer']
             for field in required_fields:
                 if field not in result:
                     logger.warning(f"필수 필드 누락: {field}")
                     if field == 'title':
                         result[field] = "광고 메시지"
+                    elif field == 'sales_script':
+                        result[field] = ""
                     elif field == 'offer':
                         result[field] = {"type": "product", "value": []}
                     else:
@@ -2384,6 +2386,9 @@ class MMSExtractor:
             logger.info("=" * 60)
             logger.info(f"제목: {final_result.get('title', 'N/A')}")
             logger.info(f"목적: {final_result.get('purpose', [])}")
+            sales_script = final_result.get('sales_script', '')
+            if sales_script:
+                logger.info(f"판매 스크립트: {sales_script[:100]}..." if len(sales_script) > 100 else f"판매 스크립트: {sales_script}")
             logger.info(f"상품 수: {len(final_result.get('product', []))}개")
             logger.info(f"채널 수: {len(final_result.get('channel', []))}개")
             logger.info(f"프로그램 수: {len(final_result.get('pgm', []))}개")
@@ -2538,6 +2543,7 @@ class MMSExtractor:
         return {
             "title": "광고 메시지",
             "purpose": ["정보 제공"],
+            "sales_script": "",
             "product": [],
             "channel": [],
             "pgm": [],
@@ -2871,6 +2877,7 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
             "extracted_result": {
                 "title": "처리 실패",
                 "purpose": ["오류"],
+                "sales_script": "",
                 "product": [],
                 "channel": [],
                 "pgm": [],
@@ -2922,6 +2929,7 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
                     "extracted_result": {
                         "title": "처리 실패",
                         "purpose": ["오류"],
+                        "sales_script": "",
                         "product": [],
                         "channel": [],
                         "pgm": [],
@@ -3209,6 +3217,9 @@ def main():
                     extracted = result.get('extracted_result', {})
                     print(f"\n--- 메시지 {i+1} ---")
                     print(f"제목: {extracted.get('title', 'N/A')}")
+                    sales_script = extracted.get('sales_script', '')
+                    if sales_script:
+                        print(f"판매 스크립트: {sales_script[:80]}..." if len(sales_script) > 80 else f"판매 스크립트: {sales_script}")
                     print(f"상품: {len(extracted.get('product', []))}개")
                     print(f"채널: {len(extracted.get('channel', []))}개")
                     print(f"프로그램: {len(extracted.get('pgm', []))}개")
@@ -3273,6 +3284,9 @@ def main():
             print("="*50)
             print(f"✅ 제목: {extracted_result.get('title', 'N/A')}")
             print(f"✅ 목적: {len(extracted_result.get('purpose', []))}개")
+            sales_script = extracted_result.get('sales_script', '')
+            if sales_script:
+                print(f"✅ 판매 스크립트: {sales_script[:100]}..." if len(sales_script) > 100 else f"✅ 판매 스크립트: {sales_script}")
             print(f"✅ 상품: {len(extracted_result.get('product', []))}개")
             print(f"✅ 채널: {len(extracted_result.get('channel', []))}개")
             print(f"✅ 프로그램: {len(extracted_result.get('pgm', []))}개")
