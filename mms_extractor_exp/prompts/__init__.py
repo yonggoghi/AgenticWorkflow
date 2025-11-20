@@ -71,7 +71,8 @@ from .entity_extraction_prompt import (
     build_entity_extraction_prompt,
     DEFAULT_ENTITY_EXTRACTION_PROMPT,
     DETAILED_ENTITY_EXTRACTION_PROMPT,
-    SIMPLE_ENTITY_EXTRACTION_PROMPT
+    SIMPLE_ENTITY_EXTRACTION_PROMPT,
+    HYBRID_DAG_EXTRACTION_PROMPT
 )
 
 # 외부에서 사용 가능한 모든 함수와 상수들을 명시적으로 정의
@@ -96,4 +97,6 @@ __all__ = [
     'build_entity_extraction_prompt',   # 엔티티 추출 프롬프트 생성
     'DEFAULT_ENTITY_EXTRACTION_PROMPT', # 기본 엔티티 추출 프롬프트
     'DETAILED_ENTITY_EXTRACTION_PROMPT', # 상세 엔티티 추출 프롬프트
+    'SIMPLE_ENTITY_EXTRACTION_PROMPT',  # 간단한 엔티티 추출 프롬프트
+    'HYBRID_DAG_EXTRACTION_PROMPT',     # DAG-Entity 하이브리드 추출 프롬프트
 ]
