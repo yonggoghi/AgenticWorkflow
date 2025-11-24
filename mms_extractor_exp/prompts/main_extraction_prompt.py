@@ -96,7 +96,7 @@ JSON_SCHEMA = {
             "properties": {
                 "type": {
                     "type": "string",
-                    "enum": ["URL", "전화번호", "앱", "대리점"],
+                    "enum": ["URL", "전화번호", "앱", "대리점", "온라인스토어"],
                     "description": "Channel type."
                 },
                 "value": {"type": "string", "description": "Specific information for the channel. 대리점인 경우 ***점으로 표시될 가능성이 높음"},
