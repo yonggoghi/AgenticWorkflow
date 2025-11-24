@@ -38,6 +38,7 @@ LLM을 활용하여 광고 내용에서 엔티티들 간의 인과관계, 순차
 from concurrent.futures import ThreadPoolExecutor
 import time
 import logging
+import traceback
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from prompts.dag_extraction_prompt import build_dag_extraction_prompt
@@ -112,20 +113,81 @@ llm_gpt = ChatOpenAI(
 
 # 데이터 파일들을 조건부로 로드 (파일이 존재할 때만)
 stop_item_names = []
-mms_pdf = None
+mms_pdf = pd.DataFrame()
 
+# Stop words 로드
 try:
-    if os.path.exists(settings.METADATA_CONFIG.stop_items_path):
-        stop_item_names = pd.read_csv(settings.METADATA_CONFIG.stop_items_path)['stop_words'].to_list()
+    stop_words_path = getattr(settings.METADATA_CONFIG, 'stop_items_path', './data/stop_words.csv')
+    if os.path.exists(stop_words_path):
+        logger.info(f"Stop words 파일 로드 중: {stop_words_path}")
+        stop_item_names = pd.read_csv(stop_words_path)['stop_words'].to_list()
+        logger.info(f"Stop words 로드 완료: {len(stop_item_names)}개")
+    else:
+        logger.warning(f"Stop words 파일을 찾을 수 없습니다: {stop_words_path}")
 except Exception as e:
-    logger.warning(f"Stop words 파일을 로드할 수 없습니다: {e}")
+    logger.warning(f"Stop words 파일 로드 실패: {e}")
+    stop_item_names = []
 
+# MMS 메시지 데이터 로드
 try:
-    if os.path.exists(settings.METADATA_CONFIG.mms_msg_path):
-        mms_pdf = pd.read_csv(settings.METADATA_CONFIG.mms_msg_path)
-        mms_pdf = mms_pdf.astype('str')
+    mms_msg_path = getattr(settings.METADATA_CONFIG, 'mms_msg_path', './data/mms_messages.csv')
+    
+    if os.path.exists(mms_msg_path):
+        logger.info(f"MMS 데이터 파일 로드 중: {mms_msg_path}")
+        mms_pdf = pd.read_csv(mms_msg_path)
+        logger.info(f"MMS 데이터 원본 크기: {mms_pdf.shape}")
+        logger.info(f"MMS 데이터 컬럼들: {list(mms_pdf.columns)}")
+        
+        # 컬럼명 확인 및 표준화
+        if 'msg' not in mms_pdf.columns:
+            # 1. 대소문자 구분 없이 msg 컬럼 찾기
+            msg_col_candidates = [col for col in mms_pdf.columns if col.lower() == 'msg']
+            if msg_col_candidates:
+                logger.info(f"'msg' 컬럼을 '{msg_col_candidates[0]}'로 리네임")
+                mms_pdf = mms_pdf.rename(columns={msg_col_candidates[0]: 'msg'})
+            # 2. mms_phrs 컬럼 확인 (일반적인 MMS 메시지 컬럼명)
+            elif 'mms_phrs' in mms_pdf.columns:
+                logger.info("'mms_phrs' 컬럼을 'msg'로 리네임")
+                mms_pdf = mms_pdf.rename(columns={'mms_phrs': 'msg'})
+            # 3. MMS_PHRS 컬럼 확인 (대문자 버전)
+            elif 'MMS_PHRS' in mms_pdf.columns:
+                logger.info("'MMS_PHRS' 컬럼을 'msg'로 리네임")
+                mms_pdf = mms_pdf.rename(columns={'MMS_PHRS': 'msg'})
+            # 4. msg_nm 컬럼 확인 (메시지 이름)
+            elif 'msg_nm' in mms_pdf.columns:
+                logger.info("'msg_nm' 컬럼을 'msg'로 리네임")
+                mms_pdf = mms_pdf.rename(columns={'msg_nm': 'msg'})
+            else:
+                logger.warning("'msg' 컬럼을 찾을 수 없습니다. 사용 가능한 컬럼들:")
+                logger.warning(f"{list(mms_pdf.columns)}")
+                # 빈 DataFrame으로 설정
+                mms_pdf = pd.DataFrame()
+        
+        # 문자열 타입으로 변환
+        if 'msg' in mms_pdf.columns:
+            mms_pdf['msg'] = mms_pdf['msg'].astype('str')
+            logger.info(f"'msg' 컬럼을 문자열 타입으로 변환 완료")
+            
+            # 데이터 품질 확인
+            null_count = mms_pdf['msg'].isnull().sum()
+            empty_count = (mms_pdf['msg'] == '').sum()
+            valid_count = len(mms_pdf) - null_count - empty_count
+            logger.info(f"MMS 메시지 품질: 유효={valid_count}, 빈값={empty_count}, null={null_count}")
+            
+            # 샘플 데이터 확인
+            if not mms_pdf.empty and valid_count > 0:
+                sample_msgs = mms_pdf['msg'].dropna().head(2).tolist()
+                logger.info(f"MMS 메시지 샘플: {[msg[:50]+'...' if len(msg) > 50 else msg for msg in sample_msgs]}")
+        
+        logger.info(f"MMS 데이터 로드 완료: {len(mms_pdf)}개 행")
+    else:
+        logger.warning(f"MMS 데이터 파일을 찾을 수 없습니다: {mms_msg_path}")
+        logger.warning("샘플 메시지로 테스트하려면 --prompt_mode simple 옵션을 사용하세요")
+        mms_pdf = pd.DataFrame()
+        
 except Exception as e:
-    logger.warning(f"MMS 데이터 파일을 로드할 수 없습니다: {e}")
+    logger.error(f"MMS 데이터 파일 로드 실패: {e}")
+    logger.error(f"오류 상세: {traceback.format_exc()}")
     mms_pdf = pd.DataFrame()  # 빈 DataFrame으로 초기화
 
 ###############################################################################
@@ -544,7 +606,7 @@ class DAGParser:
         return '\n'.join(output)
 
 
-def extract_dag(parser: DAGParser, msg: str, llm_model):
+def extract_dag(parser: DAGParser, msg: str, llm_model, prompt_mode: str = 'cot'):
     """
     엔티티 관계 DAG 추출 메인 함수
     ========================================
@@ -571,6 +633,7 @@ def extract_dag(parser: DAGParser, msg: str, llm_model):
         parser (DAGParser): DAG 파싱 전문 객체
         msg (str): 분석할 MMS 메시지 텍스트
         llm_model: Langchain 호환 LLM 모델 인스턴스
+        prompt_mode (str): 프롬프트 모드 ('cot' 또는 'simple'). 기본값 'cot'.
         
     Returns:
         dict: DAG 추출 결과
@@ -587,7 +650,7 @@ def extract_dag(parser: DAGParser, msg: str, llm_model):
         
     Example:
         >>> parser = DAGParser()
-        >>> result = extract_dag(parser, "SK텔레콤 혜택 안내...", llm_model)
+        >>> result = extract_dag(parser, "SK텔레콤 혜택 안내...", llm_model, prompt_mode='simple')
         >>> print(f"DAG 노드 수: {result['dag'].number_of_nodes()}")
         >>> print(f"DAG 엣지 수: {result['dag'].number_of_edges()}")
     """
@@ -596,9 +659,10 @@ def extract_dag(parser: DAGParser, msg: str, llm_model):
     logger.info("🚀 DAG 추출 프로세스 시작")
     logger.info(f"📝 입력 메시지 길이: {len(msg)}자")
     logger.info(f"🤖 사용 LLM 모델: {llm_model}")
+    logger.info(f"⚙️  프롬프트 모드: {prompt_mode}")
     
     # 단계 1: 외부 프롬프트 모듈에서 전문 프롬프트 구성
-    prompt = build_dag_extraction_prompt(msg)
+    prompt = build_dag_extraction_prompt(msg, mode=prompt_mode)
     
     # LLM 호출 준비 로깅
     logger.info("🤖 LLM에 DAG 추출 요청 중...")
@@ -623,7 +687,12 @@ def extract_dag(parser: DAGParser, msg: str, llm_model):
         
         dag_raw = llm_model.invoke(prompt).content
         logger.info(f"📝 LLM 응답 길이: {len(dag_raw)}자")
-        logger.info(f"📄 LLM 응답 미리보기: {dag_raw[:200]}...")
+        logger.info(f"📄 LLM 응답 미리보기 (처음 500자): {dag_raw[:500]}...")
+        print("\n" + "="*80)
+        print("🔍 [DEBUG] LLM 전체 응답:")
+        print("="*80)
+        print(dag_raw)
+        print("="*80 + "\n")
     except Exception as e:
         logger.error(f"❌ LLM 호출 중 오류 발생: {e}")
         raise
@@ -631,8 +700,17 @@ def extract_dag(parser: DAGParser, msg: str, llm_model):
     # Step 2: DAG 섹션 추출 및 정리
     # LLM 응답에서 실제 DAG 구조 부분만 추출
     logger.info("🔍 DAG 섹션 추출 중...")
-    dag_section = parser.extract_dag_section(dag_raw)
-    logger.info(f"📄 추출된 DAG 섹션 길이: {len(dag_section)}자")
+    try:
+        dag_section = parser.extract_dag_section(dag_raw)
+        logger.info(f"📄 추출된 DAG 섹션 길이: {len(dag_section)}자")
+        if dag_section:
+            logger.info(f"📄 DAG 섹션 내용:\n{dag_section}")
+        else:
+            logger.warning("⚠️ DAG 섹션이 비어있습니다")
+    except Exception as e:
+        logger.error(f"❌ DAG 섹션 추출 실패: {e}")
+        logger.error(f"❌ LLM 응답 전체:\n{dag_raw}")
+        raise
     
     # Step 3: NetworkX 그래프 구조 생성
     # 텍스트 DAG를 실제 그래프 객체로 변환
@@ -678,7 +756,7 @@ def extract_dag(parser: DAGParser, msg: str, llm_model):
 ###############################################################################
 # 7) 메인 추출 함수 (기존 인터페이스 유지 + 개선 기능 추가)
 ###############################################################################
-def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True):
+def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True, prompt_mode='cot'):
 
     if llm_model_nm == 'ax':
         llm_model = llm_ax
@@ -691,22 +769,43 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True):
     elif llm_model_nm == 'gpt':
         llm_model = llm_gpt
 
+    # 데이터 검증
+    if mms_pdf is None or mms_pdf.empty or 'msg' not in mms_pdf.columns:
+        logger.warning("MMS 데이터가 로드되지 않았습니다. 샘플 메시지로 테스트합니다.")
+        sample_messages = [
+            "[SKT] T 우주패스 쇼핑 출시! 지금 링크를 눌러 가입하면 첫 달 1,000원에 이용 가능합니다. 가입 고객 전원에게 11번가 포인트 3,000P와 아마존 무료배송 쿠폰을 드립니다.",
+            "[SKT] 에스알대리점 지행점 9월 특가. 아이폰16 즉시 개통 가능! 매장 방문하셔서 상담만 받아도 사은품을 드립니다. 위치: 지행역 2번 출구"
+        ]
+        messages_to_process = sample_messages[:min(num_msgs, len(sample_messages))]
+    else:
+        # 기존 로직: mms_pdf에서 랜덤 샘플링
+        try:
+            all_msgs = mms_pdf['msg'].unique().tolist()
+            messages_to_process = random.sample(all_msgs, min(num_msgs, len(all_msgs)))
+        except Exception as e:
+            logger.error(f"메시지 샘플링 중 오류: {e}")
+            return
+
     # 출력을 파일에 저장하기 위한 설정
     output_file = "./logs/dag_extraction_output.txt"
 
     line_break_patterns = {"__":"\n", "■":"\n■", "▶":"\n▶", "_":"\n"}
     
     # 개선된 파서 초기화
-    parser = DAGParser() 
+    parser = DAGParser()
+    dag = None  # dag 변수 초기화
+    
     with open(output_file, 'a', encoding='utf-8') as f:
         # 실행 시작 시점 기록
         from datetime import datetime
         start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write(f"\n{'='*80}\n")
         f.write(f"DAG 추출 실행 시작: {start_time}\n")
+        f.write(f"설정: 모델={llm_model_nm}, 모드={prompt_mode}\n")
         f.write(f"{'='*80}\n\n")
         
-        for msg in random.sample(mms_pdf.query("msg.str.contains('')")['msg'].unique().tolist(), num_msgs):
+        for msg in messages_to_process:
+            dag = None  # 각 메시지마다 dag 초기화
             try:
                 for pattern, replacement in line_break_patterns.items():
                     msg = msg.replace(pattern, replacement)
@@ -722,13 +821,19 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True):
                 dag_header = "==="*15+f" DAG ({llm_model_nm.upper()}) "+"==="*15
                 print(dag_header)
                 f.write(dag_header + "\n")
-                extract_dag_result = extract_dag(parser, msg, llm_model)
+                
+                print(f"🚀 extract_dag 함수 호출 중... (prompt_mode={prompt_mode})")
+                extract_dag_result = extract_dag(parser, msg, llm_model, prompt_mode=prompt_mode)
 
                 dag_raw = extract_dag_result['dag_raw']
                 dag_section = extract_dag_result['dag_section']
                 dag = extract_dag_result['dag']
 
+                print("\n" + "="*80)
+                print("📄 LLM 원본 응답 (dag_raw):")
+                print("="*80)
                 print(dag_raw)
+                print("="*80 + "\n")
                 f.write(dag_raw + "\n")
 
                 # 파서 선택 및 처리
@@ -827,6 +932,10 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True):
                 print(paths_header)
                 f.write(paths_header + "\n")
                 paths, roots, leaves = get_root_to_leaf_paths(dag)
+                
+                if not paths:
+                    print("No paths found.")
+                    f.write("No paths found.\n")
 
                 for i, path in enumerate(paths):
                     path_info = f"\nPath {i+1}:"
@@ -858,16 +967,148 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True):
     
     print(f"출력이 파일에 저장되었습니다: {output_file}")
 
-    if save_dag_image:
-        create_dag_diagram(dag, filename=f'dag_{sha256_hash(msg)}')
-        print(f"DAG 이미지가 저장되었습니다: {f'dag_{sha256_hash(msg)}.png'}")
+    if save_dag_image and dag is not None:
+        try:
+            create_dag_diagram(dag, filename=f'dag_{sha256_hash(msg)}')
+            print(f"DAG 이미지가 저장되었습니다: {f'dag_{sha256_hash(msg)}.png'}")
+        except Exception as e:
+            print(f"DAG 이미지 저장 실패: {e}")
+    elif save_dag_image and dag is None:
+        print("⚠️ DAG 객체가 생성되지 않아 이미지를 저장할 수 없습니다.")
 
 if __name__ == "__main__":
     import argparse
     
-    parser_arg = argparse.ArgumentParser(description='DAG 추출기')
-    parser_arg.add_argument('--num_msgs', type=int, default=50, help='추출할 메시지 수')
-    parser_arg.add_argument('--llm_model', type=str, default='ax', help='사용할 LLM 모델')
-    parser_arg.add_argument('--save_dag_image', type=bool, default=True, help='DAG 이미지 저장 여부')
+    parser_arg = argparse.ArgumentParser(description='DAG 추출기 - MMS 메시지에서 엔티티 관계 그래프 추출')
+    parser_arg.add_argument('--message', type=str, help='단일 메시지 직접 입력')
+    parser_arg.add_argument('--batch-file', type=str, help='배치 처리할 메시지가 담긴 파일 경로 (한 줄에 하나씩)')
+    parser_arg.add_argument('--num_msgs', type=int, default=50, help='CSV에서 추출할 메시지 수 (기본값: 50)')
+    parser_arg.add_argument('--llm_model', type=str, default='ax', help='사용할 LLM 모델 (기본값: ax)')
+    parser_arg.add_argument('--save_dag_image', action='store_true', default=False, help='DAG 이미지 저장 여부')
+    parser_arg.add_argument('--prompt_mode', type=str, default='cot', choices=['cot', 'simple'], help='프롬프트 모드 (cot: Chain-of-Thought 상세분석, simple: 간단분석)')
     args = parser_arg.parse_args()
-    dag_finder(num_msgs=args.num_msgs, llm_model_nm=args.llm_model, save_dag_image=args.save_dag_image)
+
+    args.message = """
+  message: '(광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌프란시스코 왕복 항공권, 애플 액세서리 팩까지!_Lucky 1717 이벤트 응모하고 경품 당첨의 행운을 누려 보세요.__▶ 이벤트 자세히 보기: https://t-mms.kr/aiN/#74_ _■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
+
+    """
+    
+    # 단일 메시지 처리
+    if args.message:
+        print("=" * 80)
+        print("🚀 단일 메시지 DAG 추출 시작")
+        print("=" * 80)
+        print(f"메시지: {args.message[:100]}..." if len(args.message) > 100 else f"메시지: {args.message}")
+        print(f"LLM 모델: {args.llm_model}")
+        print(f"프롬프트 모드: {args.prompt_mode}")
+        print("=" * 80 + "\n")
+        
+        # LLM 모델 초기화
+        if args.llm_model == 'ax':
+            llm_model = llm_ax
+        elif args.llm_model == 'gem':
+            llm_model = llm_gem
+        elif args.llm_model == 'cld':
+            llm_model = llm_cld
+        elif args.llm_model == 'gen':
+            llm_model = llm_gen
+        elif args.llm_model == 'gpt':
+            llm_model = llm_gpt
+        else:
+            llm_model = llm_ax
+        
+        # DAG 추출
+        parser = DAGParser()
+        try:
+            result = extract_dag(parser, args.message, llm_model, prompt_mode=args.prompt_mode)
+            
+            print("\n" + "=" * 80)
+            print("✅ DAG 추출 완료")
+            print("=" * 80)
+            print(f"추출된 DAG:\n{result['dag_section']}")
+            print("=" * 80)
+            print(f"노드 수: {result['dag'].number_of_nodes()}")
+            print(f"엣지 수: {result['dag'].number_of_edges()}")
+            
+            if args.save_dag_image and result['dag'].number_of_nodes() > 0:
+                dag_filename = f"dag_{sha256_hash(args.message)}"
+                create_dag_diagram(result['dag'], filename=dag_filename)
+                print(f"✅ DAG 이미지 저장: {dag_filename}.png")
+                
+        except Exception as e:
+            print(f"❌ DAG 추출 실패: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # 배치 파일 처리
+    elif args.batch_file:
+        print("=" * 80)
+        print("🚀 배치 파일 DAG 추출 시작")
+        print("=" * 80)
+        print(f"파일: {args.batch_file}")
+        print(f"LLM 모델: {args.llm_model}")
+        print(f"프롬프트 모드: {args.prompt_mode}")
+        print("=" * 80 + "\n")
+        
+        try:
+            with open(args.batch_file, 'r', encoding='utf-8') as f:
+                messages = [line.strip() for line in f if line.strip()]
+            
+            print(f"📄 로드된 메시지 수: {len(messages)}개\n")
+            
+            # LLM 모델 초기화
+            if args.llm_model == 'ax':
+                llm_model = llm_ax
+            elif args.llm_model == 'gem':
+                llm_model = llm_gem
+            elif args.llm_model == 'cld':
+                llm_model = llm_cld
+            elif args.llm_model == 'gen':
+                llm_model = llm_gen
+            elif args.llm_model == 'gpt':
+                llm_model = llm_gpt
+            else:
+                llm_model = llm_ax
+            
+            parser = DAGParser()
+            
+            for idx, msg in enumerate(messages, 1):
+                print(f"\n{'='*80}")
+                print(f"처리 중: {idx}/{len(messages)}")
+                print(f"메시지: {msg[:100]}..." if len(msg) > 100 else f"메시지: {msg}")
+                print('='*80)
+                
+                try:
+                    result = extract_dag(parser, msg, llm_model, prompt_mode=args.prompt_mode)
+                    print(f"✅ 노드: {result['dag'].number_of_nodes()}개, 엣지: {result['dag'].number_of_edges()}개")
+                    
+                    if args.save_dag_image and result['dag'].number_of_nodes() > 0:
+                        dag_filename = f"dag_{idx}_{sha256_hash(msg)}"
+                        create_dag_diagram(result['dag'], filename=dag_filename)
+                        print(f"✅ 이미지 저장: {dag_filename}.png")
+                        
+                except Exception as e:
+                    print(f"❌ 실패: {e}")
+            
+            print(f"\n{'='*80}")
+            print(f"✅ 배치 처리 완료: {len(messages)}개 메시지")
+            print('='*80)
+            
+        except FileNotFoundError:
+            print(f"❌ 파일을 찾을 수 없습니다: {args.batch_file}")
+        except Exception as e:
+            print(f"❌ 배치 처리 실패: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # CSV에서 랜덤 샘플링 (기존 방식)
+    else:
+        print("=" * 80)
+        print("🚀 CSV 파일에서 랜덤 샘플링 DAG 추출")
+        print("=" * 80)
+        print(f"추출할 메시지 수: {args.num_msgs}개")
+        print(f"LLM 모델: {args.llm_model}")
+        print(f"프롬프트 모드: {args.prompt_mode}")
+        print("=" * 80 + "\n")
+        
+        dag_finder(num_msgs=args.num_msgs, llm_model_nm=args.llm_model, save_dag_image=args.save_dag_image, prompt_mode=args.prompt_mode)
