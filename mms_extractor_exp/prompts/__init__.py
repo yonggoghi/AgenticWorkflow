@@ -64,7 +64,8 @@ from .retry_enhancement_prompt import (
 
 from .dag_extraction_prompt import (
     build_dag_extraction_prompt,
-    DAG_EXTRACTION_PROMPT_TEMPLATE
+    DAG_EXTRACTION_PROMPT_TEMPLATE,
+    SIMPLE_DAG_EXTRACTION_PROMPT_TEMPLATE
 )
 
 from .entity_extraction_prompt import (

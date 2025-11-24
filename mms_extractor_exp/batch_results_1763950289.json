@@ -1,0 +1,360 @@
+[
+    {
+        "extracted_result": {
+            "title": "5G 아이폰17/17 Pro 사전예약 혜택 안내",
+            "purpose": [
+                "상품 가입 유도",
+                "혜택 안내",
+                "경품 제공 안내",
+                "수신 거부 안내",
+                "기타 정보 제공"
+            ],
+            "sales_script": "아이폰 17/17 Pro 사전예약 시 특별 사은품 증정! 지금 바로 안내드릴까요?",
+            "product": [
+                {
+                    "item_nm": "IPHONE 17",
+                    "item_id": [
+                        "A6UD",
+                        "A6SQ",
+                        "A6U2",
+                        "A6U7",
+                        "A6SV"
+                    ],
+                    "item_name_in_msg": [
+                        "아이폰 17/17 Pro 사전예약"
+                    ],
+                    "expected_action": [
+                        "기타"
+                    ]
+                },
+                {
+                    "item_nm": "IPHONE 17 PRO",
+                    "item_id": [
+                        "A6UJ",
+                        "A6T4",
+                        "A6UM",
+                        "A6VK",
+                        "A6UQ",
+                        "A6T7",
+                        "A6T1"
+                    ],
+                    "item_name_in_msg": [
+                        "아이폰 17/17 Pro 사전예약"
+                    ],
+                    "expected_action": [
+                        "기타"
+                    ]
+                }
+            ],
+            "channel": [
+                {
+                    "type": "URL",
+                    "value": "http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx",
+                    "action": "가입",
+                    "store_info": []
+                },
+                {
+                    "type": "URL",
+                    "value": "http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA",
+                    "action": "추가 정보",
+                    "store_info": []
+                },
+                {
+                    "type": "전화번호",
+                    "value": "1558",
+                    "action": "문의",
+                    "store_info": []
+                },
+                {
+                    "type": "전화번호",
+                    "value": "1504",
+                    "action": "수신 거부",
+                    "store_info": []
+                }
+            ],
+            "pgm": [
+                {
+                    "pgm_nm": "[마케팅_Sales]상품및부가서비스가입유도_단말",
+                    "pgm_id": "2019SCTDH04"
+                },
+                {
+                    "pgm_nm": "[마케팅_Care]사용법/혜택/이벤트안내_단말",
+                    "pgm_id": "#2025ABCD01"
+                }
+            ],
+            "offer": {
+                "type": "product",
+                "value": [
+                    {
+                        "item_nm": "IPHONE 17",
+                        "item_id": [
+                            "A6UD",
+                            "A6SQ",
+                            "A6U2",
+                            "A6U7",
+                            "A6SV"
+                        ],
+                        "item_name_in_msg": [
+                            "아이폰 17/17 Pro 사전예약"
+                        ],
+                        "expected_action": [
+                            "기타"
+                        ]
+                    },
+                    {
+                        "item_nm": "IPHONE 17 PRO",
+                        "item_id": [
+                            "A6UJ",
+                            "A6T4",
+                            "A6UM",
+                            "A6VK",
+                            "A6UQ",
+                            "A6T7",
+                            "A6T1"
+                        ],
+                        "item_name_in_msg": [
+                            "아이폰 17/17 Pro 사전예약"
+                        ],
+                        "expected_action": [
+                            "기타"
+                        ]
+                    }
+                ]
+            },
+            "entity_dag": []
+        },
+        "raw_result": {
+            "title": "5G 아이폰17/17 Pro 사전예약 혜택 안내",
+            "purpose": [
+                "상품 가입 유도",
+                "혜택 안내",
+                "경품 제공 안내",
+                "수신 거부 안내",
+                "기타 정보 제공"
+            ],
+            "sales_script": "아이폰 17/17 Pro 사전예약 시 특별 사은품 증정! 지금 바로 안내드릴까요?",
+            "product": [
+                {
+                    "name": "아이폰 17/17 Pro",
+                    "action": "구매"
+                },
+                {
+                    "name": "[사죠영] 죠르디 한정판 기프트",
+                    "action": "기타"
+                },
+                {
+                    "name": "[프리디] 멀티 무선 충전기",
+                    "action": "기타"
+                },
+                {
+                    "name": "[에이프릴스톤] 보조배터리+멀티백",
+                    "action": "기타"
+                },
+                {
+                    "name": "[크레앙] 3in1 무선 충전 살균기",
+                    "action": "기타"
+                }
+            ],
+            "channel": [
+                {
+                    "type": "URL",
+                    "value": "http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx",
+                    "action": "가입"
+                },
+                {
+                    "type": "URL",
+                    "value": "http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA",
+                    "action": "추가 정보"
+                },
+                {
+                    "type": "전화번호",
+                    "value": "1558",
+                    "action": "문의"
+                },
+                {
+                    "type": "전화번호",
+                    "value": "1504",
+                    "action": "수신 거부"
+                }
+            ],
+            "pgm": [
+                "상품및부가서비스가입유도_단말",
+                "사용법/혜택/이벤트안내_단말"
+            ],
+            "entity_dag": []
+        },
+        "prompts": {
+            "main_extraction_prompt": {
+                "title": "메인 정보 추출 프롬프트",
+                "description": "광고 메시지에서 제목, 목적, 상품, 채널, 프로그램 정보를 추출하는 프롬프트",
+                "content": "\nExtract the advertisement purpose and product names from the provided advertisement text.\n\n### Advertisement Message ###\n[SK텔레콤] 반가워요 5G 아이폰17/ 17 Pro 사전예약 안내\\n(광고)[SKT] 아이폰 17/17 Pro 사전예약 안내  #04 고객님, 안녕하세요. 최고의 스마트폰 칩과 카메라, 견고한 세라믹 실드에 5G 기술까지! 이 모든 것을 갖춘 아이폰 17/17 Pro를 만나 보세요.  ▶ 혜택받고 사전예약하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx   ■ 사전예약 기간 - 2020년 10월 23일(금)~10월 29일(목) * 2020년 10월 30일(금)부터 순서대로 배송 후 개통 진행  ■ 아이폰 17/17 Pro 스펙 - Hi, Speed. 아이폰 최초의 5G 지원 - 스마트폰 사상 가장 빠른 A14 Bionic 칩 - 매끈하고 강화된 내구성을 가진 세라믹 글라스 적용 디자인 - 저조도 사진의 품질을 한 차원 끌어올려 주는 카메라 시스템 - 최초의 Dolby Vision 영상 카메라 탑재   ■ T다이렉트샵 특별 사은품(택1) ① [사죠영] 죠르디 한정판 기프트 ② [프리디] 멀티 무선 충전기 ③ [에이프릴스톤] 보조배터리+멀티백 ④ [크레앙] 3in1 무선 충전 살균기  ※ 이 외에도 더 많은 T기프트가 있습니다. .  ▶ T다이렉트샵 카카오톡 상담하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA  ■ 문의: SKT 고객센터(1558, 무료)   ※ 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.  SKT와 함께해주셔서 감사합니다. 무료 수신거부 1504\n\n### Extraction Steps ###\n\n1. Identify the advertisement's purpose first, using expressions as they appear in the original text.\n2. Extract ONLY explicitly mentioned product/service names from the text, using exact original expressions.\n3. For each product, assign a standardized action from: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타].\n4. Avoid inferring or adding products not directly mentioned in the text.\n5. Provide channel information considering the extracted product information, preserving original text expressions.\n\n\n### Extraction Guidelines ###\n\n* For title: Create a concise headline (max 50 characters) in headline style (개조식) that captures the core content, excluding labels like '(광고)', '[SKT]' and special characters like __, and prioritizing the most important information (benefits, products, events).\n* Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering.\n* Extract all information (purpose, product, channel, pgm) using the exact expressions as they appear in the original text without translation, as specified in the schema.\n* If the advertisement purpose includes encouraging agency/store visits, provide agency channel information.\n\n* Refer to the candidate product names list as guidance, but extract products based on your understanding of the advertisement content.\n* Maintain consistency by using standardized product naming conventions.\n* If multiple similar products exist, choose the most specific and relevant one to reduce variability.\n\n\n### 일관성 유지 지침 ###\n* 동일한 광고 메시지에 대해서는 항상 동일한 결과를 생성해야 합니다.\n* 애매한 표현이 있을 때는 가장 명확하고 구체적인 해석을 선택하세요.\n* 상품명은 원문에서 정확히 언급된 표현만 사용하세요.\n\n\n\nReturn your response as a JSON object that follows this exact structure:\n\n{\n    \"title\": \"Extract a concise title summarizing the key content of the advertisement in one sentence (max 50 characters). Guidelines: (1) Clearly capture the core content (benefits, products, events, etc.), (2) Write concisely in one sentence, (3) Exclude labels like '(광고)', '[SKT]', (4) Remove special characters (__, etc.) and create a natural sentence, (5) Prioritize the most important information, (6) Use a headline style (개조식).\",\n    \"purpose\": {\n        \"type\": \"array\",\n        \"items\": {\n            \"type\": \"string\",\n            \"enum\": [\n                \"상품 가입 유도\",\n                \"대리점/매장 방문 유도\",\n                \"웹/앱 접속 유도\",\n                \"이벤트 응모 유도\",\n                \"혜택 안내\",\n                \"쿠폰 제공 안내\",\n                \"경품 제공 안내\",\n                \"수신 거부 안내\",\n                \"기타 정보 제공\"\n            ]\n        },\n        \"description\": \"Primary purpose(s) of the advertisement.\"\n    },\n    \"sales_script\": \"Generate an extremely concise sales prompt, intended for display on a call center agent's monitor, to be used for a rapid cross-sell immediately after resolving a customer's issue. The resulting script/message should be highly condensed, containing only the absolute essential facts and a clear action cue, and must be easily readable at a glance.\",\n    \"product\": {\n        \"type\": \"array\",\n        \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n                \"name\": {\n                    \"type\": \"string\",\n                    \"description\": \"Name of the advertised product or service.\"\n                },\n                \"action\": {\n                    \"type\": \"string\",\n                    \"enum\": [\n                        \"구매\",\n                        \"가입\",\n                        \"사용\",\n                        \"방문\",\n                        \"참여\",\n                        \"코드입력\",\n                        \"쿠폰다운로드\",\n                        \"기타\"\n                    ],\n                    \"description\": \"Expected customer action for the product.\"\n                }\n            }\n        },\n        \"description\": \"Extract all product names from the advertisement.\"\n    },\n    \"channel\": {\n        \"type\": \"array\",\n        \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n                \"type\": {\n                    \"type\": \"string\",\n                    \"enum\": [\n                        \"URL\",\n                        \"전화번호\",\n                        \"앱\",\n                        \"대리점\"\n                    ],\n                    \"description\": \"Channel type.\"\n                },\n                \"value\": {\n                    \"type\": \"string\",\n                    \"description\": \"Specific information for the channel. 대리점인 경우 ***점으로 표시될 가능성이 높음\"\n                },\n                \"action\": {\n                    \"type\": \"string\",\n                    \"enum\": [\n                        \"가입\",\n                        \"추가 정보\",\n                        \"문의\",\n                        \"수신\",\n                        \"수신 거부\"\n                    ],\n                    \"description\": \"Purpose of the channel.\"\n                }\n            }\n        },\n        \"description\": \"Channels provided in the advertisement.\"\n    },\n    \"pgm\": {\n        \"type\": \"array\",\n        \"items\": {\n            \"type\": \"string\"\n        },\n        \"description\": \"Select the two most relevant pgm_nm from the advertising classification criteria.\"\n    }\n}\n\nIMPORTANT: \n- Do NOT return the schema definition itself\n- Return actual extracted data in the specified format\n- For \"purpose\": return an array of strings from the enum values\n- For \"sales_script\": return a concise string for call center agents\n- For \"product\": return an array of objects with \"name\" and \"action\" fields\n- For \"channel\": return an array of objects with \"type\", \"value\", and \"action\" fields\n- For \"pgm\": return an array of strings\n\nExample response format:\n{\n    \"title\": \"아이폰 신제품 출시 기념 최대 70% 할인 혜택\",\n    \"purpose\": [\"상품 가입 유도\", \"혜택 안내\"],\n    \"sales_script\": \"아이폰 신제품 출시 기념! 티원대리점 화순점 방문 시 최대 70% 할인. 지금 바로 안내드릴까요?\",\n    \"product\": [\n        {\"name\": \"실제 상품명\", \"action\": \"가입\"},\n        {\"name\": \"다른 상품명\", \"action\": \"구매\"}\n    ],\n    \"channel\": [\n        {\"type\": \"URL\", \"value\": \"실제 URL\", \"action\": \"가입\"}\n    ],\n    \"pgm\": [\"실제 프로그램명\"]\n}\n\n\n### OUTPUT FORMAT REQUIREMENT ###\nYou MUST respond with a valid JSON object containing actual extracted data.\nDo NOT include schema definitions, type specifications, or template structures.\nReturn only the concrete extracted information in the specified JSON format.\n\n\n### 광고 분류 기준 정보 ###\n\t상품및부가서비스가입유도_단말 : 신규, 출시, 갤럭시, Galaxy, Iphone, 아이폰, 사전, 예약, 할인, 프로모션, 구매, 단말기, 폴더블\n\t사용법/혜택/이벤트안내_단말 : 갤럭시, 아이폰, 사용법, 안내, 이벤트, 혜택, 기능, 팁, 활용법, 업데이트\n\t기변유도및해지방어 : TDS, 기기, 변경, 약정, 할인, 혜택, 업그레이드, 신규단말, 신규 단말, 보상, 프로모션, 교체\n\t타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰\n\t상품및부가서비스가입유도_AI : 에이닷, AI, 인공지능, 챗봇, 음성비서, 음성 비서, 통화, 서비스, 추천, 기능, 앱\n\n### 참고용 후보 상품 이름 목록 ###\n\t['아이폰 17/17 Pro', '아이폰 17 pro', '아이폰 17 PRO', '아이폰 17 Pro', '아이폰 17', '아이폰', '아이폰 17/17 프로', '아이폰 16 pro', '아이폰 17 시리즈', '아이폰 16 PRO', '아이폰 16 Pro', '아이폰 17 PRO MAX', '아이폰 17 PRO max', '아이폰 17 PRO Max', '아이폰 17 Pro MAX', '아이폰 17 pro MAX', '스마트 사인', 'SK(주)', 'PG', '아이폰 16E', '아이폰 최신폰', '바로 1GB 충전', '아이폰 16 PRO 맥스', '아이폰 에어', '아이폰 16', 'A. 전화 연결', 'iPhone 17 pro', 'IPHONE 17 Pro', 'IPHONE 17 pro', 'iPhone 17 Pro', '아이폰 16 PRO DEMO', '5G 음성', '아이폰 16 pro DEMO', '아이폰 16 Pro DEMO', 'KT 아이폰 16 pro 1T', 'KT 아이폰 16 Pro 1T', 'KT 아이폰 16 PRO 1T', '아이폰 16 PRO MAX', '아이폰 16 PRO Max', '아이폰 16 pro MAX', '아이폰 16 PRO max', '아이폰 16 Pro MAX', 'PPS스마트폰 라이트', '아이폰 16 PRO 맥스 DEMO', 'A. 전화']\n\n### FINAL REMINDER ###\nReturn a JSON object with actual data, not schema definitions!\n",
+                "length": 8423
+            },
+            "entity_extraction_prompt": {
+                "title": "엔티티 추출 프롬프트",
+                "description": "메시지에서 상품/서비스 엔티티를 추출하는 프롬프트",
+                "content": "\n            \nAnalyze the advertisement to extract **User Action Paths**.\nOutput two distinct sections:\n1. **ENTITY**: A list of independent Root Nodes.\n2. **DAG**: A structured graph representing the flow from Root to Benefit.\n\n## Crucial Language Rule\n* **DO NOT TRANSLATE:** Extract entities **exactly as they appear** in the source text.\n* **Preserve Original Script:** If the text says \"아이폰 17\", output \"아이폰 17\" (NOT \"iPhone 17\"). If it says \"T Day\", output \"T Day\".\n\n## Part 1: Root Node Selection Hierarchy (Extract ALL Distinct Roots)\nIdentify logical starting points based on this priority. If multiple independent offers exist, extract all.\n\n1.  **Physical Store (Highest):** Specific branch names.\n    * *Match:* \"새샘대리점 역곡점\", \"백색대리점 수성직영점\"\n2.  **Core Service (Plans/VAS):** Rate plans, Value-Added Services, Internet/IPTV.\n    * *Match:* \"5GX 프라임 요금제\", \"V컬러링\", \"로밍 baro 요금제\"\n3.  **Subscription/Event:** Membership signups or specific campaigns.\n    * *Match:* \"T 우주\", \"T Day\", \"0 day\", \"골드번호 프로모션\"\n4.  **App/Platform:** Apps requiring action.\n    * *Match:* \"A.(에이닷)\", \"PASS 앱\", \"T world\"\n5.  **Product (Hardware):** Device launches without a specific store focus.\n    * *Match:* \"iPhone 17\", \"갤럭시 Z 플립7\"\n\n## Part 2: DAG Construction Rules\nConstruct a Directed Acyclic Graph (DAG) for each identified Root Node.\n* **Format:** `(Node:Action) -[Edge]-> (Node:Action)`\n* **Nodes:**\n    * **Root:** The entry point identified above (Original Text).\n    * **Core:** The product/service being used or bought (Original Text).\n    * **Value:** The final reward or benefit (Original Text).\n* **Logic:** Represent the shortest path from the Root action to the Final Benefit.\n\n## Strict Exclusions\n* Ignore navigational labels ('바로 가기', '링크', 'Shortcut').\n* Ignore generic partners ('스타벅스', 'CU') unless they are the main subscription target.\n\n## Output Format\nENTITY: <comma-separated list of all Nodes in original text>\nDAG:\n<DAG representation line by line in original text>\n\n\n            ## message:                \n            [SK텔레콤] 반가워요 5G 아이폰17/ 17 Pro 사전예약 안내\\n(광고)[SKT] 아이폰 17/17 Pro 사전예약 안내  #04 고객님, 안녕하세요. 최고의 스마트폰 칩과 카메라, 견고한 세라믹 실드에 5G 기술까지! 이 모든 것을 갖춘 아이폰 17/17 Pro를 만나 보세요.  ▶ 혜택받고 사전예약하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx   ■ 사전예약 기간 - 2020년 10월 23일(금)~10월 29일(목) * 2020년 10월 30일(금)부터 순서대로 배송 후 개통 진행  ■ 아이폰 17/17 Pro 스펙 - Hi, Speed. 아이폰 최초의 5G 지원 - 스마트폰 사상 가장 빠른 A14 Bionic 칩 - 매끈하고 강화된 내구성을 가진 세라믹 글라스 적용 디자인 - 저조도 사진의 품질을 한 차원 끌어올려 주는 카메라 시스템 - 최초의 Dolby Vision 영상 카메라 탑재   ■ T다이렉트샵 특별 사은품(택1) ① [사죠영] 죠르디 한정판 기프트 ② [프리디] 멀티 무선 충전기 ③ [에이프릴스톤] 보조배터리+멀티백 ④ [크레앙] 3in1 무선 충전 살균기  ※ 이 외에도 더 많은 T기프트가 있습니다. .  ▶ T다이렉트샵 카카오톡 상담하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA  ■ 문의: SKT 고객센터(1558, 무료)   ※ 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.  SKT와 함께해주셔서 감사합니다. 무료 수신거부 1504\n            ",
+                "length": 2861
+            }
+        },
+        "error": ""
+    },
+    {
+        "extracted_result": {
+            "title": "8월 T Day 혜택 안내",
+            "purpose": [
+                "혜택 안내",
+                "웹/앱 접속 유도",
+                "수신 거부 안내"
+            ],
+            "sales_script": "8월 T Day 혜택! 원스토어 북스 인기 도서 10종 무료 대여 중입니다. 자세히 보시겠어요?",
+            "product": [
+                {
+                    "item_nm": "원스토어_T Day 이벤트",
+                    "item_id": [
+                        "1213_884"
+                    ],
+                    "item_name_in_msg": [
+                        "T Day"
+                    ],
+                    "expected_action": [
+                        "참여"
+                    ]
+                },
+                {
+                    "item_nm": "원스토어_이북",
+                    "item_id": [
+                        "V274_8009"
+                    ],
+                    "item_name_in_msg": [
+                        "원스토어 북스 인기 도서"
+                    ],
+                    "expected_action": [
+                        "기타"
+                    ]
+                }
+            ],
+            "channel": [
+                {
+                    "type": "URL",
+                    "value": "http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob",
+                    "action": "추가 정보",
+                    "store_info": []
+                },
+                {
+                    "type": "전화번호",
+                    "value": "1504",
+                    "action": "수신 거부",
+                    "store_info": []
+                }
+            ],
+            "pgm": [
+                {
+                    "pgm_nm": "[마케팅_Care]사용법/혜택/이벤트안내_T멤버십",
+                    "pgm_id": "2019CCEPM01"
+                },
+                {
+                    "pgm_nm": "[마케팅_Care]사용법/혜택/이벤트안내_SKT",
+                    "pgm_id": "2019CCEPM03"
+                }
+            ],
+            "offer": {
+                "type": "product",
+                "value": [
+                    {
+                        "item_nm": "원스토어_T Day 이벤트",
+                        "item_id": [
+                            "1213_884"
+                        ],
+                        "item_name_in_msg": [
+                            "T Day"
+                        ],
+                        "expected_action": [
+                            "참여"
+                        ]
+                    },
+                    {
+                        "item_nm": "원스토어_이북",
+                        "item_id": [
+                            "V274_8009"
+                        ],
+                        "item_name_in_msg": [
+                            "원스토어 북스 인기 도서"
+                        ],
+                        "expected_action": [
+                            "기타"
+                        ]
+                    }
+                ]
+            },
+            "entity_dag": []
+        },
+        "raw_result": {
+            "title": "8월 T Day 혜택 안내",
+            "purpose": [
+                "혜택 안내",
+                "웹/앱 접속 유도",
+                "수신 거부 안내"
+            ],
+            "sales_script": "8월 T Day 혜택! 원스토어 북스 인기 도서 10종 무료 대여 중입니다. 자세히 보시겠어요?",
+            "product": [
+                {
+                    "name": "원스토어 북스",
+                    "action": "사용"
+                },
+                {
+                    "name": "T멤버십",
+                    "action": "사용"
+                },
+                {
+                    "name": "해피아워",
+                    "action": "참여"
+                },
+                {
+                    "name": "T Day",
+                    "action": "참여"
+                },
+                {
+                    "name": "부스트 파크",
+                    "action": "사용"
+                },
+                {
+                    "name": "열린멤버십",
+                    "action": "사용"
+                }
+            ],
+            "channel": [
+                {
+                    "type": "URL",
+                    "value": "http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob",
+                    "action": "추가 정보"
+                },
+                {
+                    "type": "전화번호",
+                    "value": "1504",
+                    "action": "수신 거부"
+                }
+            ],
+            "pgm": [
+                "사용법/혜택/이벤트안내_T멤버십",
+                "사용법/혜택/이벤트안내_SKT"
+            ],
+            "entity_dag": []
+        },
+        "prompts": {
+            "main_extraction_prompt": {
+                "title": "메인 정보 추출 프롬프트",
+                "description": "광고 메시지에서 제목, 목적, 상품, 채널, 프로그램 정보를 추출하는 프롬프트",
+                "content": "\nExtract the advertisement purpose and product names from the provided advertisement text.\n\n### Advertisement Message ###\n8월 T Day 혜택 안내 (광고)[SKT] 8월 T Day 혜택 안내   8월 3일(월)~7일(금) 원스토어 북스 인기 도서 10종 무료 대여!  ▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob  ★T멤버십만의 5가지 혜택★ ① 매일 찾아오는 행복한 시간 \"해피아워\" ② 매달 첫 주, 매주 수요일 \"T Day\" ③ SKT 5GX 고객님을 위한 부스트 파크 특별 혜택 ④ 착한 소비에 할인까지 \"열린멤버십\" ⑤ 할인 한도는 연간 무제한    무료 수신거부 1504\n\n### Extraction Steps ###\n\n1. Identify the advertisement's purpose first, using expressions as they appear in the original text.\n2. Extract ONLY explicitly mentioned product/service names from the text, using exact original expressions.\n3. For each product, assign a standardized action from: [구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타].\n4. Avoid inferring or adding products not directly mentioned in the text.\n5. Provide channel information considering the extracted product information, preserving original text expressions.\n\n\n### Extraction Guidelines ###\n\n* For title: Create a concise headline (max 50 characters) in headline style (개조식) that captures the core content, excluding labels like '(광고)', '[SKT]' and special characters like __, and prioritizing the most important information (benefits, products, events).\n* Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering.\n* Extract all information (purpose, product, channel, pgm) using the exact expressions as they appear in the original text without translation, as specified in the schema.\n* If the advertisement purpose includes encouraging agency/store visits, provide agency channel information.\n\n* Refer to the candidate product names list as guidance, but extract products based on your understanding of the advertisement content.\n* Maintain consistency by using standardized product naming conventions.\n* If multiple similar products exist, choose the most specific and relevant one to reduce variability.\n\n\n### 일관성 유지 지침 ###\n* 동일한 광고 메시지에 대해서는 항상 동일한 결과를 생성해야 합니다.\n* 애매한 표현이 있을 때는 가장 명확하고 구체적인 해석을 선택하세요.\n* 상품명은 원문에서 정확히 언급된 표현만 사용하세요.\n\n\n\nReturn your response as a JSON object that follows this exact structure:\n\n{\n    \"title\": \"Extract a concise title summarizing the key content of the advertisement in one sentence (max 50 characters). Guidelines: (1) Clearly capture the core content (benefits, products, events, etc.), (2) Write concisely in one sentence, (3) Exclude labels like '(광고)', '[SKT]', (4) Remove special characters (__, etc.) and create a natural sentence, (5) Prioritize the most important information, (6) Use a headline style (개조식).\",\n    \"purpose\": {\n        \"type\": \"array\",\n        \"items\": {\n            \"type\": \"string\",\n            \"enum\": [\n                \"상품 가입 유도\",\n                \"대리점/매장 방문 유도\",\n                \"웹/앱 접속 유도\",\n                \"이벤트 응모 유도\",\n                \"혜택 안내\",\n                \"쿠폰 제공 안내\",\n                \"경품 제공 안내\",\n                \"수신 거부 안내\",\n                \"기타 정보 제공\"\n            ]\n        },\n        \"description\": \"Primary purpose(s) of the advertisement.\"\n    },\n    \"sales_script\": \"Generate an extremely concise sales prompt, intended for display on a call center agent's monitor, to be used for a rapid cross-sell immediately after resolving a customer's issue. The resulting script/message should be highly condensed, containing only the absolute essential facts and a clear action cue, and must be easily readable at a glance.\",\n    \"product\": {\n        \"type\": \"array\",\n        \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n                \"name\": {\n                    \"type\": \"string\",\n                    \"description\": \"Name of the advertised product or service.\"\n                },\n                \"action\": {\n                    \"type\": \"string\",\n                    \"enum\": [\n                        \"구매\",\n                        \"가입\",\n                        \"사용\",\n                        \"방문\",\n                        \"참여\",\n                        \"코드입력\",\n                        \"쿠폰다운로드\",\n                        \"기타\"\n                    ],\n                    \"description\": \"Expected customer action for the product.\"\n                }\n            }\n        },\n        \"description\": \"Extract all product names from the advertisement.\"\n    },\n    \"channel\": {\n        \"type\": \"array\",\n        \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n                \"type\": {\n                    \"type\": \"string\",\n                    \"enum\": [\n                        \"URL\",\n                        \"전화번호\",\n                        \"앱\",\n                        \"대리점\"\n                    ],\n                    \"description\": \"Channel type.\"\n                },\n                \"value\": {\n                    \"type\": \"string\",\n                    \"description\": \"Specific information for the channel. 대리점인 경우 ***점으로 표시될 가능성이 높음\"\n                },\n                \"action\": {\n                    \"type\": \"string\",\n                    \"enum\": [\n                        \"가입\",\n                        \"추가 정보\",\n                        \"문의\",\n                        \"수신\",\n                        \"수신 거부\"\n                    ],\n                    \"description\": \"Purpose of the channel.\"\n                }\n            }\n        },\n        \"description\": \"Channels provided in the advertisement.\"\n    },\n    \"pgm\": {\n        \"type\": \"array\",\n        \"items\": {\n            \"type\": \"string\"\n        },\n        \"description\": \"Select the two most relevant pgm_nm from the advertising classification criteria.\"\n    }\n}\n\nIMPORTANT: \n- Do NOT return the schema definition itself\n- Return actual extracted data in the specified format\n- For \"purpose\": return an array of strings from the enum values\n- For \"sales_script\": return a concise string for call center agents\n- For \"product\": return an array of objects with \"name\" and \"action\" fields\n- For \"channel\": return an array of objects with \"type\", \"value\", and \"action\" fields\n- For \"pgm\": return an array of strings\n\nExample response format:\n{\n    \"title\": \"아이폰 신제품 출시 기념 최대 70% 할인 혜택\",\n    \"purpose\": [\"상품 가입 유도\", \"혜택 안내\"],\n    \"sales_script\": \"아이폰 신제품 출시 기념! 티원대리점 화순점 방문 시 최대 70% 할인. 지금 바로 안내드릴까요?\",\n    \"product\": [\n        {\"name\": \"실제 상품명\", \"action\": \"가입\"},\n        {\"name\": \"다른 상품명\", \"action\": \"구매\"}\n    ],\n    \"channel\": [\n        {\"type\": \"URL\", \"value\": \"실제 URL\", \"action\": \"가입\"}\n    ],\n    \"pgm\": [\"실제 프로그램명\"]\n}\n\n\n### OUTPUT FORMAT REQUIREMENT ###\nYou MUST respond with a valid JSON object containing actual extracted data.\nDo NOT include schema definitions, type specifications, or template structures.\nReturn only the concrete extracted information in the specified JSON format.\n\n\n### 광고 분류 기준 정보 ###\n\t사용법/혜택/이벤트안내_T멤버십 : 멤버십, Tday, T day, VIP, 등급, 할인, 쿠폰, 이벤트, 혜택, 적립, 무료\n\t사용법/혜택/이벤트안내_SKT : 이벤트, 사용법, 상품, 부가서비스, 부가 서비스, 혜택, 안내, 할인, 무료, 팁, 추천\n\t사용법/혜택/이벤트안내_구독 : 우주, 구독, 혜택, 이벤트, T우주, T 우주, 콘텐츠, 할인, 추천, 사용법, 서비스\n\t기변유도및해지방어 : TDS, 기기, 변경, 약정, 할인, 혜택, 업그레이드, 신규단말, 신규 단말, 보상, 프로모션, 교체\n\t상품및부가서비스가입유도_요금제 : 데이저, data, 요금제, 5G, 5GX, 요금, 무제한, 선택, 약정, 프라임, 슬림, 할인\n\n### 참고용 후보 상품 이름 목록 ###\n\t['원스토어_ ', '멤버십 할인', '아티제_T day 할인', '던킨_T day 할인', 'CU_T Day 할인', '원스토어_이북', '세븐일레븐_T Day 할인', '제오헤어_T Day 할인', '폴바셋_T day 할인', '드롭탑_T Day 할인', 'T ARS', 'T bag', 'T_시내/외 무제한', '야놀자_T Day 부스트업', '공차코리아_T Day 할인', 'CU_T Day 부스트업', '플로_T Day 부스트업', '어바웃펫_T Day 할인', '온더보더_T Day 할인', '빌리엔젤_T Day 할인', '세븐일레븐_T Day 부스트업', '원스토어_앱할인', 'T_광랜', 'T&캡스', 'T 케어']\n\n### FINAL REMINDER ###\nReturn a JSON object with actual data, not schema definitions!\n",
+                "length": 7554
+            },
+            "entity_extraction_prompt": {
+                "title": "엔티티 추출 프롬프트",
+                "description": "메시지에서 상품/서비스 엔티티를 추출하는 프롬프트",
+                "content": "\n            \nAnalyze the advertisement to extract **User Action Paths**.\nOutput two distinct sections:\n1. **ENTITY**: A list of independent Root Nodes.\n2. **DAG**: A structured graph representing the flow from Root to Benefit.\n\n## Crucial Language Rule\n* **DO NOT TRANSLATE:** Extract entities **exactly as they appear** in the source text.\n* **Preserve Original Script:** If the text says \"아이폰 17\", output \"아이폰 17\" (NOT \"iPhone 17\"). If it says \"T Day\", output \"T Day\".\n\n## Part 1: Root Node Selection Hierarchy (Extract ALL Distinct Roots)\nIdentify logical starting points based on this priority. If multiple independent offers exist, extract all.\n\n1.  **Physical Store (Highest):** Specific branch names.\n    * *Match:* \"새샘대리점 역곡점\", \"백색대리점 수성직영점\"\n2.  **Core Service (Plans/VAS):** Rate plans, Value-Added Services, Internet/IPTV.\n    * *Match:* \"5GX 프라임 요금제\", \"V컬러링\", \"로밍 baro 요금제\"\n3.  **Subscription/Event:** Membership signups or specific campaigns.\n    * *Match:* \"T 우주\", \"T Day\", \"0 day\", \"골드번호 프로모션\"\n4.  **App/Platform:** Apps requiring action.\n    * *Match:* \"A.(에이닷)\", \"PASS 앱\", \"T world\"\n5.  **Product (Hardware):** Device launches without a specific store focus.\n    * *Match:* \"iPhone 17\", \"갤럭시 Z 플립7\"\n\n## Part 2: DAG Construction Rules\nConstruct a Directed Acyclic Graph (DAG) for each identified Root Node.\n* **Format:** `(Node:Action) -[Edge]-> (Node:Action)`\n* **Nodes:**\n    * **Root:** The entry point identified above (Original Text).\n    * **Core:** The product/service being used or bought (Original Text).\n    * **Value:** The final reward or benefit (Original Text).\n* **Logic:** Represent the shortest path from the Root action to the Final Benefit.\n\n## Strict Exclusions\n* Ignore navigational labels ('바로 가기', '링크', 'Shortcut').\n* Ignore generic partners ('스타벅스', 'CU') unless they are the main subscription target.\n\n## Output Format\nENTITY: <comma-separated list of all Nodes in original text>\nDAG:\n<DAG representation line by line in original text>\n\n\n            ## message:                \n            8월 T Day 혜택 안내 (광고)[SKT] 8월 T Day 혜택 안내   8월 3일(월)~7일(금) 원스토어 북스 인기 도서 10종 무료 대여!  ▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob  ★T멤버십만의 5가지 혜택★ ① 매일 찾아오는 행복한 시간 \"해피아워\" ② 매달 첫 주, 매주 수요일 \"T Day\" ③ SKT 5GX 고객님을 위한 부스트 파크 특별 혜택 ④ 착한 소비에 할인까지 \"열린멤버십\" ⑤ 할인 한도는 연간 무제한    무료 수신거부 1504\n            ",
+                "length": 2339
+            }
+        },
+        "error": ""
+    }
+]

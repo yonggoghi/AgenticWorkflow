@@ -5140,3 +5140,131 @@ SK텔레콤은 만 13~34세 고객을 대상으로 2월 10일(토)에 베어유 
 2025-10-22 14:04:21,409 - werkzeug - INFO - 127.0.0.1 - - [22/Oct/2025 14:04:21] "GET /health HTTP/1.1" 200 -
 2025-10-22 14:04:26,247 - werkzeug - INFO - 127.0.0.1 - - [22/Oct/2025 14:04:26] "GET /health HTTP/1.1" 200 -
 2025-10-27 08:36:25,229 - werkzeug - INFO - 127.0.0.1 - - [27/Oct/2025 08:36:25] "GET /health HTTP/1.1" 200 -
+2025-11-17 15:01:40,852 - __main__ - INFO - 🔧 --storage 옵션: local
+2025-11-17 15:01:40,852 - __main__ - INFO - 🔧 환경변수 DAG_STORAGE_MODE 설정: local
+2025-11-17 15:01:40,853 - __main__ - INFO - 📁 DAG 저장 모드: local - API server provides images (URL: API server IP)
+2025-11-17 15:01:40,853 - __main__ - INFO - 📂 DAG 저장 경로: dag_images
+2025-11-17 15:01:40,853 - __main__ - INFO - 🌐 로컬 서버 URL: http://172.23.113.31:8000
+2025-11-17 15:01:40,853 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-11-17 15:01:40,853 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-11-17 15:01:40,853 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-11-17 15:01:40,853 - mms_extractor - INFO - 🚀 MMSExtractor 초기화 시작
+2025-11-17 15:01:40,853 - mms_extractor - INFO - ⚙️ 기본 설정 적용 중...
+2025-11-17 15:01:40,853 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-11-17 15:01:40,853 - mms_extractor - INFO - 🔑 환경변수 로드 중...
+2025-11-17 15:01:40,855 - mms_extractor - INFO - 💻 디바이스 설정 중...
+2025-11-17 15:01:40,972 - mms_extractor - INFO - Using device: mps
+2025-11-17 15:01:40,973 - utils - INFO - _initialize_device 실행완료: 0.12초
+2025-11-17 15:01:40,973 - mms_extractor - INFO - 🤖 LLM 모델 초기화 중...
+2025-11-17 15:01:40,973 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-11-17 15:01:40,973 - utils - INFO - _initialize_llm 실행완료: 0.00초
+2025-11-17 15:01:40,973 - mms_extractor - INFO - 🧠 임베딩 모델 로드 중...
+2025-11-17 15:01:40,973 - utils - INFO - Loading model from ./models/ko-sbert-nli...
+2025-11-17 15:01:40,974 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-11-17 15:01:40,974 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-11-17 15:01:41,652 - utils - INFO - Model loaded on mps
+2025-11-17 15:01:41,652 - utils - INFO - _initialize_embedding_model 실행완료: 0.68초
+2025-11-17 15:01:41,652 - mms_extractor - INFO - 📝 NLP 도구 (Kiwi) 초기화 중...
+2025-11-17 15:01:42,398 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-11-17 15:01:42,398 - utils - INFO - _initialize_kiwi 실행완료: 0.75초
+2025-11-17 15:01:42,398 - mms_extractor - INFO - 📁 데이터 로드 중...
+2025-11-17 15:01:42,398 - mms_extractor - INFO - ============================================================
+2025-11-17 15:01:42,398 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-11-17 15:01:42,399 - mms_extractor - INFO - ============================================================
+2025-11-17 15:01:42,399 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-11-17 15:01:42,399 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 및 준비 중...
+2025-11-17 15:01:42,399 - mms_extractor - INFO - === 상품 정보 로드 및 준비 시작 (모드: local) ===
+2025-11-17 15:01:42,399 - mms_extractor - INFO - 📁 로컬 CSV 파일에서 로드
+2025-11-17 15:01:42,493 - mms_extractor - INFO - 원본 데이터 크기: (18070, 9)
+2025-11-17 15:01:42,577 - mms_extractor - INFO - 컬럼명 소문자 변환 완료
+2025-11-17 15:01:42,584 - mms_extractor - INFO - 도메인 필터링: 18070 -> 12305
+2025-11-17 15:01:42,584 - mms_extractor - INFO - 🔗 별칭 규칙 로드 중...
+2025-11-17 15:01:42,788 - mms_extractor - INFO - 별칭 규칙 수: 421개
+2025-11-17 15:01:42,788 - mms_extractor - INFO - 🔄 별칭 규칙 연쇄 적용 중...
+2025-11-17 15:01:52,060 - mms_extractor - INFO - 별칭 explode: 156399 -> 42409
+2025-11-17 15:01:52,113 - mms_extractor - INFO - TEST 필터링: 42412 -> 42261
+2025-11-17 15:01:52,113 - mms_extractor - INFO - === 상품 정보 준비 완료 ===
+2025-11-17 15:01:52,113 - mms_extractor - INFO - 최종 데이터 크기: (42261, 14)
+2025-11-17 15:01:52,114 - mms_extractor - INFO - 최종 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-11-17 15:01:52,114 - mms_extractor - INFO - ✅ 모든 중요 컬럼 존재
+2025-11-17 15:01:52,115 - mms_extractor - INFO - 상품명 샘플: ['우주패스 Netflix 인증', '우주패스 Netflix 인증', '우주패스 Netflix 인증']
+2025-11-17 15:01:52,116 - mms_extractor - INFO - 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증']
+2025-11-17 15:01:52,118 - mms_extractor - INFO - 상품 정보 최종 데이터 크기: (42261, 14)
+2025-11-17 15:01:52,118 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-11-17 15:01:52,118 - mms_extractor - INFO - 2️⃣ 정지어 로드 중...
+2025-11-17 15:01:52,120 - mms_extractor - INFO - 정지어 로드 완료: 202개
+2025-11-17 15:01:52,120 - mms_extractor - INFO - 로드된 정지어 수: 202개
+2025-11-17 15:01:52,120 - mms_extractor - INFO - 3️⃣ Kiwi에 상품명 등록 중...
+2025-11-17 15:01:52,120 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-11-17 15:01:52,125 - mms_extractor - INFO - 등록할 고유 별칭 수: 34361개
+2025-11-17 15:01:52,127 - mms_extractor - INFO - 유효한 별칭 수: 34361개
+2025-11-17 15:01:52,128 - mms_extractor - INFO - 등록할 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증', '우주pass Netflix 인증', '우주패스 넷플릭스 인증']
+2025-11-17 15:01:52,188 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 34361개 성공, 0개 실패
+2025-11-17 15:01:52,188 - mms_extractor - INFO - 4️⃣ 프로그램 분류 정보 로드 중...
+2025-11-17 15:01:52,188 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-11-17 15:01:52,203 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-11-17 15:01:52,203 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-11-17 15:01:54,377 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-11-17 15:01:54,377 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-11-17 15:01:54,377 - mms_extractor - INFO - 5️⃣ 조직 정보 로드 중...
+2025-11-17 15:01:54,377 - mms_extractor - INFO - === 조직 정보 로드 시작 (모드: local) ===
+2025-11-17 15:01:54,377 - mms_extractor - INFO - 로컬 CSV 파일에서 조직 정보 로드 중...
+2025-11-17 15:01:54,377 - mms_extractor - INFO - CSV 파일 경로: ./data/offer_master_data.csv
+2025-11-17 15:01:54,461 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 조직 데이터 크기: (18070, 9)
+2025-11-17 15:01:54,461 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['ITEM_ID', 'ITEM_NM', 'ITEM_DMN', 'ITEM_DESC', 'ITEM_CTG', 'ITEM_ALS', 'ITEM_EMB_VEC', 'OFER_CD', 'OPER_DT_HMS']
+2025-11-17 15:01:54,463 - mms_extractor - INFO - 로컬 모드: ITEM_DMN='R' 필터링 후 데이터 크기: (5765, 9)
+2025-11-17 15:01:54,464 - mms_extractor - INFO - 조직 데이터 샘플 (3개 행): [{'item_id': 'D15198_0020', 'item_nm': '가로수대리점 하늘도시점', 'item_dmn': 'R', 'item_desc': '인천 중구 하늘중앙로195번길 11,&&1층 105호(중산동)&&003202309011', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541517', 'oper_dt_hms': 20250909151123}, {'item_id': 'D13622_0398', 'item_nm': 'MD대리점 주엽직영점', 'item_dmn': 'R', 'item_desc': '경기 고양시 일산서구 중앙로 1426,&&(주엽동) 1층111호&&003109152662', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541945', 'oper_dt_hms': 20250909151123}, {'item_id': 'D15320_0001', 'item_nm': '강서대리점(온라인매장)', 'item_dmn': 'R', 'item_desc': '서울 양천구 남부순환로 354,&&1층 (신월동)&&007078567800', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430542104', 'oper_dt_hms': 20250909151123}]
+2025-11-17 15:01:54,464 - mms_extractor - INFO - === 조직 정보 로드 최종 완료: 5765개 조직 ===
+2025-11-17 15:01:54,464 - mms_extractor - INFO - 최종 조직 데이터 스키마: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-11-17 15:01:54,464 - mms_extractor - INFO - 모든 중요 조직 컬럼이 정상적으로 로드되었습니다.
+2025-11-17 15:01:54,464 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (5765, 9)
+2025-11-17 15:01:54,465 - mms_extractor - INFO - ============================================================
+2025-11-17 15:01:54,465 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-11-17 15:01:54,465 - mms_extractor - INFO - ============================================================
+2025-11-17 15:01:54,465 - mms_extractor - INFO - ✅ 상품 데이터: (42261, 14)
+2025-11-17 15:01:54,465 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-11-17 15:01:54,465 - mms_extractor - INFO - ✅ 조직 데이터: (5765, 9)
+2025-11-17 15:01:54,465 - mms_extractor - INFO - ✅ 정지어: 202개
+2025-11-17 15:01:54,465 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-11-17 15:01:54,468 - mms_extractor - INFO - 고유 상품명 수: 8219개
+2025-11-17 15:01:54,473 - mms_extractor - INFO - 고유 별칭 수: 34361개
+2025-11-17 15:01:54,475 - mms_extractor - INFO - 고유 상품ID 수: 12244개
+2025-11-17 15:01:54,475 - utils - INFO - _load_data 실행완료: 12.08초
+2025-11-17 15:01:54,475 - mms_extractor - INFO - ✅ MMSExtractor 초기화 완료
+2025-11-17 15:01:54,475 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-11-17 15:01:54,475 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8000, debug=False
+2025-11-17 15:01:54,475 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-11-17 15:01:54,475 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8000에서 시작합니다
+2025-11-17 15:01:54,475 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-11-17 15:01:54,475 - __main__ - INFO -   GET  /health - 헬스체크
+2025-11-17 15:01:54,475 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-11-17 15:01:54,475 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-11-17 15:01:54,475 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-11-17 15:01:54,475 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-11-17 15:01:54,475 - __main__ - INFO -   POST /dag - Entity DAG 추출
+2025-11-17 15:01:54,506 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://172.23.113.31:8000
+2025-11-17 15:01:54,506 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-17 15:02:00,310 - werkzeug - INFO - 127.0.0.1 - - [17/Nov/2025 15:02:00] "GET /health HTTP/1.1" 200 -
+2025-11-17 15:02:00,315 - __main__ - INFO - Quick Extractor 초기화 중... (LLM: False, 모델: ax)
+2025-11-17 15:02:00,315 - __main__ - INFO - Quick Extractor 초기화 완료
+2025-11-17 15:02:00,315 - __main__ - INFO - 📝 Quick Extract 시작: method=textrank, use_llm=False, llm_model=ax
+2025-11-17 15:02:00,315 - __main__ - INFO - ✅ Quick Extract 완료: 0.001초, 제목=5G 요금제 변경 시 3개월간 50% 할인!
+    
+    고객님, 안녕하세요.
+    ...
+2025-11-17 15:02:00,316 - werkzeug - INFO - 127.0.0.1 - - [17/Nov/2025 15:02:00] "POST /quick/extract HTTP/1.1" 200 -
+2025-11-17 15:02:00,319 - __main__ - INFO - Quick Extractor 재설정 중... (LLM: True, 모델: ax)
+2025-11-17 15:02:00,319 - __main__ - INFO - 📝 Quick Extract 시작: method=llm, use_llm=True, llm_model=ax
+2025-11-17 15:02:00,319 - __main__ - INFO - ✅ Quick Extract 완료: 0.000초, 제목=5G 요금제 변경 시 3개월간 50% 할인!
+    
+    고객님, 안녕하세요.
+    ...
+2025-11-17 15:02:00,319 - werkzeug - INFO - 127.0.0.1 - - [17/Nov/2025 15:02:00] "POST /quick/extract HTTP/1.1" 200 -
+2025-11-17 15:02:00,322 - __main__ - INFO - 📝 Quick Extract Batch 시작: 3개 메시지, method=textrank, use_llm=False
+2025-11-17 15:02:00,323 - __main__ - INFO - ✅ Quick Extract Batch 완료: 0.000초, 3개 메시지 처리
+2025-11-17 15:02:00,323 - werkzeug - INFO - 127.0.0.1 - - [17/Nov/2025 15:02:00] "POST /quick/extract/batch HTTP/1.1" 200 -
+2025-11-17 15:02:00,326 - werkzeug - INFO - 127.0.0.1 - - [17/Nov/2025 15:02:00] "[31m[1mPOST /quick/extract HTTP/1.1[0m" 400 -
+2025-11-17 15:02:00,329 - werkzeug - INFO - 127.0.0.1 - - [17/Nov/2025 15:02:00] "[31m[1mPOST /quick/extract HTTP/1.1[0m" 400 -
