@@ -608,9 +608,6 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
 
             org_pdf_cand = org_pdf_cand.drop('org_nm_in_msg', axis=1)
             org_pdf_cand = self.org_pdf.merge(org_pdf_cand, on=['item_nm'])
-            org_pdf_cand['sim'] = org_pdf_cand.apply(
-                lambda x: combined_sequence_similarity(store_name, x['item_nm'])[0], axis=1
-            ).round(5)
             
             # 대리점 코드('D'로 시작) 우선 검색
             similarity_threshold = getattr(PROCESSING_CONFIG, 'similarity_threshold_for_store', 0.2)
@@ -620,14 +617,24 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
             
             if org_pdf_tmp.empty:
                 # 대리점이 없으면 전체에서 검색
-                org_pdf_tmp = org_pdf_cand.query("sim >= @similarity_threshold").sort_values('sim', ascending=False)
+                similarity_threshold_secondary = getattr(PROCESSING_CONFIG, 'similarity_threshold_for_store_secondary', 0.2)
+                org_pdf_tmp = org_pdf_cand.query("sim >= @similarity_threshold_secondary").sort_values('sim', ascending=False)
             
             if not org_pdf_tmp.empty:
                 # 최고 순위 조직들의 정보 추출
-                org_pdf_tmp['rank'] = org_pdf_tmp['sim'].rank(method='dense', ascending=False)
-                org_pdf_tmp = org_pdf_tmp.rename(columns={'item_id':'org_cd','item_nm':'org_nm'})
-                org_info = org_pdf_tmp.query("rank == 1").groupby('org_nm')['org_cd'].apply(list).reset_index(name='org_cd').to_dict('records')
-                return org_info
+                org_pdf_tmp['sim'] = org_pdf_tmp.apply(
+                    lambda x: combined_sequence_similarity(store_name, x['item_nm'])[0], axis=1
+                ).round(5)
+
+                org_pdf_tmp = org_pdf_tmp.query("sim >= @similarity_threshold_secondary")
+
+                if org_pdf_tmp.shape[0]>0:
+                    org_pdf_tmp['rank'] = org_pdf_tmp['sim'].rank(method='dense', ascending=False)
+                    org_pdf_tmp = org_pdf_tmp.rename(columns={'item_id':'org_cd','item_nm':'org_nm'})
+                    org_info = org_pdf_tmp.query("rank == 1").groupby('org_nm')['org_cd'].apply(list).reset_index(name='org_cd').to_dict('records')
+                    return org_info
+                else:
+                    return []
             else:
                 return []
                 
@@ -1635,9 +1642,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '(광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌프란시스코 왕복 항공권, 애플 액세서리 팩까지!_Lucky 1717 이벤트 응모하고 경품 당첨의 행운을 누려 보세요.__▶ 이벤트 자세히 보기: https://t-mms.kr/aiN/#74_ _■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
-
-
+  message: '[SKT] 매장 방문 및 신분증 진위확인 요청 안내__고객님, 안녕하세요._2025년 9월 27일(토)~9월 30일(화) 발생한 국가정보자원관리원 화재로 인해 일부 회선이 신분증 진위확인* 절차 없이 개통되었습니다.__사후 검증 과정에서, 고객님께서 제출하신 신분증 정보가 실제 정보와 일치하지 않는 것으로 확인되었습니다._신분증 정보 불일치 회선은 대포폰 등 통신 관련 범죄에 노출될 가능성이 있습니다.__고객님의 안전한 통신 생활을 위해 신분증 진위확인을 해 주시기 바랍니다._번거롭겠지만, 가까운 매장에 방문하시면 빠르게 처리해 드리겠습니다.__■ 신분증 진위확인 방법_① 신분증을 가지고 T 월드 매장 방문_② 매장 직원 안내에 따라 신분증 진위확인__* 신분증 진위확인: 휴대폰 개통 시 고객님께서 사용하신 신분증의 정보를 발급기관의 정보와 비교하여 유효한 신분증인지 실시간으로 확인하는 서비스__■ 유의 사항_- 신분증 진위확인을 하지 않거나 이용자 본인 신분 확인이 불가한 경우, 이용약관 제9조(회사의 의무)와 제17조(이용정지)에 따라 2025년 10월 27일(월) 이후부터 휴대폰 발신이 정지될 예정입니다. 이후 이용약관 제19조(해지)에 따라 추후 통신서비스 이용계약이 해지될 수 있습니다.__■ 문의: SKT 고객센터(114)__언제나 고객님의 안전을 최우선으로 생각하겠습니다._감사합니다.',
 """
             
             # 단일 메시지 처리 (멀티스레드)
