@@ -63,7 +63,7 @@ CHAIN_OF_THOUGHT_NLP_MODE = """
 
 # 출력 데이터의 구조와 제약 조건을 엄격하게 정의
 JSON_SCHEMA = {
-    "title": "Advertisement title, using the exact expressions as they appear in the original text.",
+    "title": "Extract a concise title summarizing the key content of the advertisement in one sentence (max 50 characters). Guidelines: (1) Clearly capture the core content (benefits, products, events, etc.), (2) Write concisely in one sentence, (3) Exclude labels like '(광고)', '[SKT]', (4) Remove special characters (__, etc.) and create a natural sentence, (5) Prioritize the most important information, (6) Use a headline style (개조식).",
     "purpose": {
         "type": "array",
         "items": {
@@ -73,6 +73,7 @@ JSON_SCHEMA = {
         },
         "description": "Primary purpose(s) of the advertisement."
     },
+    "sales_script": "Generate an extremely concise sales prompt, intended for display on a call center agent's monitor, to be used for a rapid cross-sell immediately after resolving a customer's issue. The resulting script/message should be highly condensed, containing only the absolute essential facts and a clear action cue, and must be easily readable at a glance.",
     "product": {
         "type": "array",
         "items": {
@@ -117,8 +118,9 @@ JSON_SCHEMA = {
 
 # 추출 가이드라인
 EXTRACTION_GUIDELINES_BASE = """
+* For title: Create a concise headline (max 50 characters) in headline style (개조식) that captures the core content, excluding labels like '(광고)', '[SKT]' and special characters like __, and prioritizing the most important information (benefits, products, events).
 * Prioritize recall over precision to ensure all relevant products are captured, but verify that each extracted term is a distinct offering.
-* Extract all information (title, purpose, product, channel, pgm) using the exact expressions as they appear in the original text without translation, as specified in the schema.
+* Extract all information (purpose, product, channel, pgm) using the exact expressions as they appear in the original text without translation, as specified in the schema.
 * If the advertisement purpose includes encouraging agency/store visits, provide agency channel information.
 """
 
@@ -155,14 +157,16 @@ IMPORTANT:
 - Do NOT return the schema definition itself
 - Return actual extracted data in the specified format
 - For "purpose": return an array of strings from the enum values
+- For "sales_script": return a concise string for call center agents
 - For "product": return an array of objects with "name" and "action" fields
 - For "channel": return an array of objects with "type", "value", and "action" fields
 - For "pgm": return an array of strings
 
 Example response format:
 {{
-    "title": "실제 광고 제목",
+    "title": "아이폰 신제품 출시 기념 최대 70% 할인 혜택",
     "purpose": ["상품 가입 유도", "혜택 안내"],
+    "sales_script": "아이폰 신제품 출시 기념! 티원대리점 화순점 방문 시 최대 70% 할인. 지금 바로 안내드릴까요?",
     "product": [
         {{"name": "실제 상품명", "action": "가입"}},
         {{"name": "다른 상품명", "action": "구매"}}

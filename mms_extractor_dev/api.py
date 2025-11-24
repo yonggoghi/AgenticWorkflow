@@ -44,6 +44,10 @@ python api.py --test --message "샘플 MMS 텍스트"
 --------------
 - `POST /extract`: 단일 메시지 분석
 - `POST /extract/batch`: 배치 메시지 분석
+- `POST /dag`: Entity DAG 추출
+- `GET /dag_images/<filename>`: DAG 이미지 파일 제공
+- `POST /quick/extract`: 제목/수신거부 번호 추출 (단일)
+- `POST /quick/extract/batch`: 제목/수신거부 번호 추출 (배치)
 - `GET /health`: 서비스 상태 확인
 - `GET /status`: 상세 성능 지표
 - `GET /models`: 사용 가능한 모델 목록
@@ -71,7 +75,7 @@ import argparse
 import warnings
 import atexit
 from pathlib import Path
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from config import settings
 
@@ -98,10 +102,13 @@ sys.path.insert(0, str(current_dir))
 try:
     from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
+    from entity_dag_extractor import DAGParser, extract_dag, llm_ax, llm_gem, llm_cld, llm_gen, llm_gpt
+    from quick_extractor import MessageInfoExtractor  # Quick Extractor 임포트
 except ImportError as e:
-    print(f"❌ MMSExtractor 임포트 오류: {e}")
+    print(f"❌ 모듈 임포트 오류: {e}")
     print("📝 mms_extractor.py가 같은 디렉토리에 있는지 확인하세요")
     print("📝 config/ 디렉토리와 설정 파일들을 확인하세요")
+    print("📝 quick_extractor.py가 같은 디렉토리에 있는지 확인하세요")
     sys.exit(1)
 
 # Flask 앱 초기화
@@ -186,6 +193,9 @@ mms_logger.propagate = True
 # 전역 추출기 인스턴스 - 서버 시작 시 한 번만 로드
 global_extractor = None
 
+# 전역 Quick Extractor 인스턴스 (제목/수신거부 번호 추출용)
+global_quick_extractor = None
+
 # CLI에서 설정된 데이터 소스 (전역 변수)
 CLI_DATA_SOURCE = 'local'
 
@@ -221,6 +231,54 @@ def initialize_global_extractor(offer_info_data_src='local'):
         logger.info("전역 추출기 초기화 완료")
     
     return global_extractor
+
+def initialize_quick_extractor(use_llm=False, llm_model='ax'):
+    """
+    전역 Quick Extractor 인스턴스를 초기화
+    
+    Args:
+        use_llm: LLM 사용 여부
+        llm_model: 사용할 LLM 모델 ('ax', 'gpt', 'claude', 'gemini' 등)
+    
+    Returns:
+        MessageInfoExtractor: 초기화된 Quick Extractor 인스턴스
+    """
+    global global_quick_extractor
+    
+    if global_quick_extractor is None:
+        logger.info(f"Quick Extractor 초기화 중... (LLM: {use_llm}, 모델: {llm_model})")
+        
+        # Quick Extractor 초기화 (csv_path는 API에서 필요 없음)
+        global_quick_extractor = MessageInfoExtractor(
+            csv_path=None,
+            use_llm=use_llm,
+            llm_model=llm_model
+        )
+        
+        logger.info("Quick Extractor 초기화 완료")
+    
+    return global_quick_extractor
+
+def get_configured_quick_extractor(use_llm=False, llm_model='ax'):
+    """
+    런타임 설정으로 Quick Extractor 구성
+    
+    Args:
+        use_llm: LLM 사용 여부
+        llm_model: 사용할 LLM 모델
+    
+    Returns:
+        MessageInfoExtractor: 구성된 Quick Extractor 인스턴스
+    """
+    if global_quick_extractor is None:
+        return initialize_quick_extractor(use_llm, llm_model)
+    
+    # LLM 설정이 변경된 경우 재초기화
+    if use_llm != global_quick_extractor.use_llm or llm_model != global_quick_extractor.llm_model_name:
+        logger.info(f"Quick Extractor 재설정 중... (LLM: {use_llm}, 모델: {llm_model})")
+        return initialize_quick_extractor(use_llm, llm_model)
+    
+    return global_quick_extractor
 
 def get_configured_extractor(llm_model='ax', product_info_extraction_mode='nlp', entity_matching_mode='logic', extract_entity_dag=False):
     """
@@ -882,6 +940,442 @@ def get_prompts():
             "timestamp": time.time()
         }), 500
 
+@app.route('/dag', methods=['POST'])
+def extract_dag_endpoint():
+    """
+    Entity DAG 추출 API
+    
+    MMS 메시지에서 엔티티 간의 관계를 분석하여 DAG(Directed Acyclic Graph) 형태로 추출합니다.
+    
+    Request Body (JSON):
+        - message (required): 분석할 MMS 메시지 텍스트
+        - llm_model (optional): 사용할 LLM 모델 (기본값: 'ax')
+                                선택 가능: 'ax', 'gem', 'cld', 'gen', 'gpt'
+        - save_dag_image (optional): DAG 이미지 저장 여부 (기본값: False)
+    
+    Returns:
+        JSON: DAG 추출 결과
+            - success: 처리 성공 여부
+            - result: DAG 추출 결과
+                - dag_section: 파싱된 DAG 텍스트
+                - dag_raw: LLM 원본 응답
+                - dag_json: NetworkX 그래프를 JSON으로 변환
+                - analysis: 그래프 분석 정보 (노드 수, 엣지 수, root/leaf 노드 등)
+            - metadata: 처리 메타데이터 (처리 시간, 사용된 설정 등)
+    
+    HTTP Status Codes:
+        - 200: 성공
+        - 400: 잘못된 요청 (필수 필드 누락, 잘못된 파라미터 등)
+        - 500: 서버 내부 오류
+    
+    Example Request:
+        ```json
+        {
+            "message": "SK텔레콤 가입하시면 ZEM폰을 드립니다",
+            "llm_model": "ax",
+            "save_dag_image": true
+        }
+        ```
+    """
+    try:
+        # 요청 데이터 검증
+        if not request.is_json:
+            return jsonify({"error": "Content-Type은 application/json이어야 합니다"}), 400
+        
+        data = request.get_json()
+        
+        # 필수 필드 검증
+        if 'message' not in data:
+            return jsonify({"error": "필수 필드가 누락되었습니다: 'message'"}), 400
+        
+        message = data['message']
+        if not message or not message.strip():
+            return jsonify({"error": "메시지는 비어있을 수 없습니다"}), 400
+        
+        # 선택적 파라미터 추출
+        llm_model_name = data.get('llm_model', 'ax')
+        save_dag_image = data.get('save_dag_image', False)
+        
+        # 파라미터 유효성 검증
+        valid_llm_models = ['ax', 'gem', 'cld', 'gen', 'gpt']
+        if llm_model_name not in valid_llm_models:
+            return jsonify({"error": f"잘못된 llm_model입니다. 사용 가능: {valid_llm_models}"}), 400
+        
+        # LLM 모델 매핑
+        llm_model_map = {
+            'ax': llm_ax,
+            'gem': llm_gem,
+            'cld': llm_cld,
+            'gen': llm_gen,
+            'gpt': llm_gpt
+        }
+        llm_model = llm_model_map[llm_model_name]
+        
+        logger.info(f"🎯 DAG 추출 요청 - LLM: {llm_model_name}, 메시지 길이: {len(message)}자")
+        
+        # DAG 파서 초기화
+        parser = DAGParser()
+        
+        # DAG 추출 실행
+        start_time = time.time()
+        result = extract_dag(parser, message, llm_model)
+        processing_time = time.time() - start_time
+        
+        # NetworkX 그래프를 JSON으로 변환
+        dag = result['dag']
+        dag_json = parser.to_json(dag)
+        analysis = parser.analyze_graph(dag)
+        
+        # 이미지 저장 (선택 사항)
+        dag_image_url = None
+        dag_image_path = None
+        if save_dag_image:
+            try:
+                from utils import create_dag_diagram, sha256_hash
+                from config import settings
+                
+                dag_hash = sha256_hash(message)
+                dag_image_filename = f'dag_{dag_hash}.png'
+                
+                # 설정에 따라 저장 위치 결정 (재생성된 STORAGE_CONFIG 사용)
+                dag_dir = settings.STORAGE_CONFIG.get_dag_images_dir()
+                output_dir = f'./{dag_dir}'
+                
+                # DAG 다이어그램 생성 및 저장 (output_dir 명시적으로 전달)
+                create_dag_diagram(dag, filename=f'dag_{dag_hash}', output_dir=output_dir)
+                
+                # HTTP URL 생성 (스토리지 모드에 따라 URL 결정)
+                # - local 모드: API 서버 고정 주소 사용 (http://skt-tosaipoc01:8000)
+                # - nas 모드: NAS 서버 절대 IP 주소 사용 (http://172.27.7.58)
+                dag_image_url = settings.STORAGE_CONFIG.get_dag_image_url(dag_image_filename)
+                
+                # 실제 로컬 경로 (저장된 실제 경로)
+                dag_image_path = str(Path(__file__).parent / dag_dir / dag_image_filename)
+                
+                logger.info(f"📊 DAG 이미지 저장됨: {dag_image_path} ({settings.STORAGE_CONFIG.dag_storage_mode} 모드)")
+                logger.info(f"🌐 DAG 이미지 URL: {dag_image_url}")
+            except Exception as e:
+                logger.warning(f"⚠️ DAG 이미지 저장 실패: {e}")
+        
+        # 응답 구성
+        response = {
+            "success": True,
+            "result": {
+                "dag_section": result['dag_section'],
+                "dag_raw": result['dag_raw'],
+                "dag_json": json.loads(dag_json),
+                "analysis": analysis,
+                "dag_image_url": dag_image_url,  # HTTP URL (외부 시스템용)
+                "dag_image_path": dag_image_path  # 로컬 경로 (내부 참조용)
+            },
+            "metadata": {
+                "llm_model": llm_model_name,
+                "processing_time_seconds": round(processing_time, 3),
+                "timestamp": time.time(),
+                "message_length": len(message),
+                "save_dag_image": save_dag_image
+            }
+        }
+        
+        logger.info(f"✅ DAG 추출 완료: {processing_time:.3f}초, 노드: {analysis['num_nodes']}, 엣지: {analysis['num_edges']}")
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"❌ DAG 추출 중 오류 발생: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }), 500
+
+# =============================================================================
+# Quick Extractor API 엔드포인트 (제목 및 수신거부 번호 추출)
+# =============================================================================
+
+@app.route('/quick/extract', methods=['POST'])
+def quick_extract():
+    """
+    단일 메시지에서 제목과 수신거부 전화번호를 추출하는 API
+    
+    Request Body (JSON):
+    {
+        "message": "메시지 텍스트",
+        "method": "textrank|tfidf|first_bracket|llm",  // 선택사항, 기본값: textrank
+        "llm_model": "ax|gpt|claude|gemini",            // LLM 방법 사용 시 선택사항, 기본값: ax
+        "use_llm": false                                 // LLM 사용 여부, 기본값: false
+    }
+    
+    Response (JSON):
+    {
+        "success": true,
+        "data": {
+            "title": "추출된 제목",
+            "unsubscribe_phone": "1504",
+            "message": "전체 메시지 내용..."
+        },
+        "metadata": {
+            "method": "textrank",
+            "message_length": 188,
+            "processing_time_seconds": 0.123
+        }
+    }
+    """
+    try:
+        # 요청 시작 시간
+        start_time = time.time()
+        
+        # 요청 데이터 파싱
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "요청 본문이 비어있습니다. JSON 형식으로 데이터를 전송하세요."
+            }), 400
+        
+        # 필수 파라미터 검증
+        message = data.get('message')
+        if not message:
+            return jsonify({
+                "success": False,
+                "error": "'message' 필드는 필수입니다."
+            }), 400
+        
+        # 선택적 파라미터 (기본값 설정)
+        method = data.get('method', 'textrank')
+        use_llm = data.get('use_llm', method == 'llm')
+        llm_model = data.get('llm_model', 'ax')
+        
+        # 메서드 검증
+        valid_methods = ['textrank', 'tfidf', 'first_bracket', 'llm']
+        if method not in valid_methods:
+            return jsonify({
+                "success": False,
+                "error": f"유효하지 않은 method: {method}. 사용 가능: {', '.join(valid_methods)}"
+            }), 400
+        
+        # Quick Extractor 구성 및 가져오기
+        extractor = get_configured_quick_extractor(use_llm=use_llm, llm_model=llm_model)
+        
+        # 메시지 처리
+        logger.info(f"📝 Quick Extract 시작: method={method}, use_llm={use_llm}, llm_model={llm_model}")
+        result = extractor.process_single_message(message, method=method)
+        
+        # 처리 시간 계산
+        processing_time = time.time() - start_time
+        
+        # 메타데이터에 처리 시간 추가
+        result['metadata']['processing_time_seconds'] = round(processing_time, 3)
+        result['metadata']['timestamp'] = time.time()
+        
+        logger.info(f"✅ Quick Extract 완료: {processing_time:.3f}초, 제목={result['data']['title'][:50]}...")
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"❌ Quick Extract 오류: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }), 500
+
+@app.route('/quick/extract/batch', methods=['POST'])
+def quick_extract_batch():
+    """
+    여러 메시지에서 제목과 수신거부 전화번호를 일괄 추출하는 API
+    
+    Request Body (JSON):
+    {
+        "messages": ["메시지1", "메시지2", ...],
+        "method": "textrank|tfidf|first_bracket|llm",  // 선택사항, 기본값: textrank
+        "llm_model": "ax|gpt|claude|gemini",            // LLM 방법 사용 시 선택사항, 기본값: ax
+        "use_llm": false                                 // LLM 사용 여부, 기본값: false
+    }
+    
+    Response (JSON):
+    {
+        "success": true,
+        "data": {
+            "results": [
+                {
+                    "msg_id": 0,
+                    "title": "추출된 제목",
+                    "unsubscribe_phone": "1504",
+                    "message": "전체 메시지 내용..."
+                },
+                ...
+            ],
+            "statistics": {
+                "total_messages": 10,
+                "with_unsubscribe_phone": 8,
+                "extraction_rate": 80.0
+            }
+        },
+        "metadata": {
+            "method": "textrank",
+            "processing_time_seconds": 1.234,
+            "avg_time_per_message": 0.123
+        }
+    }
+    """
+    try:
+        # 요청 시작 시간
+        start_time = time.time()
+        
+        # 요청 데이터 파싱
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "요청 본문이 비어있습니다. JSON 형식으로 데이터를 전송하세요."
+            }), 400
+        
+        # 필수 파라미터 검증
+        messages = data.get('messages')
+        if not messages:
+            return jsonify({
+                "success": False,
+                "error": "'messages' 필드는 필수입니다."
+            }), 400
+        
+        if not isinstance(messages, list):
+            return jsonify({
+                "success": False,
+                "error": "'messages'는 리스트 형식이어야 합니다."
+            }), 400
+        
+        if len(messages) == 0:
+            return jsonify({
+                "success": False,
+                "error": "최소 1개 이상의 메시지가 필요합니다."
+            }), 400
+        
+        # 선택적 파라미터 (기본값 설정)
+        method = data.get('method', 'textrank')
+        use_llm = data.get('use_llm', method == 'llm')
+        llm_model = data.get('llm_model', 'ax')
+        
+        # 메서드 검증
+        valid_methods = ['textrank', 'tfidf', 'first_bracket', 'llm']
+        if method not in valid_methods:
+            return jsonify({
+                "success": False,
+                "error": f"유효하지 않은 method: {method}. 사용 가능: {', '.join(valid_methods)}"
+            }), 400
+        
+        # Quick Extractor 구성 및 가져오기
+        extractor = get_configured_quick_extractor(use_llm=use_llm, llm_model=llm_model)
+        
+        # 배치 메시지 처리
+        logger.info(f"📝 Quick Extract Batch 시작: {len(messages)}개 메시지, method={method}, use_llm={use_llm}")
+        
+        results = []
+        msg_processing_times = []
+        
+        for idx, message in enumerate(messages):
+            msg_start_time = time.time()
+            result = extractor.process_single_message(message, method=method)
+            msg_processing_time = time.time() - msg_start_time
+            
+            # 결과에 메시지 ID와 처리 시간 추가
+            message_result = {
+                'msg_id': idx,
+                'title': result['data']['title'],
+                'unsubscribe_phone': result['data']['unsubscribe_phone'],
+                'message': result['data']['message'],
+                'processing_time_seconds': round(msg_processing_time, 3)
+            }
+            results.append(message_result)
+            msg_processing_times.append(msg_processing_time)
+        
+        # 통계 계산
+        total = len(results)
+        with_phone = sum(1 for r in results if r.get('unsubscribe_phone'))
+        
+        # 처리 시간 계산
+        processing_time = time.time() - start_time
+        avg_time = sum(msg_processing_times) / total if total > 0 else 0
+        min_time = min(msg_processing_times) if msg_processing_times else 0
+        max_time = max(msg_processing_times) if msg_processing_times else 0
+        
+        # 응답 구성
+        response = {
+            'success': True,
+            'data': {
+                'results': results,
+                'statistics': {
+                    'total_messages': total,
+                    'with_unsubscribe_phone': with_phone,
+                    'extraction_rate': round(with_phone / total * 100, 2) if total > 0 else 0,
+                    'total_processing_time_seconds': round(sum(msg_processing_times), 3),
+                    'avg_processing_time_seconds': round(avg_time, 3),
+                    'min_processing_time_seconds': round(min_time, 3),
+                    'max_processing_time_seconds': round(max_time, 3)
+                }
+            },
+            'metadata': {
+                'method': method,
+                'total_time_seconds': round(processing_time, 3),
+                'timestamp': time.time()
+            }
+        }
+        
+        logger.info(f"✅ Quick Extract Batch 완료: {processing_time:.3f}초, {total}개 메시지 처리")
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"❌ Quick Extract Batch 오류: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": time.time()
+        }), 500
+
+@app.route('/dag_images/<path:filename>', methods=['GET'])
+def serve_dag_image(filename):
+    """
+    DAG 이미지 파일 제공 엔드포인트
+    
+    외부 시스템에서 HTTP를 통해 DAG 이미지에 접근할 수 있도록 합니다.
+    설정에 따라 로컬 또는 NAS 디렉토리에서 파일을 제공합니다.
+    
+    Parameters:
+    -----------
+    filename : str
+        이미지 파일명 (예: dag_abc123.png)
+    
+    Returns:
+    --------
+    file : 이미지 파일
+    """
+    try:
+        from config import settings
+        
+        # DAG 이미지 디렉토리 (스토리지 모드와 관계없이 동일)
+        dag_dir = settings.STORAGE_CONFIG.get_dag_images_dir()
+        dag_images_dir = Path(__file__).parent / dag_dir
+        
+        logger.info(f"📊 DAG 이미지 요청: {filename} (from {dag_dir})")
+        
+        return send_from_directory(dag_images_dir, filename)
+    except FileNotFoundError:
+        logger.warning(f"⚠️ DAG 이미지 없음: {filename}")
+        return jsonify({
+            "success": False,
+            "error": "Image not found"
+        }), 404
+    except Exception as e:
+        logger.error(f"❌ DAG 이미지 제공 오류: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 @app.errorhandler(404)
 def not_found(error):
     """404 에러 핸들러 - 존재하지 않는 엔드포인트 접근 시"""
@@ -937,8 +1431,28 @@ def main():
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
+    parser.add_argument('--storage', choices=['local', 'nas'], default='local',
+                       help='DAG 이미지 저장 위치 (local: 로컬 디스크, nas: NAS 서버)')
     
     args = parser.parse_args()
+    
+    # DAG 저장 모드 설정
+    logger.info(f"🔧 --storage 옵션: {args.storage}")
+    os.environ['DAG_STORAGE_MODE'] = args.storage
+    logger.info(f"🔧 환경변수 DAG_STORAGE_MODE 설정: {os.environ.get('DAG_STORAGE_MODE')}")
+    
+    # STORAGE_CONFIG 재생성 (환경변수 적용)
+    from config.settings import StorageConfig
+    from config import settings
+    settings.STORAGE_CONFIG = StorageConfig()
+    STORAGE_CONFIG = settings.STORAGE_CONFIG
+    
+    logger.info(f"📁 DAG 저장 모드: {STORAGE_CONFIG.dag_storage_mode} - {STORAGE_CONFIG.get_storage_description()}")
+    logger.info(f"📂 DAG 저장 경로: {STORAGE_CONFIG.get_dag_images_dir()}")
+    if STORAGE_CONFIG.dag_storage_mode == 'local':
+        logger.info(f"🌐 로컬 서버 URL: {STORAGE_CONFIG.local_base_url}")
+    else:
+        logger.info(f"🌐 NAS 서버 URL: {STORAGE_CONFIG.nas_base_url}")
     
     # 전역 CLI 데이터 소스 설정
     CLI_DATA_SOURCE = args.offer_data_source
@@ -999,6 +1513,7 @@ def main():
         logger.info("  GET  /status - 서버 상태 조회")
         logger.info("  POST /extract - 단일 메시지 추출")
         logger.info("  POST /extract/batch - 다중 메시지 배치 추출")
+        logger.info("  POST /dag - Entity DAG 추출")
         
         # Flask 설정 적용
         app.config['DEBUG'] = args.debug

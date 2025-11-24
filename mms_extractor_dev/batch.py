@@ -138,6 +138,22 @@ class BatchProcessor:
         try:
             # Load the CSV file
             self.mms_pdf = pd.read_csv(METADATA_CONFIG.mms_msg_path)
+            
+            # Handle different column name formats
+            # If 'mms_phrs' exists but 'msg' doesn't, rename it
+            if 'mms_phrs' in self.mms_pdf.columns and 'msg' not in self.mms_pdf.columns:
+                self.mms_pdf['msg'] = self.mms_pdf['mms_phrs']
+                logger.info("Renamed 'mms_phrs' column to 'msg'")
+            elif 'msg' not in self.mms_pdf.columns:
+                raise ValueError("CSV file must have either 'msg' or 'mms_phrs' column")
+            
+            # Filter out rows with empty or NaN messages before converting to string
+            original_count = len(self.mms_pdf)
+            self.mms_pdf = self.mms_pdf[self.mms_pdf['msg'].notna() & (self.mms_pdf['msg'].astype(str).str.strip() != '')]
+            filtered_count = original_count - len(self.mms_pdf)
+            if filtered_count > 0:
+                logger.info(f"Filtered out {filtered_count} empty messages")
+            
             self.mms_pdf = self.mms_pdf.astype('str')
             
             # Add msg_id column if it doesn't exist
@@ -224,6 +240,12 @@ class BatchProcessor:
         for idx, row in sampled_messages.iterrows():
             msg = row.get('msg', '')
             msg_id = row.get('msg_id', str(idx))
+            
+            # Skip empty messages (safety check)
+            if not msg or msg.strip() == '' or msg == 'nan':
+                logger.warning(f"Skipping empty message with ID: {msg_id}")
+                continue
+                
             messages_list.append({'msg': msg, 'msg_id': msg_id})
         
         if self.enable_multiprocessing and len(messages_list) > 1:
@@ -268,8 +290,11 @@ class BatchProcessor:
                 if i < len(batch_result):
                     extraction_result = batch_result[i]
 
-                    print("=" * 50 + " extraction_result " + "=" * 50)
-                    print(extraction_result)
+                    # 디버깅용 출력 (필요시에만 활성화)
+                    # print("=" * 50 + " extraction_result " + "=" * 50)
+                    # print(f"Type: {type(extraction_result)}")
+                    # print(f"Content: {extraction_result}")
+                    # print("=" * 50)
                     
                     # Create result record
                     result_record = {
@@ -315,13 +340,21 @@ class BatchProcessor:
                             logger.warning(f"⚠️ 메시지 {msg_id} DAG 추출 요청되었으나 결과가 비어있음")
                     
                     results.append(result_record)
-                    logger.info(f"✅ 메시지 {msg_id} 병렬 처리 완료")
+                    
+                    # 성공/실패 여부 확인 및 로깅
+                    is_error = self._is_error_result(result_record['extraction_result'])
+                    logger.debug(f"메시지 {msg_id} 에러 판단 결과: {is_error}")
+                    
+                    if is_error:
+                        logger.error(f"❌ 메시지 {msg_id} 병렬 처리 실패 - 추출 결과에 에러 포함")
+                    else:
+                        logger.info(f"✅ 메시지 {msg_id} 병렬 처리 완료")
                 else:
-                    # 처리 실패한 경우
+                    # 처리 실패한 경우 (배치 결과에 해당 메시지가 없는 경우)
                     error_record = {
                         'msg_id': msg_id,
                         'msg': msg,
-                        'extraction_result': json.dumps({'error': 'Processing failed'}, ensure_ascii=False),
+                        'extraction_result': json.dumps({'error': 'Processing failed - no result returned'}, ensure_ascii=False),
                         'processed_at': processing_time,
                         'title': '',
                         'purpose': '[]',
@@ -330,7 +363,7 @@ class BatchProcessor:
                         'pgm': '[]'
                     }
                     results.append(error_record)
-                    logger.error(f"❌ 메시지 {msg_id} 병렬 처리 실패")
+                    logger.error(f"❌ 메시지 {msg_id} 병렬 처리 실패 - 배치 결과 없음")
             
             elapsed_time = time.time() - start_time
             logger.info(f"🎯 병렬 처리 완료: {len(results)}개 메시지, {elapsed_time:.2f}초 소요")
@@ -416,7 +449,14 @@ class BatchProcessor:
                     else:
                         logger.warning(f"⚠️ 메시지 {msg_id} DAG 추출 요청되었으나 결과가 비어있음")
                 
-                logger.info(f"✅ 메시지 {msg_id} 순차 처리 완료")
+                # 성공/실패 여부 확인 및 로깅
+                is_error = self._is_error_result(result_record['extraction_result'])
+                logger.debug(f"메시지 {msg_id} 에러 판단 결과: {is_error}")
+                
+                if is_error:
+                    logger.error(f"❌ 메시지 {msg_id} 순차 처리 실패 - 추출 결과에 에러 포함")
+                else:
+                    logger.info(f"✅ 메시지 {msg_id} 순차 처리 완료")
                 
             except Exception as e:
                 logger.error(f"❌ 메시지 {msg_id} 처리 실패: {str(e)}")
@@ -467,6 +507,46 @@ class BatchProcessor:
         
         logger.info(f"Results saved to: {self.result_file_path}")
         return self.result_file_path
+    
+    def _is_error_result(self, extraction_result_str):
+        """
+        Check if extraction result contains an error
+        
+        Args:
+            extraction_result_str: JSON string of extraction result
+            
+        Returns:
+            bool: True if result contains error, False otherwise
+        """
+        try:
+            if isinstance(extraction_result_str, str):
+                result_dict = json.loads(extraction_result_str)
+                # process_messages_batch는 error 키가 있어도 실제 에러가 아닐 수 있음
+                # error 키가 있고 실제 에러 메시지가 있는 경우만 실패로 간주
+                if 'error' in result_dict:
+                    error_msg = result_dict['error']
+                    # 빈 문자열이거나 None인 경우는 성공으로 간주
+                    if error_msg and str(error_msg).strip():
+                        logger.debug(f"실제 에러 발견: {error_msg}")
+                        return True
+                    else:
+                        logger.debug(f"error 키는 있지만 빈 값: '{error_msg}' - 성공으로 간주")
+                        return False
+                return False
+            elif isinstance(extraction_result_str, dict):
+                if 'error' in extraction_result_str:
+                    error_msg = extraction_result_str['error']
+                    if error_msg and str(error_msg).strip():
+                        return True
+                    else:
+                        return False
+                return False
+            else:
+                logger.debug(f"알 수 없는 타입: {type(extraction_result_str)}")
+                return False
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.debug(f"JSON 파싱 실패: {e}, 원본: {extraction_result_str}")
+            return False
     
     def log_processing_summary(self, processed_msg_ids):
         """
@@ -519,7 +599,7 @@ class BatchProcessor:
             
             # Save results and log summary
             self.save_results(results)
-            processed_msg_ids = [r['msg_id'] for r in results if 'error' not in r.get('extraction_result', '')]
+            processed_msg_ids = [r['msg_id'] for r in results if not self._is_error_result(r.get('extraction_result', ''))]
             self.log_processing_summary(processed_msg_ids)
             
             total_time = time.time() - overall_start_time
@@ -529,12 +609,18 @@ class BatchProcessor:
             avg_time_per_message = processing_time / len(results) if results else 0
             throughput = len(results) / processing_time if processing_time > 0 else 0
             
+            success_rate = len(processed_msg_ids) / len(results) * 100 if results else 0
+            
             logger.info("="*50)
             logger.info("🎯 배치 처리 성능 요약")
             logger.info("="*50)
             logger.info(f"처리 모드: {processing_mode}")
             logger.info(f"워커 수: {self.max_workers}")
             logger.info(f"DAG 추출: {'ON' if self.extract_entity_dag else 'OFF'}")
+            logger.info(f"총 처리 메시지: {len(results)}개")
+            logger.info(f"성공: {len(processed_msg_ids)}개")
+            logger.info(f"실패: {len(results) - len(processed_msg_ids)}개")
+            logger.info(f"성공률: {success_rate:.2f}%")
             logger.info(f"총 처리 시간: {total_time:.2f}초")
             logger.info(f"메시지 처리 시간: {processing_time:.2f}초")
             logger.info(f"메시지당 평균 시간: {avg_time_per_message:.2f}초")
@@ -553,7 +639,8 @@ class BatchProcessor:
                 'total_time_seconds': round(total_time, 2),
                 'processing_time_seconds': round(processing_time, 2),
                 'avg_time_per_message': round(avg_time_per_message, 2),
-                'throughput_messages_per_second': round(throughput, 2)
+                'throughput_messages_per_second': round(throughput, 2),
+                'success_rate': round(len(processed_msg_ids) / len(results) * 100, 2) if results else 0
             }
             
         except Exception as e:
@@ -599,7 +686,7 @@ def main():
                        help='엔티티 DAG 추출 활성화 - 메시지에서 엔티티 간 관계를 그래프로 추출하고 시각화 (default: False)')
     
     # MongoDB arguments
-    parser.add_argument('--save-to-mongodb', action='store_true', default=False,
+    parser.add_argument('--save-to-mongodb', action='store_true', default=True,
                        help='추출 결과를 MongoDB에 저장 (mongodb_utils.py 필요)')
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')

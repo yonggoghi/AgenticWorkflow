@@ -65,10 +65,10 @@ import re
 import ast
 import glob
 import os
-from bson import raw_bson
 import copy
 import pandas as pd
 import numpy as np
+from langchain.prompts import PromptTemplate
 
 # joblib과 multiprocessing 경고 억제
 warnings.filterwarnings("ignore", category=UserWarning, module="joblib")
@@ -91,7 +91,7 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from rapidfuzz import fuzz, process
 from kiwipiepy import Kiwi
 from joblib import Parallel, delayed
-from entity_dag_extractor import DAGParser, extract_dag, create_dag_diagram, sha256_hash
+from entity_dag_extractor import DAGParser, extract_dag
 
 # 프롬프트 모듈 임포트
 from prompts import (
@@ -100,7 +100,41 @@ from prompts import (
     get_fallback_result,
     build_entity_extraction_prompt,
     DEFAULT_ENTITY_EXTRACTION_PROMPT,
-    DETAILED_ENTITY_EXTRACTION_PROMPT
+    DETAILED_ENTITY_EXTRACTION_PROMPT,
+    SIMPLE_ENTITY_EXTRACTION_PROMPT,
+    HYBRID_DAG_EXTRACTION_PROMPT
+    )
+
+# 유틸리티 함수 모듈 임포트
+from utils import (
+    select_most_comprehensive,
+    log_performance,
+    safe_execute,
+    validate_text_input,
+    safe_check_empty,
+    dataframe_to_markdown_prompt,
+    extract_json_objects,
+    preprocess_text,
+    fuzzy_similarities,
+    get_fuzzy_similarities,
+    parallel_fuzzy_similarity,
+    longest_common_subsequence_ratio,
+    sequence_matcher_similarity,
+    substring_aware_similarity,
+    token_sequence_similarity,
+    combined_sequence_similarity,
+    calculate_seq_similarity,
+    parallel_seq_similarity,
+    load_sentence_transformer,
+    Token,
+    Sentence,
+    filter_text_by_exc_patterns,
+    filter_specific_terms,
+    convert_df_to_json_list,
+    create_dag_diagram,
+    sha256_hash,
+    replace_special_chars_with_space,
+    extract_ngram_candidates
 )
 
 # 설정 및 의존성 임포트 (원본 코드에서 가져옴)
@@ -136,524 +170,6 @@ if __name__ == '__main__':
 # pandas 출력 설정
 pd.set_option('display.max_colwidth', 500)
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
-
-# ===== 데코레이터 및 유틸리티 함수들 =====
-
-def log_performance(func):
-    """함수 실행 시간을 로깅하는 데코레이터"""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        try:
-            result = func(*args, **kwargs)
-            elapsed = time.time() - start_time
-            logger.info(f"{func.__name__} 실행완료: {elapsed:.2f}초")
-            return result
-        except Exception as e:
-            elapsed = time.time() - start_time
-            logger.error(f"{func.__name__} 실행실패 ({elapsed:.2f}초): {e}")
-            raise
-    return wrapper
-
-def safe_execute(func, *args, default_return=None, max_retries=2, **kwargs):
-    """
-    안전한 함수 실행을 위한 유틸리티 함수
-    
-    이 함수는 네트워크 오류, API 호출 실패 등의 일시적 오류에 대해
-    지수 백오프(exponential backoff)를 사용하여 재시도합니다.
-    
-    Args:
-        func: 실행할 함수
-        *args: 함수에 전달할 위치 인수
-        default_return: 모든 재시도 실패 시 반환할 기본값
-        max_retries: 최대 재시도 횟수 (default: 2)
-        **kwargs: 함수에 전달할 키워드 인수
-        
-    Returns:
-        함수 실행 결과 또는 default_return
-        
-    Example:
-        result = safe_execute(api_call, data, default_return={}, max_retries=3)
-    """
-    for attempt in range(max_retries + 1):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            if attempt == max_retries:
-                # 모든 재시도 실패 시 에러 로깅 및 기본값 반환
-                logger.error(f"{func.__name__} 최종 실패: {e}")
-                return default_return
-            else:
-                # 재시도 전 대기 시간: 1초, 2초, 4초, 8초... (지수 백오프)
-                logger.warning(f"{func.__name__} 재시도 {attempt + 1}/{max_retries}: {e}")
-                time.sleep(2 ** attempt)
-    return default_return
-
-def validate_text_input(text: str) -> str:
-    """
-    텍스트 입력 검증 및 정리 함수
-    
-    MMS 텍스트 처리 전에 입력된 텍스트의 유효성을 검증하고
-    처리에 적합한 형태로 정리합니다.
-    
-    Args:
-        text (str): 검증할 입력 텍스트
-        
-    Returns:
-        str: 정리된 텍스트
-        
-    Raises:
-        ValueError: 비어있거나 잘못된 형식의 입력
-        
-    Example:
-        clean_text = validate_text_input("  [SK텔레콤] 혜택 안내  ")
-    """
-    # 타입 검증: 문자열이 아닌 경우 에러 발생
-    if not isinstance(text, str):
-        raise ValueError(f"텍스트 입력이 문자열이 아닙니다: {type(text)}")
-    
-    # 앞뒤 공백 제거
-    text = text.strip()
-    
-    # 빈 문자열 검사
-    if not text:
-        raise ValueError("빈 텍스트는 처리할 수 없습니다")
-    
-    # 최대 길이 제한 (LLM 토큰 제한 및 성능 고려)
-    if len(text) > 10000:
-        logger.warning(f"텍스트가 너무 깁니다 ({len(text)} 문자). 처음 10000자만 사용합니다.")
-        text = text[:10000]
-    
-    return text
-
-def safe_check_empty(obj) -> bool:
-    """다양한 타입의 객체가 비어있는지 안전하게 확인"""
-    try:
-        if hasattr(obj, '__len__'):
-            return len(obj) == 0
-        elif hasattr(obj, 'size'):  # numpy 배열
-            return obj.size == 0
-        elif hasattr(obj, 'empty'):  # pandas DataFrame/Series
-            return obj.empty
-        else:
-            return not bool(obj)
-    except (ValueError, TypeError):
-        # numpy 배열의 truth value 에러 등을 처리
-        try:
-            return getattr(obj, 'size', 1) == 0
-        except:
-            return True  # 안전을 위해 비어있다고 가정
-
-# ===== 원본 유틸리티 함수들 (유지) =====
-
-def dataframe_to_markdown_prompt(df, max_rows=None):
-    """DataFrame을 마크다운 형식의 프롬프트로 변환"""
-    if max_rows is not None and len(df) > max_rows:
-        display_df = df.head(max_rows)
-        truncation_note = f"\n[Note: Only showing first {max_rows} of {len(df)} rows]"
-    else:
-        display_df = df
-        truncation_note = ""
-    df_markdown = display_df.to_markdown()
-    prompt = f"\n\n    {df_markdown}\n    {truncation_note}\n\n    "
-    return prompt
-
-def clean_segment(segment):
-    """따옴표로 둘러싸인 문자열에서 내부의 동일한 따옴표 제거"""
-    segment = segment.strip()
-    if len(segment) >= 2 and segment[0] in ['"', "'"] and segment[-1] == segment[0]:
-        q = segment[0]
-        inner = segment[1:-1].replace(q, '')
-        return q + inner + q
-    return segment
-
-def split_key_value(text):
-    """따옴표 외부의 첫 번째 콜론을 기준으로 키-값 분리"""
-    in_quote = False
-    quote_char = ''
-    for i, char in enumerate(text):
-        if char in ['"', "'"]:
-            if in_quote:
-                if char == quote_char:
-                    in_quote = False
-                    quote_char = ''
-            else:
-                in_quote = True
-                quote_char = char
-        elif char == ':' and not in_quote:
-            return text[:i], text[i+1:]
-    return text, ''
-
-def split_outside_quotes(text, delimiter=','):
-    """따옴표 외부의 구분자로만 텍스트 분리"""
-    parts = []
-    current = []
-    in_quote = False
-    quote_char = ''
-    for char in text:
-        if char in ['"', "'"]:
-            if in_quote:
-                if char == quote_char:
-                    in_quote = False
-                    quote_char = ''
-            else:
-                in_quote = True
-                quote_char = char
-            current.append(char)
-        elif char == delimiter and not in_quote:
-            parts.append(''.join(current).strip())
-            current = []
-        else:
-            current.append(char)
-    if current:
-        parts.append(''.join(current).strip())
-    return parts
-
-def clean_ill_structured_json(text):
-    """잘못 구조화된 JSON 형식의 텍스트 정리"""
-    parts = split_outside_quotes(text, delimiter=',')
-    cleaned_parts = []
-    for part in parts:
-        key, value = split_key_value(part)
-        key_clean = clean_segment(key)
-        value_clean = clean_segment(value) if value.strip() != "" else ""
-        if value_clean:
-            cleaned_parts.append(f"{key_clean}: {value_clean}")
-        else:
-            cleaned_parts.append(key_clean)
-    return ', '.join(cleaned_parts)
-
-def repair_json(broken_json):
-    """손상된 JSON 문자열 복구"""
-    json_str = broken_json
-    # 따옴표 없는 키에 따옴표 추가
-    json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1 "\2":', json_str)
-    # 따옴표 없는 값 처리
-    parts = json_str.split('"')
-    for i in range(0, len(parts), 2):
-        parts[i] = re.sub(r':\s*([a-zA-Z0-9_]+)(?=\s*[,\]\}])', r': "\1"', parts[i])
-    json_str = '"'.join(parts)
-    # 후행 쉼표 제거
-    json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
-    return json_str
-
-def extract_json_objects(text):
-    """텍스트에서 JSON 객체 추출"""
-    pattern = r'(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})'
-    result = []
-    for match in re.finditer(pattern, text):
-        potential_json = match.group(0)
-        try:
-            json_obj = ast.literal_eval(clean_ill_structured_json(repair_json(potential_json)))
-            result.append(json_obj)
-        except (json.JSONDecodeError, SyntaxError, ValueError):
-            pass
-    return result
-
-def preprocess_text(text):
-    """텍스트 전처리 (특수문자 제거, 공백 정규화)"""
-    text = re.sub(r'[^\w\s]', ' ', text)
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
-
-# ===== 유사도 계산 함수들 (원본 유지) =====
-
-def fuzzy_similarities(text, entities):
-    """퍼지 매칭을 사용한 유사도 계산"""
-    results = []
-    for entity in entities:
-        scores = {
-            'ratio': fuzz.ratio(text, entity) / 100,
-            'partial_ratio': fuzz.partial_ratio(text, entity) / 100,
-            'token_sort_ratio': fuzz.token_sort_ratio(text, entity) / 100,
-            'token_set_ratio': fuzz.token_set_ratio(text, entity) / 100
-        }
-        max_score = max(scores.values())
-        results.append((entity, max_score))
-    return results
-
-def get_fuzzy_similarities(args_dict):
-    """배치 처리를 위한 퍼지 유사도 계산 함수"""
-    text = args_dict['text']
-    entities = args_dict['entities']
-    threshold = args_dict['threshold']
-    text_col_nm = args_dict['text_col_nm']
-    item_col_nm = args_dict['item_col_nm']
-    
-    text_processed = preprocess_text(text.lower())
-    similarities = fuzzy_similarities(text_processed, entities)
-    
-    filtered_results = [
-        {
-            text_col_nm: text,
-            item_col_nm: entity, 
-            "sim": score
-        } 
-        for entity, score in similarities 
-        if score >= threshold
-    ]
-    return filtered_results
-
-def parallel_fuzzy_similarity(texts, entities, threshold=0.5, text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=None, batch_size=None):
-    """병렬 처리를 통한 퍼지 유사도 계산"""
-    if n_jobs is None:
-        n_jobs = min(os.cpu_count()-1, 8)
-    if batch_size is None:
-        batch_size = max(1, len(entities) // (n_jobs * 2))
-    
-    batches = []
-    for text in texts:
-        for i in range(0, len(entities), batch_size):
-            batch = entities[i:i + batch_size]
-            batches.append({"text": text, "entities": batch, "threshold": threshold, "text_col_nm": text_col_nm, "item_col_nm": item_col_nm})
-    
-    with Parallel(n_jobs=n_jobs) as parallel:
-        batch_results = parallel(delayed(get_fuzzy_similarities)(args) for args in batches)
-    
-    return pd.DataFrame(sum(batch_results, []))
-
-def longest_common_subsequence_ratio(s1, s2, normalizaton_value):
-    """최장 공통 부분수열 비율 계산"""
-    def lcs_length(x, y):
-        m, n = len(x), len(y)
-        dp = [[0] * (n + 1) for _ in range(m + 1)]
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                if x[i-1] == y[j-1]:
-                    dp[i][j] = dp[i-1][j-1] + 1
-                else:
-                    dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-        return dp[m][n]
-    
-    lcs_len = lcs_length(s1, s2)
-    if normalizaton_value == 'max':
-        max_len = max(len(s1), len(s2))
-        return lcs_len / max_len if max_len > 0 else 1.0
-    elif normalizaton_value == 'min':
-        min_len = min(len(s1), len(s2))
-        return lcs_len / min_len if min_len > 0 else 1.0
-    elif normalizaton_value == 's1':
-        return lcs_len / len(s1) if len(s1) > 0 else 1.0
-    elif normalizaton_value == 's2':
-        return lcs_len / len(s2) if len(s2) > 0 else 1.0
-    else:
-        raise ValueError(f"Invalid normalization value: {normalizaton_value}")
-
-def sequence_matcher_similarity(s1, s2, normalizaton_value):
-    """SequenceMatcher를 사용한 유사도 계산"""
-    matcher = difflib.SequenceMatcher(None, s1, s2)
-    matches = sum(triple.size for triple in matcher.get_matching_blocks())
-    
-    normalization_length = min(len(s1), len(s2))
-    if normalizaton_value == 'max':
-        normalization_length = max(len(s1), len(s2))
-    elif normalizaton_value == 's1':
-        normalization_length = len(s1)
-    elif normalizaton_value == 's2':
-        normalization_length = len(s2)
-        
-    if normalization_length == 0: 
-        return 0.0
-    
-    return matches / normalization_length
-
-def substring_aware_similarity(s1, s2, normalizaton_value):
-    """부분문자열 관계를 고려한 유사도 계산"""
-    if s1 in s2 or s2 in s1:
-        shorter = min(s1, s2, key=len)
-        longer = max(s1, s2, key=len)
-        base_score = len(shorter) / len(longer)
-        return min(0.95 + base_score * 0.05, 1.0)
-    return longest_common_subsequence_ratio(s1, s2, normalizaton_value)
-
-def token_sequence_similarity(s1, s2, normalizaton_value, separator_pattern=r'[\s_\-]+'):
-    """토큰 시퀀스 기반 유사도 계산"""
-    tokens1 = [t for t in re.split(separator_pattern, s1.strip()) if t]
-    tokens2 = [t for t in re.split(separator_pattern, s2.strip()) if t]
-    
-    if not tokens1 or not tokens2:
-        return 0.0
-    
-    def token_lcs_length(t1, t2):
-        m, n = len(t1), len(t2)
-        dp = [[0] * (n + 1) for _ in range(m + 1)]
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                if t1[i-1] == t2[j-1]:
-                    dp[i][j] = dp[i-1][j-1] + 1
-                else:
-                    dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-        return dp[m][n]
-    
-    lcs_tokens = token_lcs_length(tokens1, tokens2)
-    normalization_tokens = max(len(tokens1), len(tokens2))
-    if normalizaton_value == 'min':
-        normalization_tokens = min(len(tokens1), len(tokens2))
-    elif normalizaton_value == 's1':
-        normalization_tokens = len(tokens1)
-    elif normalizaton_value == 's2':
-        normalization_tokens = len(tokens2)
-    
-    return lcs_tokens / normalization_tokens  
-
-def combined_sequence_similarity(s1, s2, weights=None, normalizaton_value='max'):
-    """여러 유사도 메트릭을 결합한 종합 유사도 계산"""
-    if weights is None:
-        weights = {'substring': 0.4, 'sequence_matcher': 0.4, 'token_sequence': 0.2}
-    
-    similarities = {
-        'substring': substring_aware_similarity(s1, s2, normalizaton_value),
-        'sequence_matcher': sequence_matcher_similarity(s1, s2, normalizaton_value),
-        'token_sequence': token_sequence_similarity(s1, s2, normalizaton_value)
-    }
-    
-    return sum(similarities[key] * weights[key] for key in weights), similarities
-
-def calculate_seq_similarity(args_dict):
-    """배치 처리를 위한 시퀀스 유사도 계산"""
-    sent_item_batch = args_dict['sent_item_batch']
-    text_col_nm = args_dict['text_col_nm']
-    item_col_nm = args_dict['item_col_nm']
-    normalizaton_value = args_dict['normalizaton_value']
-    
-    results = []
-    for sent_item in sent_item_batch:
-        sent = sent_item[text_col_nm]
-        item = sent_item[item_col_nm]
-        try:
-            sent_processed = preprocess_text(sent.lower())
-            item_processed = preprocess_text(item.lower())
-            similarity = combined_sequence_similarity(sent_processed, item_processed, normalizaton_value=normalizaton_value)[0]
-            results.append({text_col_nm:sent, item_col_nm:item, "sim":similarity})
-        except Exception as e:
-            logger.error(f"Error processing {item}: {e}")
-            results.append({text_col_nm:sent, item_col_nm:item, "sim":0.0})
-    
-    return results
-
-def parallel_seq_similarity(sent_item_pdf, text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=None, batch_size=None, normalizaton_value='s2'):
-    """병렬 처리를 통한 시퀀스 유사도 계산"""
-    if n_jobs is None:
-        n_jobs = min(os.cpu_count()-1, 8)
-    if batch_size is None:
-        batch_size = max(1, sent_item_pdf.shape[0] // (n_jobs * 2))
-    
-    batches = []
-    for i in range(0, sent_item_pdf.shape[0], batch_size):
-        batch = sent_item_pdf.iloc[i:i + batch_size].to_dict(orient='records')
-        batches.append({"sent_item_batch": batch, 'text_col_nm': text_col_nm, 'item_col_nm': item_col_nm, 'normalizaton_value': normalizaton_value})
-    
-    with Parallel(n_jobs=n_jobs) as parallel:
-        batch_results = parallel(delayed(calculate_seq_similarity)(args) for args in batches)
-    
-    return pd.DataFrame(sum(batch_results, []))
-
-def load_sentence_transformer(model_path, device=None):
-    """SentenceTransformer 모델 로드"""
-    if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logger.info(f"Loading model from {model_path}...")
-    model = SentenceTransformer(model_path).to(device)
-    logger.info(f"Model loaded on {device}")
-    return model
-
-# ===== Kiwi 형태소 분석 관련 클래스들 (원본 유지) =====
-
-class Token:
-    """형태소 분석 토큰 클래스"""
-    def __init__(self, form, tag, start, length):
-        self.form = form      # 토큰 형태
-        self.tag = tag        # 품사 태그
-        self.start = start    # 시작 위치
-        self.len = length     # 길이
-
-class Sentence:
-    """형태소 분석 문장 클래스"""
-    def __init__(self, text, start, end, tokens, subs=None):
-        self.text = text      # 문장 텍스트
-        self.start = start    # 시작 위치
-        self.end = end        # 끝 위치
-        self.tokens = tokens  # 토큰 리스트
-        self.subs = subs or []  # 하위 문장들
-
-def filter_text_by_exc_patterns(sentence, exc_tag_patterns):
-    """제외할 품사 패턴에 따라 텍스트 필터링"""
-    # 개별 태그와 시퀀스 패턴 분리
-    individual_tags = set()
-    sequences = []
-    
-    for pattern in exc_tag_patterns:
-        if isinstance(pattern, list):
-            if len(pattern) == 1:
-                individual_tags.add(pattern[0])
-            else:
-                sequences.append(pattern)
-        else:
-            individual_tags.add(pattern)
-    
-    # 제외할 토큰 인덱스 수집
-    tokens_to_exclude = set()
-    
-    # 개별 태그 매칭 확인
-    for i, token in enumerate(sentence.tokens):
-        if token.tag in individual_tags:
-            tokens_to_exclude.add(i)
-    
-    # 시퀀스 패턴 매칭 확인
-    for sequence in sequences:
-        seq_len = len(sequence)
-        for i in range(len(sentence.tokens) - seq_len + 1):
-            if all(sentence.tokens[i + j].tag == sequence[j] for j in range(seq_len)):
-                for j in range(seq_len):
-                    tokens_to_exclude.add(i + j)
-    
-    # 원본 텍스트에서 제외할 토큰 부분을 공백으로 대체
-    result_chars = list(sentence.text)
-    for i, token in enumerate(sentence.tokens):
-        if i in tokens_to_exclude:
-            start_pos = token.start - sentence.start
-            end_pos = start_pos + token.len
-            for j in range(start_pos, end_pos):
-                if j < len(result_chars) and result_chars[j] != ' ':
-                    result_chars[j] = ' '
-    
-    filtered_text = ''.join(result_chars)
-    return re.sub(r'\s+', ' ', filtered_text)
-
-def filter_specific_terms(strings: List[str]) -> List[str]:
-    """중복되거나 포함 관계에 있는 용어들 필터링"""
-    unique_strings = list(set(strings))
-    unique_strings.sort(key=len, reverse=True)
-    
-    filtered = []
-    for s in unique_strings:
-        if not any(s in other for other in filtered):
-            filtered.append(s)
-    
-    return filtered
-
-def convert_df_to_json_list(df):
-    """DataFrame을 특정 JSON 구조로 변환"""
-    result = []
-    grouped = df.groupby('item_name_in_msg')
-    
-    for item_name_in_msg, group in grouped:
-        item_dict = {
-            'item_name_in_msg': item_name_in_msg,
-            'item_in_voca': []
-        }
-        
-        item_nm_groups = group.groupby('item_nm')
-        for item_nm, item_group in item_nm_groups:
-            item_ids = list(item_group['item_id'].unique())
-            voca_item = {
-                'item_nm': item_nm,
-                'item_id': item_ids
-            }
-            item_dict['item_in_voca'].append(voca_item)
-        result.append(item_dict)
-    
-    return result
 
 # ===== 추상 클래스 및 전략 패턴 =====
 
@@ -851,7 +367,7 @@ class MMSExtractor:
                 "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'gpt-4')
             }
             
-            model_name = model_mapping.get(self.llm_model_name, getattr(MODEL_CONFIG, 'llm_model', 'ax-4'))
+            model_name = model_mapping.get(self.llm_model_name, getattr(MODEL_CONFIG, 'llm_model', 'gemini-pro'))
             
             # LLM 모델별 일관성 설정
             model_kwargs = {
@@ -912,7 +428,8 @@ class MMSExtractor:
         model_mapping = {
             "cld": getattr(MODEL_CONFIG, 'anthropic_model', 'amazon/anthropic/claude-sonnet-4-20250514'),
             "ax": getattr(MODEL_CONFIG, 'ax_model', 'skt/ax4'),
-            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06')
+            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06'),
+            "gen": getattr(MODEL_CONFIG, 'gemini_model', 'gcp/gemini-2.5-flash')
         }
         
         for model_name in model_names:
@@ -970,33 +487,28 @@ class MMSExtractor:
             logger.info("=" * 60)
             logger.info(f"데이터 소스 모드: {self.offer_info_data_src}")
             
-            # 상품 정보 로드
-            logger.info("1️⃣ 상품 정보 로드 중...")
-            self._load_item_data()
-            logger.info(f"상품 정보 로드 후 데이터 크기: {self.item_pdf_all.shape}")
+            # 상품 정보 로드 및 준비 (별칭 규칙 적용 포함)
+            logger.info("1️⃣ 상품 정보 로드 및 준비 중...")
+            self._load_and_prepare_item_data()
+            logger.info(f"상품 정보 최종 데이터 크기: {self.item_pdf_all.shape}")
             logger.info(f"상품 정보 컬럼들: {list(self.item_pdf_all.columns)}")
             
-            # 별칭 규칙 적용
-            logger.info("2️⃣ 별칭 규칙 적용 중...")
-            self._apply_alias_rules()
-            logger.info(f"별칭 규칙 적용 후 데이터 크기: {self.item_pdf_all.shape}")
-            
             # 정지어 로드
-            logger.info("3️⃣ 정지어 로드 중...")
+            logger.info("2️⃣ 정지어 로드 중...")
             self._load_stop_words()
             logger.info(f"로드된 정지어 수: {len(self.stop_item_names)}개")
             
             # Kiwi에 상품명 등록
-            logger.info("4️⃣ Kiwi에 상품명 등록 중...")
+            logger.info("3️⃣ Kiwi에 상품명 등록 중...")
             self._register_items_to_kiwi()
             
             # 프로그램 분류 정보 로드
-            logger.info("5️⃣ 프로그램 분류 정보 로드 중...")
+            logger.info("4️⃣ 프로그램 분류 정보 로드 중...")
             self._load_program_data()
             logger.info(f"프로그램 분류 정보 로드 후 데이터 크기: {self.pgm_pdf.shape}")
             
             # 조직 정보 로드
-            logger.info("6️⃣ 조직 정보 로드 중...")
+            logger.info("5️⃣ 조직 정보 로드 중...")
             self._load_organization_data()
             logger.info(f"조직 정보 로드 후 데이터 크기: {self.org_pdf.shape}")
             
@@ -1027,136 +539,203 @@ class MMSExtractor:
             logger.error(f"오류 상세: {traceback.format_exc()}")
             raise
 
-    def _load_item_data(self):
-        """상품 정보 로드"""
+    def _load_and_prepare_item_data(self):
+        """상품 정보 로드 및 준비 (ipynb 코드 기준으로 통합)"""
         try:
-            logger.info(f"=== 상품 정보 로드 시작 (모드: {self.offer_info_data_src}) ===")
+            logger.info(f"=== 상품 정보 로드 및 준비 시작 (모드: {self.offer_info_data_src}) ===")
             
+            # ===== 1단계: 데이터 소스에서 원본 데이터 로드 =====
             if self.offer_info_data_src == "local":
-                # 로컬 CSV 파일에서 로드
-                logger.info("로컬 CSV 파일에서 상품 정보 로드 중...")
+                logger.info("📁 로컬 CSV 파일에서 로드")
                 csv_path = getattr(METADATA_CONFIG, 'offer_data_path', './data/items.csv')
-                logger.info(f"CSV 파일 경로: {csv_path}")
-                
                 item_pdf_raw = pd.read_csv(csv_path)
-
-                # 단말기인 경우, 설명을 상품명으로 사용
-                item_pdf_raw['ITEM_NM'] = item_pdf_raw.apply(lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1)
-                logger.info(f"로컬 CSV에서 로드된 원본 데이터 크기: {item_pdf_raw.shape}")
-                logger.info(f"로컬 CSV 원본 컬럼들: {list(item_pdf_raw.columns)}")
-                
-                # 스키마 호환성 처리: 대문자/소문자 컬럼명 모두 지원
-                available_columns = list(item_pdf_raw.columns)
-                
-                # 필요한 컬럼명 매핑 (대문자 우선, 소문자 폴백)
-                column_mapping = {}
-                required_cols = ['item_nm', 'item_id', 'item_desc', 'item_dmn']
-                
-                for req_col in required_cols:
-                    if req_col.upper() in available_columns:
-                        column_mapping[req_col.upper()] = req_col
-                    elif req_col in available_columns:
-                        column_mapping[req_col] = req_col
-                    else:
-                        logger.warning(f"필수 컬럼 '{req_col}' 또는 '{req_col.upper()}'를 찾을 수 없습니다.")
-                
-                # ITEM_ALS -> item_nm_alias 매핑 처리
-                if 'ITEM_ALS' in available_columns:
-                    column_mapping['ITEM_ALS'] = 'item_nm_alias'
-                elif 'item_als' in available_columns:
-                    column_mapping['item_als'] = 'item_nm_alias'
-                elif 'item_nm_alias' in available_columns:
-                    column_mapping['item_nm_alias'] = 'item_nm_alias'
-                else:
-                    logger.info("ITEM_ALS/item_nm_alias 컬럼을 찾을 수 없습니다. 나중에 생성됩니다.")
-                
-                logger.info(f"컬럼 매핑: {column_mapping}")
-                
-                # 데이터 추출 및 중복 제거
-                mapped_columns = list(column_mapping.keys())
-                if len(mapped_columns) >= 2:  # 최소 2개 컬럼은 있어야 함
-                    # 대문자 컬럼명으로 중복 제거
-                    dedup_cols = [col for col in ['ITEM_NM', 'ITEM_ID'] if col in available_columns]
-                    if not dedup_cols:  # 대문자가 없으르 소문자 사용
-                        dedup_cols = [col for col in ['item_nm', 'item_id'] if col in available_columns]
-                    
-                    self.item_pdf_all = item_pdf_raw.drop_duplicates(dedup_cols)[mapped_columns].copy()
-                    
-                    # 컬럼명을 소문자로 리네임
-                    self.item_pdf_all = self.item_pdf_all.rename(columns=column_mapping)
-                    logger.info(f"중복 제거 후 데이터 크기: {self.item_pdf_all.shape}")
-                else:
-                    logger.error(f"필수 컬럼을 충분히 찾을 수 없습니다. 사용 가능한 컬럼: {available_columns}")
-                    raise ValueError("필수 컬럼 부족")
-                
-                # 추가 컬럼들 생성 (DB 스키마와 호환성을 위해)
-                if 'item_ctg' not in self.item_pdf_all.columns:
-                    self.item_pdf_all['item_ctg'] = None
-                if 'item_emb_vec' not in self.item_pdf_all.columns:
-                    self.item_pdf_all['item_emb_vec'] = None
-                if 'ofer_cd' not in self.item_pdf_all.columns:
-                    self.item_pdf_all['ofer_cd'] = self.item_pdf_all['item_id']
-                if 'oper_dt_hms' not in self.item_pdf_all.columns:
-                    self.item_pdf_all['oper_dt_hms'] = '20250101000000'
-                
-                # item_nm_alias 컬럼이 없으면 item_nm을 기본값으로 사용
-                if 'item_nm_alias' not in self.item_pdf_all.columns:
-                    logger.info("item_nm_alias 컬럼이 없어서 item_nm을 복사하여 생성합니다.")
-                    self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
-                else:
-                    # item_nm_alias가 비어있는 경우 item_nm으로 채우기
-                    null_count = self.item_pdf_all['item_nm_alias'].isnull().sum()
-                    if null_count > 0:
-                        logger.info(f"item_nm_alias에서 {null_count}개 null 값을 item_nm으로 채웁니다.")
-                        self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm_alias'].fillna(self.item_pdf_all['item_nm'])
-                
-                # 컬럼명이 이미 소문자로 되어 있으므로 추가 변환 불필요
-                logger.info(f"로컬 모드 최종 컬럼들: {list(self.item_pdf_all.columns)}")
-                
-                # item_nm_alias 컬럼 확인
-                if 'item_nm_alias' in self.item_pdf_all.columns:
-                    alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
-                    logger.info(f"item_nm_alias 샘플: {alias_sample}")
-                else:
-                    logger.error("item_nm_alias 컬럼 생성에 실패했습니다!")
-                
-                # 로컬 데이터 샘플 확인
-                if not self.item_pdf_all.empty:
-                    sample_items = self.item_pdf_all['item_nm'].dropna().head(5).tolist()
-                    logger.info(f"로컬 모드 상품명 샘플: {sample_items}")
-                    logger.info(f"로컬 모드 데이터 샘플 (5개 행):")
-                    logger.info(f"{self.item_pdf_all.head().to_dict('records')}")
-                
             elif self.offer_info_data_src == "db":
-                # 데이터베이스에서 로드
-                logger.info("데이터베이스에서 상품 정보 로드 중...")
-                self._load_item_from_database()
+                logger.info("🗄️ 데이터베이스에서 로드")
+                with self._database_connection() as conn:
+                    sql = "SELECT * FROM TCAM_RC_OFER_MST"
+                    item_pdf_raw = pd.read_sql(sql, conn)
+            
+            logger.info(f"원본 데이터 크기: {item_pdf_raw.shape}")
+            
+            # ===== 2단계: 공통 전처리 (데이터 소스 무관) =====
+            # ITEM_DESC를 str로 변환
+            item_pdf_raw['ITEM_DESC'] = item_pdf_raw['ITEM_DESC'].astype('str')
+            
+            # 단말기인 경우 설명을 상품명으로 사용
+            item_pdf_raw['ITEM_NM'] = item_pdf_raw.apply(
+                lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1
+            )
+            
+            # 컬럼명을 소문자로 변환
+            item_pdf_all = item_pdf_raw.rename(columns={c: c.lower() for c in item_pdf_raw.columns})
+            logger.info(f"컬럼명 소문자 변환 완료")
+            
+            # 추가 컬럼 생성
+            item_pdf_all['item_ctg'] = None
+            item_pdf_all['item_emb_vec'] = None
+            item_pdf_all['ofer_cd'] = item_pdf_all['item_id']
+            item_pdf_all['oper_dt_hms'] = '20250101000000'
             
             # 제외할 도메인 코드 필터링
             excluded_domains = getattr(PROCESSING_CONFIG, 'excluded_domain_codes_for_items', [])
             if excluded_domains:
-                before_filter_size = len(self.item_pdf_all)
-                self.item_pdf_all = self.item_pdf_all.query("item_dmn not in @excluded_domains")
-                after_filter_size = len(self.item_pdf_all)
-                logger.info(f"도메인 필터링: {before_filter_size} -> {after_filter_size} (제외된 도메인: {excluded_domains})")
-                
-            logger.info(f"=== 상품 정보 로드 최종 완료: {len(self.item_pdf_all)}개 상품 ===")
-            logger.info(f"최종 데이터 스키마: {list(self.item_pdf_all.columns)}")
-            logger.info(f"최종 데이터 타입: {self.item_pdf_all.dtypes.to_dict()}")
+                before_filter = len(item_pdf_all)
+                item_pdf_all = item_pdf_all.query("item_dmn not in @excluded_domains")
+                logger.info(f"도메인 필터링: {before_filter} -> {len(item_pdf_all)}")
             
-            # 중요 컬럼 존재 여부 최종 확인
+            # ===== 3단계: 별칭 규칙 로드 및 처리 (데이터 소스 무관) =====
+            logger.info("🔗 별칭 규칙 로드 중...")
+            self.alias_pdf_raw = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
+            alias_pdf = self.alias_pdf_raw.copy()
+            alias_pdf['alias_1'] = alias_pdf['alias_1'].str.split("&&")
+            alias_pdf['alias_2'] = alias_pdf['alias_2'].str.split("&&")
+            alias_pdf = alias_pdf.explode('alias_1')
+            alias_pdf = alias_pdf.explode('alias_2')
+            
+            # build 타입 별칭 확장
+            alias_list_ext = alias_pdf.query("type=='build'")[['alias_1','category','direction','type']].to_dict('records')
+            for alias in alias_list_ext:
+                adf = item_pdf_all.query(
+                    "item_nm.str.contains(@alias['alias_1']) and item_dmn==@alias['category']"
+                )[['item_nm','item_desc','item_dmn']].rename(
+                    columns={'item_nm':'alias_2','item_desc':'description','item_dmn':'category'}
+                ).drop_duplicates()
+                adf['alias_1'] = alias['alias_1']
+                adf['direction'] = alias['direction']
+                adf['type'] = alias['type']
+                adf = adf[alias_pdf.columns]
+                alias_pdf = pd.concat([alias_pdf.query(f"alias_1!='{alias['alias_1']}'"), adf])
+            
+            alias_pdf = alias_pdf.drop_duplicates()
+            
+            # 양방향(B) 별칭 추가
+            alias_pdf = pd.concat([
+                alias_pdf, 
+                alias_pdf.query("direction=='B'").rename(
+                    columns={'alias_1':'alias_2', 'alias_2':'alias_1'}
+                )[alias_pdf.columns]
+            ])
+            
+            alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2'], alias_pdf['type']))
+            logger.info(f"별칭 규칙 수: {len(alias_rule_set)}개")
+            
+            # ===== 4단계: 별칭 규칙 연쇄 적용 (병렬 처리) =====
+            def apply_alias_rule_cascade_parallel(args_dict):
+                """별칭 규칙을 연쇄적으로 적용"""
+                item_nm = args_dict['item_nm']
+                max_depth = args_dict['max_depth']
+                
+                processed = set()
+                result_dict = {item_nm: '#' * len(item_nm)}
+                to_process = [(item_nm, 0, frozenset())]
+                
+                while to_process:
+                    current_item, depth, path_applied_rules = to_process.pop(0)
+                    
+                    if depth >= max_depth or current_item in processed:
+                        continue
+                    
+                    processed.add(current_item)
+                    
+                    for r in alias_rule_set:
+                        alias_from, alias_to, alias_type = r[0], r[1], r[2]
+                        rule_key = (alias_from, alias_to, alias_type)
+                        
+                        if rule_key in path_applied_rules:
+                            continue
+                        
+                        # 타입에 따른 매칭
+                        if alias_type == 'exact':
+                            matched = (current_item == alias_from)
+                        else:
+                            matched = (alias_from in current_item)
+                        
+                        if matched:
+                            new_item = alias_to.strip() if alias_type == 'exact' else current_item.replace(alias_from.strip(), alias_to.strip())
+                            
+                            if new_item not in result_dict:
+                                result_dict[new_item] = alias_from.strip()
+                                to_process.append((new_item, depth + 1, path_applied_rules | {rule_key}))
+                
+                item_nm_list = [{'item_nm': k, 'item_nm_alias': v} for k, v in result_dict.items()]
+                adf = pd.DataFrame(item_nm_list)
+                selected_alias = select_most_comprehensive(adf['item_nm_alias'].tolist())
+                result_aliases = list(adf.query("item_nm_alias in @selected_alias")['item_nm'].unique())
+                
+                if item_nm not in result_aliases:
+                    result_aliases.append(item_nm)
+                
+                return {'item_nm': item_nm, 'item_nm_alias': result_aliases}
+            
+            def parallel_alias_rule_cascade(texts, max_depth=5, n_jobs=None):
+                """병렬 별칭 규칙 적용"""
+                if n_jobs is None:
+                    n_jobs = min(os.cpu_count()-1, 4)
+                
+                batches = [{"item_nm": text, "max_depth": max_depth} for text in texts]
+                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                    batch_results = parallel(delayed(apply_alias_rule_cascade_parallel)(args) for args in batches)
+                
+                return pd.DataFrame(batch_results)
+            
+            logger.info("🔄 별칭 규칙 연쇄 적용 중...")
+            item_alias_pdf = parallel_alias_rule_cascade(item_pdf_all['item_nm'], max_depth=3)
+            
+            # 별칭 병합 및 explode
+            item_pdf_all = item_pdf_all.merge(item_alias_pdf, on='item_nm', how='left')
+            before_explode = len(item_pdf_all)
+            item_pdf_all = item_pdf_all.explode('item_nm_alias').drop_duplicates()
+            logger.info(f"별칭 explode: {before_explode} -> {len(item_pdf_all)}")
+            
+            # ===== 5단계: 사용자 정의 엔티티 추가 =====
+            user_defined_entity = ['AIA Vitality', '부스트 파크 건대입구', 'Boost Park 건대입구']
+            item_pdf_ext = pd.DataFrame([{
+                'item_nm': e, 'item_id': e, 'item_desc': e, 'item_dmn': 'user_defined',
+                'start_dt': 20250101, 'end_dt': 99991231, 'rank': 1, 'item_nm_alias': e
+            } for e in user_defined_entity])
+            item_pdf_all = pd.concat([item_pdf_all, item_pdf_ext])
+            
+            # ===== 6단계: item_dmn_nm 컬럼 추가 =====
+            item_dmn_map = pd.DataFrame([
+                {"item_dmn": 'P', 'item_dmn_nm': '요금제 및 관련 상품'},
+                {"item_dmn": 'E', 'item_dmn_nm': '단말기'},
+                {"item_dmn": 'S', 'item_dmn_nm': '구독 상품'},
+                {"item_dmn": 'C', 'item_dmn_nm': '쿠폰'},
+                {"item_dmn": 'X', 'item_dmn_nm': '가상 상품'}
+            ])
+            item_pdf_all = item_pdf_all.merge(item_dmn_map, on='item_dmn', how='left')
+            item_pdf_all['item_dmn_nm'] = item_pdf_all['item_dmn_nm'].fillna('기타')
+            
+            # ===== 7단계: TEST 필터링 =====
+            before_test = len(item_pdf_all)
+            item_pdf_all = item_pdf_all.query("not item_nm_alias.str.contains('TEST', case=False, na=False)")
+            logger.info(f"TEST 필터링: {before_test} -> {len(item_pdf_all)}")
+            
+            self.item_pdf_all = item_pdf_all
+            
+            # 최종 확인
+            logger.info(f"=== 상품 정보 준비 완료 ===")
+            logger.info(f"최종 데이터 크기: {self.item_pdf_all.shape}")
+            logger.info(f"최종 컬럼들: {list(self.item_pdf_all.columns)}")
+            
+            # 중요 컬럼 확인
             critical_columns = ['item_nm', 'item_id', 'item_nm_alias']
             missing_columns = [col for col in critical_columns if col not in self.item_pdf_all.columns]
             if missing_columns:
-                logger.error(f"중요 컬럼이 누락되었습니다: {missing_columns}")
+                logger.error(f"중요 컬럼 누락: {missing_columns}")
             else:
-                logger.info("모든 중요 컬럼이 존재합니다.")
+                logger.info("✅ 모든 중요 컬럼 존재")
+            
+            # 샘플 데이터 확인
+            if not self.item_pdf_all.empty:
+                logger.info(f"상품명 샘플: {self.item_pdf_all['item_nm'].dropna().head(3).tolist()}")
+                logger.info(f"별칭 샘플: {self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()}")
             
         except Exception as e:
-            logger.error(f"상품 정보 로드 실패: {e}")
+            logger.error(f"상품 정보 로드 및 준비 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
             # 빈 DataFrame으로 fallback
-            self.item_pdf_all = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
+            self.item_pdf_all = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias'])
             logger.warning("빈 DataFrame으로 fallback 설정됨")
 
     def _get_database_connection(self):
@@ -1259,95 +838,6 @@ class MMSExtractor:
             else:
                 logger.warning("데이터베이스 연결이 생성되지 않았습니다.")
 
-    def _load_item_from_database(self):
-        """데이터베이스에서 상품 정보 로드"""
-        try:
-            logger.info("=== 데이터베이스에서 상품 정보 로드 시작 ===")
-            
-            with self._database_connection() as conn:
-                sql = "SELECT * FROM TCAM_RC_OFER_MST"
-                logger.info(f"실행할 SQL: {sql}")
-                
-                self.item_pdf_all = pd.read_sql(sql, conn)
-                self.item_pdf_all['ITEM_NM'] = self.item_pdf_all.apply(lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1)
-                logger.info(f"DB에서 로드된 원본 데이터 크기: {self.item_pdf_all.shape}")
-                logger.info(f"DB에서 로드된 컬럼들: {list(self.item_pdf_all.columns)}")
-                
-                # 데이터 타입 정보 로깅
-                logger.info("=== DB 데이터 타입 정보 ===")
-                for col in self.item_pdf_all.columns:
-                    dtype = self.item_pdf_all[col].dtype
-                    null_count = self.item_pdf_all[col].isnull().sum()
-                    logger.info(f"  {col}: {dtype}, null값: {null_count}개")
-                
-                # 컬럼명 소문자 변환 및 ITEM_ALS -> item_nm_alias 매핑
-                original_columns = list(self.item_pdf_all.columns)
-                
-                # ITEM_ALS 컬럼을 item_nm_alias로 매핑
-                column_mapping = {c: c.lower() for c in self.item_pdf_all.columns}
-                if 'ITEM_ALS' in original_columns:
-                    column_mapping['ITEM_ALS'] = 'item_nm_alias'
-                    logger.info("ITEM_ALS 컬럼을 item_nm_alias로 매핑합니다.")
-                
-                self.item_pdf_all = self.item_pdf_all.rename(columns=column_mapping)
-                logger.info(f"컬럼명 변환: {dict(zip(original_columns, self.item_pdf_all.columns))}")
-                
-                # LOB 데이터가 있는 경우를 대비해 데이터 강제 로드
-                if not self.item_pdf_all.empty:
-                    logger.info("DataFrame 데이터 강제 로드 시작...")
-                    try:
-                        # DataFrame의 모든 데이터를 메모리로 강제 로드
-                        _ = self.item_pdf_all.values  # 모든 데이터 접근하여 LOB 로드 유도
-                        logger.info("DataFrame 데이터 강제 로드 완료")
-                        
-                        # 주요 컬럼들의 샘플 데이터 확인
-                        if 'item_nm' in self.item_pdf_all.columns:
-                            sample_items = self.item_pdf_all['item_nm'].dropna().head(5).tolist()
-                            logger.info(f"상품명 샘플: {sample_items}")
-                        
-                        if 'item_id' in self.item_pdf_all.columns:
-                            sample_ids = self.item_pdf_all['item_id'].dropna().head(5).tolist()
-                            logger.info(f"상품ID 샘플: {sample_ids}")
-                        
-                        # item_nm_alias 컬럼 확인 및 생성
-                        if 'item_nm_alias' not in self.item_pdf_all.columns:
-                            logger.info("item_nm_alias 컬럼이 없어서 item_nm에서 생성합니다.")
-                            if 'item_nm' in self.item_pdf_all.columns:
-                                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
-                            else:
-                                logger.error("item_nm 컬럼도 없어 item_nm_alias를 생성할 수 없습니다!")
-                                self.item_pdf_all['item_nm_alias'] = None
-                        else:
-                            # item_nm_alias가 비어있는 경우 item_nm으로 채우기
-                            null_count = self.item_pdf_all['item_nm_alias'].isnull().sum()
-                            if null_count > 0:
-                                logger.info(f"DB 모드: item_nm_alias에서 {null_count}개 null 값을 item_nm으로 채웁니다.")
-                                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm_alias'].fillna(self.item_pdf_all['item_nm'])
-                        
-                        # item_nm_alias 샘플 확인
-                        if 'item_nm_alias' in self.item_pdf_all.columns:
-                            alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
-                            logger.info(f"DB 모드 item_nm_alias 샘플: {alias_sample}")
-                            
-                        logger.info(f"최종 상품 정보 로드 완료: {len(self.item_pdf_all)}개 상품")
-                        logger.info(f"DB 모드 최종 컬럼들: {list(self.item_pdf_all.columns)}")
-                    except Exception as load_error:
-                        logger.error(f"데이터 강제 로드 중 오류: {load_error}")
-                        raise
-                else:
-                    logger.warning("로드된 상품 데이터가 비어있습니다!")
-            
-        except Exception as e:
-            logger.error(f"상품 정보 데이터베이스 로드 실패: {e}")
-            logger.error(f"오류 상세: {traceback.format_exc()}")
-            # 비상 상황에서 빈 데이터프레임 생성 (item_nm_alias 컬럼 포함)
-            logger.warning("상품 정보 DB 로드 실패로 빈 데이터프레임을 생성합니다.")
-            self.item_pdf_all = pd.DataFrame(columns=[
-                'item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_ctg', 
-                'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias'
-            ])
-            raise
-
     def _load_program_from_database(self):
         """데이터베이스에서 프로그램 분류 정보 로드"""
         try:
@@ -1402,99 +892,6 @@ class MMSExtractor:
             # 빈 데이터로 fallback
             self.pgm_pdf = pd.DataFrame(columns=['pgm_nm', 'clue_tag', 'pgm_id'])
             raise
-
-    def _apply_alias_rules(self):
-        """별칭 규칙 적용"""
-        try:
-            logger.info("=== 별칭 규칙 적용 시작 ===")
-            logger.info(f"별칭 규칙 적용 전 상품 데이터 크기: {self.item_pdf_all.shape}")
-            
-            alias_pdf = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
-            alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2']))
-            logger.info(f"로드된 별칭 규칙 수: {len(alias_rule_set)}개")
-
-            def apply_alias_rule(item_nm):
-                if pd.isna(item_nm) or not isinstance(item_nm, str):
-                    return [item_nm] if not pd.isna(item_nm) else []
-                    
-                item_nm_list = [item_nm]
-                for r in alias_rule_set:
-                    if r[0] in item_nm:
-                        item_nm_list.append(item_nm.replace(r[0], r[1]))
-                    if r[1] in item_nm:
-                        item_nm_list.append(item_nm.replace(r[1], r[0]))
-                return item_nm_list
-
-            # 별칭 규칙 적용 전 데이터 상태 확인
-            if 'item_nm' in self.item_pdf_all.columns:
-                non_null_items = self.item_pdf_all['item_nm'].dropna()
-                logger.info(f"null이 아닌 상품명 수: {len(non_null_items)}개")
-                if len(non_null_items) > 0:
-                    sample_before = non_null_items.head(3).tolist()
-                    logger.info(f"별칭 적용 전 상품명 샘플: {sample_before}")
-            
-            # 중요: 기존 item_nm_alias 데이터 보존 여부 확인
-            existing_alias_data = None
-            has_existing_alias = 'item_nm_alias' in self.item_pdf_all.columns and not self.item_pdf_all['item_nm_alias'].isnull().all()
-            
-            if has_existing_alias:
-                # 기존 ITEM_ALS 데이터가 있는 경우 보존
-                logger.info("기존 item_nm_alias 데이터를 발견했습니다. 별칭 규칙과 병합합니다.")
-                existing_alias_sample = self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()
-                logger.info(f"기존 alias 샘플: {existing_alias_sample}")
-                
-                # 기존 alias 데이터를 별도 컴럼으로 보존
-                self.item_pdf_all['original_item_alias'] = self.item_pdf_all['item_nm_alias']
-                
-                # item_nm에 별칭 규칙을 적용한 다음 기존 alias와 병합
-                generated_aliases = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
-                
-                # 기존 alias와 생성된 alias를 병합
-                def combine_aliases(row):
-                    generated = row['generated_aliases'] if isinstance(row['generated_aliases'], list) else [row['generated_aliases']]
-                    original = [row['original_item_alias']] if pd.notna(row['original_item_alias']) else []
-                    combined = list(set(generated + original))  # 중복 제거
-                    return combined
-                
-                self.item_pdf_all['generated_aliases'] = generated_aliases
-                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all.apply(combine_aliases, axis=1)
-                
-                # 임시 컴럼 삭제
-                self.item_pdf_all = self.item_pdf_all.drop(['original_item_alias', 'generated_aliases'], axis=1)
-                
-                logger.info("기존 ITEM_ALS 데이터와 별칭 규칙이 성공적으로 병합되었습니다.")
-                
-            else:
-                # 기존 alias 데이터가 없는 경우 기존 방식 사용
-                logger.info("기존 item_nm_alias 데이터가 없어 item_nm에서 별칭을 생성합니다.")
-                self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm'].apply(apply_alias_rule)
-            
-            # explode 전후 크기 비교
-            before_explode_size = len(self.item_pdf_all)
-            self.item_pdf_all = self.item_pdf_all.explode('item_nm_alias')
-            after_explode_size = len(self.item_pdf_all)
-            
-            logger.info(f"별칭 규칙 적용 후 데이터 크기: {before_explode_size} -> {after_explode_size}")
-            
-            # 별칭 적용 후 샘플 확인
-            if 'item_nm_alias' in self.item_pdf_all.columns:
-                non_null_aliases = self.item_pdf_all['item_nm_alias'].dropna()
-                if len(non_null_aliases) > 0:
-                    sample_after = non_null_aliases.head(5).tolist()
-                    logger.info(f"별칭 적용 후 샘플: {sample_after}")
-            
-            logger.info(f"별칭 규칙 적용 완료: {len(alias_rule_set)}개 규칙")
-            
-        except Exception as e:
-            logger.warning(f"별칭 규칙 적용 실패: {e}")
-            logger.warning(f"오류 상세: {traceback.format_exc()}")
-            # 예외 발생 시 기존 item_nm_alias 데이터 보존 또는 원본 이름 사용
-            if 'item_nm_alias' not in self.item_pdf_all.columns or self.item_pdf_all['item_nm_alias'].isnull().all():
-                if 'item_nm' in self.item_pdf_all.columns:
-                    self.item_pdf_all['item_nm_alias'] = self.item_pdf_all['item_nm']
-                    logger.info("예외 발생으로 원본 상품명을 별칭으로 사용합니다")
-            else:
-                logger.info("기존 item_nm_alias 데이터를 유지합니다")
 
     def _load_stop_words(self):
         """정지어 목록 로드"""
@@ -1871,7 +1268,7 @@ class MMSExtractor:
                    len(token.form) >= 2 and 
                    not token.form.lower() in self.stop_item_names
             ]
-            entities_from_kiwi = filter_specific_terms(entities_from_kiwi)
+            entities_from_kiwi = [e for e in filter_specific_terms(entities_from_kiwi) if e in unique_aliases]
             
             logger.info(f"필터링 후 Kiwi 추출 엔티티: {list(set(entities_from_kiwi))}")
 
@@ -1980,15 +1377,15 @@ class MMSExtractor:
                 cand_item_list = []
                 extra_item_pdf = pd.DataFrame()
 
-            return cand_item_list, extra_item_pdf
+            return entities_from_kiwi, cand_item_list, extra_item_pdf
             
         except Exception as e:
             logger.error(f"Kiwi 엔티티 추출 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
             # 안전한 기본값 반환 - 빈 리스트와 빈 DataFrame
-            return [], pd.DataFrame()
+            return [], [], pd.DataFrame()
 
-    def extract_entities_by_logic(self, cand_entities: List[str], threshold_for_fuzzy: float = 0.8) -> pd.DataFrame:
+    def extract_entities_by_logic(self, cand_entities: List[str], threshold_for_fuzzy: float = 0.5) -> pd.DataFrame:
         """로직 기반 엔티티 추출"""
         try:
             if not cand_entities:
@@ -2019,7 +1416,7 @@ class MMSExtractor:
             logger.error(f"로직 기반 엔티티 추출 실패: {e}")
             return pd.DataFrame()
 
-    def _calculate_combined_similarity(self, similarities_fuzzy: pd.DataFrame) -> pd.DataFrame:
+    def _calculate_combined_similarity(self, similarities_fuzzy: pd.DataFrame, weights: dict = None) -> pd.DataFrame:
         """s1, s2 정규화 방식으로 각각 계산 후 합산"""
         try:
             # s1 정규화
@@ -2031,6 +1428,7 @@ class MMSExtractor:
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=30,
                 normalizaton_value='s1',
+                # weights=weights,
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s1'})
             
@@ -2043,256 +1441,581 @@ class MMSExtractor:
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=30,
                 normalizaton_value='s2',
+                # weights=weights,
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s2'})
             
             # 결과 합치기
             if not sim_s1.empty and not sim_s2.empty:
-                combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
-                combined = combined.groupby(['item_name_in_msg', 'item_nm_alias'])[
-                    ['sim_s1', 'sim_s2']
-                ].apply(lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()).reset_index(name='sim')
+                try:
+                    # ipynb와 동일하게 merge 후 쿼리 조건 적용
+                    combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
+                    # ipynb와 동일한 필터링 조건: (sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)
+                    filtered = combined.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+                    if filtered.empty:
+                        logger.warning("결합 유사도 계산 결과가 비어있음")
+                        return pd.DataFrame()
+                    # sim_s1과 sim_s2를 각각 합산한 후 더하기 (ipynb와 동일)
+                    combined = filtered.groupby(['item_name_in_msg', 'item_nm_alias']).agg({
+                        'sim_s1': 'sum',
+                        'sim_s2': 'sum'
+                    }).reset_index()
+                    combined['sim'] = combined['sim_s1'] + combined['sim_s2']
+                except Exception as e:
+                    logger.error(f"결합 유사도 계산 실패: {e}")
+                    return pd.DataFrame()
                 return combined
             else:
+                logger.warning("결합 유사도 계산 결과가 비어있음")
                 return pd.DataFrame()
                 
         except Exception as e:
             logger.error(f"결합 유사도 계산 실패: {e}")
             return pd.DataFrame()
 
+    def _parse_entity_response(self, response: str) -> List[str]:
+        """
+        LLM 응답에서 엔티티를 견고하게 파싱
+        
+        여러 전략을 사용하여 다양한 LLM 응답 형식을 처리:
+        1. ENTITY: 라인 찾기 (라인 단위)
+        2. 정규식으로 ENTITY: 패턴 찾기
+        3. ENTITY: 키워드 없이 엔티티만 반환된 경우 (마지막 줄)
+        4. 빈 결과 반환
+        
+        Args:
+            response: LLM의 원본 응답 텍스트
+            
+        Returns:
+            추출된 엔티티 리스트
+        """
+        try:
+            # Strategy 1: ENTITY: 라인을 찾아서 정확하게 추출 (라인 단위)
+            lines = response.split('\n')
+            for line in lines:
+                line_stripped = line.strip()
+                line_upper = line_stripped.upper()
+                
+                # REASON: 라인은 건너뛰기
+                if line_upper.startswith('REASON:'):
+                    continue
+                
+                # ENTITY: 로 시작하는 라인 찾기
+                if line_upper.startswith('ENTITY:'):
+                    # ENTITY: 이후 텍스트 추출
+                    entity_part = line_stripped[line_upper.find('ENTITY:') + 7:].strip()
+                    
+                    # 빈 문자열이거나 의미 없는 값 체크
+                    if not entity_part or entity_part.lower() in ['none', 'empty', '없음', 'null']:
+                        logger.debug("ENTITY 섹션이 비어있음 (정상)")
+                        return []
+                    
+                    # 너무 긴 텍스트는 설명 문장으로 간주
+                    if len(entity_part) > 200:
+                        logger.warning(f"ENTITY 값이 너무 김 ({len(entity_part)}자) - 설명 문장으로 판단")
+                        continue  # 다음 라인 확인
+                    
+                    # 콤마로 구분하여 엔티티 추출
+                    entities = [e.strip() for e in entity_part.split(',') if e.strip()]
+                    
+                    # 개별 엔티티 검증
+                    valid_entities = []
+                    for entity in entities:
+                        if len(entity) > 100:
+                            logger.debug(f"엔티티가 너무 김 ({len(entity)}자): {entity[:50]}...")
+                            continue
+                        # 불완전한 따옴표 구조 제외
+                        if entity.startswith('"') and not entity.endswith('"'):
+                            logger.debug(f"불완전한 따옴표 구조: {entity[:50]}...")
+                            continue
+                        valid_entities.append(entity)
+                    
+                    if valid_entities:
+                        logger.debug(f"파싱된 엔티티: {valid_entities}")
+                        return valid_entities
+            
+            # Strategy 2: ENTITY: 패턴을 정규식으로 찾기
+            entity_pattern = r'ENTITY:\s*([^\n]*?)(?:\n|$)'
+            entity_matches = list(re.finditer(entity_pattern, response, re.IGNORECASE))
+            
+            if entity_matches:
+                last_match = entity_matches[-1]
+                entity_text = last_match.group(1).strip()
+                
+                if entity_text and entity_text.lower() not in ['none', 'empty', '없음', 'null']:
+                    if len(entity_text) <= 200:
+                        entities = [e.strip() for e in entity_text.split(',') 
+                                   if e.strip() and len(e.strip()) <= 100]
+                        if entities:
+                            logger.debug(f"정규식으로 파싱된 엔티티: {entities}")
+                            return entities
+            
+            # Strategy 3: ENTITY: 키워드 없이 엔티티만 반환된 경우 (마지막 줄)
+            # REASON이나 설명 없이 바로 엔티티 리스트만 반환하는 경우
+            for line in reversed(lines):
+                line_stripped = line.strip()
+                if not line_stripped:
+                    continue
+                
+                # REASON: 으로 시작하는 라인은 제외
+                if line_stripped.upper().startswith('REASON:'):
+                    continue
+                
+                # 너무 긴 라인은 설명 문장으로 간주
+                if len(line_stripped) > 200:
+                    continue
+                
+                # 콤마가 있으면 엔티티 리스트로 파싱 시도
+                if ',' in line_stripped:
+                    entities = [e.strip() for e in line_stripped.split(',') 
+                               if e.strip() and len(e.strip()) <= 100]
+                    if entities:
+                        # 엔티티처럼 보이는지 확인 (너무 긴 문장이 아닌지)
+                        if all(len(e) <= 100 for e in entities):
+                            logger.debug(f"키워드 없이 파싱된 엔티티: {entities}")
+                            return entities
+                # 단일 엔티티일 수도 있음
+                elif len(line_stripped) <= 100:
+                    logger.debug(f"단일 엔티티: [{line_stripped}]")
+                    return [line_stripped]
+            
+            # Strategy 4: 빈 리스트 반환
+            logger.debug(f"엔티티를 찾을 수 없음. 응답: {response[:100]}...")
+            return []
+            
+        except Exception as e:
+            logger.error(f"엔티티 응답 파싱 실패: {e}")
+            return []
+    
+    def _calculate_optimal_batch_size(self, msg_text: str, base_size: int = 50) -> int:
+        """
+        메시지 길이에 따라 동적으로 배치 크기 계산
+        
+        긴 메시지의 경우 더 작은 배치를 사용하여 LLM 컨텍스트 윈도우 초과 방지
+        
+        Args:
+            msg_text: 분석할 메시지 텍스트
+            base_size: 기본 배치 크기
+            
+        Returns:
+            최적화된 배치 크기
+        """
+        msg_length = len(msg_text)
+        
+        if msg_length < 500:
+            # 짧은 메시지 → 큰 배치
+            return min(base_size * 2, 100)
+        elif msg_length < 1000:
+            # 중간 메시지 → 기본 배치
+            return base_size
+        else:
+            # 긴 메시지 → 작은 배치
+            return max(base_size // 2, 25)
+    
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 5, llm_models: List = None) -> pd.DataFrame:
+    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 200, llm_models: List = None, external_cand_entities: List[str] = []) -> pd.DataFrame:
         """
         LLM 기반 엔티티 추출 (복수 모델 병렬 처리 지원)
+        
+        개선 사항:
+        - 견고한 LLM 응답 파싱 (parse_entity_response)
+        - 동적 배치 크기 계산 (메시지 길이 기반)
+        - 병렬 처리 제한 (최대 3 워커)
+        - 개선된 에러 처리
+        - 상세한 로깅
+        - Step 1에서 DAG 컨텍스트 추출 후 Step 4에서 활용
         
         Args:
             msg_text (str): 분석할 메시지 텍스트
             rank_limit (int): 결과에서 반환할 최대 순위
             llm_models (List, optional): 사용할 LLM 모델 리스트. None이면 기본 모델 사용
+            external_cand_entities (List[str]): 외부에서 제공된 후보 엔티티
             
         Returns:
             pd.DataFrame: 추출된 엔티티와 유사도 정보
         """
         try:
+            logger.info("=" * 80)
+            logger.info("🔍 [LLM 엔티티 추출] 함수 시작")
+            logger.info(f"📝 입력 파라미터:")
+            logger.info(f"   - rank_limit: {rank_limit}")
+            logger.info(f"   - external_cand_entities 제공 여부: {external_cand_entities is not None}")
+            if external_cand_entities is not None:
+                logger.info(f"   - external_cand_entities 개수: {len(external_cand_entities)}")
+            
             msg_text = validate_text_input(msg_text)
+            logger.info(f"📄 메시지 텍스트 길이: {len(msg_text):,} 문자")
+            logger.info(f"📄 메시지 텍스트 미리보기: {msg_text[:100]}..." if len(msg_text) > 100 else f"📄 메시지 텍스트: {msg_text}")
             
             # LLM 모델이 지정되지 않은 경우 기본 모델 사용
             if llm_models is None:
                 llm_models = [self.llm_model]
+                logger.info(f"🤖 LLM 모델 자동 선택: 기본 모델 사용 (1개)")
+            else:
+                logger.info(f"🤖 LLM 모델 지정됨: {len(llm_models)}개 모델 사용")
             
-            # 로직 기반 방식으로 후보 엔티티 먼저 추출
-            logger.info("=== 후보 엔티티 추출 시작 ===")
-            fuzzy_threshold = getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.4)
-            logger.info(f"퍼지 매칭 임계값: {fuzzy_threshold}")
+            for idx, model in enumerate(llm_models):
+                model_name = getattr(model, 'model_name', 'Unknown')
+                logger.info(f"   [{idx+1}] 모델: {model_name}")
             
-            # 로직 기반 엔티티 추출
-            logic_result = self.extract_entities_by_logic([msg_text], threshold_for_fuzzy=fuzzy_threshold)
-            raw_entities = logic_result['item_nm_alias'].unique()
-            logger.info(f"로직 기반 추출 원본 엔티티 수: {len(raw_entities)}개")
-            
-            # 필터링 전 엔티티 샘플 확인
-            if len(raw_entities) > 0:
-                sample_raw = raw_entities[:10] if len(raw_entities) > 10 else raw_entities
-                logger.info(f"원본 엔티티 샘플 (최대 10개): {list(sample_raw)}")
-            
-            # 필터링 적용
-            filtered_entities = [
-                e.strip() for e in raw_entities
-                if e.strip() not in self.stop_item_names and len(e.strip()) >= 2
-            ]
-            logger.info(f"필터링 후 엔티티 수: {len(filtered_entities)}개")
-            logger.info(f"제거된 엔티티 수: {len(raw_entities) - len(filtered_entities)}개")
-            
-            # 정렬
-            cand_entities_by_sim = sorted(filtered_entities)
-            logger.info(f"최종 후보 엔티티 수: {len(cand_entities_by_sim)}개")
-            
-            # 후보 엔티티가 너무 많은 경우 경고
-            if len(cand_entities_by_sim) > 100:
-                logger.warning(f"⚠️ 후보 엔티티가 매우 많습니다: {len(cand_entities_by_sim)}개")
-                logger.warning("이는 프롬프트 길이를 크게 증가시킬 수 있습니다.")
-                
-                # 상위 100개만 사용하도록 제한
-                original_count = len(cand_entities_by_sim)
-                cand_entities_by_sim = cand_entities_by_sim[:100]
-                logger.warning(f"성능을 위해 상위 {len(cand_entities_by_sim)}개만 사용합니다. (원본: {original_count}개)")
-            
-            # 최종 후보 엔티티 샘플 표시
-            if len(cand_entities_by_sim) > 0:
-                sample_final = cand_entities_by_sim[:10] if len(cand_entities_by_sim) > 10 else cand_entities_by_sim
-                logger.info(f"최종 후보 엔티티 샘플 (최대 10개): {sample_final}")
-            
-            logger.info("=== 후보 엔티티 추출 완료 ===")
-            
-            def get_entities_by_llm(args_dict):
-                """단일 LLM으로 엔티티 추출하는 내부 함수"""
-                llm_model, msg_text, cand_entities_list = args_dict['llm_model'], args_dict['msg_text'], args_dict['cand_entities_list']
+            def get_entities_and_dag_by_llm(args_dict):
+                """단일 LLM으로 엔티티와 DAG 추출하는 내부 함수"""
+                llm_model, prompt = args_dict['llm_model'], args_dict['prompt']
+                model_name = getattr(llm_model, 'model_name', 'Unknown')
                 
                 try:
-                    # 프롬프트 구성 - 기존 로직과 동일
-                    base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
-                    if base_prompt is None:
-                        base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
-                        logger.info("엔티티 추출에 prompts 디렉토리의 DETAILED_ENTITY_EXTRACTION_PROMPT 사용")
-                    else:
-                        logger.info("엔티티 추출에 settings.py의 entity_extraction_prompt 사용")
-                    
-                    # 후보 엔티티 리스트 크기 디버깅
-                    logger.info(f"🔍 프롬프트 구성 중 - LLM 모델: {llm_model}")
-                    logger.info(f"🔍 후보 엔티티 개수: {len(cand_entities_list)}개")
-                    
-                    # 후보 엔티티를 문자열로 변환
-                    cand_entities_str = '\n'.join([f"- {entity}" for entity in cand_entities_list])
-                    cand_entities_str_length = len(cand_entities_str)
-                    logger.info(f"🔍 후보 엔티티 문자열 길이: {cand_entities_str_length:,} 문자")
-                    
-                    # 베이스 프롬프트 길이 확인
-                    base_prompt_length = len(base_prompt)
-                    msg_length = len(msg_text)
-                    logger.info(f"🔍 베이스 프롬프트 길이: {base_prompt_length:,} 문자")
-                    logger.info(f"🔍 메시지 길이: {msg_length:,} 문자")
-                    
-                    # 전체 예상 프롬프트 길이 계산
-                    estimated_total_length = base_prompt_length + msg_length + cand_entities_str_length + 100  # 템플릿 여백
-                    logger.info(f"🔍 예상 전체 프롬프트 길이: {estimated_total_length:,} 문자")
-                    
-                    if estimated_total_length > 50000:  # 50K 문자 이상인 경우 경고
-                        logger.warning(f"⚠️ 프롬프트가 매우 깁니다: {estimated_total_length:,} 문자")
-                        logger.warning("LLM 토큰 제한에 도달할 수 있습니다.")
-                    
-                    # PromptTemplate 사용 (langchain 방식)
-                    from langchain.prompts import PromptTemplate
+                    # PromptTemplate 사용
                     zero_shot_prompt = PromptTemplate(
-                        input_variables=["entity_extraction_prompt", "msg", "cand_entities"],
-                        template="""
-                        {entity_extraction_prompt}
-                        
-                        ## message:                
-                        {msg}
-
-                        ## Candidate entities:
-                        {cand_entities}
-                        """
+                        input_variables=["prompt"],
+                        template="{prompt}"
                     )
                     
+                    # LLM 호출
                     chain = zero_shot_prompt | llm_model
-                    cand_entities = chain.invoke({
-                        "entity_extraction_prompt": base_prompt, 
-                        "msg": msg_text, 
-                        "cand_entities": cand_entities_list
-                    }).content
+                    response = chain.invoke({"prompt": prompt}).content
                     
-                    # LLM 응답 파싱 및 정리
-                    cand_entity_list = [e.strip() for e in cand_entities.split(',') if e.strip()]
-                    cand_entity_list = [e for e in cand_entity_list if e not in self.stop_item_names and len(e) >= 2]
+                    # 견고한 응답 파싱 사용
+                    cand_entity_list_raw = self._parse_entity_response(response)
+                    cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
                     
-                    return cand_entity_list
+                    # DAG 섹션 추출
+                    dag_text = ""
+                    dag_match = re.search(r'DAG:\s*(.*)', response, re.DOTALL | re.IGNORECASE)
+                    if dag_match:
+                        dag_text = dag_match.group(1).strip()
+                    
+                    logger.debug(f"   ✅ [{model_name}] 추출된 엔티티 수: {len(cand_entity_list)}개, DAG 추출: {'성공' if dag_text else '실패'}")
+                    return {"entities": cand_entity_list, "dag_text": dag_text}
                     
                 except Exception as e:
-                    logger.error(f"LLM 모델에서 엔티티 추출 실패: {e}")
-                    return []
+                    logger.error(f"   ❌ [{model_name}] LLM 모델에서 엔티티 추출 실패: {e}")
+                    logger.error(f"   ❌ [{model_name}] 오류 상세: {traceback.format_exc()}")
+                    return {"entities": [], "dag_text": ""}
             
-            # 프롬프트 미리보기 저장 (디버깅용) - 복수 모델이어도 프롬프트는 동일하므로 항상 저장
-            base_prompt = getattr(PROCESSING_CONFIG, 'entity_extraction_prompt', None)
-            if base_prompt is None:
-                base_prompt = DETAILED_ENTITY_EXTRACTION_PROMPT
-            preview_prompt = build_entity_extraction_prompt(msg_text, base_prompt)
+            def get_entities_only_by_llm(args_dict):
+                """get_entities_and_dag_by_llm의 래퍼 (엔티티 리스트만 반환)"""
+                result = get_entities_and_dag_by_llm(args_dict)
+                return result['entities']
             
-            # 후보 엔티티 섹션 추가 전 디버깅
-            entities_section = f"""
+            # 프롬프트 미리보기 저장 (디버깅용)
+            logger.info("📋 프롬프트 미리보기 저장 중...")
+            preview_prompt = f"""
+            {HYBRID_DAG_EXTRACTION_PROMPT}
 
-            ## Candidate entities:
-            {cand_entities_by_sim}
+            ## message:                
+            {msg_text}
             """
-            logger.info(f"🔍 프롬프트에 추가될 엔티티 섹션 길이: {len(entities_section):,} 문자")
-            
-            preview_prompt += entities_section
-            
-            # 최종 프롬프트 길이 확인
-            final_prompt_length = len(preview_prompt)
-            logger.info(f"🔍 최종 엔티티 추출 프롬프트 길이: {final_prompt_length:,} 문자")
-            
             self._store_prompt_for_preview(preview_prompt, "entity_extraction")
+            logger.info("✅ 프롬프트 미리보기 저장 완료")
+
             
-            # 병렬 처리를 위한 배치 구성 (단일/복수 모델 모두 동일하게 처리)
+            logger.info("🔄 1단계 LLM 추출 - 메시지에서 직접 엔티티 및 DAG 추출")
+            # 1단계: 각 LLM 모델로 메시지에서 엔티티 추출
             batches = []
             for llm_model in llm_models:
-                batches.append({
-                    "msg_text": msg_text, 
-                    "llm_model": llm_model, 
-                    "cand_entities_list": cand_entities_by_sim
-                })
+                prompt = f"""
+                {HYBRID_DAG_EXTRACTION_PROMPT}
+
+                ## message:                
+                {msg_text}
+                """
+                batches.append({"prompt": prompt, "llm_model": llm_model})
             
-            logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 엔티티 추출 시작")
+            logger.info(f"🔄 {len(llm_models)}개 LLM 모델로 1단계 엔티티 추출 시작")
             
             # 병렬 작업 실행
-            n_jobs = min(3, len(llm_models))  # 최대 3개 작업으로 제한
-            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                batch_results = parallel(delayed(get_entities_by_llm)(args) for args in batches)
+            n_jobs = min(len(batches), 3)  # 최대 3개 작업으로 제한
+            logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
             
-            # 모든 결과를 합치고 중복 제거
-            cand_entity_list = list(set(sum(batch_results, [])))
-            logger.info(f"✅ LLM 추출 완료: {cand_entity_list}")
+            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                # 딕셔너리 반환하는 함수 호출
+                batch_results_dicts = parallel(delayed(get_entities_and_dag_by_llm)(args) for args in batches)
+            
+            logger.info(f"✅ 모든 LLM 모델 처리 완료")
+            
+            # 결과 분리 및 수집
+            all_entities = []
+            all_dags = []
+            
+            for idx, (model, result_dict) in enumerate(zip(llm_models, batch_results_dicts)):
+                model_name = getattr(model, 'model_name', 'Unknown')
+                entities = result_dict['entities']
+                dag_text = result_dict['dag_text']
+                
+                logger.info(f"   [{idx+1}] {model_name}: {len(entities)}개 엔티티 추출")
+                all_entities.extend(entities)
+                if dag_text:
+                    all_dags.append(dag_text)
+            
+            # DAG 컨텍스트 병합
+            combined_dag_context = "\n".join(all_dags)
+            if combined_dag_context:
+                logger.info(f"   📝 캡처된 DAG 컨텍스트 길이: {len(combined_dag_context)}자")
+            
+            # 외부 엔티티 추가 및 중복 제거
+            if external_cand_entities is not None and len(external_cand_entities)>0:
+                all_entities.extend(external_cand_entities)
+            
+            logger.info(f"📊 병합 전 총 엔티티 수: {len(all_entities)}개")
+            cand_entity_list = list(set(all_entities))
+            
+            # N-gram 확장
+            cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
+            
+            logger.info(f"📊 중복 제거 및 확장 후 엔티티 수: {len(cand_entity_list)}개")
+            logger.info(f"✅ LLM 추출 완료: {cand_entity_list[:20]}..." if len(cand_entity_list) > 20 else f"✅ LLM 추출 완료: {cand_entity_list}")
 
             if not cand_entity_list:
-                logger.warning("LLM 추출에서 유효한 엔티티를 찾지 못함")
+                logger.warning("⚠️  LLM 추출에서 유효한 엔티티를 찾지 못함")
+                logger.info("=" * 80)
                 return pd.DataFrame()
+            
+            logger.info("🔍 엔티티-상품 매칭 시작...")
+            logger.info(f"   입력 엔티티 수: {len(cand_entity_list)}개")
+            cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
+            logger.info(f"   매칭 결과: {len(cand_entities_sim)}개 행")
+            
+            if cand_entities_sim.empty:
+                logger.warning("⚠️  엔티티-상품 매칭 결과가 비어있음")
+                logger.info("=" * 80)
+                return pd.DataFrame()
+            
+            logger.info(f"   매칭된 고유 item_name_in_msg 수: {cand_entities_sim['item_name_in_msg'].nunique()}개")
+            logger.info(f"   매칭된 고유 item_nm_alias 수: {cand_entities_sim['item_nm_alias'].nunique()}개")
 
             # 후보 엔티티들과 상품 DB 매칭
-            return self._match_entities_with_products(cand_entity_list, rank_limit)
+            logger.info("🔍 2단계 LLM 필터링 시작 (동적 배치 크기 + DAG 컨텍스트 사용)...")
+            logger.info(f"   입력 메시지 엔티티 수: {len(cand_entities_sim['item_name_in_msg'].unique())}개")
+            logger.info(f"   후보 상품 별칭 수: {len(cand_entities_sim['item_nm_alias'].unique())}개")
+            
+            # entities_in_message 추출
+            entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
+            
+            # 2단계: 동적 배치 크기 계산
+            optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=50)
+            logger.info(f"   📏 메시지 길이 기반 최적 배치 크기: {optimal_batch_size}개")
+            
+            # cand_entities_voca_all을 동적 배치 크기로 분할해서 병렬 처리
+            cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
+            logger.info(f"   총 후보 상품 별칭: {len(cand_entities_voca_all)}개")
+            
+            # 2단계 필터링에는 첫 번째 모델 사용
+            second_stage_llm = llm_models[0] if llm_models else self.llm_model
+            
+            batches = []
+            for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
+                cand_entities_voca = cand_entities_voca_all[i:i+optimal_batch_size]
+                prompt = f"""
+                {SIMPLE_ENTITY_EXTRACTION_PROMPT}
+                
+                ## message:                
+                {msg_text}
+
+                ## DAG Context (User Action Paths):
+                {combined_dag_context}
+
+                ## entities in message:
+                {entities_in_message}
+
+                ## candidate entities in vocabulary:
+                {cand_entities_voca}
+                """
+                batches.append({"prompt": prompt, "llm_model": second_stage_llm})
+            
+            logger.info(f"🔄 2단계 LLM 필터링: {len(batches)}개 배치로 분할 (배치당 ~{optimal_batch_size}개)")
+            
+            # 병렬 작업 실행 (최대 3개 워커로 제한하여 rate limit 방지)
+            n_jobs = min(len(batches), 3)
+            logger.info(f"⚙️  병렬 처리 설정: {n_jobs}개 워커 (threading 백엔드)")
+            
+            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                # 엔티티 리스트만 반환하는 래퍼 함수 사용
+                batch_results = parallel(delayed(get_entities_only_by_llm)(args) for args in batches)
+            
+            # 모든 배치 결과를 합치고 중복 제거
+            logger.info(f"📊 배치별 결과 요약:")
+            for idx, batch_result in enumerate(batch_results):
+                logger.info(f"   배치 {idx+1}: {len(batch_result)}개 엔티티")
+            
+            cand_entity_list = list(set(sum(batch_results, [])))
+            
+            logger.info(f"✅ 2단계 LLM 필터링 완료")
+            logger.info(f"📊 최종 선택된 엔티티 수: {len(cand_entity_list)}개")
+            logger.info(f"📊 최종 선택된 엔티티: {cand_entity_list}")
+
+            logger.info(f"🔍 최종 엔티티로 필터링 중...")
+            logger.info(f"   필터링 전 행 수: {len(cand_entities_sim)}개")
+            
+            cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list")
+            logger.info(f"   필터링 후 행 수: {len(cand_entities_sim)}개")
+            
+            logger.info("=" * 80)
+            logger.info("✅ [LLM 엔티티 추출] 함수 완료")
+            logger.info(f"📊 최종 결과: {len(cand_entities_sim)}개 행 반환")
+            logger.info("=" * 80)
+
+            return cand_entities_sim
             
         except Exception as e:
-            logger.error(f"LLM 기반 엔티티 추출 실패: {e}")
+            logger.error("=" * 80)
+            logger.error("❌ [LLM 엔티티 추출] 함수 실패")
+            logger.error(f"오류 메시지: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
+            logger.error("=" * 80)
             return pd.DataFrame()
 
     def _match_entities_with_products(self, cand_entity_list: List[str], rank_limit: int) -> pd.DataFrame:
-        """후보 엔티티들을 상품 DB와 매칭"""
+        """후보 엔티티들을 상품 DB와 매칭 (ipynb 로직과 동일)"""
         try:
-            # 퍼지 유사도 매칭
-            similarities_fuzzy = safe_execute(
-                parallel_fuzzy_similarity,
+            logger.info("   🔍 [매칭] 퍼지 유사도 매칭 시작...")
+            logger.info(f"   📝 입력 엔티티 수: {len(cand_entity_list)}개")
+            logger.info(f"   📝 상품 DB 별칭 수: {len(self.item_pdf_all['item_nm_alias'].unique()):,}개")
+            logger.info(f"   ⚙️  퍼지 유사도 임계값: 0.6")
+            logger.info(f"   ⚙️  n_jobs: 6, batch_size: 30")
+            
+            # 퍼지 유사도 매칭 (ipynb와 동일하게 직접 호출)
+            similarities_fuzzy = parallel_fuzzy_similarity(
                 cand_entity_list,
                 self.item_pdf_all['item_nm_alias'].unique(),
                 threshold=0.6,
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
-                n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
-                batch_size=30,
-                default_return=pd.DataFrame()
+                n_jobs=6,
+                batch_size=30
             )
             
+            logger.info(f"   ✅ 퍼지 유사도 매칭 완료: {len(similarities_fuzzy)}개 행")
+            
             if similarities_fuzzy.empty:
+                logger.warning("   ⚠️  퍼지 유사도 매칭 결과가 비어있음")
                 return pd.DataFrame()
             
+            logger.info(f"   📊 퍼지 매칭 고유 엔티티 수: {similarities_fuzzy['item_name_in_msg'].nunique()}개")
+            logger.info(f"   📊 퍼지 매칭 고유 별칭 수: {similarities_fuzzy['item_nm_alias'].nunique()}개")
+            
             # 정지어 필터링
+            logger.info("   🔍 [매칭] 정지어 필터링...")
+            before_stopwords = len(similarities_fuzzy)
             similarities_fuzzy = similarities_fuzzy[
                 ~similarities_fuzzy['item_nm_alias'].isin(self.stop_item_names)
             ]
+            after_stopwords = len(similarities_fuzzy)
+            logger.info(f"   📊 정지어 필터링 결과: {before_stopwords}개 → {after_stopwords}개 (제거: {before_stopwords - after_stopwords}개)")
 
-            # 시퀀스 유사도 매칭
-            cand_entities_sim = self._calculate_combined_similarity(similarities_fuzzy)
+            # 시퀀스 유사도 매칭 (ipynb와 동일하게 두 번 호출)
+            logger.info("   🔍 [매칭] 시퀀스 유사도 계산 시작 (s1, s2 각각)...")
+            logger.info(f"   ⚙️  ipynb와 동일하게 weights=None, n_jobs=6, batch_size=30 사용")
+            
+            # s1 정규화
+            sim_s1 = parallel_seq_similarity(
+                sent_item_pdf=similarities_fuzzy,
+                text_col_nm='item_name_in_msg',
+                item_col_nm='item_nm_alias',
+                n_jobs=6,
+                batch_size=30,
+                # weights=None,  # ipynb와 동일하게 weights 없음
+                normalizaton_value='s1'
+            ).rename(columns={'sim': 'sim_s1'})
+            
+            # s2 정규화
+            sim_s2 = parallel_seq_similarity(
+                sent_item_pdf=similarities_fuzzy,
+                text_col_nm='item_name_in_msg',
+                item_col_nm='item_nm_alias',
+                n_jobs=6,
+                batch_size=30,
+                # weights=None,  # ipynb와 동일하게 weights 없음
+                normalizaton_value='s2'
+            ).rename(columns={'sim': 'sim_s2'})
+            
+            logger.info(f"   ✅ 시퀀스 유사도 계산 완료: sim_s1={len(sim_s1)}개, sim_s2={len(sim_s2)}개")
+            
+            # merge로 합치기 (ipynb와 동일)
+            logger.info("   🔍 [매칭] sim_s1과 sim_s2 병합 중...")
+            cand_entities_sim = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
+            logger.info(f"   ✅ 병합 완료: {len(cand_entities_sim)}개 행")
             
             if cand_entities_sim.empty:
+                logger.warning("   ⚠️  시퀀스 유사도 계산 결과가 비어있음")
                 return pd.DataFrame()
             
-            high_sim_threshold = getattr(PROCESSING_CONFIG, 'high_similarity_threshold', 1.5)
-            cand_entities_sim = cand_entities_sim.query("sim >= @high_sim_threshold").copy()
+            logger.info(f"   📊 유사도 통계:")
+            logger.info(f"      - sim_s1 최소: {cand_entities_sim['sim_s1'].min():.4f}")
+            logger.info(f"      - sim_s1 최대: {cand_entities_sim['sim_s1'].max():.4f}")
+            logger.info(f"      - sim_s2 최소: {cand_entities_sim['sim_s2'].min():.4f}")
+            logger.info(f"      - sim_s2 최대: {cand_entities_sim['sim_s2'].max():.4f}")
+            
+            # ipynb와 동일한 필터링 조건 적용
+            logger.info(f"   🔍 [매칭] 쿼리 조건 필터링...")
+            logger.info(f"   ⚙️  조건: (sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+            before_query = len(cand_entities_sim)
+            cand_entities_sim = cand_entities_sim.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+            after_query = len(cand_entities_sim)
+            logger.info(f"   📊 쿼리 필터링 결과: {before_query}개 → {after_query}개 (제거: {before_query - after_query}개)")
+
+            # ipynb와 동일하게 groupby로 합산
+            logger.info(f"   🔍 [매칭] sim_s1과 sim_s2 합산 중...")
+            cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg', 'item_nm_alias'])[['sim_s1', 'sim_s2']].apply(
+                lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()
+            )
+            if cand_entities_sim.empty:
+                logger.warning("합산 결과가 비어있음")
+                return pd.DataFrame()
+            
+            cand_entities_sim = cand_entities_sim.reset_index(name='sim')
+            logger.info(f"   ✅ 합산 완료: {len(cand_entities_sim)}개 행")
+            
+            # ipynb와 동일하게 sim>=1.1 필터링
+            logger.info(f"   🔍 [매칭] 유사도 필터링 (임계값: sim>=1.1)...")
+            before_sim_filter = len(cand_entities_sim)
+            cand_entities_sim = cand_entities_sim.query("sim >= 1.1").copy()
+            if cand_entities_sim.empty:
+                logger.warning("필터링 결과가 비어있음")
+                return pd.DataFrame()
+            after_sim_filter = len(cand_entities_sim)
+            logger.info(f"   📊 유사도 필터링 결과: {before_sim_filter}개 → {after_sim_filter}개 (제거: {before_sim_filter - after_sim_filter}개)")
+            
+            logger.info(f"   📊 합산 sim 통계:")
+            logger.info(f"      - 최소: {cand_entities_sim['sim'].min():.4f}")
+            logger.info(f"      - 최대: {cand_entities_sim['sim'].max():.4f}")
+            logger.info(f"      - 평균: {cand_entities_sim['sim'].mean():.4f}")
+            logger.info(f"      - 중앙값: {cand_entities_sim['sim'].median():.4f}")
 
             # 순위 매기기 및 결과 제한
+            logger.info(f"   🔍 [매칭] 순위 매기기 및 결과 제한 (rank_limit: {rank_limit})...")
             cand_entities_sim["rank"] = cand_entities_sim.groupby('item_name_in_msg')['sim'].rank(
-                method='first', ascending=False
+                method='dense', ascending=False
             )
+            before_rank_limit = len(cand_entities_sim)
             cand_entities_sim = cand_entities_sim.query(f"rank <= {rank_limit}").sort_values(
                 ['item_name_in_msg', 'rank'], ascending=[True, True]
             )
+            after_rank_limit = len(cand_entities_sim)
+            logger.info(f"   📊 순위 제한 결과: {before_rank_limit}개 → {after_rank_limit}개 (제거: {before_rank_limit - after_rank_limit}개)")
+            
+            # ipynb와 동일하게 rank 제한 후 item_dmn_nm 병합
+            logger.info(f"   🔍 [매칭] item_dmn_nm 병합 중...")
+            if 'item_dmn_nm' in self.item_pdf_all.columns:
+                cand_entities_sim = cand_entities_sim.merge(
+                    self.item_pdf_all[['item_nm_alias', 'item_dmn_nm']].drop_duplicates(),
+                    on='item_nm_alias',
+                    how='left'
+                )
+                logger.info(f"   ✅ item_dmn_nm 병합 완료")
+            else:
+                logger.warning(f"   ⚠️  item_dmn_nm 컬럼이 없어 병합을 건너뜁니다.")
+                logger.warning(f"   ⚠️  item_pdf_all 컬럼 목록: {list(self.item_pdf_all.columns)}")
+            
+            logger.info(f"   ✅ [매칭] 최종 결과: {len(cand_entities_sim)}개 행, {cand_entities_sim['item_name_in_msg'].nunique()}개 고유 엔티티")
 
             return cand_entities_sim
             
         except Exception as e:
-            logger.error(f"엔티티-상품 매칭 실패: {e}")
+            logger.error(f"   ❌ [매칭] 엔티티-상품 매칭 실패: {e}")
+            logger.error(f"   ❌ [매칭] 오류 상세: {traceback.format_exc()}")
             return pd.DataFrame()
 
-    def _extract_entities(self, mms_msg: str) -> Tuple[List[str], pd.DataFrame]:
+    def _extract_entities(self, mms_msg: str) -> Tuple[List[str], List[str], pd.DataFrame]:
         """엔티티 추출 (Kiwi 또는 LLM 방식)"""
         try:
             if self.entity_extraction_mode == 'logic':
@@ -2300,14 +2023,14 @@ class MMSExtractor:
                 return self.extract_entities_from_kiwi(mms_msg)
             else:
                 # LLM 기반 추출을 위해 먼저 Kiwi로 기본 추출
-                cand_item_list, extra_item_pdf = self.extract_entities_from_kiwi(mms_msg)
-                return cand_item_list, extra_item_pdf
+                entities_from_kiwi, cand_item_list, extra_item_pdf = self.extract_entities_from_kiwi(mms_msg)
+                return entities_from_kiwi, cand_item_list, extra_item_pdf
                 
         except Exception as e:
             logger.error(f"엔티티 추출 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
             # 안전한 기본값 반환
-            return [], pd.DataFrame()
+            return [], [], pd.DataFrame()
 
     def _classify_programs(self, mms_msg: str) -> Dict[str, Any]:
         """프로그램 분류"""
@@ -2358,8 +2081,8 @@ class MMSExtractor:
             
         return prompt
 
-    def _extract_channels(self, json_objects: Dict, msg: str) -> List[Dict]:
-        """채널 정보 추출 및 매칭"""
+    def _extract_channels(self, json_objects: Dict, msg: str, offer_object: Dict) -> tuple[List[Dict], Dict]:
+        """채널 정보 추출 및 매칭 (offer_object도 함께 반환)"""
         try:
             channel_tag = []
             channel_items = json_objects.get('channel', [])
@@ -2371,15 +2094,29 @@ class MMSExtractor:
                     # 대리점명으로 조직 정보 검색
                     store_info = self._match_store_info(d['value'])
                     d['store_info'] = store_info
+                    
+                    # offer_object를 org 타입으로 변경
+                    if store_info:
+                        offer_object['type'] = 'org'
+                        org_tmp = [
+                            {
+                                'item_nm': o['org_nm'], 
+                                'item_id': o['org_cd'], 
+                                'item_name_in_msg': d['value'], 
+                                'expected_action': ['방문']
+                            } 
+                            for o in store_info
+                        ]
+                        offer_object['value'] = org_tmp
                 else:
                     d['store_info'] = []
                 channel_tag.append(d)
 
-            return channel_tag
+            return channel_tag, offer_object
             
         except Exception as e:
             logger.error(f"채널 정보 추출 실패: {e}")
-            return []
+            return [], offer_object
 
     def _match_store_info(self, store_name: str) -> List[Dict]:
         """대리점 정보 매칭"""
@@ -2433,23 +2170,18 @@ class MMSExtractor:
         """추출 결과 검증 및 정리"""
         try:
             # 필수 필드 확인
-            required_fields = ['title', 'purpose', 'product', 'channel']
+            required_fields = ['title', 'purpose', 'sales_script', 'product', 'channel', 'offer']
             for field in required_fields:
                 if field not in result:
                     logger.warning(f"필수 필드 누락: {field}")
-                    result[field] = [] if field != 'title' else "광고 메시지"
-
-            # 상품명 길이 검증
-            validated_products = []
-            for product in result.get('product', []):
-                if isinstance(product, dict):
-                    item_name = product.get('item_name_in_msg', product.get('name', ''))
-                    if len(item_name) >= 2 and item_name not in self.stop_item_names:
-                        validated_products.append(product)
+                    if field == 'title':
+                        result[field] = "광고 메시지"
+                    elif field == 'sales_script':
+                        result[field] = ""
+                    elif field == 'offer':
+                        result[field] = {"type": "product", "value": []}
                     else:
-                        logger.warning(f"의심스러운 상품명 제외: {item_name}")
-            
-            result['product'] = validated_products
+                        result[field] = []
 
             # 채널 정보 검증
             validated_channels = []
@@ -2458,6 +2190,14 @@ class MMSExtractor:
                     validated_channels.append(channel)
             
             result['channel'] = validated_channels
+            
+            # offer 정보 검증
+            if not isinstance(result.get('offer'), dict):
+                logger.warning("offer 필드가 딕셔너리가 아님, 기본값으로 설정")
+                result['offer'] = {"type": "product", "value": []}
+            elif 'type' not in result['offer'] or 'value' not in result['offer']:
+                logger.warning("offer 필드에 type 또는 value가 없음, 기본값으로 설정")
+                result['offer'] = {"type": "product", "value": result.get('product', [])}
 
             return result
             
@@ -2515,7 +2255,8 @@ class MMSExtractor:
                     total_aliases = len(self.item_pdf_all)
                     logger.info(f"DB 모드 별칭 데이터 품질: {total_aliases - null_aliases}/{total_aliases} 유효")
             
-            cand_item_list, extra_item_pdf = self._extract_entities(msg)
+            entities_from_kiwi, cand_item_list, extra_item_pdf = self._extract_entities(msg)
+            logger.info(f"추출된 Kiwi 엔티티: {entities_from_kiwi}")
             logger.info(f"추출된 후보 엔티티: {cand_item_list}")
             logger.info(f"매칭된 상품 정보: {extra_item_pdf.shape}")
             
@@ -2620,7 +2361,7 @@ class MMSExtractor:
             
             # 7단계: 엔티티 매칭 및 최종 결과 구성
             logger.info("=" * 30 + " 7단계: 최종 결과 구성 " + "=" * 30)
-            final_result = self._build_final_result(json_objects, msg, pgm_info)
+            final_result = self._build_final_result(json_objects, msg, pgm_info, entities_from_kiwi)
             
             # 8단계: 결과 검증
             logger.info("=" * 30 + " 8단계: 결과 검증 " + "=" * 30)
@@ -2666,9 +2407,15 @@ class MMSExtractor:
             logger.info("=" * 60)
             logger.info(f"제목: {final_result.get('title', 'N/A')}")
             logger.info(f"목적: {final_result.get('purpose', [])}")
+            sales_script = final_result.get('sales_script', '')
+            if sales_script:
+                logger.info(f"판매 스크립트: {sales_script[:100]}..." if len(sales_script) > 100 else f"판매 스크립트: {sales_script}")
             logger.info(f"상품 수: {len(final_result.get('product', []))}개")
             logger.info(f"채널 수: {len(final_result.get('channel', []))}개")
             logger.info(f"프로그램 수: {len(final_result.get('pgm', []))}개")
+            offer_info = final_result.get('offer', {})
+            logger.info(f"오퍼 타입: {offer_info.get('type', 'N/A')}")
+            logger.info(f"오퍼 항목 수: {len(offer_info.get('value', []))}개")
 
             actual_prompts = get_stored_prompts_from_thread()
 
@@ -2786,60 +2533,187 @@ class MMSExtractor:
             logger.error(f"스키마 응답 감지 중 오류: {e}")
             return False
 
+    def convert_df_to_json_list(self, df: pd.DataFrame) -> List[Dict]:
+        """
+        DataFrame을 특정 JSON 구조로 변환
+        새로운 스키마: item_nm 기준으로 그룹화하고 모든 item_name_in_msg를 배열로 수집
+        
+        Schema:
+        {
+            "item_nm": "상품명",
+            "item_id": ["ID1", "ID2"],
+            "item_name_in_msg": ["메시지내표현1", "메시지내표현2"]
+        }
+        """
+        result = []
+        # item_nm 기준으로 그룹화
+        grouped = df.groupby('item_nm')
+        for item_nm, group in grouped:
+            # 메인 아이템 딕셔너리 생성
+            item_name_in_msg_raw = list(group['item_name_in_msg'].unique())
+            item_dict = {
+                'item_nm': item_nm,
+                'item_id': list(group['item_id'].unique()),
+                'item_name_in_msg': select_most_comprehensive(item_name_in_msg_raw)
+            }
+            result.append(item_dict)
+        return result
+
     def _create_fallback_result(self, msg: str) -> Dict[str, Any]:
         """처리 실패 시 기본 결과 생성"""
         return {
             "title": "광고 메시지",
             "purpose": ["정보 제공"],
+            "sales_script": "",
             "product": [],
             "channel": [],
-            "pgm": []
+            "pgm": [],
+            "offer": {"type": "product", "value": []},
+            "entity_dag": []
         }
 
-    def _build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict) -> Dict[str, Any]:
+    def _build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str]) -> Dict[str, Any]:
         """최종 결과 구성"""
         try:
+            logger.info("=" * 80)
+            logger.info("🔍 [PRODUCT DEBUG] _build_final_result 시작")
+            logger.info("=" * 80)
+            
             final_result = json_objects.copy()
             
-            # 상품 정보에서 엔티티 추출
-            product_items = json_objects.get('product', [])
-            if isinstance(product_items, dict):
-                product_items = product_items.get('items', [])
+            # offer_object 초기화
+            offer_object = {}
             
-            logger.info(f"LLM 추출 엔티티: {[x.get('name', '') for x in product_items]}")
+            # 상품 정보에서 엔티티 추출
+            logger.info("📋 [STEP 1] product_items 추출")
+            product_items = json_objects.get('product', [])
+            logger.info(f"   - 원본 product 타입: {type(product_items)}")
+            logger.info(f"   - 원본 product 내용: {product_items}")
+            
+            if isinstance(product_items, dict):
+                logger.info("   - product가 dict 타입 → 'items' 키로 접근")
+                product_items = product_items.get('items', [])
+                logger.info(f"   - items 추출 후: {product_items}")
+            
+            logger.info(f"   ✅ 최종 product_items 개수: {len(product_items)}개")
+            logger.info(f"   ✅ 최종 product_items 내용: {product_items}")
+
+            primary_llm_extracted_entities = [x.get('name', '') for x in product_items]
+            logger.info(f"📋 [STEP 2] LLM 추출 엔티티: {primary_llm_extracted_entities}")
+            logger.info(f"📋 [STEP 2] Kiwi 엔티티: {entities_from_kiwi}")
+            logger.info(f"📋 [STEP 2] entity_extraction_mode: {self.entity_extraction_mode}")
 
             # 엔티티 매칭 모드에 따른 처리
             if self.entity_extraction_mode == 'logic':
+                logger.info("🔍 [STEP 3] 로직 기반 엔티티 매칭 시작")
                 # 로직 기반: 퍼지 + 시퀀스 유사도
-                cand_entities = [item.get('name', '') for item in product_items if item.get('name')]
+                cand_entities = list(set(entities_from_kiwi+[item.get('name', '') for item in product_items if item.get('name')]))
+                logger.info(f"   - cand_entities: {cand_entities}")
                 similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
+                logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
             else:
+                logger.info("🔍 [STEP 3] LLM 기반 엔티티 매칭 시작")
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
-                default_llm_models = self._initialize_multiple_llm_models(['ax', 'cld'])
-                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models)
+                default_llm_models = self._initialize_multiple_llm_models(['gen','ax'])
+                logger.info(f"   - 초기화된 LLM 모델 수: {len(default_llm_models)}개")
+                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=entities_from_kiwi)
+                logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
+            
+            if not similarities_fuzzy.empty:
+                logger.info(f"   📊 similarities_fuzzy 샘플 (처음 3개):")
+                logger.info(f"{similarities_fuzzy.head(3).to_dict('records')}")
+            else:
+                logger.warning("   ⚠️ similarities_fuzzy가 비어있습니다!")
 
-            similarities_fuzzy = similarities_fuzzy[similarities_fuzzy.apply(lambda x: (x['item_nm_alias'].replace(' ', '') in x['item_name_in_msg'].replace(' ', '') or x['item_name_in_msg'].replace(' ', '') in x['item_nm_alias'].replace(' ', '')) , axis=1)]
+            if not similarities_fuzzy.empty:
+                logger.info("🔍 [STEP 4] alias_pdf_raw와 merge 시작")
+                logger.info(f"   - alias_pdf_raw 크기: {self.alias_pdf_raw.shape}")
+                merged_df = similarities_fuzzy.merge(
+                    self.alias_pdf_raw[['alias_1','type']].drop_duplicates(), 
+                    left_on='item_name_in_msg', 
+                    right_on='alias_1', 
+                    how='left'
+                )
+                logger.info(f"   ✅ merged_df 크기: {merged_df.shape if not merged_df.empty else '비어있음'}")
+                if not merged_df.empty:
+                    logger.info(f"   📊 merged_df 샘플 (처음 3개):")
+                    logger.info(f"{merged_df.head(3).to_dict('records')}")
+
+                logger.info("🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)")
+                filtered_df = merged_df[merged_df.apply(
+                    lambda x: (
+                        replace_special_chars_with_space(x['item_nm_alias']) in replace_special_chars_with_space(x['item_name_in_msg']) or 
+                        replace_special_chars_with_space(x['item_name_in_msg']) in replace_special_chars_with_space(x['item_nm_alias'])
+                    ) if x['type'] != 'expansion' else True, 
+                    axis=1
+                )]
+                logger.info(f"   ✅ filtered_df 크기: {filtered_df.shape if not filtered_df.empty else '비어있음'}")
+                if not filtered_df.empty:
+                    logger.info(f"   📊 filtered_df 샘플 (처음 3개):")
+                    logger.info(f"{filtered_df.head(3).to_dict('records')}")
+
+                # similarities_fuzzy = filtered_df[similarities_fuzzy.columns]
 
             # 상품 정보 매핑
+            logger.info("🔍 [STEP 6] 상품 정보 매핑 시작")
+            logger.info(f"   - similarities_fuzzy.empty: {similarities_fuzzy.empty}")
+            
             if not similarities_fuzzy.empty:
+                logger.info("   ✅ similarities_fuzzy가 비어있지 않음 → _map_products_with_similarity 호출")
                 final_result['product'] = self._map_products_with_similarity(similarities_fuzzy, json_objects)
+                logger.info(f"   ✅ 최종 product 개수: {len(final_result['product'])}개")
+                logger.info(f"   ✅ 최종 product 내용: {final_result['product']}")
             else:
-                # 유사도 결과가 없으면 LLM 결과 그대로 사용
-                final_result['product'] = [
-                    {
-                        'item_name_in_msg': d.get('name', ''), 
-                        'expected_action': d.get('action', '기타'),
-                        'item_in_voca': [{'item_name_in_voca': d.get('name', ''), 'item_id': ['#']}]
-                    } 
-                    for d in product_items 
+                logger.warning("   ⚠️ similarities_fuzzy가 비어있음 → LLM 결과 그대로 사용 (else 브랜치)")
+                logger.info(f"   - product_items 개수: {len(product_items)}개")
+                logger.info(f"   - stop_item_names 개수: {len(self.stop_item_names)}개")
+                
+                # 유사도 결과가 없으면 LLM 결과 그대로 사용 (새 스키마 + expected_action 리스트)
+                filtered_product_items = [
+                    d for d in product_items 
                     if d.get('name') and d['name'] not in self.stop_item_names
                 ]
+                logger.info(f"   - 필터링 후 product_items 개수: {len(filtered_product_items)}개")
+                logger.info(f"   - 필터링 후 product_items: {filtered_product_items}")
+                
+                final_result['product'] = [
+                    {
+                        'item_nm': d.get('name', ''), 
+                        'item_id': ['#'],
+                        'item_name_in_msg': [d.get('name', '')],
+                        'expected_action': [d.get('action', '기타')]
+                    } 
+                    for d in filtered_product_items
+                ]
+                logger.info(f"   ✅ 최종 product 개수: {len(final_result['product'])}개")
+                logger.info(f"   ✅ 최종 product 내용: {final_result['product']}")
+
+            # offer_object에 product 타입으로 설정
+            offer_object['type'] = 'product'
+            offer_object['value'] = final_result['product']
+            logger.info(f"🏷️  [STEP 7] offer_object 초기화: type=product, value 개수={len(offer_object['value'])}개")
 
             # 프로그램 분류 정보 매핑
             final_result['pgm'] = self._map_program_classification(json_objects, pgm_info)
             
-            # 채널 정보 처리
-            final_result['channel'] = self._extract_channels(json_objects, msg)
+            # 채널 정보 처리 (offer_object도 함께 전달 및 반환)
+            logger.info("🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트")
+            final_result['channel'], offer_object = self._extract_channels(json_objects, msg, offer_object)
+            logger.info(f"   ✅ 최종 channel 개수: {len(final_result['channel'])}개")
+            logger.info(f"   ✅ 최종 offer_object type: {offer_object.get('type', 'N/A')}")
+            logger.info(f"   ✅ 최종 offer_object value 개수: {len(offer_object.get('value', []))}개")
+            
+            # offer 필드 추가
+            final_result['offer'] = offer_object
+            logger.info(f"✅ [STEP 9] final_result에 offer 필드 추가 완료")
+            
+            # entity_dag 초기화 (빈 배열)
+            final_result['entity_dag'] = []
+            
+            logger.info("=" * 80)
+            logger.info("✅ [PRODUCT DEBUG] _build_final_result 완료")
+            logger.info(f"   최종 final_result['product'] 개수: {len(final_result.get('product', []))}개")
+            logger.info("=" * 80)
 
             return final_result
             
@@ -2850,31 +2724,75 @@ class MMSExtractor:
     def _map_products_with_similarity(self, similarities_fuzzy: pd.DataFrame, json_objects: Dict = None) -> List[Dict]:
         """유사도를 기반으로 상품 정보 매핑"""
         try:
+            logger.info("🔍 [_map_products_with_similarity] 시작")
+            logger.info(f"   - 입력 similarities_fuzzy 크기: {similarities_fuzzy.shape}")
+            
             # 높은 유사도 아이템들 필터링
-            high_sim_threshold = getattr(PROCESSING_CONFIG, 'high_similarity_threshold', 1.5)
+            high_sim_threshold = getattr(PROCESSING_CONFIG, 'high_similarity_threshold', 1.0)
+            logger.info(f"   - high_sim_threshold: {high_sim_threshold}")
+            
             high_sim_items = similarities_fuzzy.query('sim >= @high_sim_threshold')['item_nm_alias'].unique()
+            logger.info(f"   - high_sim_items 개수: {len(high_sim_items)}개")
+            logger.info(f"   - high_sim_items: {list(high_sim_items)[:10]}")
+            
+            before_filter = len(similarities_fuzzy)
             filtered_similarities = similarities_fuzzy[
                 (similarities_fuzzy['item_nm_alias'].isin(high_sim_items)) &
                 (~similarities_fuzzy['item_nm_alias'].str.contains('test', case=False)) &
                 (~similarities_fuzzy['item_name_in_msg'].isin(self.stop_item_names))
             ]
+            after_filter = len(filtered_similarities)
+            logger.info(f"   - 필터링: {before_filter}개 → {after_filter}개 (제거: {before_filter - after_filter}개)")
             
-            # 상품 정보와 매핑하여 최종 결과 생성
-            product_tag = convert_df_to_json_list(
-                self.item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
-            )
+            if filtered_similarities.empty:
+                logger.warning("   ⚠️ filtered_similarities가 비어있음 → 빈 배열 반환")
+                return []
             
-            # Add action information from original json_objects
+            logger.info(f"   📊 filtered_similarities 샘플 (처음 3개):")
+            logger.info(f"{filtered_similarities.head(3).to_dict('records')}")
+            
+            # 상품 정보와 매핑하여 최종 결과 생성 (새 스키마 + expected_action)
+            logger.info("   🔍 item_pdf_all과 merge 시작")
+            logger.info(f"   - item_pdf_all 크기: {self.item_pdf_all.shape}")
+            merged_items = self.item_pdf_all.merge(filtered_similarities, on=['item_nm_alias'])
+            logger.info(f"   - merged_items 크기: {merged_items.shape}")
+            
+            if merged_items.empty:
+                logger.warning("   ⚠️ merged_items가 비어있음 → 빈 배열 반환")
+                return []
+            
+            logger.info(f"   📊 merged_items 샘플 (처음 3개):")
+            logger.info(f"{merged_items.head(3).to_dict('records')}")
+            
+            logger.info("   🔍 convert_df_to_json_list 호출")
+            product_tag = self.convert_df_to_json_list(merged_items)
+            logger.info(f"   ✅ product_tag 개수: {len(product_tag)}개")
+            logger.info(f"   ✅ product_tag 내용: {product_tag}")
+            
+            # Add expected_action to each product
             if json_objects:
+                logger.info("   🔍 expected_action 추가 시작")
                 action_mapping = self._create_action_mapping(json_objects)
+                logger.info(f"   - action_mapping: {action_mapping}")
+                
                 for product in product_tag:
-                    item_name = product.get('item_name_in_msg', '')
-                    product['expected_action'] = action_mapping.get(item_name, '기타')
+                    item_names_in_msg = product.get('item_name_in_msg', [])
+                    # 배열의 각 항목에 대해 모든 action 찾기 (리스트로 수집, 중복 제거)
+                    found_actions = []
+                    for item_name in item_names_in_msg:
+                        if item_name in action_mapping:
+                            found_actions.append(action_mapping[item_name])
+                    # 중복 제거 (순서 유지)
+                    product['expected_action'] = list(dict.fromkeys(found_actions)) if found_actions else ['기타']
+                
+                logger.info(f"   ✅ expected_action 추가 완료")
             
+            logger.info(f"✅ [_map_products_with_similarity] 완료 - 반환: {len(product_tag)}개")
             return product_tag
             
         except Exception as e:
-            logger.error(f"상품 정보 매핑 실패: {e}")
+            logger.error(f"❌ [_map_products_with_similarity] 실패: {e}")
+            logger.error(f"   오류 상세: {traceback.format_exc()}")
             return []
 
     def _create_action_mapping(self, json_objects: Dict) -> Dict[str, str]:
@@ -2977,12 +2895,18 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
     except Exception as e:
         logger.error(f"워커 프로세스에서 메시지 처리 실패: {e}")
         return {
-            "title": "처리 실패",
-            "purpose": ["오류"],
-            "product": [],
-            "channel": [],
-            "pgm": [],
-            "entity_dag": [],
+            "extracted_result": {
+                "title": "처리 실패",
+                "purpose": ["오류"],
+                "sales_script": "",
+                "product": [],
+                "channel": [],
+                "pgm": [],
+                "offer": {"type": "product", "value": []},
+                "entity_dag": []
+            },
+            "raw_result": {},
+            "prompts": {},
             "error": str(e)
         }
 
@@ -3023,12 +2947,18 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
             except Exception as e:
                 logger.error(f"배치 처리 중 오류 발생: {e}")
                 results.append({
-                    "title": "처리 실패",
-                    "purpose": ["오류"],
-                    "product": [],
-                    "channel": [],
-                    "pgm": [],
-                    "entity_dag": [],
+                    "extracted_result": {
+                        "title": "처리 실패",
+                        "purpose": ["오류"],
+                        "sales_script": "",
+                        "product": [],
+                        "channel": [],
+                        "pgm": [],
+                        "offer": {"type": "product", "value": []},
+                        "entity_dag": []
+                    },
+                    "raw_result": {},
+                    "prompts": {},
                     "error": str(e)
                 })
     
@@ -3221,16 +3151,16 @@ def main():
     parser.add_argument('--max-workers', type=int, help='배치 처리 시 최대 워커 수 (기본값: CPU 코어 수)')
     parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
                        help='데이터 소스 (local: CSV 파일, db: 데이터베이스)')
-    parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm', 'rag'], default='nlp',
+    parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm', 'rag'], default='llm',
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
+    parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='gen',
                        help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
-    parser.add_argument('--save-to-mongodb', action='store_true', default=False, 
+    parser.add_argument('--save-to-mongodb', action='store_true', default=True, 
                        help='추출 결과를 MongoDB에 저장 (mongodb_utils.py 필요)')
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')
@@ -3305,14 +3235,23 @@ def main():
                 print("="*50)
                 
                 for i, result in enumerate(results):
+                    extracted = result.get('extracted_result', {})
                     print(f"\n--- 메시지 {i+1} ---")
-                    print(f"제목: {result.get('title', 'N/A')}")
-                    print(f"상품: {len(result.get('product', []))}개")
+                    print(f"제목: {extracted.get('title', 'N/A')}")
+                    sales_script = extracted.get('sales_script', '')
+                    if sales_script:
+                        print(f"판매 스크립트: {sales_script[:80]}..." if len(sales_script) > 80 else f"판매 스크립트: {sales_script}")
+                    print(f"상품: {len(extracted.get('product', []))}개")
+                    print(f"채널: {len(extracted.get('channel', []))}개")
+                    print(f"프로그램: {len(extracted.get('pgm', []))}개")
+                    offer_info = extracted.get('offer', {})
+                    print(f"오퍼 타입: {offer_info.get('type', 'N/A')}")
+                    print(f"오퍼 항목: {len(offer_info.get('value', []))}개")
                     if result.get('error'):
                         print(f"오류: {result['error']}")
                 
                 # 전체 배치 통계
-                successful = len([r for r in results if not r.get('error')])
+                successful = len([r for r in results if not r.get('error') and r.get('extracted_result')])
                 failed = len(results) - successful
                 print(f"\n📊 배치 처리 통계")
                 print(f"✅ 성공: {successful}개")
@@ -3335,31 +3274,9 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-[Web발신]
-(광고)[SKT (을지로점)] 신용욱 단골고객님
-9월은 SKT 직영점에서 혜택받9, 구매하9
+  message: '(광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌프란시스코 왕복 항공권, 애플 액세서리 팩까지!_Lucky 1717 이벤트 응모하고 경품 당첨의 행운을 누려 보세요.__▶ 이벤트 자세히 보기: https://t-mms.kr/aiN/#74_ _■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
 
-【갤럭시 마지막 특가】
-① 와이드8 ▶기기값 5만원
-② A36 ▶기기값 10만원
-③ S24 FE ▶기기값 20만원
-☞ 제휴카드 사용 시 최대 72만원 추가할인
 
-【SK로 통신사 이동 시】
-① 쓰던 폰 그대로 이동시 상품권 20만원
-② 인터넷+TV 가입 최대 70만원
-
-★9/9 까지 선착순 행사 (조건에 따라 할인금액 상이)
-
-♥아이폰17 사전예약♥
-고용량 전색상 바로 개통가능☞ https://naver.me/FTM8rdfj
-
-☞ 을지로입구역 5번출구 하나은행 명동사옥 맞은편
-https://naver.me/GipIR3Lg
-☎ 0507-1399-6011
-
-(무료ARS)수신거부 및 단골해지 : 
-080-801-0011            
 """
             
             # 단일 메시지 처리 (멀티스레드)
@@ -3388,9 +3305,15 @@ https://naver.me/GipIR3Lg
             print("="*50)
             print(f"✅ 제목: {extracted_result.get('title', 'N/A')}")
             print(f"✅ 목적: {len(extracted_result.get('purpose', []))}개")
+            sales_script = extracted_result.get('sales_script', '')
+            if sales_script:
+                print(f"✅ 판매 스크립트: {sales_script[:100]}..." if len(sales_script) > 100 else f"✅ 판매 스크립트: {sales_script}")
             print(f"✅ 상품: {len(extracted_result.get('product', []))}개")
             print(f"✅ 채널: {len(extracted_result.get('channel', []))}개")
             print(f"✅ 프로그램: {len(extracted_result.get('pgm', []))}개")
+            offer_info = extracted_result.get('offer', {})
+            print(f"✅ 오퍼 타입: {offer_info.get('type', 'N/A')}")
+            print(f"✅ 오퍼 항목: {len(offer_info.get('value', []))}개")
             if extracted_result.get('error'):
                 print(f"❌ 오류: {extracted_result['error']}")
         
@@ -3402,3 +3325,4 @@ https://naver.me/GipIR3Lg
 
 if __name__ == '__main__':
     main()
+# %%
