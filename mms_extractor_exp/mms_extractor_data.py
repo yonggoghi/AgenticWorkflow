@@ -53,7 +53,7 @@ class MMSExtractorDataMixin:
     """
     
     def _set_default_config(self, model_path, data_dir, product_info_extraction_mode, 
-                          entity_extraction_mode, offer_info_data_src, llm_model, extract_entity_dag):
+                          entity_extraction_mode, offer_info_data_src, llm_model):
         """기본 설정값 적용"""
         self.data_dir = data_dir if data_dir is not None else './data/'
         self.model_path = model_path if model_path is not None else getattr(EMBEDDING_CONFIG, 'ko_sbert_model_path', 'jhgan/ko-sroberta-multitask')
@@ -62,13 +62,7 @@ class MMSExtractorDataMixin:
         self.entity_extraction_mode = entity_extraction_mode if entity_extraction_mode is not None else getattr(PROCESSING_CONFIG, 'entity_extraction_mode', 'llm')
         self.llm_model_name = llm_model
         self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 5)
-        self.extract_entity_dag = extract_entity_dag
-        
-        # DAG 추출 설정 로깅
-        if self.extract_entity_dag:
-            logger.info("🎯 DAG 추출 모드 활성화됨")
-        else:
-            logger.info("📋 표준 추출 모드 (DAG 비활성화)")
+        self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 5)
 
     @log_performance
     def _initialize_device(self):
