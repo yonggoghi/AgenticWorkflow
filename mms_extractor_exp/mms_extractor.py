@@ -248,7 +248,7 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
     """
     
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, 
-                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='ax', extract_entity_dag=False):
+                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='ax'):
         """
         MMSExtractor 초기화 메소드
         
@@ -266,7 +266,6 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
             entity_extraction_mode (str, optional): 엔티티 추출 모드 ('nlp', 'llm', 'hybrid')
             offer_info_data_src (str, optional): 데이터 소스 타입 ('local' 또는 'db')
             llm_model (str, optional): 사용할 LLM 모델. 기본값: 'ax'
-            extract_entity_dag (bool, optional): DAG 추출 여부. 기본값: False
             
         Raises:
             Exception: 초기화 과정에서 발생하는 모든 오류
@@ -284,7 +283,7 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
             # 1단계: 기본 설정 매개변수 구성
             logger.info("⚙️ 기본 설정 적용 중...")
             self._set_default_config(model_path, data_dir, product_info_extraction_mode, 
-                                   entity_extraction_mode, offer_info_data_src, llm_model, extract_entity_dag)
+                                   entity_extraction_mode, offer_info_data_src, llm_model)
             
             # 2단계: 환경변수 로드 (API 키 등)
             logger.info("🔑 환경변수 로드 중...")
@@ -590,10 +589,15 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
     def _match_store_info(self, store_name: str) -> List[Dict]:
         """대리점 정보 매칭"""
         try:
+            logger.info(f"[_match_store_info] 입력 대리점명: '{store_name}'")
+            
             # 대리점명으로 조직 정보 검색
+            preprocessed_name = preprocess_text(store_name.lower())
+            logger.info(f"[_match_store_info] 전처리된 대리점명: '{preprocessed_name}'")
+            
             org_pdf_cand = safe_execute(
                 parallel_fuzzy_similarity,
-                [preprocess_text(store_name.lower())],
+                [preprocessed_name],
                 self.org_pdf['item_nm'].unique(),
                 threshold=0.5,
                 text_col_nm='org_nm_in_msg',
@@ -602,44 +606,70 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
                 batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
                 default_return=pd.DataFrame()
             )
+            
+            logger.info(f"[_match_store_info] 초기 fuzzy 검색 결과: {org_pdf_cand.shape[0]}개 후보")
+            if not org_pdf_cand.empty:
+                logger.debug(f"[_match_store_info] 초기 후보 상위 5개:\n{org_pdf_cand.head()}")
 
             if org_pdf_cand.empty:
+                logger.info("[_match_store_info] 초기 검색 결과 없음, 빈 리스트 반환")
                 return []
 
             org_pdf_cand = org_pdf_cand.drop('org_nm_in_msg', axis=1)
             org_pdf_cand = self.org_pdf.merge(org_pdf_cand, on=['item_nm'])
+            logger.info(f"[_match_store_info] org_pdf와 병합 후: {org_pdf_cand.shape[0]}개 후보")
             
             # 대리점 코드('D'로 시작) 우선 검색
             similarity_threshold = getattr(PROCESSING_CONFIG, 'similarity_threshold_for_store', 0.2)
+            logger.info(f"[_match_store_info] 1차 유사도 임계값: {similarity_threshold}")
+            
             org_pdf_tmp = org_pdf_cand.query(
                 "sim >= @similarity_threshold", engine='python'
             ).sort_values('sim', ascending=False)
             
+            logger.info(f"[_match_store_info] 1차 필터링 후: {org_pdf_tmp.shape[0]}개 후보")
+            
             if org_pdf_tmp.empty:
                 # 대리점이 없으면 전체에서 검색
                 similarity_threshold_secondary = getattr(PROCESSING_CONFIG, 'similarity_threshold_for_store_secondary', 0.2)
+                logger.info(f"[_match_store_info] 1차 필터링 결과 없음, 2차 임계값 적용: {similarity_threshold_secondary}")
                 org_pdf_tmp = org_pdf_cand.query("sim >= @similarity_threshold_secondary").sort_values('sim', ascending=False)
+                logger.info(f"[_match_store_info] 2차 필터링 후: {org_pdf_tmp.shape[0]}개 후보")
             
             if not org_pdf_tmp.empty:
+                similarity_threshold_secondary = getattr(PROCESSING_CONFIG, 'similarity_threshold_for_store_secondary', 0.2)
+                logger.info(f"[_match_store_info] combined_sequence_similarity로 재계산 시작")
                 # 최고 순위 조직들의 정보 추출
                 org_pdf_tmp['sim'] = org_pdf_tmp.apply(
                     lambda x: combined_sequence_similarity(store_name, x['item_nm'])[0], axis=1
                 ).round(5)
+                
+                logger.info(f"[_match_store_info] 재계산된 유사도 상위 5개:\n{org_pdf_tmp[['item_nm', 'sim']].head()}")
 
                 org_pdf_tmp = org_pdf_tmp.query("sim >= @similarity_threshold_secondary")
+                logger.info(f"[_match_store_info] 2차 임계값 재적용 후: {org_pdf_tmp.shape[0]}개 후보")
 
                 if org_pdf_tmp.shape[0]>0:
                     org_pdf_tmp['rank'] = org_pdf_tmp['sim'].rank(method='dense', ascending=False)
+                    logger.info(f"[_match_store_info] 랭킹 부여 완료, 랭크 1 개수: {(org_pdf_tmp['rank'] == 1).sum()}개")
+                    
                     org_pdf_tmp = org_pdf_tmp.rename(columns={'item_id':'org_cd','item_nm':'org_nm'})
                     org_info = org_pdf_tmp.query("rank == 1").groupby('org_nm')['org_cd'].apply(list).reset_index(name='org_cd').to_dict('records')
+                    
+                    logger.info(f"[_match_store_info] 최종 매칭 결과: {len(org_info)}개 조직")
+                    for info in org_info:
+                        logger.info(f"[_match_store_info] - {info['org_nm']}: {info['org_cd']}")
+                    
                     return org_info
                 else:
+                    logger.info("[_match_store_info] 2차 임계값 재적용 후 결과 없음, 빈 리스트 반환")
                     return []
             else:
+                logger.info("[_match_store_info] 필터링 후 결과 없음, 빈 리스트 반환")
                 return []
                 
         except Exception as e:
-            logger.error(f"대리점 정보 매칭 실패: {e}")
+            logger.error(f"[_match_store_info] 대리점 정보 매칭 실패: {e}")
             return []
 
     def _validate_extraction_result(self, result: Dict) -> Dict:
@@ -843,40 +873,6 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
             logger.info("=" * 30 + " 8단계: 결과 검증 " + "=" * 30)
             final_result = self._validate_extraction_result(final_result)
 
-            # # DAG 추출 프로세스 (선택적)
-            # # 메시지에서 엔티티 간의 관계를 방향성 있는 그래프로 추출
-            # # 예: (고객:가입) -[하면]-> (혜택:수령) -[통해]-> (만족도:향상)
-            # dag_section = ""
-            # if self.extract_entity_dag:
-            #     logger.info("=" * 30 + " DAG 추출 시작 " + "=" * 30)
-            #     try:
-            #         dag_start_time = time.time()
-            #         # DAG 추출 함수 호출 (entity_dag_extractor.py)
-            #         extract_dag_result = extract_dag(DAGParser(), msg, self.llm_model)
-            #         dag_raw = extract_dag_result['dag_raw']      # LLM 원본 응답
-            #         dag_section = extract_dag_result['dag_section']  # 파싱된 DAG 텍스트
-            #         dag = extract_dag_result['dag']             # NetworkX 그래프 객체
-                    
-            #         # 시각적 다이어그램 생성 (utils.py)
-            #         dag_filename = f'dag_{sha256_hash(msg)}'
-            #         create_dag_diagram(dag, filename=dag_filename)
-            #         dag_processing_time = time.time() - dag_start_time
-                    
-            #         logger.info(f"✅ DAG 추출 완료: {dag_filename}")
-            #         logger.info(f"🕒 DAG 처리 시간: {dag_processing_time:.3f}초")
-            #         logger.info(f"📏 DAG 섹션 길이: {len(dag_section)}자")
-            #         if dag_section:
-            #             logger.info(f"📄 DAG 내용 미리보기: {dag_section[:200]}...")
-            #         else:
-            #             logger.warning("⚠️ DAG 섹션이 비어있습니다")
-                        
-            #     except Exception as e:
-            #         logger.error(f"❌ DAG 추출 중 오류 발생: {e}")
-            #         dag_section = ""
-
-            # # 최종 결과에 DAG 정보 추가 (비어있을 수도 있음)
-            # final_result['entity_dag'] = sorted([d for d in dag_section.split('\n') if d!=''])
-            
             # 최종 결과 요약 로깅
             logger.info("=" * 60)
             logger.info("✅ 메시지 처리 완료 - 최종 결과 요약")
@@ -1035,6 +1031,87 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
             result.append(item_dict)
         return result
 
+    def _resolve_product_info(self, json_objects: Dict, msg: str, entities_from_kiwi: List[str]) -> List[Dict]:
+        """
+        상품 정보 해결 (엔티티 매칭, 별칭 적용, 필터링)
+        
+        Args:
+            json_objects: LLM 추출 결과
+            msg: 원본 메시지
+            entities_from_kiwi: Kiwi로 추출한 엔티티 리스트
+            
+        Returns:
+            List[Dict]: 최종 상품 정보 리스트
+        """
+        try:
+            # 상품 정보에서 엔티티 추출
+            logger.info("📋 [STEP 1] product_items 추출")
+            product_items = json_objects.get('product', [])
+            
+            if isinstance(product_items, dict):
+                product_items = product_items.get('items', [])
+            
+            logger.info(f"   ✅ 최종 product_items 개수: {len(product_items)}개")
+
+            # 엔티티 매칭 모드에 따른 처리
+            if self.entity_extraction_mode == 'logic':
+                logger.info("🔍 [STEP 3] 로직 기반 엔티티 매칭 시작")
+                cand_entities = list(set(entities_from_kiwi+[item.get('name', '') for item in product_items if item.get('name')]))
+                similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
+            else:
+                logger.info("🔍 [STEP 3] LLM 기반 엔티티 매칭 시작")
+                default_llm_models = self._initialize_multiple_llm_models(['gen','ax'])
+                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=entities_from_kiwi)
+            
+            if not similarities_fuzzy.empty:
+                logger.info(" [STEP 4] alias_pdf_raw와 merge 시작")
+                merged_df = similarities_fuzzy.merge(
+                    self.alias_pdf_raw[['alias_1','type']].drop_duplicates(), 
+                    left_on='item_name_in_msg', 
+                    right_on='alias_1', 
+                    how='left'
+                )
+
+                logger.info("🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)")
+                filtered_df = merged_df[merged_df.apply(
+                    lambda x: (
+                        replace_special_chars_with_space(x['item_nm_alias']) in replace_special_chars_with_space(x['item_name_in_msg']) or 
+                        replace_special_chars_with_space(x['item_name_in_msg']) in replace_special_chars_with_space(x['item_nm_alias'])
+                    ) if x['type'] != 'expansion' else True, 
+                    axis=1
+                )]
+                # similarities_fuzzy = filtered_df[similarities_fuzzy.columns]
+
+            # 상품 정보 매핑
+            logger.info("🔍 [STEP 6] 상품 정보 매핑 시작")
+            
+            if not similarities_fuzzy.empty:
+                logger.info("   ✅ similarities_fuzzy가 비어있지 않음 → _map_products_with_similarity 호출")
+                return self._map_products_with_similarity(similarities_fuzzy, json_objects)
+            else:
+                logger.warning("   ⚠️ similarities_fuzzy가 비어있음 → LLM 결과 그대로 사용")
+                
+                # 유사도 결과가 없으면 LLM 결과 그대로 사용
+                filtered_product_items = [
+                    d for d in product_items 
+                    if d.get('name') and d['name'] not in self.stop_item_names
+                ]
+                
+                return [
+                    {
+                        'item_nm': d.get('name', ''), 
+                        'item_id': ['#'],
+                        'item_name_in_msg': [d.get('name', '')],
+                        'expected_action': [d.get('action', '기타')]
+                    } 
+                    for d in filtered_product_items
+                ]
+                
+        except Exception as e:
+            logger.error(f"상품 정보 해결 실패: {e}")
+            logger.error(traceback.format_exc())
+            return []
+
     def _create_fallback_result(self, msg: str) -> Dict[str, Any]:
         """처리 실패 시 기본 결과 생성"""
         return {
@@ -1060,109 +1137,8 @@ class MMSExtractor(MMSExtractorDataMixin, MMSExtractorEntityMixin):
             # offer_object 초기화
             offer_object = {}
             
-            # 상품 정보에서 엔티티 추출
-            logger.info("📋 [STEP 1] product_items 추출")
-            product_items = json_objects.get('product', [])
-            logger.info(f"   - 원본 product 타입: {type(product_items)}")
-            logger.info(f"   - 원본 product 내용: {product_items}")
-            
-            if isinstance(product_items, dict):
-                logger.info("   - product가 dict 타입 → 'items' 키로 접근")
-                product_items = product_items.get('items', [])
-                logger.info(f"   - items 추출 후: {product_items}")
-            
-            logger.info(f"   ✅ 최종 product_items 개수: {len(product_items)}개")
-            logger.info(f"   ✅ 최종 product_items 내용: {product_items}")
-
-            primary_llm_extracted_entities = [x.get('name', '') for x in product_items]
-            logger.info(f"📋 [STEP 2] LLM 추출 엔티티: {primary_llm_extracted_entities}")
-            logger.info(f"📋 [STEP 2] Kiwi 엔티티: {entities_from_kiwi}")
-            logger.info(f"📋 [STEP 2] entity_extraction_mode: {self.entity_extraction_mode}")
-
-            # 엔티티 매칭 모드에 따른 처리
-            if self.entity_extraction_mode == 'logic':
-                logger.info("🔍 [STEP 3] 로직 기반 엔티티 매칭 시작")
-                # 로직 기반: 퍼지 + 시퀀스 유사도
-                cand_entities = list(set(entities_from_kiwi+[item.get('name', '') for item in product_items if item.get('name')]))
-                logger.info(f"   - cand_entities: {cand_entities}")
-                similarities_fuzzy = self.extract_entities_by_logic(cand_entities)
-                logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
-            else:
-                logger.info("🔍 [STEP 3] LLM 기반 엔티티 매칭 시작")
-                # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
-                default_llm_models = self._initialize_multiple_llm_models(['gen','ax'])
-                logger.info(f"   - 초기화된 LLM 모델 수: {len(default_llm_models)}개")
-                similarities_fuzzy = self.extract_entities_by_llm(msg, llm_models=default_llm_models, external_cand_entities=entities_from_kiwi)
-                logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
-            
-            if not similarities_fuzzy.empty:
-                logger.info(f"   📊 similarities_fuzzy 샘플 (처음 3개):")
-                logger.info(f"{similarities_fuzzy.head(3).to_dict('records')}")
-            else:
-                logger.warning("   ⚠️ similarities_fuzzy가 비어있습니다!")
-
-            if not similarities_fuzzy.empty:
-                logger.info("🔍 [STEP 4] alias_pdf_raw와 merge 시작")
-                logger.info(f"   - alias_pdf_raw 크기: {self.alias_pdf_raw.shape}")
-                merged_df = similarities_fuzzy.merge(
-                    self.alias_pdf_raw[['alias_1','type']].drop_duplicates(), 
-                    left_on='item_name_in_msg', 
-                    right_on='alias_1', 
-                    how='left'
-                )
-                logger.info(f"   ✅ merged_df 크기: {merged_df.shape if not merged_df.empty else '비어있음'}")
-                if not merged_df.empty:
-                    logger.info(f"   📊 merged_df 샘플 (처음 3개):")
-                    logger.info(f"{merged_df.head(3).to_dict('records')}")
-
-                logger.info("🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)")
-                filtered_df = merged_df[merged_df.apply(
-                    lambda x: (
-                        replace_special_chars_with_space(x['item_nm_alias']) in replace_special_chars_with_space(x['item_name_in_msg']) or 
-                        replace_special_chars_with_space(x['item_name_in_msg']) in replace_special_chars_with_space(x['item_nm_alias'])
-                    ) if x['type'] != 'expansion' else True, 
-                    axis=1
-                )]
-                logger.info(f"   ✅ filtered_df 크기: {filtered_df.shape if not filtered_df.empty else '비어있음'}")
-                if not filtered_df.empty:
-                    logger.info(f"   📊 filtered_df 샘플 (처음 3개):")
-                    logger.info(f"{filtered_df.head(3).to_dict('records')}")
-
-                # similarities_fuzzy = filtered_df[similarities_fuzzy.columns]
-
-            # 상품 정보 매핑
-            logger.info("🔍 [STEP 6] 상품 정보 매핑 시작")
-            logger.info(f"   - similarities_fuzzy.empty: {similarities_fuzzy.empty}")
-            
-            if not similarities_fuzzy.empty:
-                logger.info("   ✅ similarities_fuzzy가 비어있지 않음 → _map_products_with_similarity 호출")
-                final_result['product'] = self._map_products_with_similarity(similarities_fuzzy, json_objects)
-                logger.info(f"   ✅ 최종 product 개수: {len(final_result['product'])}개")
-                logger.info(f"   ✅ 최종 product 내용: {final_result['product']}")
-            else:
-                logger.warning("   ⚠️ similarities_fuzzy가 비어있음 → LLM 결과 그대로 사용 (else 브랜치)")
-                logger.info(f"   - product_items 개수: {len(product_items)}개")
-                logger.info(f"   - stop_item_names 개수: {len(self.stop_item_names)}개")
-                
-                # 유사도 결과가 없으면 LLM 결과 그대로 사용 (새 스키마 + expected_action 리스트)
-                filtered_product_items = [
-                    d for d in product_items 
-                    if d.get('name') and d['name'] not in self.stop_item_names
-                ]
-                logger.info(f"   - 필터링 후 product_items 개수: {len(filtered_product_items)}개")
-                logger.info(f"   - 필터링 후 product_items: {filtered_product_items}")
-                
-                final_result['product'] = [
-                    {
-                        'item_nm': d.get('name', ''), 
-                        'item_id': ['#'],
-                        'item_name_in_msg': [d.get('name', '')],
-                        'expected_action': [d.get('action', '기타')]
-                    } 
-                    for d in filtered_product_items
-                ]
-                logger.info(f"   ✅ 최종 product 개수: {len(final_result['product'])}개")
-                logger.info(f"   ✅ 최종 product 내용: {final_result['product']}")
+            # 상품 정보 해결 (리팩토링된 메소드 호출)
+            final_result['product'] = self._resolve_product_info(json_objects, msg, entities_from_kiwi)
 
             # offer_object에 product 타입으로 설정
             offer_object['type'] = 'product'
@@ -1563,8 +1539,8 @@ def main():
             offer_info_data_src=args.offer_data_source,
             product_info_extraction_mode=args.product_info_extraction_mode,
             entity_extraction_mode=args.entity_matching_mode,
-            llm_model=args.llm_model,
-            extract_entity_dag=args.extract_entity_dag
+
+            llm_model=args.llm_model
         )
         
         # 배치 처리 또는 단일 메시지 처리
@@ -1642,7 +1618,8 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '[SKT] 매장 방문 및 신분증 진위확인 요청 안내__고객님, 안녕하세요._2025년 9월 27일(토)~9월 30일(화) 발생한 국가정보자원관리원 화재로 인해 일부 회선이 신분증 진위확인* 절차 없이 개통되었습니다.__사후 검증 과정에서, 고객님께서 제출하신 신분증 정보가 실제 정보와 일치하지 않는 것으로 확인되었습니다._신분증 정보 불일치 회선은 대포폰 등 통신 관련 범죄에 노출될 가능성이 있습니다.__고객님의 안전한 통신 생활을 위해 신분증 진위확인을 해 주시기 바랍니다._번거롭겠지만, 가까운 매장에 방문하시면 빠르게 처리해 드리겠습니다.__■ 신분증 진위확인 방법_① 신분증을 가지고 T 월드 매장 방문_② 매장 직원 안내에 따라 신분증 진위확인__* 신분증 진위확인: 휴대폰 개통 시 고객님께서 사용하신 신분증의 정보를 발급기관의 정보와 비교하여 유효한 신분증인지 실시간으로 확인하는 서비스__■ 유의 사항_- 신분증 진위확인을 하지 않거나 이용자 본인 신분 확인이 불가한 경우, 이용약관 제9조(회사의 의무)와 제17조(이용정지)에 따라 2025년 10월 27일(월) 이후부터 휴대폰 발신이 정지될 예정입니다. 이후 이용약관 제19조(해지)에 따라 추후 통신서비스 이용계약이 해지될 수 있습니다.__■ 문의: SKT 고객센터(114)__언제나 고객님의 안전을 최우선으로 생각하겠습니다._감사합니다.',
+SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세요. _아이폰 신제품 출시 기념 이벤트를 안내드립니다. _매장에 방문해 편하게 상담받고 다양한 혜택도 누려 보세요.__■ 아이폰 신제품 개통 혜택_- T 즉시보상 최대 70% 혜택_- 제휴 카드 추가 할인__■ 갤럭시 Z 플립7/Z 폴드7, 효도폰, 키즈폰_- 최대 할인 제공__■ 매장 방문 혜택_① 액정 보호 필름 무료 교체_② 키친타월 증정__▶ [단골이라서 더 드림] 혜택 자세히 보기: https://t-mms.kr/aiC/#74_* 대리점 공식 홈페이지로 연결__■ 티원대리점 화순점_- 주소: 전라남도 화순군 화순읍 광덕로 187_- 연락처: 061-927-7722__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
+
 """
             
             # 단일 메시지 처리 (멀티스레드)
