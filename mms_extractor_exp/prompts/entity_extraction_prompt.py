@@ -72,6 +72,14 @@ Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
     * **Root:** The entry point identified above (Original Text).
     * **Core:** The product/service being used or bought (Original Text).
     * **Value:** The final reward or benefit (Original Text).
+* **Edges:**
+    * **Definition:** A verb describing the relationship between two nodes.
+    * **Purpose:** Represents the action or transition from one node to the next.
+    * **Examples:**
+        * `가입` (subscribe), `구매` (purchase), `사용` (use)
+        * `획득` (obtain), `제공` (provide), `지급` (grant)
+        * `방문` (visit), `다운로드` (download), `신청` (apply)
+    * **Guidelines:** Use concise action verbs that clearly describe how the user moves from one step to the next in the flow.
 * **Logic:** Represent the shortest path from the Root action to the Final Benefit.
 
 ## Strict Exclusions

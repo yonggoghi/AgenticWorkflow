@@ -18,7 +18,7 @@ import traceback
 import re
 from typing import List, Tuple, Dict
 import pandas as pd
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from joblib import Parallel, delayed
 
 # 유틸리티 함수 임포트
@@ -413,7 +413,7 @@ class MMSExtractorEntityMixin:
             return max(base_size // 2, 25)
     
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 200, llm_models: List = None, external_cand_entities: List[str] = []) -> pd.DataFrame:
+    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None, external_cand_entities: List[str] = []) -> pd.DataFrame:
         """
         LLM 기반 엔티티 추출 (복수 모델 병렬 처리 지원)
         """
@@ -603,7 +603,7 @@ class MMSExtractorEntityMixin:
             entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
             
             # 2단계: 동적 배치 크기 계산
-            optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=50)
+            optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=10)
             logger.info(f"   📏 메시지 길이 기반 최적 배치 크기: {optimal_batch_size}개")
             
             # cand_entities_voca_all을 동적 배치 크기로 분할해서 병렬 처리
@@ -756,7 +756,7 @@ class MMSExtractorEntityMixin:
             cand_entities_sim = cand_entities_sim.reset_index(name='sim')
             logger.info(f"   ✅ 합산 완료: {len(cand_entities_sim)}개 행")
             
-            # sim>=1.1 필터링
+            # sim>=1.0 필터링
             before_sim_filter = len(cand_entities_sim)
             cand_entities_sim = cand_entities_sim.query("sim >= 1.1").copy()
             if cand_entities_sim.empty:
