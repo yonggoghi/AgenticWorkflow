@@ -211,7 +211,7 @@ class ProcessingConfig:
     similarity_threshold_for_store: float = 0.6  # Minimum similarity score for entity matching (0.0-1.0)
     similarity_threshold_for_store_secondary: float = 0.3  # Minimum similarity score for entity matching (0.0-1.0)
     fuzzy_threshold: float = 0.4  # Minimum fuzzy matching score for initial filtering (0.0-1.0)
-    high_similarity_threshold: float = 1.1  # Minimum high similarity score for final entity filtering (0.0-2.0)
+    high_similarity_threshold: float = 1.05  # Minimum high similarity score for final entity filtering (0.0-2.0)
     
     # Processing parameters
     num_candidate_programs: int = 5  # Number of candidate programs to consider for classification
