@@ -217,14 +217,14 @@ def initialize_global_extractor(offer_info_data_src='local'):
     if global_extractor is None:
         logger.info(f"데이터 소스로 전역 추출기 초기화 중: {offer_info_data_src}")
         
-        # 기본 설정으로 추출기 초기화 (요청 시 동적으로 변경 가능)
+        # 기본 설정으로 추출기 초기화 (CLI와 동일한 기본값 사용)
         global_extractor = MMSExtractor(
             model_path='./models/ko-sbert-nli',      # 임베딩 모델 경로
             data_dir='./data',                       # 데이터 디렉토리
             offer_info_data_src=offer_info_data_src, # 상품 정보 소스
-            llm_model='ax',                       # 기본 LLM (요청별 변경 가능)
-            product_info_extraction_mode='nlp',     # 기본 상품 추출 모드
-            entity_extraction_mode='logic',          # 기본 엔티티 매칭 모드
+            llm_model='gemini',                      # 기본 LLM: Gemini (CLI와 동일)
+            product_info_extraction_mode='llm',      # 기본 상품 추출 모드: LLM (CLI와 동일)
+            entity_extraction_mode='llm',            # 기본 엔티티 매칭 모드: LLM (CLI와 동일)
             extract_entity_dag=False
         )
         
@@ -280,7 +280,7 @@ def get_configured_quick_extractor(use_llm=False, llm_model='ax'):
     
     return global_quick_extractor
 
-def get_configured_extractor(llm_model='ax', product_info_extraction_mode='nlp', entity_matching_mode='logic', extract_entity_dag=False):
+def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='llm', entity_matching_mode='llm', extract_entity_dag=False):
     """
     런타임 설정으로 전역 추출기 구성
     
