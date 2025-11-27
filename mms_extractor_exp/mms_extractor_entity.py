@@ -290,7 +290,7 @@ class MMSExtractorEntityMixin:
             if not sim_s1.empty and not sim_s2.empty:
                 try:
                     combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
-                    filtered = combined.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+                    filtered = combined.query("(sim_s1>=@PROCESSING_CONFIG.combined_similarity_threshold and sim_s2>=@PROCESSING_CONFIG.combined_similarity_threshold)")
                     if filtered.empty:
                         logger.warning("결합 유사도 계산 결과가 비어있음")
                         return pd.DataFrame()
@@ -741,7 +741,7 @@ class MMSExtractorEntityMixin:
             
             # 필터링 조건 적용
             before_query = len(cand_entities_sim)
-            cand_entities_sim = cand_entities_sim.query("(sim_s1>=0.4 and sim_s2>=0.4) or (sim_s1>=1.9 and sim_s2>=0.3) or (sim_s1>=0.3 and sim_s2>=0.9)")
+            cand_entities_sim = cand_entities_sim.query("(sim_s1>=@PROCESSING_CONFIG.combined_similarity_threshold and sim_s2>=@PROCESSING_CONFIG.combined_similarity_threshold)")
             after_query = len(cand_entities_sim)
             logger.info(f"   📊 쿼리 필터링 결과: {before_query}개 → {after_query}개")
 
@@ -758,7 +758,7 @@ class MMSExtractorEntityMixin:
             
             # sim>=1.0 필터링
             before_sim_filter = len(cand_entities_sim)
-            cand_entities_sim = cand_entities_sim.query("sim >= 1.1").copy()
+            cand_entities_sim = cand_entities_sim.query("sim >= @PROCESSING_CONFIG.high_similarity_threshold").copy()
             if cand_entities_sim.empty:
                 logger.warning("필터링 결과가 비어있음")
                 return pd.DataFrame()
