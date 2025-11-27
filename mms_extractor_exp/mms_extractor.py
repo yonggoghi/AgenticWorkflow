@@ -1147,23 +1147,6 @@ class MMSExtractor(MMSExtractorEntityMixin):
         """프롬프트를 미리보기용으로 저장 (PromptManager 사용)"""
         PromptManager.store_prompt_for_preview(prompt, prompt_type)
 
-        
-        # 프롬프트가 매우 긴 경우 경고
-        if prompt_length > 20000:
-            logger.warning(f"⚠️ 매우 긴 프롬프트가 저장됨: {prompt_length:,} 문자")
-            logger.warning("이는 UI 표시 성능에 영향을 줄 수 있습니다.")
-            
-            # 프롬프트 내용 분석 (엔티티 추출 프롬프트인 경우)
-            if 'entity' in prompt_key.lower():
-                entity_section_start = prompt.find("## Candidate entities:")
-                if entity_section_start > 0:
-                    entity_section = prompt[entity_section_start:]
-                    entity_lines = entity_section.split('\n')
-                    entity_count = len([line for line in entity_lines if line.strip().startswith('-')])
-                    logger.warning(f"🔍 후보 엔티티 개수: {entity_count}개")
-        
-        logger.info(f"📝 현재 저장된 프롬프트 수: {len(current_thread.stored_prompts)}")
-        logger.info(f"📝 저장된 프롬프트 키들: {list(current_thread.stored_prompts.keys())}")
 
     def _safe_llm_invoke(self, prompt: str, max_retries: int = 3) -> str:
         """안전한 LLM 호출 메소드"""
