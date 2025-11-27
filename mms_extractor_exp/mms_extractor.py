@@ -107,6 +107,9 @@ from prompts import (
 
 from mms_extractor_entity import MMSExtractorEntityMixin
 
+# Helpers 모듈 임포트
+from helpers import PromptManager
+
 # Workflow 모듈 임포트
 from workflow_core import WorkflowEngine, WorkflowState
 from mms_workflow_steps import (
@@ -120,6 +123,7 @@ from mms_workflow_steps import (
     ValidationStep,
     DAGExtractionStep
 )
+
 
 
 # 유틸리티 함수 모듈 임포트
@@ -1140,44 +1144,9 @@ class MMSExtractor(MMSExtractorEntityMixin):
             raise
 
     def _store_prompt_for_preview(self, prompt: str, prompt_type: str):
-        """프롬프트를 미리보기용으로 저장"""
-        import threading
-        current_thread = threading.current_thread()
-        
-        if not hasattr(current_thread, 'stored_prompts'):
-            current_thread.stored_prompts = {}
-        
-        # 프롬프트 타입별 제목과 설명 매핑
-        prompt_info = {
-            "main_extraction": {
-                'title': '메인 정보 추출 프롬프트',
-                'description': '광고 메시지에서 제목, 목적, 상품, 채널, 프로그램 정보를 추출하는 프롬프트'
-            },
-            "entity_extraction": {
-                'title': '엔티티 추출 프롬프트', 
-                'description': '메시지에서 상품/서비스 엔티티를 추출하는 프롬프트'
-            }
-        }
-        
-        info = prompt_info.get(prompt_type, {
-            'title': f'{prompt_type} 프롬프트',
-            'description': f'{prompt_type} 처리를 위한 프롬프트'
-        })
-        
-        prompt_key = f'{prompt_type}_prompt'
-        prompt_data = {
-            'title': info['title'],
-            'description': info['description'],
-            'content': prompt,
-            'length': len(prompt)
-        }
-        
-        current_thread.stored_prompts[prompt_key] = prompt_data
-        
-        # 디버깅 로그 추가
-        prompt_length = len(prompt)
-        logger.info(f"📝 프롬프트 저장됨: {prompt_key}")
-        logger.info(f"📝 프롬프트 길이: {prompt_length:,} 문자")
+        """프롬프트를 미리보기용으로 저장 (PromptManager 사용)"""
+        PromptManager.store_prompt_for_preview(prompt, prompt_type)
+
         
         # 프롬프트가 매우 긴 경우 경고
         if prompt_length > 20000:
@@ -1464,7 +1433,7 @@ class MMSExtractor(MMSExtractorEntityMixin):
             raw_result = final_state.get("raw_result", {})
             
             # 프롬프트 정보 가져오기
-            actual_prompts = get_stored_prompts_from_thread()
+            actual_prompts = PromptManager.get_stored_prompts_from_thread()
             
             return {
                 "extracted_result": final_result,
@@ -1953,14 +1922,8 @@ def make_entity_dag(msg: str, llm_model, save_dag_image=True):
 
 
 def get_stored_prompts_from_thread():
-    """현재 스레드에서 저장된 프롬프트 정보를 가져오는 함수"""
-    import threading
-    current_thread = threading.current_thread()
-    
-    if hasattr(current_thread, 'stored_prompts'):
-        return current_thread.stored_prompts
-    else:
-        return {}
+    """현재 스레드에서 저장된 프롬프트 정보를 가져오는 함수 (PromptManager 사용)"""
+    return PromptManager.get_stored_prompts_from_thread()
 
 def save_result_to_mongodb_if_enabled(message: str, result: dict, args_or_data, extractor=None):
     """MongoDB 저장이 활성화된 경우 결과를 저장하는 도우미 함수
