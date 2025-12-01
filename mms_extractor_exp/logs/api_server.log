@@ -10084,3 +10084,371 @@ ENTITY: 베어유_베어유, 에이닷 노트...
 2025-12-01 10:30:24,988 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 1개
 2025-12-01 10:30:24,988 - __main__ - INFO - 추출 완료: 30.502초
 2025-12-01 10:30:24,989 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 10:30:24] "POST /extract HTTP/1.1" 200 -
+2025-12-01 11:37:51,879 - __main__ - INFO - 🔧 --storage 옵션: local
+2025-12-01 11:37:51,879 - __main__ - INFO - 🔧 환경변수 DAG_STORAGE_MODE 설정: local
+2025-12-01 11:37:51,880 - __main__ - INFO - 📁 DAG 저장 모드: local - API server provides images (URL: API server IP)
+2025-12-01 11:37:51,880 - __main__ - INFO - 📂 DAG 저장 경로: dag_images
+2025-12-01 11:37:51,880 - __main__ - INFO - 🌐 로컬 서버 URL: http://172.23.113.94:8000
+2025-12-01 11:37:51,880 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-12-01 11:37:51,880 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-12-01 11:37:51,880 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-12-01 11:37:51,880 - mms_extractor - INFO - 🚀 MMSExtractor 초기화 시작
+2025-12-01 11:37:51,880 - mms_extractor - INFO - ⚙️ 기본 설정 적용 중...
+2025-12-01 11:37:51,880 - mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-12-01 11:37:51,880 - mms_extractor - INFO - 🔑 환경변수 로드 중...
+2025-12-01 11:37:51,881 - mms_extractor - INFO - 💻 디바이스 설정 중...
+2025-12-01 11:37:51,917 - mms_extractor - INFO - Using device: mps
+2025-12-01 11:37:51,917 - utils - INFO - _initialize_device 실행완료: 0.04초
+2025-12-01 11:37:51,917 - mms_extractor - INFO - 🤖 LLM 모델 초기화 중...
+2025-12-01 11:37:51,918 - mms_extractor - INFO - LLM 초기화 완료: gemini (gcp/gemini-2.5-flash)
+2025-12-01 11:37:51,918 - utils - INFO - _initialize_llm 실행완료: 0.00초
+2025-12-01 11:37:51,918 - mms_extractor - INFO - 🧠 임베딩 모델 로드 중...
+2025-12-01 11:37:51,918 - utils - INFO - Loading model from ./models/ko-sbert-nli...
+2025-12-01 11:37:51,918 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-12-01 11:37:51,918 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-12-01 11:37:52,576 - utils - INFO - Model loaded on mps
+2025-12-01 11:37:52,576 - utils - INFO - _initialize_embedding_model 실행완료: 0.66초
+2025-12-01 11:37:52,576 - mms_extractor - INFO - 📝 NLP 도구 (Kiwi) 초기화 중...
+2025-12-01 11:37:53,318 - mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-12-01 11:37:53,318 - utils - INFO - _initialize_kiwi 실행완료: 0.74초
+2025-12-01 11:37:53,319 - mms_extractor - INFO - 📁 데이터 로드 중...
+2025-12-01 11:37:53,319 - mms_extractor - INFO - ============================================================
+2025-12-01 11:37:53,319 - mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-12-01 11:37:53,319 - mms_extractor - INFO - ============================================================
+2025-12-01 11:37:53,319 - mms_extractor - INFO - 데이터 소스 모드: local
+2025-12-01 11:37:53,319 - mms_extractor - INFO - 1️⃣ 상품 정보 로드 및 준비 중...
+2025-12-01 11:37:53,319 - mms_extractor - INFO - === 상품 정보 로드 및 준비 시작 (모드: local) ===
+2025-12-01 11:37:53,319 - mms_extractor - INFO - 📁 로컬 CSV 파일에서 로드
+2025-12-01 11:37:53,412 - mms_extractor - INFO - 원본 데이터 크기: (18070, 9)
+2025-12-01 11:37:53,490 - mms_extractor - INFO - 컬럼명 소문자 변환 완료
+2025-12-01 11:37:53,495 - mms_extractor - INFO - 도메인 필터링: 18070 -> 12305
+2025-12-01 11:37:53,495 - mms_extractor - INFO - 🔗 별칭 규칙 로드 중...
+2025-12-01 11:37:53,729 - mms_extractor - INFO - 별칭 규칙 수: 427개
+2025-12-01 11:37:53,729 - mms_extractor - INFO - 🔄 별칭 규칙 연쇄 적용 중...
+2025-12-01 11:38:04,234 - mms_extractor - INFO - 별칭 explode: 156399 -> 42462
+2025-12-01 11:38:04,287 - mms_extractor - INFO - TEST 필터링: 42465 -> 42314
+2025-12-01 11:38:04,287 - mms_extractor - INFO - === 상품 정보 준비 완료 ===
+2025-12-01 11:38:04,287 - mms_extractor - INFO - 최종 데이터 크기: (42314, 14)
+2025-12-01 11:38:04,287 - mms_extractor - INFO - 최종 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-12-01 11:38:04,287 - mms_extractor - INFO - ✅ 모든 중요 컬럼 존재
+2025-12-01 11:38:04,288 - mms_extractor - INFO - 상품명 샘플: ['우주패스 Netflix 인증', '우주패스 Netflix 인증', '우주패스 Netflix 인증']
+2025-12-01 11:38:04,290 - mms_extractor - INFO - 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증']
+2025-12-01 11:38:04,293 - mms_extractor - INFO - 상품 정보 최종 데이터 크기: (42314, 14)
+2025-12-01 11:38:04,293 - mms_extractor - INFO - 상품 정보 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-12-01 11:38:04,293 - mms_extractor - INFO - 2️⃣ 정지어 로드 중...
+2025-12-01 11:38:04,294 - mms_extractor - INFO - 정지어 로드 완료: 202개
+2025-12-01 11:38:04,294 - mms_extractor - INFO - 로드된 정지어 수: 202개
+2025-12-01 11:38:04,294 - mms_extractor - INFO - 3️⃣ Kiwi에 상품명 등록 중...
+2025-12-01 11:38:04,294 - mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-12-01 11:38:04,299 - mms_extractor - INFO - 등록할 고유 별칭 수: 34387개
+2025-12-01 11:38:04,302 - mms_extractor - INFO - 유효한 별칭 수: 34387개
+2025-12-01 11:38:04,302 - mms_extractor - INFO - 등록할 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증', '우주pass Netflix 인증', '우주패스 넷플릭스 인증']
+2025-12-01 11:38:04,352 - mms_extractor - INFO - Kiwi에 상품명 등록 완료: 34387개 성공, 0개 실패
+2025-12-01 11:38:04,353 - mms_extractor - INFO - 4️⃣ 프로그램 분류 정보 로드 중...
+2025-12-01 11:38:04,353 - mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-12-01 11:38:04,365 - mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-12-01 11:38:04,365 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-12-01 11:38:04,733 - mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-12-01 11:38:04,733 - mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-12-01 11:38:04,733 - mms_extractor - INFO - 5️⃣ 조직 정보 로드 중...
+2025-12-01 11:38:04,733 - mms_extractor - INFO - === 조직 정보 로드 시작 (모드: local) ===
+2025-12-01 11:38:04,733 - mms_extractor - INFO - 로컬 CSV 파일에서 조직 정보 로드 중...
+2025-12-01 11:38:04,733 - mms_extractor - INFO - CSV 파일 경로: ./data/offer_master_data.csv
+2025-12-01 11:38:04,823 - mms_extractor - INFO - 로컬 CSV에서 로드된 원본 조직 데이터 크기: (18070, 9)
+2025-12-01 11:38:04,823 - mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['ITEM_ID', 'ITEM_NM', 'ITEM_DMN', 'ITEM_DESC', 'ITEM_CTG', 'ITEM_ALS', 'ITEM_EMB_VEC', 'OFER_CD', 'OPER_DT_HMS']
+2025-12-01 11:38:04,825 - mms_extractor - INFO - 로컬 모드: ITEM_DMN='R' 필터링 후 데이터 크기: (5765, 9)
+2025-12-01 11:38:04,825 - mms_extractor - INFO - 조직 데이터 샘플 (3개 행): [{'item_id': 'D15198_0020', 'item_nm': '가로수대리점 하늘도시점', 'item_dmn': 'R', 'item_desc': '인천 중구 하늘중앙로195번길 11,&&1층 105호(중산동)&&003202309011', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541517', 'oper_dt_hms': 20250909151123}, {'item_id': 'D13622_0398', 'item_nm': 'MD대리점 주엽직영점', 'item_dmn': 'R', 'item_desc': '경기 고양시 일산서구 중앙로 1426,&&(주엽동) 1층111호&&003109152662', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541945', 'oper_dt_hms': 20250909151123}, {'item_id': 'D15320_0001', 'item_nm': '강서대리점(온라인매장)', 'item_dmn': 'R', 'item_desc': '서울 양천구 남부순환로 354,&&1층 (신월동)&&007078567800', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430542104', 'oper_dt_hms': 20250909151123}]
+2025-12-01 11:38:04,825 - mms_extractor - INFO - === 조직 정보 로드 최종 완료: 5765개 조직 ===
+2025-12-01 11:38:04,825 - mms_extractor - INFO - 최종 조직 데이터 스키마: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-12-01 11:38:04,826 - mms_extractor - INFO - 모든 중요 조직 컬럼이 정상적으로 로드되었습니다.
+2025-12-01 11:38:04,826 - mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (5765, 9)
+2025-12-01 11:38:04,826 - mms_extractor - INFO - ============================================================
+2025-12-01 11:38:04,826 - mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-12-01 11:38:04,826 - mms_extractor - INFO - ============================================================
+2025-12-01 11:38:04,827 - mms_extractor - INFO - ✅ 상품 데이터: (42314, 14)
+2025-12-01 11:38:04,827 - mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-12-01 11:38:04,827 - mms_extractor - INFO - ✅ 조직 데이터: (5765, 9)
+2025-12-01 11:38:04,827 - mms_extractor - INFO - ✅ 정지어: 202개
+2025-12-01 11:38:04,827 - mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-12-01 11:38:04,830 - mms_extractor - INFO - 고유 상품명 수: 8219개
+2025-12-01 11:38:04,835 - mms_extractor - INFO - 고유 별칭 수: 34387개
+2025-12-01 11:38:04,837 - mms_extractor - INFO - 고유 상품ID 수: 12244개
+2025-12-01 11:38:04,837 - utils - INFO - _load_data 실행완료: 11.52초
+2025-12-01 11:38:04,838 - mms_extractor - INFO - 🛠️ 서비스 초기화 중...
+2025-12-01 11:38:04,838 - mms_extractor - INFO - ✅ 서비스 초기화 완료
+2025-12-01 11:38:04,838 - mms_extractor - INFO - ⚙️ Workflow 엔진 초기화 중...
+2025-12-01 11:38:04,838 - mms_extractor - INFO - ✅ Workflow 엔진 초기화 완료 (8개 단계)
+2025-12-01 11:38:04,838 - mms_extractor - INFO - ✅ MMSExtractor 초기화 완료
+2025-12-01 11:38:04,838 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-12-01 11:38:04,838 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8000, debug=False
+2025-12-01 11:38:04,838 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-12-01 11:38:04,838 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8000에서 시작합니다
+2025-12-01 11:38:04,838 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-12-01 11:38:04,838 - __main__ - INFO -   GET  /health - 헬스체크
+2025-12-01 11:38:04,838 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-12-01 11:38:04,838 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-12-01 11:38:04,838 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-12-01 11:38:04,838 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-12-01 11:38:04,838 - __main__ - INFO -   POST /dag - Entity DAG 추출
+2025-12-01 11:38:04,864 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://172.23.113.94:8000
+2025-12-01 11:38:04,864 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-01 11:43:57,101 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 11:43:57] "GET /health HTTP/1.1" 200 -
+2025-12-01 11:43:58,822 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 11:43:58] "GET /health HTTP/1.1" 200 -
+2025-12-01 11:43:58,855 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 11:43:58] "GET /health HTTP/1.1" 200 -
+2025-12-01 11:44:05,669 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 11:44:05] "GET /health HTTP/1.1" 200 -
+2025-12-01 11:44:08,124 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 11:44:08] "GET /health HTTP/1.1" 200 -
+2025-12-01 11:44:10,678 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 11:44:10] "GET /health HTTP/1.1" 200 -
+2025-12-01 11:44:10,694 - __main__ - INFO - 🎯 DAG 추출 요청됨 - LLM: ax, 메시지 길이: 323자
+2025-12-01 11:44:10,694 - __main__ - INFO - LLM 모델이 gemini -> ax로 변경됨. 재초기화 중...
+2025-12-01 11:44:10,695 - mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-12-01 11:44:10,695 - utils - INFO - _initialize_llm 실행완료: 0.00초
+2025-12-01 11:44:10,695 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-12-01 11:44:10,695 - __main__ - INFO - DAG 추출과 함께 순차 처리 시작
+2025-12-01 11:44:10,695 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: [SK텔레콤] ZEM폰 포켓몬에디션3 안내
+(광고)[SKT] 우리 아이 첫 번째 스마트폰,...
+2025-12-01 11:44:10,696 - workflow_core - INFO - ============================================================
+2025-12-01 11:44:10,696 - workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-01 11:44:10,696 - workflow_core - INFO - ============================================================
+2025-12-01 11:44:10,696 - workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - 메시지 내용: [SK텔레콤] ZEM폰 포켓몬에디션3 안내
+(광고)[SKT] 우리 아이 첫 번째 스마트폰, ZEM 키즈폰__#04 고객님, 안녕하세요!
+우리 아이 스마트폰 고민 중이셨다면, 자녀 스마트폰 관리 앱 ZEM이 설치된 SKT만의 안전한 키즈폰,
+ZEM폰 포켓몬에디션3으로 우리 아이 취향을 저격해 보세요!
+
+✨ 특별 혜택
+- 월 요금 20% 할인 (첫 6개월)
+-...
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - 메시지 길이: 323 문자
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - LLM 모델: ax
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-01 11:44:10,696 - mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-01 11:44:10,696 - workflow_core - INFO - ✅ InputValidationStep 완료 (0.00초)
+2025-12-01 11:44:10,696 - workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-01 11:44:10,696 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-01 11:44:10,697 - services.entity_recognizer - INFO - Message length: 323 chars
+2025-12-01 11:44:10,705 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-01 11:44:11,448 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): ['ZEM폰 포켓몬에디션3', '키즈폰']
+2025-12-01 11:44:11,448 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-01 11:44:18,006 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-01 11:44:18,125 - utils - INFO - extract_entities_from_kiwi 실행완료: 7.43초
+2025-12-01 11:44:18,125 - mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: ['ZEM폰 포켓몬에디션3', '키즈폰']
+2025-12-01 11:44:18,126 - mms_workflow_steps - INFO - 추출된 후보 엔티티: ['ZEM폰 포켓몬에디션3', '키즈폰', '0서비스', '리안', '아이폰', '이마트_이마트', '포미', 'T 서비스']
+2025-12-01 11:44:18,126 - mms_workflow_steps - INFO - 매칭된 상품 정보: (12, 2)
+2025-12-01 11:44:18,126 - workflow_core - INFO - ✅ EntityExtractionStep 완료 (7.43초)
+2025-12-01 11:44:18,126 - workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-01 11:44:18,399 - mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-01 11:44:18,400 - workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.27초)
+2025-12-01 11:44:18,400 - workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 400 문자
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - 후보 아이템 리스트 크기: 8개
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - 후보 아이템 리스트: ['ZEM폰 포켓몬에디션3', '키즈폰', '0서비스', '리안', '아이폰', '이마트_이마트', '포미', 'T 서비스']
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - extra_item_pdf 크기: (12, 2)
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - extra_item_pdf 샘플: [{'item_nm': '(KTF)갤럭시 A16 키즈폰 포차코', 'item_id': ['A6C5']}, {'item_nm': '(LGU)갤럭시 A16 키즈폰 무너에디션', 'item_id': ['A6A4']}]
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-12-01 11:44:18,400 - workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-01 11:44:18,400 - workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - 구성된 프롬프트 길이: 7357 문자
+2025-12-01 11:44:18,400 - mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: True
+2025-12-01 11:44:18,400 - helpers.prompt_manager - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-01 11:44:18,400 - helpers.prompt_manager - INFO - 📝 프롬프트 길이: 7,357 문자
+2025-12-01 11:44:25,967 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 11:44:25,987 - mms_workflow_steps - INFO - LLM 응답 길이: 1045 문자
+2025-12-01 11:44:25,987 - mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "ZEM폰 포켓몬에디션3 출시 및 특별 혜택 안내",
+    "purpose": [
+        "상품 가입 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "우리 아이 첫 스마트폰, ZEM폰 포켓몬에디션3 가입 시 월 요금 20% 할인(6개월) 및 포켓몬 케이스 무료 증정! 지금 안내드릴까요?",
+    "product": [
+        {
+            "name": "ZEM폰 포켓몬에디션3",
+            "action": "가입"
+        },
+        {
+            "name": "포켓몬 케이스",
+            "action": "구매"
+        },
+        {
+            "name": "ZEM 프리미엄 서비스",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+...
+2025-12-01 11:44:25,987 - workflow_core - INFO - ✅ LLMExtractionStep 완료 (7.59초)
+2025-12-01 11:44:25,987 - workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-01 11:44:25,988 - mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-01 11:44:25,988 - mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-01 11:44:25,988 - mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': 'ZEM폰 포켓몬에디션3 출시 및 특별 혜택 안내', 'purpose': ['상품 가입 유도', '혜택 안내'], 'sales_script': '우리 아이 첫 스마트폰, ZEM폰 포켓몬에디션3 가입 시 월 요금 20% 할인(6개월) 및 포켓몬 케이스 무료 증정! 지금 안내드릴까요?', 'product': [{'name': 'ZEM폰 포켓몬에디션3', 'action': '가입'}, {'name': '포켓몬 케이스', 'action': '구매'}, {'name': 'ZEM 프리미엄 서비스', 'action': '가입'}], 'channel': [{'type': '전화번호', 'value': '1588-0011', 'action': '문의'}, {'type': '대리점', 'value': '가까운 T world 매장', 'action': '추가 정보'}, {'type': 'URL', 'value': 'www.tworld.co.kr', 'action': '추가 정보'}, {'type': '전화번호', 'value': '080-011-0000', 'action': '수신 거부'}], 'pgm': ['상품및부가서비스가입유도_단말', '사용법/혜택/이벤트안내_단말']}
+2025-12-01 11:44:25,988 - workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-01 11:44:25,988 - workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-01 11:44:25,988 - services.result_builder - INFO - ================================================================================
+2025-12-01 11:44:25,988 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_final_result 시작
+2025-12-01 11:44:25,988 - services.result_builder - INFO - ================================================================================
+2025-12-01 11:44:25,988 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-01 11:44:25,988 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-01 11:44:25,988 - services.result_builder - INFO -    - 원본 product 내용: [{'name': 'ZEM폰 포켓몬에디션3', 'action': '가입'}, {'name': '포켓몬 케이스', 'action': '구매'}, {'name': 'ZEM 프리미엄 서비스', 'action': '가입'}]
+2025-12-01 11:44:25,988 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 3개
+2025-12-01 11:44:25,988 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': 'ZEM폰 포켓몬에디션3', 'action': '가입'}, {'name': '포켓몬 케이스', 'action': '구매'}, {'name': 'ZEM 프리미엄 서비스', 'action': '가입'}]
+2025-12-01 11:44:25,989 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['ZEM폰 포켓몬에디션3', '포켓몬 케이스', 'ZEM 프리미엄 서비스']
+2025-12-01 11:44:25,989 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: ['ZEM폰 포켓몬에디션3', '키즈폰']
+2025-12-01 11:44:25,989 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-01 11:44:25,989 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-01 11:44:25,989 - services.result_builder - INFO - ✅ LLM 모델 초기화 완료: ax (skt/ax4)
+2025-12-01 11:44:25,990 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-01 11:44:25,990 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-01 11:44:28,375 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 11:44:29,693 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 11:44:29,754 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 11:44:29,771 - utils - INFO - extract_entities_by_llm 실행완료: 3.78초
+2025-12-01 11:44:29,771 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: (1, 5)
+2025-12-01 11:44:29,771 - services.result_builder - INFO -    📊 similarities_fuzzy 샘플 (처음 3개):
+2025-12-01 11:44:29,773 - services.result_builder - INFO - [{'item_name_in_msg': 'ZEM폰 포켓몬에디션3', 'item_nm_alias': 'ZEM폰 포켓몬에디션3', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기'}]
+2025-12-01 11:44:29,773 - services.result_builder - INFO - 🔍 [STEP 4] alias_pdf_raw와 merge 시작
+2025-12-01 11:44:29,773 - services.result_builder - INFO -    - alias_pdf_raw 크기: (187, 6)
+2025-12-01 11:44:29,778 - services.result_builder - INFO -    ✅ merged_df 크기: (1, 7)
+2025-12-01 11:44:29,778 - services.result_builder - INFO -    📊 merged_df 샘플 (처음 3개):
+2025-12-01 11:44:29,779 - services.result_builder - INFO - [{'item_name_in_msg': 'ZEM폰 포켓몬에디션3', 'item_nm_alias': 'ZEM폰 포켓몬에디션3', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기', 'alias_1': nan, 'type': nan}]
+2025-12-01 11:44:29,779 - services.result_builder - INFO - 🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)
+2025-12-01 11:44:29,782 - services.result_builder - INFO -    ✅ filtered_df 크기: (1, 7)
+2025-12-01 11:44:29,782 - services.result_builder - INFO -    📊 filtered_df 샘플 (처음 3개):
+2025-12-01 11:44:29,783 - services.result_builder - INFO - [{'item_name_in_msg': 'ZEM폰 포켓몬에디션3', 'item_nm_alias': 'ZEM폰 포켓몬에디션3', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기', 'alias_1': nan, 'type': nan}]
+2025-12-01 11:44:29,783 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-01 11:44:29,783 - services.result_builder - INFO -    - similarities_fuzzy.empty: False
+2025-12-01 11:44:29,783 - services.result_builder - INFO -    ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출
+2025-12-01 11:44:29,783 - services.entity_recognizer - INFO - 🔍 [map_products_with_similarity] Started
+2025-12-01 11:44:29,783 - services.entity_recognizer - INFO -    - Input similarities_fuzzy shape: (1, 5)
+2025-12-01 11:44:29,786 - services.entity_recognizer - INFO -    - Filtering: 1 -> 1
+2025-12-01 11:44:29,795 - services.entity_recognizer - INFO -    ✅ product_tag count: 1
+2025-12-01 11:44:29,795 - services.result_builder - INFO -    ✅ 최종 product 개수: 1개
+2025-12-01 11:44:29,795 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': 'ZEM폰 포켓몬에디션3', 'item_id': ['A5V5'], 'item_name_in_msg': ['ZEM폰 포켓몬에디션3'], 'expected_action': ['가입']}]
+2025-12-01 11:44:29,795 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=1개
+2025-12-01 11:44:29,797 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-01 11:44:29,829 - services.result_builder - INFO -    ✅ 최종 channel 개수: 4개
+2025-12-01 11:44:29,829 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-01 11:44:29,829 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 1개
+2025-12-01 11:44:29,829 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-01 11:44:29,829 - services.result_builder - INFO - ================================================================================
+2025-12-01 11:44:29,829 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_final_result 완료
+2025-12-01 11:44:29,829 - services.result_builder - INFO -    최종 final_result['product'] 개수: 1개
+2025-12-01 11:44:29,829 - services.result_builder - INFO - ================================================================================
+2025-12-01 11:44:29,829 - workflow_core - INFO - ✅ ResultConstructionStep 완료 (3.84초)
+2025-12-01 11:44:29,829 - workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-01 11:44:29,829 - mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-01 11:44:29,829 - mms_workflow_steps - INFO - 제목: ZEM폰 포켓몬에디션3 출시 및 특별 혜택 안내
+2025-12-01 11:44:29,829 - mms_workflow_steps - INFO - 목적: ['상품 가입 유도', '혜택 안내']
+2025-12-01 11:44:29,829 - mms_workflow_steps - INFO - 판매 스크립트: 우리 아이 첫 스마트폰, ZEM폰 포켓몬에디션3 가입 시 월 요금 20% 할인(6개월) 및 포켓몬 케이스 무료 증정! 지금 안내드릴까요?
+2025-12-01 11:44:29,830 - mms_workflow_steps - INFO - 상품 수: 1개
+2025-12-01 11:44:29,830 - mms_workflow_steps - INFO - 채널 수: 4개
+2025-12-01 11:44:29,830 - mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-01 11:44:29,830 - mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-01 11:44:29,830 - mms_workflow_steps - INFO - 오퍼 항목 수: 1개
+2025-12-01 11:44:29,830 - workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-01 11:44:29,830 - workflow_core - INFO - 
+============================================================
+2025-12-01 11:44:29,830 - workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 19.13초)
+2025-12-01 11:44:29,830 - workflow_core - INFO - ============================================================
+2025-12-01 11:44:29,830 - workflow_core - INFO - 
+📊 실행 요약:
+2025-12-01 11:44:29,830 - workflow_core - INFO -   ✅ InputValidationStep: 0.00초
+2025-12-01 11:44:29,830 - workflow_core - INFO -   ✅ EntityExtractionStep: 7.43초
+2025-12-01 11:44:29,830 - workflow_core - INFO -   ✅ ProgramClassificationStep: 0.27초
+2025-12-01 11:44:29,830 - workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-01 11:44:29,830 - workflow_core - INFO -   ✅ LLMExtractionStep: 7.59초
+2025-12-01 11:44:29,830 - workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-01 11:44:29,830 - workflow_core - INFO -   ✅ ResultConstructionStep: 3.84초
+2025-12-01 11:44:29,830 - workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-01 11:44:29,830 - utils - INFO - process_message 실행완료: 19.14초
+2025-12-01 11:44:29,830 - mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-12-01 11:44:29,830 - mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-12-01 11:44:29,830 - entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-12-01 11:44:29,830 - entity_dag_extractor - INFO - 📝 입력 메시지 길이: 323자
+2025-12-01 11:44:29,831 - entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x16c55a210> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x16c5592e0> root_client=<openai.OpenAI object at 0x16c558e00> root_async_client=<openai.AsyncOpenAI object at 0x16c558b60> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-12-01 11:44:29,831 - entity_dag_extractor - INFO - ⚙️  프롬프트 모드: cot
+2025-12-01 11:44:29,831 - entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-12-01 11:44:29,831 - entity_dag_extractor - INFO - 📏 프롬프트 길이: 3542자
+2025-12-01 11:44:53,356 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 11:44:53,358 - entity_dag_extractor - INFO - 📝 LLM 응답 길이: 2528자
+2025-12-01 11:44:53,358 - entity_dag_extractor - INFO - 📄 LLM 응답 미리보기 (처음 500자): ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SK텔레콤은 자녀의 첫 스마트폰으로 ZEM폰 포켓몬에디션3을 추천하며, 월 요금 20% 할인(첫 6개월), 포켓몬 케이스 무료 증정, ZEM 프리미엄 서비스 3개월 무료 등의 특별 혜택을 제공하여 구매를 유도하고 있다.
+
+[식별된 가치 제안 목록]
+- 즉각적 혜택:
+  1. 월 요금 20% 할인 (첫 6개월)
+  2. 포켓몬 케이스 무료 증정
+  3. ZEM 프리미엄 서비스 3개월 무료
+- 서비스 가치:
+  1. ZEM 키즈폰 사용
+  2. ZEM 앱(자녀 스마트폰 관리 앱) 사용
+  3. SKT만의 안전한 키즈폰 사용
+```
+
+## 2. 초기 DAG
+
+```
+(T world 매장:방문) -[방문하면]-> (ZEM폰 포켓몬에디션3:구매)
+(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (월 요금 20% 할인:수령)
+(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (포켓몬 케이스:수령)
+(ZEM폰 포켓몬에디션3:구매) ...
+2025-12-01 11:44:53,359 - entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-12-01 11:44:53,360 - entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 345자
+2025-12-01 11:44:53,360 - entity_dag_extractor - INFO - 📄 DAG 섹션 내용:
+(T world 매장:방문) -[방문하면]-> (ZEM폰 포켓몬에디션3:구매)
+(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (월 요금 20% 할인:수령)
+(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (포켓몬 케이스:수령)
+(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (ZEM 프리미엄 서비스 3개월 무료:수령)
+(ZEM폰 포켓몬에디션3:구매) -[구매후]-> (ZEM 앱:사용)
+(ZEM 앱:사용) -[사용하면]-> (자녀 스마트폰 관리:이용)
+(ZEM폰 포켓몬에디션3:구매) -[구매후]-> (SKT 안전한 키즈폰:사용)
+(SKT 안전한 키즈폰:사용) -[사용하면]-> (안전한 스마트폰 사용:이용)
+2025-12-01 11:44:53,360 - entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-12-01 11:44:53,361 - entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 9, 엣지 수: 8
+2025-12-01 11:44:53,361 - entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['T world 매장:방문', 'ZEM폰 포켓몬에디션3:구매', '월 요금 20% 할인:수령', '포켓몬 케이스:수령', 'ZEM 프리미엄 서비스 3개월 무료:수령', 'ZEM 앱:사용', '자녀 스마트폰 관리:이용', 'SKT 안전한 키즈폰:사용', '안전한 스마트폰 사용:이용']
+2025-12-01 11:44:53,361 - entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('T world 매장:방문', 'ZEM폰 포켓몬에디션3:구매'), ('ZEM폰 포켓몬에디션3:구매', '월 요금 20% 할인:수령'), ('ZEM폰 포켓몬에디션3:구매', '포켓몬 케이스:수령'), ('ZEM폰 포켓몬에디션3:구매', 'ZEM 프리미엄 서비스 3개월 무료:수령'), ('ZEM폰 포켓몬에디션3:구매', 'ZEM 앱:사용'), ('ZEM폰 포켓몬에디션3:구매', 'SKT 안전한 키즈폰:사용'), ('ZEM 앱:사용', '자녀 스마트폰 관리:이용'), ('SKT 안전한 키즈폰:사용', '안전한 스마트폰 사용:이용')]
+2025-12-01 11:44:53,361 - entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-12-01 11:44:53,361 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_7918d9d4d4c330a6
+2025-12-01 11:44:53,361 - utils - INFO - 📊 입력 그래프 - 노드 수: 9, 엣지 수: 8
+2025-12-01 11:44:53,362 - utils - INFO - ✅ Graphviz PATH 추가: /usr/local/bin
+2025-12-01 11:44:53,364 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-12-01 11:44:54,583 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_7918d9d4d4c330a6.png
+2025-12-01 11:44:54,583 - mms_extractor - INFO - ✅ DAG 추출 완료: dag_7918d9d4d4c330a6
+2025-12-01 11:44:54,583 - mms_extractor - INFO - 🕒 DAG 처리 시간: 24.753초
+2025-12-01 11:44:54,583 - mms_extractor - INFO - 📏 DAG 섹션 길이: 345자
+2025-12-01 11:44:54,584 - mms_extractor - INFO - 📄 DAG 내용 미리보기: (T world 매장:방문) -[방문하면]-> (ZEM폰 포켓몬에디션3:구매)
+(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (월 요금 20% 할인:수령)
+(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (포켓몬 케이스:수령)
+(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (ZEM 프리미엄 서비스 3개월 무료:수령)
+(ZEM폰 포켓몬에디션3:구매)...
+2025-12-01 11:44:54,584 - mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-12-01 11:44:54,584 - __main__ - INFO - MongoDB 저장 중...
+2025-12-01 11:44:54,760 - mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-12-01 11:44:54,762 - mongodb_utils - INFO - 문서 저장 성공: 692d012637173de3cbe58bc3
+2025-12-01 11:44:54,762 - mongodb_utils - INFO - MongoDB 연결 해제
+2025-12-01 11:44:54,763 - __main__ - INFO - MongoDB 저장 완료!
+2025-12-01 11:44:54,763 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 2개
+2025-12-01 11:44:54,763 - __main__ - INFO - ✅ DAG 추출 성공 - 길이: 8자
+2025-12-01 11:44:54,763 - __main__ - INFO - DAG 내용 미리보기: ['(SKT 안전한 키즈폰:사용) -[사용하면]-> (안전한 스마트폰 사용:이용)', '(T world 매장:방문) -[방문하면]-> (ZEM폰 포켓몬에디션3:구매)', '(ZEM 앱:사용) -[사용하면]-> (자녀 스마트폰 관리:이용)', '(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (ZEM 프리미엄 서비스 3개월 무료:수령)', '(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (월 요금 20% 할인:수령)', '(ZEM폰 포켓몬에디션3:구매) -[구매하면]-> (포켓몬 케이스:수령)', '(ZEM폰 포켓몬에디션3:구매) -[구매후]-> (SKT 안전한 키즈폰:사용)', '(ZEM폰 포켓몬에디션3:구매) -[구매후]-> (ZEM 앱:사용)']...
+2025-12-01 11:44:54,763 - __main__ - INFO - 추출 완료: 44.069초
+2025-12-01 11:44:54,764 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 11:44:54] "POST /extract HTTP/1.1" 200 -
+2025-12-01 11:44:54,788 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 11:44:54] "GET /health HTTP/1.1" 200 -

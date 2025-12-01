@@ -13,36 +13,55 @@ Workflow Core - 워크플로우 프레임워크 핵심 컴포넌트
 
 import logging
 import time
+import pandas as pd
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class WorkflowState:
     """
-    워크플로우 상태 관리 클래스
+    워크플로우 상태 관리 클래스 (Typed Dataclass)
     
     워크플로우의 각 단계 간에 데이터를 전달하고 관리합니다.
-    입력 데이터, 중간 결과, 최종 출력, 에러 정보 등을 저장합니다.
+    Type-safe 필드로 IDE 지원 및 런타임 타입 체크 향상.
     """
     
-    def __init__(self, initial_data: Dict[str, Any] = None):
-        """
-        Args:
-            initial_data: 초기 상태 데이터 (예: {"mms_msg": "...", "extractor": ...})
-        """
-        self._data = initial_data or {}
-        self._history = []
-        self._errors = []
+    # Input fields (set at initialization)
+    mms_msg: str
+    extractor: Any  # MMSExtractor instance (avoid circular import)
     
+    # Processing fields (set during workflow)
+    msg: str = ""  # Validated/trimmed message
+    entities_from_kiwi: List[str] = field(default_factory=list)
+    cand_item_list: pd.DataFrame = field(default_factory=pd.DataFrame)
+    extra_item_pdf: pd.DataFrame = field(default_factory=pd.DataFrame)
+    pgm_info: Dict[str, Any] = field(default_factory=dict)
+    rag_context: str = ""
+    product_element: Optional[Any] = None
+    result_json_text: str = ""
+    json_objects: Dict[str, Any] = field(default_factory=dict)
+    raw_result: Dict[str, Any] = field(default_factory=dict)
+    final_result: Dict[str, Any] = field(default_factory=dict)
+    
+    # Control flags
+    is_fallback: bool = False
+    
+    # Internal tracking
+    _history: List[Dict[str, Any]] = field(default_factory=list, repr=False)
+    _errors: List[str] = field(default_factory=list, repr=False)
+    
+    # Backward compatibility methods (for gradual migration)
     def get(self, key: str, default: Any = None) -> Any:
-        """상태에서 값 가져오기"""
-        return self._data.get(key, default)
+        """상태에서 값 가져오기 (backward compatible)"""
+        return getattr(self, key, default)
     
     def set(self, key: str, value: Any) -> None:
-        """상태에 값 저장"""
-        self._data[key] = value
+        """상태에 값 저장 (backward compatible)"""
+        setattr(self, key, value)
     
     def has_error(self) -> bool:
         """에러 발생 여부 확인"""
@@ -67,9 +86,6 @@ class WorkflowState:
     def get_history(self) -> List[Dict[str, Any]]:
         """실행 히스토리 반환"""
         return self._history
-    
-    def __repr__(self) -> str:
-        return f"WorkflowState(keys={list(self._data.keys())}, errors={len(self._errors)})"
 
 
 class WorkflowStep(ABC):
