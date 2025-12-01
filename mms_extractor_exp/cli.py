@@ -125,7 +125,7 @@ def main():
                 print("="*50)
                 
                 for i, result in enumerate(results):
-                    extracted = result.get('extracted_result', {})
+                    extracted = result.get('ext_result', {})
                     print(f"\n--- 메시지 {i+1} ---")
                     print(f"제목: {extracted.get('title', 'N/A')}")
                     sales_script = extracted.get('sales_script', '')
@@ -141,7 +141,7 @@ def main():
                         print(f"오류: {result['error']}")
                 
                 # 전체 배치 통계
-                successful = len([r for r in results if not r.get('error') and r.get('extracted_result')])
+                successful = len([r for r in results if not r.get('error') and r.get('ext_result')])
                 failed = len(results) - successful
                 print(f"\n📊 배치 처리 통계")
                 print(f"✅ 성공: {successful}개")
@@ -164,9 +164,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-    광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
-광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc__■ 에이닷 X T 멤버십 시크릿코드 이벤트_에이닷 T 멤버십 쿠폰함에 ‘에이닷이빵쏜닷’을 입력해보세요!_뚜레쥬르 데일리우유식빵 무료 쿠폰을 드립니다._▶ 시크릿코드 입력하러 가기: https://bit.ly/3HCUhLM__■ 문의: SKT 고객센터(1558, 무료)_무료 수신거부 1504
-
+[SK텔레콤] 반가워요 5G 아이폰17/ 17 Pro 사전예약 안내\n(광고)[SKT] 아이폰 17/17 Pro 사전예약 안내  #04 고객님, 안녕하세요. 최고의 스마트폰 칩과 카메라, 견고한 세라믹 실드에 5G 기술까지! 이 모든 것을 갖춘 아이폰 17/17 Pro를 만나 보세요.  ▶ 혜택받고 사전예약하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx   ■ 사전예약 기간 - 2020년 10월 23일(금)~10월 29일(목) * 2020년 10월 30일(금)부터 순서대로 배송 후 개통 진행  ■ 아이폰 17/17 Pro 스펙 - Hi, Speed. 아이폰 최초의 5G 지원 - 스마트폰 사상 가장 빠른 A14 Bionic 칩 - 매끈하고 강화된 내구성을 가진 세라믹 글라스 적용 디자인 - 저조도 사진의 품질을 한 차원 끌어올려 주는 카메라 시스템 - 최초의 Dolby Vision 영상 카메라 탑재   ■ T다이렉트샵 특별 사은품(택1) ① [사죠영] 죠르디 한정판 기프트 ② [프리디] 멀티 무선 충전기 ③ [에이프릴스톤] 보조배터리+멀티백 ④ [크레앙] 3in1 무선 충전 살균기  ※ 이 외에도 더 많은 T기프트가 있습니다. .  ▶ T다이렉트샵 카카오톡 상담하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA  ■ 문의: SKT 고객센터(1558, 무료)   ※ 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.  SKT와 함께해주셔서 감사합니다. 무료 수신거부 1504
 
 """
             
@@ -183,7 +181,7 @@ def main():
                     print("📄 MongoDB 저장 완료!")
 
             
-            extracted_result = result.get('extracted_result', {})
+            extracted_result = result.get('ext_result', {})
         
             print("\n" + "="*50)
             print("🎯 최종 추출된 정보")

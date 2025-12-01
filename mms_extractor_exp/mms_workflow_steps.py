@@ -71,6 +71,9 @@ class EntityExtractionStep(WorkflowStep):
     - DB 모드 진단
     """
     
+    def __init__(self, entity_recognizer):
+        self.entity_recognizer = entity_recognizer
+
     def execute(self, state: WorkflowState) -> WorkflowState:
         if state.has_error():
             return state
@@ -83,7 +86,7 @@ class EntityExtractionStep(WorkflowStep):
             self._diagnose_db_mode(extractor)
         
         # 엔티티 추출
-        entities_from_kiwi, cand_item_list, extra_item_pdf = extractor._extract_entities(msg)
+        entities_from_kiwi, cand_item_list, extra_item_pdf = self.entity_recognizer.extract_entities_from_kiwi(msg)
         
         self._log_extraction_results(entities_from_kiwi, cand_item_list, extra_item_pdf)
         
@@ -137,6 +140,9 @@ class ProgramClassificationStep(WorkflowStep):
     - 메시지를 프로그램 카테고리로 분류
     """
     
+    def __init__(self, program_classifier):
+        self.program_classifier = program_classifier
+
     def execute(self, state: WorkflowState) -> WorkflowState:
         if state.has_error():
             return state
@@ -144,7 +150,7 @@ class ProgramClassificationStep(WorkflowStep):
         msg = state.get("msg")
         extractor = state.get("extractor")
         
-        pgm_info = extractor._classify_programs(msg)
+        pgm_info = self.program_classifier.classify(msg)
         logger.info(f"프로그램 분류 결과 키: {list(pgm_info.keys())}")
         
         state.set("pgm_info", pgm_info)
@@ -335,6 +341,9 @@ class ResultConstructionStep(WorkflowStep):
     - 프로그램 매핑
     """
     
+    def __init__(self, result_builder):
+        self.result_builder = result_builder
+
     def execute(self, state: WorkflowState) -> WorkflowState:
         if state.has_error():
             return state
@@ -346,7 +355,7 @@ class ResultConstructionStep(WorkflowStep):
         extractor = state.get("extractor")
         
         # 최종 결과 구성
-        final_result = extractor._build_final_result(json_objects, msg, pgm_info, entities_from_kiwi)
+        final_result = self.result_builder.build_final_result(json_objects, msg, pgm_info, entities_from_kiwi)
         
         state.set("final_result", final_result)
         

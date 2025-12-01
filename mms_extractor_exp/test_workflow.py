@@ -52,7 +52,7 @@ def test_workflow():
         logger.info("테스트 결과")
         logger.info("=" * 60)
         
-        extracted = result.get('extracted_result', {})
+        extracted = result.get('ext_result', {})
         
         logger.info(f"✅ 제목: {extracted.get('title', 'N/A')}")
         logger.info(f"✅ 목적: {extracted.get('purpose', [])}")

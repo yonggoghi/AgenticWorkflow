@@ -484,7 +484,7 @@ def extract_message():
             result = process_message_with_dag(extractor, message, extract_dag=True)
         else:
             result = extractor.process_message(message)
-            result['extracted_result']['entity_dag'] = []
+            result['ext_result']['entity_dag'] = []
             result['raw_result']['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
 
         if save_to_mongodb:
@@ -496,7 +496,7 @@ def extract_message():
         if result_type == 'raw':
             result = result.get('raw_result', {})
         else:
-            result = result.get('extracted_result', {})
+            result = result.get('ext_result', {})
             
         processing_time = time.time() - start_time
         
@@ -695,7 +695,7 @@ def extract_batch():
                         if result_type == 'raw':
                             result_data = batch_result.get('raw_result', {})
                         else:
-                            result_data = batch_result.get('extracted_result', {})
+                            result_data = batch_result.get('ext_result', {})
 
                         # print("=" * 50 + " batch_result " + "=" * 50)
                         # print(batch_result)

@@ -634,24 +634,22 @@ def filter_specific_terms(strings: List[str]) -> List[str]:
     return filtered
 
 def convert_df_to_json_list(df):
-    """DataFrame을 특정 JSON 구조로 변환"""
+    """DataFrame을 특정 JSON 구조로 변환 (item_nm 기준 플랫 구조)"""
     result = []
-    grouped = df.groupby('item_name_in_msg')
+    # item_nm으로 그룹화
+    grouped = df.groupby('item_nm')
     
-    for item_name_in_msg, group in grouped:
-        item_dict = {
-            'item_name_in_msg': item_name_in_msg,
-            'item_in_voca': []
-        }
+    for item_nm, group in grouped:
+        # item_id 리스트 (중복 제거)
+        item_ids = list(group['item_id'].unique())
+        # item_name_in_msg 리스트 (중복 제거)
+        item_names_in_msg = list(group['item_name_in_msg'].unique())
         
-        item_nm_groups = group.groupby('item_nm')
-        for item_nm, item_group in item_nm_groups:
-            item_ids = list(item_group['item_id'].unique())
-            voca_item = {
-                'item_nm': item_nm,
-                'item_id': item_ids
-            }
-            item_dict['item_in_voca'].append(voca_item)
+        item_dict = {
+            'item_nm': item_nm,
+            'item_id': item_ids,
+            'item_name_in_msg': item_names_in_msg
+        }
         result.append(item_dict)
     
     return result
