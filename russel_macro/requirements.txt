@@ -1,0 +1,6 @@
+# 웹 브라우저 자동화
+playwright>=1.40.0
+
+# 환경 변수
+python-dotenv>=1.0.0
+
