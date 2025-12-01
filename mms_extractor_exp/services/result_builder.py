@@ -20,13 +20,15 @@ class ResultBuilder:
     """
 
     def __init__(self, entity_recognizer, store_matcher, alias_pdf_raw: pd.DataFrame, 
-                 stop_item_names: List[str], num_cand_pgms: int, entity_extraction_mode: str):
+                 stop_item_names: List[str], num_cand_pgms: int, entity_extraction_mode: str,
+                 llm_initializer: Optional[callable] = None):
         self.entity_recognizer = entity_recognizer
         self.store_matcher = store_matcher
         self.alias_pdf_raw = alias_pdf_raw
         self.stop_item_names = stop_item_names
         self.num_cand_pgms = num_cand_pgms
         self.entity_extraction_mode = entity_extraction_mode
+        self.llm_initializer = llm_initializer
 
     def build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str]) -> Dict[str, Any]:
         """최종 결과 구성"""
@@ -70,9 +72,13 @@ class ResultBuilder:
             else:
                 logger.info("🔍 [STEP 3] LLM 기반 엔티티 매칭 시작")
                 # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
-                default_llm_models = self._initialize_multiple_llm_models(['ax'])
+                if self.llm_initializer:
+                    default_llm_models = self.llm_initializer(['gen'])
+                else:
+                    logger.warning("⚠️ llm_initializer가 설정되지 않았습니다. 빈 리스트를 사용합니다.")
+                    default_llm_models = []
                 logger.info(f"   - 초기화된 LLM 모델 수: {len(default_llm_models)}개")
-                similarities_fuzzy = self.entity_recognizer.extract_entities_by_llm(msg, llm_models=default_llm_models, rank_limit=100, external_cand_entities=entities_from_kiwi)
+                similarities_fuzzy = self.entity_recognizer.extract_entities_by_llm(msg, llm_models=default_llm_models, rank_limit=100, external_cand_entities=list(set(entities_from_kiwi+primary_llm_extracted_entities)))
                 logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
             
             if not similarities_fuzzy.empty:
@@ -236,49 +242,4 @@ class ResultBuilder:
             logger.error(f"채널 정보 추출 실패: {e}")
             return [], offer_object
 
-    def _initialize_multiple_llm_models(self, model_names: List[str]) -> List:
-        """
-        복수의 LLM 모델을 초기화하는 헬퍼 메서드
-        
-        Args:
-            model_names (List[str]): 초기화할 모델명 리스트 (예: ['ax', 'gpt', 'gen'])
-            
-        Returns:
-            List: 초기화된 LLM 모델 객체 리스트
-        """
-        llm_models = []
-        
-        # 모델명 매핑 (기존 LLM 초기화 로직과 동일)
-        model_mapping = {
-            "cld": getattr(MODEL_CONFIG, 'anthropic_model', 'amazon/anthropic/claude-sonnet-4-20250514'),
-            "ax": getattr(MODEL_CONFIG, 'ax_model', 'skt/ax4'),
-            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06'),
-            "gen": getattr(MODEL_CONFIG, 'gemini_model', 'gcp/gemini-2.5-flash')
-        }
-        
-        for model_name in model_names:
-            try:
-                actual_model_name = model_mapping.get(model_name, model_name)
-                
-                # 모델별 설정 (기존 로직과 동일)
-                model_kwargs = {
-                    "temperature": 0.0,
-                    "openai_api_key": getattr(API_CONFIG, 'llm_api_key', os.getenv('OPENAI_API_KEY')),
-                    "openai_api_base": getattr(API_CONFIG, 'llm_api_url', None),
-                    "model": actual_model_name,
-                    "max_tokens": getattr(MODEL_CONFIG, 'llm_max_tokens', 4000)
-                }
-                
-                # GPT 모델의 경우 시드 설정
-                if 'gpt' in actual_model_name.lower():
-                    model_kwargs["seed"] = 42
-                
-                llm_model = ChatOpenAI(**model_kwargs)
-                llm_models.append(llm_model)
-                logger.info(f"✅ LLM 모델 초기화 완료: {model_name} ({actual_model_name})")
-                
-            except Exception as e:
-                logger.error(f"❌ LLM 모델 초기화 실패: {model_name} - {e}")
-                continue
-        
-        return llm_models
+
