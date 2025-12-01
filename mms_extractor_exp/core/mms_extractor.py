@@ -370,7 +370,8 @@ class MMSExtractor:
                 self.alias_pdf_raw,
                 self.stop_item_names,
                 self.num_cand_pgms,
-                self.entity_extraction_mode
+                self.entity_extraction_mode,
+                self._initialize_multiple_llm_models
             )
             logger.info("✅ 서비스 초기화 완료")
             
@@ -494,7 +495,49 @@ class MMSExtractor:
                 logger.warning("임베딩 모델 없이 동작 모드로 전환")
                 self.emb_model = None
 
-    # _initialize_multiple_llm_models moved to ResultBuilder
+    def _initialize_multiple_llm_models(self, model_names: List[str]) -> List:
+        """
+        복수의 LLM 모델을 초기화하는 헬퍼 메서드
+        
+        Args:
+            model_names (List[str]): 초기화할 모델명 리스트 (예: ['ax', 'gpt', 'gen'])
+            
+        Returns:
+            List: 초기화된 LLM 모델 객체 리스트
+        """
+        llm_models = []
+        
+        # 모델명 매핑 (기존 LLM 초기화 로직과 동일)
+        model_mapping = {
+            "cld": getattr(MODEL_CONFIG, 'anthropic_model', 'amazon/anthropic/claude-sonnet-4-20250514'),
+            "ax": getattr(MODEL_CONFIG, 'ax_model', 'skt/ax4'),
+            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06'),
+            "gen": getattr(MODEL_CONFIG, 'gemini_model', 'gcp/gemini-2.5-flash')
+        }
+        
+        for model_name in model_names:
+            try:
+                actual_model_name = model_mapping.get(model_name, model_name)
+                
+                # 모델별 설정 (기존 로직과 동일)
+                model_kwargs = {
+                    "temperature": 0.0,
+                    "openai_api_key": getattr(API_CONFIG, 'llm_api_key', os.getenv('OPENAI_API_KEY')),
+                    "openai_api_base": getattr(API_CONFIG, 'llm_api_url', None),
+                    "model": actual_model_name,
+                    "max_tokens": getattr(MODEL_CONFIG, 'llm_max_tokens', 4000),
+                    "seed": getattr(MODEL_CONFIG, 'llm_seed', 42)
+                }
+                
+                llm_model = ChatOpenAI(**model_kwargs)
+                llm_models.append(llm_model)
+                logger.info(f"✅ LLM 모델 초기화 완료: {model_name} ({actual_model_name})")
+                
+            except Exception as e:
+                logger.error(f"❌ LLM 모델 초기화 실패: {model_name} - {e}")
+                continue
+        
+        return llm_models
 
     @log_performance
     def _initialize_kiwi(self):
@@ -1433,7 +1476,7 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args_or_data, 
         
     try:
         # MongoDB 임포트 시도
-        from mongodb_utils import save_to_mongodb
+        from utils.mongodb_utils import save_to_mongodb
         
         # 스레드 로컬 저장소에서 프롬프트 정보 가져오기
         stored_prompts = result.get('prompts', get_stored_prompts_from_thread()) 

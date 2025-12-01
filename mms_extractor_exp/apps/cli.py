@@ -55,7 +55,7 @@ def main():
                        help='로그 레벨 설정')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
     parser.add_argument('--save-to-mongodb', action='store_true', default=True, 
-                       help='추출 결과를 MongoDB에 저장 (mongodb_utils.py 필요)')
+                       help='추출 결과를 MongoDB에 저장 (utils/mongodb_utils.py 필요)')
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')
 
@@ -67,10 +67,10 @@ def main():
     # MongoDB 연결 테스트만 수행하는 경우
     if args.test_mongodb:
         try:
-            from mongodb_utils import test_mongodb_connection
+            from utils.mongodb_utils import test_mongodb_connection
         except ImportError:
             print("❌ MongoDB 유틸리티를 찾을 수 없습니다.")
-            print("mongodb_utils.py 파일과 pymongo 패키지를 확인하세요.")
+            print("utils/mongodb_utils.py 파일과 pymongo 패키지를 확인하세요.")
             exit(1)
         
         print("🔌 MongoDB 연결 테스트 중...")
@@ -168,7 +168,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-[SK텔레콤] 반가워요 5G 아이폰17/ 17 Pro 사전예약 안내\n(광고)[SKT] 아이폰 17/17 Pro 사전예약 안내  #04 고객님, 안녕하세요. 최고의 스마트폰 칩과 카메라, 견고한 세라믹 실드에 5G 기술까지! 이 모든 것을 갖춘 아이폰 17/17 Pro를 만나 보세요.  ▶ 혜택받고 사전예약하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx   ■ 사전예약 기간 - 2020년 10월 23일(금)~10월 29일(목) * 2020년 10월 30일(금)부터 순서대로 배송 후 개통 진행  ■ 아이폰 17/17 Pro 스펙 - Hi, Speed. 아이폰 최초의 5G 지원 - 스마트폰 사상 가장 빠른 A14 Bionic 칩 - 매끈하고 강화된 내구성을 가진 세라믹 글라스 적용 디자인 - 저조도 사진의 품질을 한 차원 끌어올려 주는 카메라 시스템 - 최초의 Dolby Vision 영상 카메라 탑재   ■ T다이렉트샵 특별 사은품(택1) ① [사죠영] 죠르디 한정판 기프트 ② [프리디] 멀티 무선 충전기 ③ [에이프릴스톤] 보조배터리+멀티백 ④ [크레앙] 3in1 무선 충전 살균기  ※ 이 외에도 더 많은 T기프트가 있습니다. .  ▶ T다이렉트샵 카카오톡 상담하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA  ■ 문의: SKT 고객센터(1558, 무료)   ※ 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.  SKT와 함께해주셔서 감사합니다. 무료 수신거부 1504
+  message: '[SK텔레콤] 공식인증대리점 혜택 안내드립니다.\t(광고)[SKT] 공식인증대리점 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점에서 상담받고 다양한 혜택을 누려 보세요.__■ 공식인증대리점 혜택_- T끼리 온가족할인, 선택약정으로 통신 요금 최대 55% 할인_- 갤럭시 폴더블/퀀텀, 아이폰 등 기기 할인 상담__■ T 멤버십 고객 감사제 안내_- 2025년 12월까지 매달 Big 3 제휴사 릴레이 할인(10일 단위)__궁금한 점이 있으면 가까운 T 월드 매장에 방문하거나 전화로 문의해 주세요.__▶ 가까운 매장 찾기: https://tworldfriends.co.kr/h/B11109__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
 
 """
             

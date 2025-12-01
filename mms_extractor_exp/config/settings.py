@@ -122,6 +122,7 @@ class ModelConfig:
     # LLM generation parameters
     llm_max_tokens: int = 4000  # Maximum tokens for LLM responses
     temperature: float = 0.0  # Temperature for LLM generation (0.0 = deterministic, 1.0 = creative)
+    llm_seed: int = 42  # Seed for LLM generation
     
     def __post_init__(self):
         """Validate model loading mode after initialization."""

@@ -52,6 +52,7 @@ from core.mms_extractor import MMSExtractor, process_message_with_dag, process_m
 
 # MongoDB 유틸리티는 필요할 때 동적으로 임포트
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+# from utils.mongodb_utils import save_to_mongodb # (필요시 사용)
 import multiprocessing
 import time
 
@@ -688,7 +689,7 @@ def main():
     
     # MongoDB arguments
     parser.add_argument('--save-to-mongodb', action='store_true', default=True,
-                       help='추출 결과를 MongoDB에 저장 (mongodb_utils.py 필요)')
+                       help='추출 결과를 MongoDB에 저장 (utils/mongodb_utils.py 필요)')
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')
 
@@ -697,10 +698,10 @@ def main():
     # MongoDB 연결 테스트만 수행하는 경우
     if args.test_mongodb:
         try:
-            from mongodb_utils import test_mongodb_connection
+            from utils.mongodb_utils import test_mongodb_connection
         except ImportError:
             print("❌ MongoDB 유틸리티를 찾을 수 없습니다.")
-            print("mongodb_utils.py 파일과 pymongo 패키지를 확인하세요.")
+            print("utils/mongodb_utils.py 파일과 pymongo 패키지를 확인하세요.")
             sys.exit(1)
         
         print("🔌 MongoDB 연결 테스트 중...")

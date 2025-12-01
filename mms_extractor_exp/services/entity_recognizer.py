@@ -353,6 +353,7 @@ class EntityRecognizer:
     @log_performance
     def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None, external_cand_entities: List[str] = []) -> pd.DataFrame:
         """LLM-based entity extraction with multi-model support"""
+
         try:
             logger.info("=== LLM Entity Extraction Started ===")
             msg_text = validate_text_input(msg_text)
@@ -367,9 +368,20 @@ class EntityRecognizer:
                 model_name = getattr(llm_model, 'model_name', 'Unknown')
                 
                 try:
-                    zero_shot_prompt = PromptTemplate(input_variables=["prompt"], template="{prompt}")
-                    chain = zero_shot_prompt | llm_model
-                    response = chain.invoke({"prompt": prompt}).content
+                    # zero_shot_prompt = PromptTemplate(input_variables=["prompt"], template="{prompt}")
+                    # chain = zero_shot_prompt | llm_model
+                    # response = chain.invoke({"prompt": prompt}).content
+
+                    response = llm_model.invoke(f"""
+                    
+                    {prompt}
+                    
+                    """).content
+
+                    # print("="*100)
+                    # print(prompt)
+                    # print("-"*100)
+                    # print(response)
                     
                     cand_entity_list_raw = self._parse_entity_response(response)
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
@@ -412,6 +424,8 @@ class EntityRecognizer:
                 all_entities.extend(external_cand_entities)
             
             cand_entity_list = list(set(all_entities))
+
+            # print(cand_entity_list)
             
             # N-gram expansion
             cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
@@ -429,6 +443,8 @@ class EntityRecognizer:
             entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
             cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
             optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=10)
+
+            # print(entities_in_message)
             
             second_stage_llm = llm_models[0] if llm_models else self.llm_model
             
@@ -458,6 +474,8 @@ class EntityRecognizer:
             
             cand_entity_list = list(set(sum(batch_results, [])))
             
+            # print(cand_entity_list)
+            
             cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list")
             
             return cand_entities_sim
@@ -470,6 +488,7 @@ class EntityRecognizer:
     def _match_entities_with_products(self, cand_entity_list: List[str], rank_limit: int) -> pd.DataFrame:
         """Match candidate entities with product database"""
         try:
+            # print(cand_entity_list)
             similarities_fuzzy = parallel_fuzzy_similarity(
                 cand_entity_list,
                 self.item_pdf_all['item_nm_alias'].unique(),
@@ -534,6 +553,9 @@ class EntityRecognizer:
                     on='item_nm_alias',
                     how='left'
                 )
+
+
+            # print(cand_entities_sim['item_nm_alias'].unique())
             
             return cand_entities_sim
             
