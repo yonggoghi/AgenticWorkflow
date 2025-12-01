@@ -385,7 +385,12 @@ class MMSExtractor:
             self.workflow_engine.add_step(ResponseParsingStep())
             self.workflow_engine.add_step(ResultConstructionStep(self.result_builder))
             self.workflow_engine.add_step(ValidationStep())
-            self.workflow_engine.add_step(DAGExtractionStep())
+            
+            # DAG 추출 단계는 플래그가 활성화된 경우만 등록
+            if self.extract_entity_dag:
+                self.workflow_engine.add_step(DAGExtractionStep())
+                logger.info("🎯 DAG 추출 단계 등록됨")
+            
             logger.info(f"✅ Workflow 엔진 초기화 완료 ({len(self.workflow_engine.steps)}개 단계)")
             
             logger.info("✅ MMSExtractor 초기화 완료")
@@ -1053,11 +1058,11 @@ class MMSExtractor:
             dict: 추출된 정보가 담긴 JSON 구조
         """
         try:
-            # 초기 상태 생성
-            initial_state = WorkflowState({
-                "mms_msg": mms_msg,
-                "extractor": self
-            })
+            # 초기 상태 생성 (typed dataclass)
+            initial_state = WorkflowState(
+                mms_msg=mms_msg,
+                extractor=self
+            )
             
             # Workflow 실행
             final_state = self.workflow_engine.run(initial_state)
