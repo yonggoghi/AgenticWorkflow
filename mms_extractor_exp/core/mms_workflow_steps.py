@@ -9,13 +9,13 @@ MMS Workflow Steps - MMS 추출기 워크플로우 단계 구현
 import logging
 import copy
 from typing import Any, Dict
-from workflow_core import WorkflowStep, WorkflowState
+from .workflow_core import WorkflowStep, WorkflowState
 from utils import (
     validate_text_input,
     safe_check_empty,
     extract_json_objects
 )
-from helpers import PromptManager, validate_extraction_result, detect_schema_response
+from utils import PromptManager, validate_extraction_result, detect_schema_response
 
 
 logger = logging.getLogger(__name__)

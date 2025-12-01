@@ -45,7 +45,7 @@ if check_api_server 8000; then
 else
     echo -e "${YELLOW}⚠️  MMS 추출기 API 서버가 실행되지 않았습니다.${NC}"
     echo -e "${YELLOW}   다음 명령으로 API 서버를 먼저 시작하세요:${NC}"
-    echo -e "${YELLOW}   python api.py --host 0.0.0.0 --port 8000${NC}"
+    echo -e "${YELLOW}   python apps/api.py --host 0.0.0.0 --port 8000${NC}"
     echo ""
     
     read -p "그래도 데모 서버를 시작하시겠습니까? (y/N): " -n 1 -r
@@ -77,4 +77,5 @@ echo ""
 echo -e "${GREEN}🚀 서버 시작...${NC}"
 
 # Python 스크립트 실행
-python demo_server.py --host "$DEMO_HOST" --port "$DEMO_PORT" "$@"
+# Python 스크립트 실행
+python ../apps/api.py --host "$DEMO_HOST" --port "$DEMO_PORT" "$@"

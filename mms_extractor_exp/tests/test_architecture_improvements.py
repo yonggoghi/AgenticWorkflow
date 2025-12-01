@@ -8,7 +8,7 @@ Simplified test for architectural improvements:
 import sys
 sys.path.insert(0, '.')
 
-from workflow_core import WorkflowState
+from core.workflow_core import WorkflowState
 import pandas as pd
 
 def test_typed_state():

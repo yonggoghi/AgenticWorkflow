@@ -24,7 +24,7 @@ def test_workflow():
         logger.info("=" * 60)
         
         # MMSExtractor 임포트 및 초기화
-        from mms_extractor import MMSExtractor
+        from core.mms_extractor import MMSExtractor
         
         logger.info("MMSExtractor 초기화 중...")
         extractor = MMSExtractor(
