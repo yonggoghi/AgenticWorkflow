@@ -397,8 +397,8 @@ def display_results(result: Dict[str, Any]):
         # 하위 호환성을 위한 다른 키 확인
         elif 'extracted_data' in result:
             extracted_data = result['extracted_data']
-        elif 'extracted_result' in result:
-            extracted_data = result['extracted_result']
+        elif 'ext_result' in result:
+            extracted_data = result['ext_result']
         
         if extracted_data:
             # 딕셔너리인 경우
