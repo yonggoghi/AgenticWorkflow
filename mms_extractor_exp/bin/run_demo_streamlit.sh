@@ -43,4 +43,4 @@ echo "🌐 Demo 서버 포트: $DEMO_PORT"
 echo ""
 
 # Streamlit 실행 (우리가 원하는 인수들을 스크립트에 전달)
-streamlit run demo_streamlit.py --server.port 8501 -- --api-port $API_PORT --demo-port $DEMO_PORT
+streamlit run ../apps/demo_streamlit.py --server.port 8501 -- --api-port $API_PORT --demo-port $DEMO_PORT

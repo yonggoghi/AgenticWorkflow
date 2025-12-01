@@ -68,6 +68,8 @@ python api.py --test --message "샘플 MMS 텍스트"
 # =============================================================================
 import sys
 import os
+# Add parent directory to path to allow imports from core
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 import logging
 import time
@@ -100,9 +102,10 @@ sys.path.insert(0, str(current_dir))
 # =============================================================================
 # MMS 추출기 및 설정 모듈 임포트
 try:
-    from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
+    from core.mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
-    from entity_dag_extractor import DAGParser, extract_dag, llm_ax, llm_gem, llm_cld, llm_gen, llm_gpt
+    # Lazy import for DAG extractor
+    from core.entity_dag_extractor import DAGParser, extract_dag, llm_ax, llm_gem, llm_cld, llm_gen, llm_gpt
     from quick_extractor import MessageInfoExtractor  # Quick Extractor 임포트
 except ImportError as e:
     print(f"❌ 모듈 임포트 오류: {e}")

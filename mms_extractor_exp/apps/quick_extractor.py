@@ -14,6 +14,11 @@ from typing import Dict, List, Optional
 from collections import Counter
 import numpy as np
 
+import sys
+import os
+# Add parent directory to path to allow imports from core
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # mms_extractor.py와 동일한 설정 사용
 try:
     from config.settings import API_CONFIG, MODEL_CONFIG

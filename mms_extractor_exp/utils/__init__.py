@@ -957,3 +957,14 @@ def extract_ngram_candidates(text, min_n=1, max_n=5):
     
     return candidates
 
+
+# ===== Imports from newly added modules (from helpers/) =====
+
+# Import from prompt_utils (formerly helpers/prompt_manager.py)
+from .prompt_utils import PromptManager
+
+# Import from validation_utils (formerly helpers/validation.py)
+from .validation_utils import (
+    validate_extraction_result,
+    detect_schema_response
+)

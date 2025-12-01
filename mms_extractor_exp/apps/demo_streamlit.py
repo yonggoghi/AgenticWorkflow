@@ -8,6 +8,9 @@ from pathlib import Path
 import pandas as pd
 import argparse
 import sys
+import os
+# Add parent directory to path to allow imports from core
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # MongoDB 유틸리티는 필요할 때 동적으로 임포트
 

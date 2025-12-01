@@ -44,10 +44,11 @@ import logging
 from pathlib import Path
 
 # Add current directory to path for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add parent directory to path to allow imports from core
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.settings import METADATA_CONFIG
-from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
+from core.mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
 
 # MongoDB 유틸리티는 필요할 때 동적으로 임포트
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed

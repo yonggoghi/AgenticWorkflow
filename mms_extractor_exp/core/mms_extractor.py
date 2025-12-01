@@ -91,7 +91,7 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from rapidfuzz import fuzz, process
 from kiwipiepy import Kiwi
 from joblib import Parallel, delayed
-from entity_dag_extractor import DAGParser, extract_dag
+from .entity_dag_extractor import DAGParser, extract_dag
 
 # 프롬프트 모듈 임포트
 from prompts import (
@@ -108,11 +108,11 @@ from prompts import (
 
 
 # Helpers 모듈 임포트
-from helpers import PromptManager
+from utils import PromptManager
 
 # Workflow 모듈 임포트
-from workflow_core import WorkflowEngine, WorkflowState
-from mms_workflow_steps import (
+from .workflow_core import WorkflowEngine, WorkflowState
+from .mms_workflow_steps import (
     InputValidationStep,
     EntityExtractionStep,
     ProgramClassificationStep,

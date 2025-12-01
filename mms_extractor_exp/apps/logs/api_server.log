@@ -1,0 +1,549 @@
+2025-12-01 13:45:49,055 - __main__ - INFO - 🔧 --storage 옵션: local
+2025-12-01 13:45:49,055 - __main__ - INFO - 🔧 환경변수 DAG_STORAGE_MODE 설정: local
+2025-12-01 13:45:49,056 - __main__ - INFO - 📁 DAG 저장 모드: local - API server provides images (URL: API server IP)
+2025-12-01 13:45:49,056 - __main__ - INFO - 📂 DAG 저장 경로: dag_images
+2025-12-01 13:45:49,056 - __main__ - INFO - 🌐 로컬 서버 URL: http://172.23.113.94:8000
+2025-12-01 13:45:49,056 - __main__ - INFO - CLI 데이터 소스 설정: local
+2025-12-01 13:45:49,056 - __main__ - INFO - 전역 추출기 초기화 중...
+2025-12-01 13:45:49,056 - __main__ - INFO - 데이터 소스로 전역 추출기 초기화 중: local
+2025-12-01 13:45:49,056 - core.mms_extractor - INFO - 🚀 MMSExtractor 초기화 시작
+2025-12-01 13:45:49,056 - core.mms_extractor - INFO - ⚙️ 기본 설정 적용 중...
+2025-12-01 13:45:49,056 - core.mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-12-01 13:45:49,056 - core.mms_extractor - INFO - 🔑 환경변수 로드 중...
+2025-12-01 13:45:49,064 - core.mms_extractor - INFO - 💻 디바이스 설정 중...
+2025-12-01 13:45:49,146 - core.mms_extractor - INFO - Using device: mps
+2025-12-01 13:45:49,146 - utils - INFO - _initialize_device 실행완료: 0.08초
+2025-12-01 13:45:49,146 - core.mms_extractor - INFO - 🤖 LLM 모델 초기화 중...
+2025-12-01 13:45:49,147 - core.mms_extractor - INFO - LLM 초기화 완료: gemini (gcp/gemini-2.5-flash)
+2025-12-01 13:45:49,147 - utils - INFO - _initialize_llm 실행완료: 0.00초
+2025-12-01 13:45:49,147 - core.mms_extractor - INFO - 🧠 임베딩 모델 로드 중...
+2025-12-01 13:45:49,147 - utils - INFO - Loading model from ./models/ko-sbert-nli...
+2025-12-01 13:45:49,148 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-12-01 13:45:49,148 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-12-01 13:45:49,762 - utils - INFO - Model loaded on mps
+2025-12-01 13:45:49,762 - utils - INFO - _initialize_embedding_model 실행완료: 0.62초
+2025-12-01 13:45:49,762 - core.mms_extractor - INFO - 📝 NLP 도구 (Kiwi) 초기화 중...
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-12-01 13:45:50,461 - utils - INFO - _initialize_kiwi 실행완료: 0.70초
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - 📁 데이터 로드 중...
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - ============================================================
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - ============================================================
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - 데이터 소스 모드: local
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - 1️⃣ 상품 정보 로드 및 준비 중...
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - === 상품 정보 로드 및 준비 시작 (모드: local) ===
+2025-12-01 13:45:50,461 - core.mms_extractor - INFO - 📁 로컬 CSV 파일에서 로드
+2025-12-01 13:45:50,568 - core.mms_extractor - INFO - 원본 데이터 크기: (18070, 9)
+2025-12-01 13:45:50,648 - core.mms_extractor - INFO - 컬럼명 소문자 변환 완료
+2025-12-01 13:45:50,652 - core.mms_extractor - INFO - 도메인 필터링: 18070 -> 12305
+2025-12-01 13:45:50,652 - core.mms_extractor - INFO - 🔗 별칭 규칙 로드 중...
+2025-12-01 13:45:50,885 - core.mms_extractor - INFO - 별칭 규칙 수: 427개
+2025-12-01 13:45:50,885 - core.mms_extractor - INFO - 🔄 별칭 규칙 연쇄 적용 중...
+2025-12-01 13:46:00,752 - core.mms_extractor - INFO - 별칭 explode: 156399 -> 42462
+2025-12-01 13:46:00,810 - core.mms_extractor - INFO - TEST 필터링: 42465 -> 42314
+2025-12-01 13:46:00,810 - core.mms_extractor - INFO - === 상품 정보 준비 완료 ===
+2025-12-01 13:46:00,810 - core.mms_extractor - INFO - 최종 데이터 크기: (42314, 14)
+2025-12-01 13:46:00,810 - core.mms_extractor - INFO - 최종 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-12-01 13:46:00,810 - core.mms_extractor - INFO - ✅ 모든 중요 컬럼 존재
+2025-12-01 13:46:00,811 - core.mms_extractor - INFO - 상품명 샘플: ['우주패스 Netflix 인증', '우주패스 Netflix 인증', '우주패스 Netflix 인증']
+2025-12-01 13:46:00,812 - core.mms_extractor - INFO - 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증']
+2025-12-01 13:46:00,815 - core.mms_extractor - INFO - 상품 정보 최종 데이터 크기: (42314, 14)
+2025-12-01 13:46:00,815 - core.mms_extractor - INFO - 상품 정보 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-12-01 13:46:00,815 - core.mms_extractor - INFO - 2️⃣ 정지어 로드 중...
+2025-12-01 13:46:00,817 - core.mms_extractor - INFO - 정지어 로드 완료: 202개
+2025-12-01 13:46:00,817 - core.mms_extractor - INFO - 로드된 정지어 수: 202개
+2025-12-01 13:46:00,817 - core.mms_extractor - INFO - 3️⃣ Kiwi에 상품명 등록 중...
+2025-12-01 13:46:00,817 - core.mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-12-01 13:46:00,821 - core.mms_extractor - INFO - 등록할 고유 별칭 수: 34387개
+2025-12-01 13:46:00,824 - core.mms_extractor - INFO - 유효한 별칭 수: 34387개
+2025-12-01 13:46:00,824 - core.mms_extractor - INFO - 등록할 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증', '우주pass Netflix 인증', '우주패스 넷플릭스 인증']
+2025-12-01 13:46:00,887 - core.mms_extractor - INFO - Kiwi에 상품명 등록 완료: 34387개 성공, 0개 실패
+2025-12-01 13:46:00,887 - core.mms_extractor - INFO - 4️⃣ 프로그램 분류 정보 로드 중...
+2025-12-01 13:46:00,887 - core.mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-12-01 13:46:00,897 - core.mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-12-01 13:46:00,897 - core.mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-12-01 13:46:01,174 - core.mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-12-01 13:46:01,174 - core.mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-12-01 13:46:01,174 - core.mms_extractor - INFO - 5️⃣ 조직 정보 로드 중...
+2025-12-01 13:46:01,174 - core.mms_extractor - INFO - === 조직 정보 로드 시작 (모드: local) ===
+2025-12-01 13:46:01,174 - core.mms_extractor - INFO - 로컬 CSV 파일에서 조직 정보 로드 중...
+2025-12-01 13:46:01,174 - core.mms_extractor - INFO - CSV 파일 경로: ./data/offer_master_data.csv
+2025-12-01 13:46:01,258 - core.mms_extractor - INFO - 로컬 CSV에서 로드된 원본 조직 데이터 크기: (18070, 9)
+2025-12-01 13:46:01,258 - core.mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['ITEM_ID', 'ITEM_NM', 'ITEM_DMN', 'ITEM_DESC', 'ITEM_CTG', 'ITEM_ALS', 'ITEM_EMB_VEC', 'OFER_CD', 'OPER_DT_HMS']
+2025-12-01 13:46:01,260 - core.mms_extractor - INFO - 로컬 모드: ITEM_DMN='R' 필터링 후 데이터 크기: (5765, 9)
+2025-12-01 13:46:01,261 - core.mms_extractor - INFO - 조직 데이터 샘플 (3개 행): [{'item_id': 'D15198_0020', 'item_nm': '가로수대리점 하늘도시점', 'item_dmn': 'R', 'item_desc': '인천 중구 하늘중앙로195번길 11,&&1층 105호(중산동)&&003202309011', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541517', 'oper_dt_hms': 20250909151123}, {'item_id': 'D13622_0398', 'item_nm': 'MD대리점 주엽직영점', 'item_dmn': 'R', 'item_desc': '경기 고양시 일산서구 중앙로 1426,&&(주엽동) 1층111호&&003109152662', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541945', 'oper_dt_hms': 20250909151123}, {'item_id': 'D15320_0001', 'item_nm': '강서대리점(온라인매장)', 'item_dmn': 'R', 'item_desc': '서울 양천구 남부순환로 354,&&1층 (신월동)&&007078567800', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430542104', 'oper_dt_hms': 20250909151123}]
+2025-12-01 13:46:01,261 - core.mms_extractor - INFO - === 조직 정보 로드 최종 완료: 5765개 조직 ===
+2025-12-01 13:46:01,261 - core.mms_extractor - INFO - 최종 조직 데이터 스키마: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-12-01 13:46:01,261 - core.mms_extractor - INFO - 모든 중요 조직 컬럼이 정상적으로 로드되었습니다.
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (5765, 9)
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - ============================================================
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - ============================================================
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - ✅ 상품 데이터: (42314, 14)
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - ✅ 조직 데이터: (5765, 9)
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - ✅ 정지어: 202개
+2025-12-01 13:46:01,262 - core.mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-12-01 13:46:01,265 - core.mms_extractor - INFO - 고유 상품명 수: 8219개
+2025-12-01 13:46:01,271 - core.mms_extractor - INFO - 고유 별칭 수: 34387개
+2025-12-01 13:46:01,273 - core.mms_extractor - INFO - 고유 상품ID 수: 12244개
+2025-12-01 13:46:01,273 - utils - INFO - _load_data 실행완료: 10.81초
+2025-12-01 13:46:01,273 - core.mms_extractor - INFO - 🛠️ 서비스 초기화 중...
+2025-12-01 13:46:01,273 - core.mms_extractor - INFO - ✅ 서비스 초기화 완료
+2025-12-01 13:46:01,273 - core.mms_extractor - INFO - ⚙️ Workflow 엔진 초기화 중...
+2025-12-01 13:46:01,273 - core.mms_extractor - INFO - ✅ Workflow 엔진 초기화 완료 (8개 단계)
+2025-12-01 13:46:01,273 - core.mms_extractor - INFO - ✅ MMSExtractor 초기화 완료
+2025-12-01 13:46:01,273 - __main__ - INFO - 전역 추출기 초기화 완료
+2025-12-01 13:46:01,273 - __main__ - INFO - 파싱된 인자: host=0.0.0.0, port=8000, debug=False
+2025-12-01 13:46:01,273 - __main__ - INFO - ✅ 전역 추출기 초기화 완료, 요청 처리 준비됨
+2025-12-01 13:46:01,273 - __main__ - INFO - MMS 추출기 API 서버를 0.0.0.0:8000에서 시작합니다
+2025-12-01 13:46:01,273 - __main__ - INFO - 사용 가능한 엔드포인트:
+2025-12-01 13:46:01,273 - __main__ - INFO -   GET  /health - 헬스체크
+2025-12-01 13:46:01,273 - __main__ - INFO -   GET  /models - 사용 가능한 모델 목록
+2025-12-01 13:46:01,273 - __main__ - INFO -   GET  /status - 서버 상태 조회
+2025-12-01 13:46:01,273 - __main__ - INFO -   POST /extract - 단일 메시지 추출
+2025-12-01 13:46:01,273 - __main__ - INFO -   POST /extract/batch - 다중 메시지 배치 추출
+2025-12-01 13:46:01,273 - __main__ - INFO -   POST /dag - Entity DAG 추출
+2025-12-01 13:46:01,307 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://172.23.113.94:8000
+2025-12-01 13:46:01,307 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-01 13:46:49,132 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-12-01 13:46:49,133 - core.workflow_core - INFO - ============================================================
+2025-12-01 13:46:49,133 - core.workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-01 13:46:49,133 - core.workflow_core - INFO - ============================================================
+2025-12-01 13:46:49,133 - core.workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - 메시지 내용: 
+    광고 제목:[SK텔레콤] 2월 0 day 혜택 안내
+광고 내용:(광고)[SKT] 2월 0 day 혜택 안내__[2월 10일(토) 혜택]_만 13~34세 고객이라면_베어유 모든 강의 14일 무료 수강 쿠폰 드립니다!_(선착순 3만 명 증정)_▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit...
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - 메시지 길이: 376 문자
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - LLM 모델: gemini
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-01 13:46:49,134 - core.mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-01 13:46:49,134 - core.workflow_core - INFO - ✅ InputValidationStep 완료 (0.00초)
+2025-12-01 13:46:49,134 - core.workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-01 13:46:49,134 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-01 13:46:49,134 - services.entity_recognizer - INFO - Message length: 370 chars
+2025-12-01 13:46:49,141 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-01 13:46:49,849 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): []
+2025-12-01 13:46:49,849 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-01 13:47:03,735 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-01 13:47:03,890 - utils - INFO - extract_entities_from_kiwi 실행완료: 14.76초
+2025-12-01 13:47:03,891 - core.mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: []
+2025-12-01 13:47:03,891 - core.mms_workflow_steps - INFO - 추출된 후보 엔티티: ['CU(0 day)_0 day', '고피자_0 Day', 'CU(0 day)_CU(0 day)', '씽씽_0 day', 'CU_0 Day', '쿤달_0 day', '갓잇_0 day', '던킨_0 day', '컬리_0 day', '쿤달_0 day 20일 혜택', '쿤달_0 day 10일 혜택', '던킨_0 day 10일 혜택', '던킨_0 day 30일 혜택', '던킨_0 day 20일 혜택', 'CU_0 day 30일 혜택', 'CU_0 day 20일 혜택', 'CU_0 day 10일 혜택', '쿤달_0 day 30일 혜택']
+2025-12-01 13:47:03,891 - core.mms_workflow_steps - INFO - 매칭된 상품 정보: (18, 2)
+2025-12-01 13:47:03,891 - core.workflow_core - INFO - ✅ EntityExtractionStep 완료 (14.76초)
+2025-12-01 13:47:03,891 - core.workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-01 13:47:04,055 - core.mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-01 13:47:04,055 - core.workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.16초)
+2025-12-01 13:47:04,055 - core.workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-01 13:47:04,055 - core.mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 387 문자
+2025-12-01 13:47:04,055 - core.mms_workflow_steps - INFO - 후보 아이템 리스트 크기: 18개
+2025-12-01 13:47:04,055 - core.mms_workflow_steps - INFO - 후보 아이템 리스트: ['CU(0 day)_0 day', '고피자_0 Day', 'CU(0 day)_CU(0 day)', '씽씽_0 day', 'CU_0 Day', '쿤달_0 day', '갓잇_0 day', '던킨_0 day', '컬리_0 day', '쿤달_0 day 20일 혜택', '쿤달_0 day 10일 혜택', '던킨_0 day 10일 혜택', '던킨_0 day 30일 혜택', '던킨_0 day 20일 혜택', 'CU_0 day 30일 혜택', 'CU_0 day 20일 혜택', 'CU_0 day 10일 혜택', '쿤달_0 day 30일 혜택']
+2025-12-01 13:47:04,055 - core.mms_workflow_steps - INFO - extra_item_pdf 크기: (18, 2)
+2025-12-01 13:47:04,055 - core.mms_workflow_steps - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-12-01 13:47:04,056 - core.mms_workflow_steps - INFO - extra_item_pdf 샘플: [{'item_nm': 'CU(0 day)_0 day', 'item_id': ['V861_9301']}, {'item_nm': 'CU(0 day)_CU(0 day)', 'item_id': ['V861_0000']}]
+2025-12-01 13:47:04,056 - core.mms_workflow_steps - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-12-01 13:47:04,056 - core.workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-01 13:47:04,056 - core.workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-01 13:47:04,056 - core.mms_workflow_steps - INFO - 구성된 프롬프트 길이: 7619 문자
+2025-12-01 13:47:04,056 - core.mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: True
+2025-12-01 13:47:04,056 - utils.prompt_utils - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-01 13:47:04,056 - utils.prompt_utils - INFO - 📝 프롬프트 길이: 7,619 문자
+2025-12-01 13:47:11,885 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:11,901 - core.mms_workflow_steps - INFO - LLM 응답 길이: 1149 문자
+2025-12-01 13:47:11,902 - core.mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "2월 0 day 혜택: 베어유 무료 수강 및 뚜레쥬르 빵 쿠폰",
+    "purpose": [
+        "혜택 안내",
+        "쿠폰 제공 안내",
+        "이벤트 응모 유도",
+        "웹/앱 접속 유도",
+        "수신 거부 안내"
+    ],
+    "sales_script": "2월 0 day 혜택! 베어유 무료 수강, 에이닷 시크릿코드 입력 시 뚜레쥬르 빵 쿠폰 드려요!",
+    "product": [
+        {
+            "name": "베어유 모든 강의",
+            "action": "쿠폰다운로드"
+        },
+        {
+            "name": "에이닷 T 멤버십 시크릿코드",
+            "action": "코드입력"
+        },
+        {
+            "name": "뚜레쥬르 데일리우유식빵",
+   ...
+2025-12-01 13:47:11,902 - core.workflow_core - INFO - ✅ LLMExtractionStep 완료 (7.85초)
+2025-12-01 13:47:11,902 - core.workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-01 13:47:11,902 - core.mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-01 13:47:11,902 - core.mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-01 13:47:11,902 - core.mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': '2월 0 day 혜택: 베어유 무료 수강 및 뚜레쥬르 빵 쿠폰', 'purpose': ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도', '수신 거부 안내'], 'sales_script': '2월 0 day 혜택! 베어유 무료 수강, 에이닷 시크릿코드 입력 시 뚜레쥬르 빵 쿠폰 드려요!', 'product': [{'name': '베어유 모든 강의', 'action': '쿠폰다운로드'}, {'name': '에이닷 T 멤버십 시크릿코드', 'action': '코드입력'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '쿠폰다운로드'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/t.do?m=#61&s=24589&a=&u=https://bit.ly/3SfBjjc', 'action': '추가 정보'}, {'type': 'URL', 'value': 'https://bit.ly/3HCUhLM', 'action': '코드입력'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_T멤버십', '사용법/혜택/이벤트안내_AI']}
+2025-12-01 13:47:11,903 - core.workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-01 13:47:11,903 - core.workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-01 13:47:11,903 - services.result_builder - INFO - ================================================================================
+2025-12-01 13:47:11,903 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_final_result 시작
+2025-12-01 13:47:11,903 - services.result_builder - INFO - ================================================================================
+2025-12-01 13:47:11,903 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-01 13:47:11,903 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-01 13:47:11,903 - services.result_builder - INFO -    - 원본 product 내용: [{'name': '베어유 모든 강의', 'action': '쿠폰다운로드'}, {'name': '에이닷 T 멤버십 시크릿코드', 'action': '코드입력'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '쿠폰다운로드'}]
+2025-12-01 13:47:11,903 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 3개
+2025-12-01 13:47:11,903 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': '베어유 모든 강의', 'action': '쿠폰다운로드'}, {'name': '에이닷 T 멤버십 시크릿코드', 'action': '코드입력'}, {'name': '뚜레쥬르 데일리우유식빵', 'action': '쿠폰다운로드'}]
+2025-12-01 13:47:11,903 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['베어유 모든 강의', '에이닷 T 멤버십 시크릿코드', '뚜레쥬르 데일리우유식빵']
+2025-12-01 13:47:11,903 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: []
+2025-12-01 13:47:11,903 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-01 13:47:11,903 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-01 13:47:11,904 - services.result_builder - INFO - ✅ LLM 모델 초기화 완료: ax (skt/ax4)
+2025-12-01 13:47:11,904 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-01 13:47:11,904 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-01 13:47:14,270 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:15,517 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:15,559 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:15,637 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:16,133 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:16,209 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:16,421 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:16,962 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:47:16,969 - utils - INFO - extract_entities_by_llm 실행완료: 5.06초
+2025-12-01 13:47:16,969 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: (4, 5)
+2025-12-01 13:47:16,970 - services.result_builder - INFO -    📊 similarities_fuzzy 샘플 (처음 3개):
+2025-12-01 13:47:16,970 - services.result_builder - INFO - [{'item_name_in_msg': '0 day', 'item_nm_alias': '베어유_0 day', 'sim': 1.6177777777777778, 'rank': 2.0, 'item_dmn_nm': '기타'}, {'item_name_in_msg': '0 day', 'item_nm_alias': '뚜레쥬르_0 Day', 'sim': 1.5783333333333331, 'rank': 3.0, 'item_dmn_nm': '기타'}, {'item_name_in_msg': '베어유', 'item_nm_alias': '베어유_베어유', 'sim': 1.4942857142857142, 'rank': 1.0, 'item_dmn_nm': '기타'}]
+2025-12-01 13:47:16,970 - services.result_builder - INFO - 🔍 [STEP 4] alias_pdf_raw와 merge 시작
+2025-12-01 13:47:16,971 - services.result_builder - INFO -    - alias_pdf_raw 크기: (187, 6)
+2025-12-01 13:47:16,973 - services.result_builder - INFO -    ✅ merged_df 크기: (4, 7)
+2025-12-01 13:47:16,973 - services.result_builder - INFO -    📊 merged_df 샘플 (처음 3개):
+2025-12-01 13:47:16,974 - services.result_builder - INFO - [{'item_name_in_msg': '0 day', 'item_nm_alias': '베어유_0 day', 'sim': 1.6177777777777778, 'rank': 2.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': '0 day', 'item_nm_alias': '뚜레쥬르_0 Day', 'sim': 1.5783333333333331, 'rank': 3.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': '베어유', 'item_nm_alias': '베어유_베어유', 'sim': 1.4942857142857142, 'rank': 1.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}]
+2025-12-01 13:47:16,974 - services.result_builder - INFO - 🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)
+2025-12-01 13:47:16,977 - services.result_builder - INFO -    ✅ filtered_df 크기: (3, 7)
+2025-12-01 13:47:16,977 - services.result_builder - INFO -    📊 filtered_df 샘플 (처음 3개):
+2025-12-01 13:47:16,978 - services.result_builder - INFO - [{'item_name_in_msg': '0 day', 'item_nm_alias': '베어유_0 day', 'sim': 1.6177777777777778, 'rank': 2.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': '베어유', 'item_nm_alias': '베어유_베어유', 'sim': 1.4942857142857142, 'rank': 1.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': '에이닷', 'item_nm_alias': '에이닷 노트', 'sim': 1.545, 'rank': 1.0, 'item_dmn_nm': '구독 상품', 'alias_1': '에이닷', 'type': 'partial'}]
+2025-12-01 13:47:16,978 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-01 13:47:16,978 - services.result_builder - INFO -    - similarities_fuzzy.empty: False
+2025-12-01 13:47:16,978 - services.result_builder - INFO -    ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출
+2025-12-01 13:47:16,978 - services.entity_recognizer - INFO - 🔍 [map_products_with_similarity] Started
+2025-12-01 13:47:16,978 - services.entity_recognizer - INFO -    - Input similarities_fuzzy shape: (4, 5)
+2025-12-01 13:47:16,981 - services.entity_recognizer - INFO -    - Filtering: 4 -> 4
+2025-12-01 13:47:16,990 - services.entity_recognizer - INFO -    ✅ product_tag count: 4
+2025-12-01 13:47:16,990 - services.result_builder - INFO -    ✅ 최종 product 개수: 4개
+2025-12-01 13:47:16,990 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': '뚜레쥬르_0 Day', 'item_id': ['V498_9301'], 'item_name_in_msg': ['0 day'], 'expected_action': ['기타']}, {'item_nm': '베어유_0 day', 'item_id': ['V899_9301'], 'item_name_in_msg': ['0 day'], 'expected_action': ['기타']}, {'item_nm': '베어유_베어유', 'item_id': ['V899_0000'], 'item_name_in_msg': ['베어유'], 'expected_action': ['기타']}, {'item_nm': '에이닷 노트', 'item_id': ['PR00000655'], 'item_name_in_msg': ['에이닷'], 'expected_action': ['기타']}]
+2025-12-01 13:47:16,990 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=4개
+2025-12-01 13:47:16,992 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-01 13:47:16,992 - services.result_builder - INFO -    ✅ 최종 channel 개수: 4개
+2025-12-01 13:47:16,992 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-01 13:47:16,992 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 4개
+2025-12-01 13:47:16,992 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-01 13:47:16,992 - services.result_builder - INFO - ================================================================================
+2025-12-01 13:47:16,992 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_final_result 완료
+2025-12-01 13:47:16,992 - services.result_builder - INFO -    최종 final_result['product'] 개수: 4개
+2025-12-01 13:47:16,992 - services.result_builder - INFO - ================================================================================
+2025-12-01 13:47:16,992 - core.workflow_core - INFO - ✅ ResultConstructionStep 완료 (5.09초)
+2025-12-01 13:47:16,992 - core.workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - 제목: 2월 0 day 혜택: 베어유 무료 수강 및 뚜레쥬르 빵 쿠폰
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - 목적: ['혜택 안내', '쿠폰 제공 안내', '이벤트 응모 유도', '웹/앱 접속 유도', '수신 거부 안내']
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - 판매 스크립트: 2월 0 day 혜택! 베어유 무료 수강, 에이닷 시크릿코드 입력 시 뚜레쥬르 빵 쿠폰 드려요!
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - 상품 수: 4개
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - 채널 수: 4개
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-01 13:47:16,992 - core.mms_workflow_steps - INFO - 오퍼 항목 수: 4개
+2025-12-01 13:47:16,993 - core.workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-01 13:47:16,993 - core.workflow_core - INFO - 
+============================================================
+2025-12-01 13:47:16,993 - core.workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 27.86초)
+2025-12-01 13:47:16,993 - core.workflow_core - INFO - ============================================================
+2025-12-01 13:47:16,993 - core.workflow_core - INFO - 
+📊 실행 요약:
+2025-12-01 13:47:16,993 - core.workflow_core - INFO -   ✅ InputValidationStep: 0.00초
+2025-12-01 13:47:16,993 - core.workflow_core - INFO -   ✅ EntityExtractionStep: 14.76초
+2025-12-01 13:47:16,993 - core.workflow_core - INFO -   ✅ ProgramClassificationStep: 0.16초
+2025-12-01 13:47:16,993 - core.workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-01 13:47:16,993 - core.workflow_core - INFO -   ✅ LLMExtractionStep: 7.85초
+2025-12-01 13:47:16,993 - core.workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-01 13:47:16,993 - core.workflow_core - INFO -   ✅ ResultConstructionStep: 5.09초
+2025-12-01 13:47:16,993 - core.workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-01 13:47:16,993 - utils - INFO - process_message 실행완료: 27.86초
+2025-12-01 13:47:16,993 - __main__ - INFO - MongoDB 저장 중...
+2025-12-01 13:47:16,994 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 1개
+2025-12-01 13:47:16,994 - __main__ - INFO - 추출 완료: 27.862초
+2025-12-01 13:47:16,997 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:47:16] "POST /extract HTTP/1.1" 200 -
+2025-12-01 13:50:11,631 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:50:11] "GET /health HTTP/1.1" 200 -
+2025-12-01 13:50:20,581 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:50:20] "GET /health HTTP/1.1" 200 -
+2025-12-01 13:50:20,611 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:50:20] "GET /health HTTP/1.1" 200 -
+2025-12-01 13:50:29,073 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:50:29] "GET /health HTTP/1.1" 200 -
+2025-12-01 13:50:31,454 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:50:31] "GET /health HTTP/1.1" 200 -
+2025-12-01 13:50:32,886 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:50:32] "GET /health HTTP/1.1" 200 -
+2025-12-01 13:50:32,903 - __main__ - INFO - 🎯 DAG 추출 요청됨 - LLM: ax, 메시지 길이: 614자
+2025-12-01 13:50:32,903 - __main__ - INFO - LLM 모델이 gemini -> ax로 변경됨. 재초기화 중...
+2025-12-01 13:50:32,904 - core.mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-12-01 13:50:32,905 - utils - INFO - _initialize_llm 실행완료: 0.00초
+2025-12-01 13:50:32,905 - __main__ - INFO - 데이터 소스로 메시지 처리 중: local
+2025-12-01 13:50:32,905 - __main__ - INFO - DAG 추출과 함께 순차 처리 시작
+2025-12-01 13:50:32,905 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네! 
+#04 고객님,
+넷플릭스...
+2025-12-01 13:50:32,906 - core.workflow_core - INFO - ============================================================
+2025-12-01 13:50:32,906 - core.workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-01 13:50:32,906 - core.workflow_core - INFO - ============================================================
+2025-12-01 13:50:32,906 - core.workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - 메시지 내용: (광고)[SKT] 넷플릭스+웨이브 월 9,900원, 이게 되네! 
+#04 고객님,
+넷플릭스와 웨이브 둘 다 보고 싶었지만, 가격 때문에 망설이셨다면 지금이 바로 기회! 
+오직 T 우주에서만, 
+2개월 동안 월 9,900원에 넷플릭스와 웨이브를 모두 즐기실 수 있습니다.
+8월 31일까지만 드리는 혜택이니, 지금 바로 가입해 보세요! 
+
+■ 우주패스 Netfl...
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - 메시지 길이: 614 문자
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - LLM 모델: ax
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-01 13:50:32,907 - core.mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-01 13:50:32,907 - core.workflow_core - INFO - ✅ InputValidationStep 완료 (0.00초)
+2025-12-01 13:50:32,907 - core.workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-01 13:50:32,907 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-01 13:50:32,907 - services.entity_recognizer - INFO - Message length: 613 chars
+2025-12-01 13:50:32,916 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-01 13:50:32,945 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): ['넷플릭스', 'Wavve 콘텐츠 팩', 'Netflix']
+2025-12-01 13:50:32,945 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-01 13:50:33,664 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-01 13:50:34,045 - utils - INFO - extract_entities_from_kiwi 실행완료: 1.14초
+2025-12-01 13:50:34,045 - core.mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: ['Wavve 콘텐츠 팩', 'Netflix', '넷플릭스']
+2025-12-01 13:50:34,045 - core.mms_workflow_steps - INFO - 추출된 후보 엔티티: ['Wavve 콘텐츠 팩 프리미엄', 'wavve 콘텐츠 팩 프리미엄', 'Netflix', 'Wavve 콘텐츠 팩', '넷플릭스', 'wavve 콘텐츠 팩', 'T 우주패스 Netflix', 'Netflix 광고형 스탠다드 이용권', 'wavve 콘텐츠 팩(TV)', 'Wavve 콘텐츠 팩(TV)', 'Netflix 스탠다드 이용권', 'Wavve 콘텐츠 팩 프리미엄 연간', 'wavve 콘텐츠 팩 프리미엄_인증', 'wavve 콘텐츠 팩 프리미엄 연간', 'Wavve 콘텐츠 팩 프리미엄_인증', '우주패스 life_T', '우주패스 Netflix 추가혜택', 'Flo 콘텐츠 팩', 'flo 콘텐츠 팩', 'FLO 콘텐츠 팩', 'Wavve 콘텐츠 팩 플러스', 'wavve 콘텐츠 팩 플러스', 'Wavve 콘텐츠 팩 프리미엄_할인1', 'wavve 콘텐츠 팩 프리미엄_할인1', 'Wavve 콘텐츠 팩_인증', 'wavve 콘텐츠 팩 연간', 'wavve 콘텐츠 팩(티비)', 'wavve 콘텐츠 팩_인증', 'Wavve 콘텐츠 팩 연간', 'Wavve 콘텐츠 팩(티비)', '우주패스 Netflix 인증', 'wavve 콘텐츠 팩 Plus', 'Wavve 콘텐츠 팩 plus', 'wavve 콘텐츠 팩 plus', 'Wavve 콘텐츠 팩 PLUS', 'Wavve 콘텐츠 팩 Plus', 'wavve 콘텐츠 팩 PLUS', '멤버십 미가입자', '멤버십가입', '오다', 'wavve 콘텐츠 팩_할인2', 'Wavve 콘텐츠 팩 이용권', 'wavve 콘텐츠 팩 이용권', 'wavve 콘텐츠 팩(이벤트)', 'Wavve 콘텐츠 팩_할인2', 'Wavve 콘텐츠 팩_할인1', 'wavve 콘텐츠 팩_할인1', 'Wavve 콘텐츠 팩(이벤트)', '티빙 광고형 스탠다드', 'Netflix 프리미엄 이용권', '웨이브 콘텐츠 팩 프리미엄', '우주패스(유튜브 프리미엄)②ⓒ', '우주패스(유튜브 프리미엄)②ⓐ', '우주패스(유튜브 프리미엄)②ⓑ', '타다 쿠폰', 'T 서비스', 'Netflix 단독', 'Wavve 콘텐츠 팩 premium', 'Wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩 Premium', 'wavve 콘텐츠 팩 premium', 'wavve 콘텐츠 팩 Premium', 'wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩 플러스 (구)', 'wavve 콘텐츠 팩 플러스 (구)', '플로 콘텐츠 팩', 'T 우주패스 넷플릭스', 'tving 광고형 스탠다드', 'TVING 광고형 스탠다드', 'FLO 콘텐츠 팩 플러스', 'flo 콘텐츠 팩 플러스', 'Flo 콘텐츠 팩 플러스', '티비ING 광고형 스탠다드', '넷플릭스 광고형 스탠다드 이용권', 'Wavve 앤 data 프리미엄', 'wavve 앤 DATA 프리미엄', 'wavve 앤 Data 프리미엄', 'wavve 앤 data 프리미엄', 'Wavve 앤 DATA 프리미엄', 'Wavve 앤 Data 프리미엄', 'T 우주패스 할인③ⓒ', 'T 우주패스 할인④ⓓ', 'T 우주패스 할인④ⓒ', 'T 우주패스 할인④ⓑ', 'T 우주패스 할인④ⓐ', 'T 우주패스 할인③ⓓ', 'T 우주패스 할인③ⓑ', 'T 우주패스 100', 'T 우주패스 DIY', 'T 우주패스 할인①ⓐ', 'T 우주패스 할인②ⓐ', 'T 우주패스 할인②ⓑ', 'T 우주패스 할인②ⓒ', 'T 우주패스 할인③ⓐ', 'Wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 Plus (구)', 'Wavve 콘텐츠 팩 plus (구)', 'wavve 콘텐츠 팩 Plus (구)', 'wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 플러스 연간', 'Wavve 콘텐츠 팩 플러스_인증', 'wavve 콘텐츠 팩 플러스 연간', 'wavve 콘텐츠 팩 플러스_인증', 'wavve 콘텐츠 팩 plus (구)', 'T_다뷰', '클럽T 스탠다드', '클럽T 프리미엄', 'Wavve 앤 데이터 프리미엄', 'wavve 앤 데이터 프리미엄']
+2025-12-01 13:50:34,045 - core.mms_workflow_steps - INFO - 매칭된 상품 정보: (54, 2)
+2025-12-01 13:50:34,045 - core.workflow_core - INFO - ✅ EntityExtractionStep 완료 (1.14초)
+2025-12-01 13:50:34,045 - core.workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-01 13:50:34,088 - core.mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-01 13:50:34,088 - core.workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.04초)
+2025-12-01 13:50:34,088 - core.workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-01 13:50:34,088 - core.mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 423 문자
+2025-12-01 13:50:34,088 - core.mms_workflow_steps - INFO - 후보 아이템 리스트 크기: 109개
+2025-12-01 13:50:34,088 - core.mms_workflow_steps - INFO - 후보 아이템 리스트: ['Wavve 콘텐츠 팩 프리미엄', 'wavve 콘텐츠 팩 프리미엄', 'Netflix', 'Wavve 콘텐츠 팩', '넷플릭스', 'wavve 콘텐츠 팩', 'T 우주패스 Netflix', 'Netflix 광고형 스탠다드 이용권', 'wavve 콘텐츠 팩(TV)', 'Wavve 콘텐츠 팩(TV)', 'Netflix 스탠다드 이용권', 'Wavve 콘텐츠 팩 프리미엄 연간', 'wavve 콘텐츠 팩 프리미엄_인증', 'wavve 콘텐츠 팩 프리미엄 연간', 'Wavve 콘텐츠 팩 프리미엄_인증', '우주패스 life_T', '우주패스 Netflix 추가혜택', 'Flo 콘텐츠 팩', 'flo 콘텐츠 팩', 'FLO 콘텐츠 팩', 'Wavve 콘텐츠 팩 플러스', 'wavve 콘텐츠 팩 플러스', 'Wavve 콘텐츠 팩 프리미엄_할인1', 'wavve 콘텐츠 팩 프리미엄_할인1', 'Wavve 콘텐츠 팩_인증', 'wavve 콘텐츠 팩 연간', 'wavve 콘텐츠 팩(티비)', 'wavve 콘텐츠 팩_인증', 'Wavve 콘텐츠 팩 연간', 'Wavve 콘텐츠 팩(티비)', '우주패스 Netflix 인증', 'wavve 콘텐츠 팩 Plus', 'Wavve 콘텐츠 팩 plus', 'wavve 콘텐츠 팩 plus', 'Wavve 콘텐츠 팩 PLUS', 'Wavve 콘텐츠 팩 Plus', 'wavve 콘텐츠 팩 PLUS', '멤버십 미가입자', '멤버십가입', '오다', 'wavve 콘텐츠 팩_할인2', 'Wavve 콘텐츠 팩 이용권', 'wavve 콘텐츠 팩 이용권', 'wavve 콘텐츠 팩(이벤트)', 'Wavve 콘텐츠 팩_할인2', 'Wavve 콘텐츠 팩_할인1', 'wavve 콘텐츠 팩_할인1', 'Wavve 콘텐츠 팩(이벤트)', '티빙 광고형 스탠다드', 'Netflix 프리미엄 이용권', '웨이브 콘텐츠 팩 프리미엄', '우주패스(유튜브 프리미엄)②ⓒ', '우주패스(유튜브 프리미엄)②ⓐ', '우주패스(유튜브 프리미엄)②ⓑ', '타다 쿠폰', 'T 서비스', 'Netflix 단독', 'Wavve 콘텐츠 팩 premium', 'Wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩 Premium', 'wavve 콘텐츠 팩 premium', 'wavve 콘텐츠 팩 Premium', 'wavve 콘텐츠 팩 PREMIUM', 'Wavve 콘텐츠 팩 플러스 (구)', 'wavve 콘텐츠 팩 플러스 (구)', '플로 콘텐츠 팩', 'T 우주패스 넷플릭스', 'tving 광고형 스탠다드', 'TVING 광고형 스탠다드', 'FLO 콘텐츠 팩 플러스', 'flo 콘텐츠 팩 플러스', 'Flo 콘텐츠 팩 플러스', '티비ING 광고형 스탠다드', '넷플릭스 광고형 스탠다드 이용권', 'Wavve 앤 data 프리미엄', 'wavve 앤 DATA 프리미엄', 'wavve 앤 Data 프리미엄', 'wavve 앤 data 프리미엄', 'Wavve 앤 DATA 프리미엄', 'Wavve 앤 Data 프리미엄', 'T 우주패스 할인③ⓒ', 'T 우주패스 할인④ⓓ', 'T 우주패스 할인④ⓒ', 'T 우주패스 할인④ⓑ', 'T 우주패스 할인④ⓐ', 'T 우주패스 할인③ⓓ', 'T 우주패스 할인③ⓑ', 'T 우주패스 100', 'T 우주패스 DIY', 'T 우주패스 할인①ⓐ', 'T 우주패스 할인②ⓐ', 'T 우주패스 할인②ⓑ', 'T 우주패스 할인②ⓒ', 'T 우주패스 할인③ⓐ', 'Wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 Plus (구)', 'Wavve 콘텐츠 팩 plus (구)', 'wavve 콘텐츠 팩 Plus (구)', 'wavve 콘텐츠 팩 PLUS (구)', 'Wavve 콘텐츠 팩 플러스 연간', 'Wavve 콘텐츠 팩 플러스_인증', 'wavve 콘텐츠 팩 플러스 연간', 'wavve 콘텐츠 팩 플러스_인증', 'wavve 콘텐츠 팩 plus (구)', 'T_다뷰', '클럽T 스탠다드', '클럽T 프리미엄', 'Wavve 앤 데이터 프리미엄', 'wavve 앤 데이터 프리미엄']
+2025-12-01 13:50:34,088 - core.mms_workflow_steps - INFO - extra_item_pdf 크기: (54, 2)
+2025-12-01 13:50:34,088 - core.mms_workflow_steps - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-12-01 13:50:34,089 - core.mms_workflow_steps - INFO - extra_item_pdf 샘플: [{'item_nm': 'FLO 콘텐츠 팩', 'item_id': ['PR00000217', 'PR00000217', 'PR00000217', 'PR00000217']}, {'item_nm': 'FLO 콘텐츠 팩 플러스', 'item_id': ['PR00000218', 'PR00000218', 'PR00000218']}]
+2025-12-01 13:50:34,089 - core.mms_workflow_steps - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-12-01 13:50:34,089 - core.workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-01 13:50:34,089 - core.workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-01 13:50:34,089 - core.mms_workflow_steps - INFO - 구성된 프롬프트 길이: 9592 문자
+2025-12-01 13:50:34,089 - core.mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: True
+2025-12-01 13:50:34,089 - utils.prompt_utils - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-01 13:50:34,089 - utils.prompt_utils - INFO - 📝 프롬프트 길이: 9,592 문자
+2025-12-01 13:50:40,459 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:40,461 - core.mms_workflow_steps - INFO - LLM 응답 길이: 827 문자
+2025-12-01 13:50:40,461 - core.mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "T 우주, 넷플릭스+웨이브 2개월 월 9,900원 프로모션",
+    "purpose": [
+        "상품 가입 유도",
+        "쿠폰 제공 안내"
+    ],
+    "sales_script": "T 우주에서 넷플릭스+웨이브 2개월 월 9,900원! 지금 가입 안내할까요?",
+    "product": [
+        {
+            "name": "우주패스 Netflix(광고형 스탠다드)",
+            "action": "가입"
+        },
+        {
+            "name": "Wavve 콘텐츠 팩",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "http://t-mms.kr/jAs/#74",
+          ...
+2025-12-01 13:50:40,461 - core.workflow_core - INFO - ✅ LLMExtractionStep 완료 (6.37초)
+2025-12-01 13:50:40,461 - core.workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-01 13:50:40,461 - core.mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-01 13:50:40,461 - core.mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-01 13:50:40,461 - core.mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': 'T 우주, 넷플릭스+웨이브 2개월 월 9,900원 프로모션', 'purpose': ['상품 가입 유도', '쿠폰 제공 안내'], 'sales_script': 'T 우주에서 넷플릭스+웨이브 2개월 월 9,900원! 지금 가입 안내할까요?', 'product': [{'name': '우주패스 Netflix(광고형 스탠다드)', 'action': '가입'}, {'name': 'Wavve 콘텐츠 팩', 'action': '가입'}], 'channel': [{'type': 'URL', 'value': 'http://t-mms.kr/jAs/#74', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1505', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['상품및부가서비스가입유도_구독', '사용법/혜택/이벤트안내_구독']}
+2025-12-01 13:50:40,461 - core.workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-01 13:50:40,461 - core.workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-01 13:50:40,461 - services.result_builder - INFO - ================================================================================
+2025-12-01 13:50:40,461 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_final_result 시작
+2025-12-01 13:50:40,461 - services.result_builder - INFO - ================================================================================
+2025-12-01 13:50:40,461 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-01 13:50:40,462 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-01 13:50:40,462 - services.result_builder - INFO -    - 원본 product 내용: [{'name': '우주패스 Netflix(광고형 스탠다드)', 'action': '가입'}, {'name': 'Wavve 콘텐츠 팩', 'action': '가입'}]
+2025-12-01 13:50:40,462 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 2개
+2025-12-01 13:50:40,462 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': '우주패스 Netflix(광고형 스탠다드)', 'action': '가입'}, {'name': 'Wavve 콘텐츠 팩', 'action': '가입'}]
+2025-12-01 13:50:40,462 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['우주패스 Netflix(광고형 스탠다드)', 'Wavve 콘텐츠 팩']
+2025-12-01 13:50:40,462 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: ['Wavve 콘텐츠 팩', 'Netflix', '넷플릭스']
+2025-12-01 13:50:40,462 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-01 13:50:40,462 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-01 13:50:40,462 - services.result_builder - INFO - ✅ LLM 모델 초기화 완료: ax (skt/ax4)
+2025-12-01 13:50:40,462 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-01 13:50:40,462 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-01 13:50:41,901 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:43,225 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:43,233 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:43,295 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:43,848 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:43,901 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:43,942 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:44,551 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:44,582 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:44,612 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:45,262 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:45,326 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:45,362 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:45,926 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:45,989 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:46,048 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:46,599 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:46,680 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:46,694 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:47,330 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:47,371 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:47,392 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:48,054 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:48,069 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:48,101 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:50:48,108 - utils - INFO - extract_entities_by_llm 실행완료: 7.65초
+2025-12-01 13:50:48,109 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: (10, 5)
+2025-12-01 13:50:48,109 - services.result_builder - INFO -    📊 similarities_fuzzy 샘플 (처음 3개):
+2025-12-01 13:50:48,109 - services.result_builder - INFO - [{'item_name_in_msg': 'Netflix', 'item_nm_alias': 'T 우주패스 Netflix', 'sim': 1.5116666666666667, 'rank': 3.0, 'item_dmn_nm': '구독 상품'}, {'item_name_in_msg': 'Netflix', 'item_nm_alias': 'T 우주PASS Netflix', 'sim': 1.4672916666666667, 'rank': 6.0, 'item_dmn_nm': '구독 상품'}, {'item_name_in_msg': 'Netflix', 'item_nm_alias': '우주PASS Netflix 추가혜택', 'sim': 1.4182456140350876, 'rank': 10.0, 'item_dmn_nm': '요금제 및 관련 상품'}]
+2025-12-01 13:50:48,109 - services.result_builder - INFO - 🔍 [STEP 4] alias_pdf_raw와 merge 시작
+2025-12-01 13:50:48,109 - services.result_builder - INFO -    - alias_pdf_raw 크기: (187, 6)
+2025-12-01 13:50:48,111 - services.result_builder - INFO -    ✅ merged_df 크기: (10, 7)
+2025-12-01 13:50:48,111 - services.result_builder - INFO -    📊 merged_df 샘플 (처음 3개):
+2025-12-01 13:50:48,111 - services.result_builder - INFO - [{'item_name_in_msg': 'Netflix', 'item_nm_alias': 'T 우주패스 Netflix', 'sim': 1.5116666666666667, 'rank': 3.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'Netflix', 'item_nm_alias': 'T 우주PASS Netflix', 'sim': 1.4672916666666667, 'rank': 6.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'Netflix', 'item_nm_alias': '우주PASS Netflix 추가혜택', 'sim': 1.4182456140350876, 'rank': 10.0, 'item_dmn_nm': '요금제 및 관련 상품', 'alias_1': nan, 'type': nan}]
+2025-12-01 13:50:48,111 - services.result_builder - INFO - 🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)
+2025-12-01 13:50:48,112 - services.result_builder - INFO -    ✅ filtered_df 크기: (7, 7)
+2025-12-01 13:50:48,112 - services.result_builder - INFO -    📊 filtered_df 샘플 (처음 3개):
+2025-12-01 13:50:48,112 - services.result_builder - INFO - [{'item_name_in_msg': 'Netflix', 'item_nm_alias': 'T 우주패스 Netflix', 'sim': 1.5116666666666667, 'rank': 3.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'Netflix', 'item_nm_alias': 'T 우주PASS Netflix', 'sim': 1.4672916666666667, 'rank': 6.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'Netflix', 'item_nm_alias': '우주PASS Netflix 추가혜택', 'sim': 1.4182456140350876, 'rank': 10.0, 'item_dmn_nm': '요금제 및 관련 상품', 'alias_1': nan, 'type': nan}]
+2025-12-01 13:50:48,112 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-01 13:50:48,112 - services.result_builder - INFO -    - similarities_fuzzy.empty: False
+2025-12-01 13:50:48,112 - services.result_builder - INFO -    ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출
+2025-12-01 13:50:48,113 - services.entity_recognizer - INFO - 🔍 [map_products_with_similarity] Started
+2025-12-01 13:50:48,113 - services.entity_recognizer - INFO -    - Input similarities_fuzzy shape: (10, 5)
+2025-12-01 13:50:48,114 - services.entity_recognizer - INFO -    - Filtering: 10 -> 10
+2025-12-01 13:50:48,122 - services.entity_recognizer - INFO -    ✅ product_tag count: 6
+2025-12-01 13:50:48,122 - services.result_builder - INFO -    ✅ 최종 product 개수: 6개
+2025-12-01 13:50:48,122 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': 'T 우주패스 Netflix', 'item_id': ['PR00000506', 'PR00000435'], 'item_name_in_msg': ['Netflix', '우주패스 Netflix(광고형 스탠다드)', 'T 우주', '넷플릭스'], 'expected_action': ['가입']}, {'item_nm': 'T 우주패스 Netflix with Wavve 이용권', 'item_id': ['PR00000592'], 'item_name_in_msg': ['우주패스 Netflix(광고형 스탠다드)'], 'expected_action': ['가입']}, {'item_nm': 'T 우주패스 미디어', 'item_id': ['PR00000437'], 'item_name_in_msg': ['T 우주'], 'expected_action': ['기타']}, {'item_nm': 'T 우주패스 할인2④ⓐ', 'item_id': ['NA00008013'], 'item_name_in_msg': ['T 우주'], 'expected_action': ['기타']}, {'item_nm': 'Wavve콘텐츠팩+해지', 'item_id': ['NA00008316'], 'item_name_in_msg': ['Wavve 콘텐츠 팩'], 'expected_action': ['가입']}, {'item_nm': '우주패스 Netflix 추가혜택', 'item_id': ['NA00008734'], 'item_name_in_msg': ['Netflix'], 'expected_action': ['기타']}]
+2025-12-01 13:50:48,122 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=6개
+2025-12-01 13:50:48,123 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-01 13:50:48,123 - services.result_builder - INFO -    ✅ 최종 channel 개수: 3개
+2025-12-01 13:50:48,123 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-01 13:50:48,123 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 6개
+2025-12-01 13:50:48,123 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-01 13:50:48,123 - services.result_builder - INFO - ================================================================================
+2025-12-01 13:50:48,123 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_final_result 완료
+2025-12-01 13:50:48,124 - services.result_builder - INFO -    최종 final_result['product'] 개수: 6개
+2025-12-01 13:50:48,124 - services.result_builder - INFO - ================================================================================
+2025-12-01 13:50:48,124 - core.workflow_core - INFO - ✅ ResultConstructionStep 완료 (7.66초)
+2025-12-01 13:50:48,124 - core.workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - 제목: T 우주, 넷플릭스+웨이브 2개월 월 9,900원 프로모션
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - 목적: ['상품 가입 유도', '쿠폰 제공 안내']
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - 판매 스크립트: T 우주에서 넷플릭스+웨이브 2개월 월 9,900원! 지금 가입 안내할까요?
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - 상품 수: 6개
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - 채널 수: 3개
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-01 13:50:48,124 - core.mms_workflow_steps - INFO - 오퍼 항목 수: 6개
+2025-12-01 13:50:48,124 - core.workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-01 13:50:48,124 - core.workflow_core - INFO - 
+============================================================
+2025-12-01 13:50:48,124 - core.workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 15.22초)
+2025-12-01 13:50:48,124 - core.workflow_core - INFO - ============================================================
+2025-12-01 13:50:48,124 - core.workflow_core - INFO - 
+📊 실행 요약:
+2025-12-01 13:50:48,124 - core.workflow_core - INFO -   ✅ InputValidationStep: 0.00초
+2025-12-01 13:50:48,124 - core.workflow_core - INFO -   ✅ EntityExtractionStep: 1.14초
+2025-12-01 13:50:48,124 - core.workflow_core - INFO -   ✅ ProgramClassificationStep: 0.04초
+2025-12-01 13:50:48,124 - core.workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-01 13:50:48,124 - core.workflow_core - INFO -   ✅ LLMExtractionStep: 6.37초
+2025-12-01 13:50:48,124 - core.workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-01 13:50:48,125 - core.workflow_core - INFO -   ✅ ResultConstructionStep: 7.66초
+2025-12-01 13:50:48,125 - core.workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-01 13:50:48,125 - utils - INFO - process_message 실행완료: 15.22초
+2025-12-01 13:50:48,125 - core.mms_extractor - INFO - 순차적 처리로 메인 추출 및 DAG 추출 수행
+2025-12-01 13:50:48,125 - core.mms_extractor - INFO - ============================== DAG 추출 시작 ==============================
+2025-12-01 13:50:48,125 - core.entity_dag_extractor - INFO - 🚀 DAG 추출 프로세스 시작
+2025-12-01 13:50:48,125 - core.entity_dag_extractor - INFO - 📝 입력 메시지 길이: 614자
+2025-12-01 13:50:48,125 - core.entity_dag_extractor - INFO - 🤖 사용 LLM 모델: client=<openai.resources.chat.completions.completions.Completions object at 0x169213620> async_client=<openai.resources.chat.completions.completions.AsyncCompletions object at 0x169213c50> root_client=<openai.OpenAI object at 0x169212de0> root_async_client=<openai.AsyncOpenAI object at 0x16908fbc0> model_name='skt/ax4' temperature=0.0 model_kwargs={} openai_api_key=SecretStr('**********') openai_api_base='https://api.platform.a15t.com/v1' max_tokens=4000
+2025-12-01 13:50:48,125 - core.entity_dag_extractor - INFO - ⚙️  프롬프트 모드: cot
+2025-12-01 13:50:48,125 - core.entity_dag_extractor - INFO - 🤖 LLM에 DAG 추출 요청 중...
+2025-12-01 13:50:48,125 - core.entity_dag_extractor - INFO - 📏 프롬프트 길이: 3833자
+2025-12-01 13:51:08,193 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-01 13:51:08,194 - core.entity_dag_extractor - INFO - 📝 LLM 응답 길이: 2255자
+2025-12-01 13:51:08,194 - core.entity_dag_extractor - INFO - 📄 LLM 응답 미리보기 (처음 500자): ## 1. 메시지 분석
+
+```
+[메시지 요약 및 핵심 의도]
+SKT는 넷플릭스와 웨이브(Wavve)를 동시에 저렴하게 이용할 수 있는 '우주패스 Netflix' 프로모션을 광고하고 있습니다. 주요 의도는 고객이 해당 프로모션에 가입하여 2개월 동안 월 9,900원에 넷플릭스와 웨이브를 모두 이용하도록 유도하는 것입니다.
+
+[식별된 가치 제안 목록]
+- 2개월 동안 월 9,900원에 넷플릭스와 웨이브 동시 이용 가능
+- 우주패스 Netflix(광고형 스탠다드) 2개월 이용 쿠폰 제공
+- 기본 혜택: Netflix 광고형 스탠다드 멤버십
+- 추가 혜택: Wavve 콘텐츠 팩
+- 추가 요금 지불 시 Netflix 스탠다드/프리미엄 멤버십 선택 가능
+```
+
+## 2. 초기 DAG
+
+```
+(우주패스 Netflix:가입) -[가입하면]-> (넷플릭스 광고형 스탠다드:이용)
+(우주패스 Netflix:가입) -[가입하면]-> (웨이브 콘텐츠 팩:이용)
+(우주패스 Netflix:가입) -[가입...
+2025-12-01 13:51:08,194 - core.entity_dag_extractor - INFO - 🔍 DAG 섹션 추출 중...
+2025-12-01 13:51:08,195 - core.entity_dag_extractor - INFO - 📄 추출된 DAG 섹션 길이: 206자
+2025-12-01 13:51:08,195 - core.entity_dag_extractor - INFO - 📄 DAG 섹션 내용:
+(우주패스 Netflix:가입) -[가입하면]-> (넷플릭스 광고형 스탠다드:이용)
+(우주패스 Netflix:가입) -[가입하면]-> (웨이브 콘텐츠 팩:이용)
+(우주패스 Netflix:가입) -[가입하면]-> (2개월 동안 월 9,900원:할인)
+(우주패스 Netflix:가입) -[가입후]-> (추가 요금:지불) -[지불하면]-> (넷플릭스 스탠다드/프리미엄:이용)
+2025-12-01 13:51:08,195 - core.entity_dag_extractor - INFO - 🔗 DAG 파싱 중...
+2025-12-01 13:51:08,195 - core.entity_dag_extractor - INFO - 📊 파싱된 DAG - 노드 수: 5, 엣지 수: 4
+2025-12-01 13:51:08,195 - core.entity_dag_extractor - INFO - 🎯 DAG 노드 목록: ['우주패스 Netflix:가입', '넷플릭스 광고형 스탠다드:이용', '웨이브 콘텐츠 팩:이용', '2개월 동안 월 9,900원:할인', '추가 요금:지불']
+2025-12-01 13:51:08,195 - core.entity_dag_extractor - INFO - 🔗 DAG 엣지 목록: [('우주패스 Netflix:가입', '넷플릭스 광고형 스탠다드:이용'), ('우주패스 Netflix:가입', '웨이브 콘텐츠 팩:이용'), ('우주패스 Netflix:가입', '2개월 동안 월 9,900원:할인'), ('우주패스 Netflix:가입', '추가 요금:지불')]
+2025-12-01 13:51:08,195 - core.entity_dag_extractor - INFO - ✅ DAG 추출 프로세스 완료
+2025-12-01 13:51:08,196 - utils - INFO - 🎨 DAG 다이어그램 생성 시작 - 파일명: dag_95754a0322c71532
+2025-12-01 13:51:08,196 - utils - INFO - 📊 입력 그래프 - 노드 수: 5, 엣지 수: 4
+2025-12-01 13:51:08,196 - utils - INFO - ✅ Graphviz PATH 추가: /usr/local/bin
+2025-12-01 13:51:08,196 - utils - INFO - 🖼️ DAG 이미지 렌더링 중...
+2025-12-01 13:51:08,890 - utils - INFO - ✅ DAG 다이어그램 생성 완료: dag_images/dag_95754a0322c71532.png
+2025-12-01 13:51:08,891 - core.mms_extractor - INFO - ✅ DAG 추출 완료: dag_95754a0322c71532
+2025-12-01 13:51:08,891 - core.mms_extractor - INFO - 🕒 DAG 처리 시간: 20.766초
+2025-12-01 13:51:08,891 - core.mms_extractor - INFO - 📏 DAG 섹션 길이: 206자
+2025-12-01 13:51:08,891 - core.mms_extractor - INFO - 📄 DAG 내용 미리보기: (우주패스 Netflix:가입) -[가입하면]-> (넷플릭스 광고형 스탠다드:이용)
+(우주패스 Netflix:가입) -[가입하면]-> (웨이브 콘텐츠 팩:이용)
+(우주패스 Netflix:가입) -[가입하면]-> (2개월 동안 월 9,900원:할인)
+(우주패스 Netflix:가입) -[가입후]-> (추가 요금:지불) -[지불하면]-> (넷플릭스 스탠다드/프리...
+2025-12-01 13:51:08,891 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-12-01 13:51:08,891 - __main__ - INFO - MongoDB 저장 중...
+2025-12-01 13:51:08,892 - __main__ - INFO - 추출 과정에서 캡처된 프롬프트: 2개
+2025-12-01 13:51:08,892 - __main__ - INFO - ✅ DAG 추출 성공 - 길이: 4자
+2025-12-01 13:51:08,892 - __main__ - INFO - DAG 내용 미리보기: ['(우주패스 Netflix:가입) -[가입하면]-> (2개월 동안 월 9,900원:할인)', '(우주패스 Netflix:가입) -[가입하면]-> (넷플릭스 광고형 스탠다드:이용)', '(우주패스 Netflix:가입) -[가입하면]-> (웨이브 콘텐츠 팩:이용)', '(우주패스 Netflix:가입) -[가입후]-> (추가 요금:지불) -[지불하면]-> (넷플릭스 스탠다드/프리미엄:이용)']...
+2025-12-01 13:51:08,892 - __main__ - INFO - 추출 완료: 35.989초
+2025-12-01 13:51:08,893 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:51:08] "POST /extract HTTP/1.1" 200 -
+2025-12-01 13:51:08,914 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 13:51:08] "GET /health HTTP/1.1" 200 -

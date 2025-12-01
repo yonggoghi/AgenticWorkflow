@@ -7,11 +7,15 @@ Command-line interface for the MMS Extractor system.
 """
 
 import argparse
+import sys
+import os
+# Add parent directory to path to allow imports from core
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 import logging
 import time
 import traceback
-from mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
+from core.mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
 
 logger = logging.getLogger(__name__)
 
