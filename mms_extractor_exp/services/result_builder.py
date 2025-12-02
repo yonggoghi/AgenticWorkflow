@@ -21,7 +21,7 @@ class ResultBuilder:
 
     def __init__(self, entity_recognizer, store_matcher, alias_pdf_raw: pd.DataFrame, 
                  stop_item_names: List[str], num_cand_pgms: int, entity_extraction_mode: str,
-                 llm_initializer: Optional[callable] = None):
+                 llm_initializer: Optional[callable] = None, llm_model: str = 'ax'):
         self.entity_recognizer = entity_recognizer
         self.store_matcher = store_matcher
         self.alias_pdf_raw = alias_pdf_raw
@@ -29,6 +29,7 @@ class ResultBuilder:
         self.num_cand_pgms = num_cand_pgms
         self.entity_extraction_mode = entity_extraction_mode
         self.llm_initializer = llm_initializer
+        self.llm_model = llm_model
 
     def build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str]) -> Dict[str, Any]:
         """최종 결과 구성"""
@@ -71,9 +72,10 @@ class ResultBuilder:
                 logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
             else:
                 logger.info("🔍 [STEP 3] LLM 기반 엔티티 매칭 시작")
-                # LLM 기반: LLM을 통한 엔티티 추출 (기본 모델들: ax=ax, cld=claude)
+                # LLM 기반: LLM을 통한 엔티티 추출 (설정된 모델 사용)
                 if self.llm_initializer:
-                    default_llm_models = self.llm_initializer(['gen'])
+                    default_llm_models = self.llm_initializer([self.llm_model])
+                    logger.info(f"   - 사용할 LLM 모델: {self.llm_model}")
                 else:
                     logger.warning("⚠️ llm_initializer가 설정되지 않았습니다. 빈 리스트를 사용합니다.")
                     default_llm_models = []

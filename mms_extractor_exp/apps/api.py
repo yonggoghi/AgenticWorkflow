@@ -147,7 +147,7 @@ atexit.register(cleanup_resources)
 import logging.handlers
 
 # 로그 디렉토리 생성
-log_dir = Path(__file__).parent / 'logs'
+log_dir = Path(__file__).parent.parent / 'logs'
 log_dir.mkdir(exist_ok=True)
 
 # API 전용 로그 파일 경로 - 실시간 API 요청/응답 로그
@@ -283,7 +283,7 @@ def get_configured_quick_extractor(use_llm=False, llm_model='ax'):
     
     return global_quick_extractor
 
-def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='llm', entity_matching_mode='llm', extract_entity_dag=False):
+def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=False):
     """
     런타임 설정으로 전역 추출기 구성
     
@@ -291,9 +291,10 @@ def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='l
     API 요청별로 다른 설정을 사용할 수 있습니다.
     
     Args:
-        llm_model: 사용할 LLM 모델 ('gemma', 'ax', 'claude', 'gpt', 'gemini')
+        llm_model: 메인 프롬프트에 사용할 LLM 모델 ('gemma', 'ax', 'claude', 'gpt', 'gemini')
         product_info_extraction_mode: 상품 정보 추출 모드 ('nlp', 'llm', 'rag')
         entity_matching_mode: 엔티티 매칭 모드 ('logic', 'llm')
+        entity_llm_model: 엔티티 추출에 사용할 LLM 모델 ('gemma', 'ax', 'claude', 'gpt', 'gemini')
     
     Returns:
         MMSExtractor: 구성된 추출기 인스턴스
@@ -310,9 +311,15 @@ def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='l
     
     # 데이터 재로딩 없이 런타임 설정만 업데이트
     global_extractor.llm_model_name = llm_model
+    global_extractor.entity_llm_model_name = entity_llm_model
     global_extractor.product_info_extraction_mode = product_info_extraction_mode
     global_extractor.entity_extraction_mode = entity_matching_mode
     global_extractor.extract_entity_dag = extract_entity_dag
+    
+    # ResultBuilder의 llm_model도 업데이트
+    if hasattr(global_extractor, 'result_builder'):
+        global_extractor.result_builder.llm_model = entity_llm_model
+    
     # LLM 모델이 실제로 변경된 경우에만 재초기화
     if llm_model_changed:
         logger.info(f"LLM 모델이 {current_llm_model} -> {llm_model}로 변경됨. 재초기화 중...")
@@ -432,6 +439,7 @@ def extract_message():
         data_source = data.get('data_source', CLI_DATA_SOURCE)
         offer_info_data_src = data.get('offer_info_data_src', CLI_DATA_SOURCE)
         llm_model = data.get('llm_model', settings.ModelConfig.llm_model)
+        entity_llm_model = data.get('entity_llm_model', 'ax')
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', False)
@@ -472,7 +480,7 @@ def extract_message():
         
         # 구성된 추출기로 메시지 처리 (프롬프트 캡처 포함)
         start_time = time.time()
-        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, extract_entity_dag)
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, entity_llm_model, extract_entity_dag)
         
         logger.info(f"데이터 소스로 메시지 처리 중: {offer_info_data_src}")
         
@@ -614,6 +622,7 @@ def extract_batch():
         # 선택적 파라미터 추출
         offer_info_data_src = data.get('offer_info_data_src', CLI_DATA_SOURCE)
         llm_model = data.get('llm_model', settings.ModelConfig.llm_model)
+        entity_llm_model = data.get('entity_llm_model', 'ax')
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', False)
@@ -643,7 +652,7 @@ def extract_batch():
             return jsonify({"error": f"잘못된 entity_matching_mode입니다. 사용 가능: {valid_entity_modes}"}), 400
         
         # 구성된 추출기 가져오기
-        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, extract_entity_dag)
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, entity_llm_model, extract_entity_dag)
         
         # DAG 추출 요청 로깅
         if extract_entity_dag:

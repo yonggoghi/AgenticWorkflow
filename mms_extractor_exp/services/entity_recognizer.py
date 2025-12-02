@@ -368,6 +368,12 @@ class EntityRecognizer:
                 model_name = getattr(llm_model, 'model_name', 'Unknown')
                 
                 try:
+                    # Log the prompt being sent to LLM
+                    logger.debug(f"[{model_name}] Sending prompt to LLM:")
+                    logger.debug("="*100)
+                    logger.debug(prompt)
+                    logger.debug("="*100)
+                    
                     # zero_shot_prompt = PromptTemplate(input_variables=["prompt"], template="{prompt}")
                     # chain = zero_shot_prompt | llm_model
                     # response = chain.invoke({"prompt": prompt}).content
@@ -378,19 +384,25 @@ class EntityRecognizer:
                     
                     """).content
 
-                    # print("="*100)
-                    # print(prompt)
-                    # print("-"*100)
-                    # print(response)
+                    # Log the response received from LLM
+                    logger.debug(f"[{model_name}] Received response from LLM:")
+                    logger.debug("-"*100)
+                    logger.debug(response)
+                    logger.debug("-"*100)
                     
                     cand_entity_list_raw = self._parse_entity_response(response)
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
+                    
+                    logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities: {cand_entity_list}")
                     
                     dag_text = ""
                     if extract_dag:
                         dag_match = re.search(r'DAG:\s*(.*)', response, re.DOTALL | re.IGNORECASE)
                         if dag_match:
                             dag_text = dag_match.group(1).strip()
+                            logger.info(f"[{model_name}] Extracted DAG text ({len(dag_text)} chars)")
+                        else:
+                            logger.debug(f"[{model_name}] No DAG found in response")
                     
                     return {"entities": cand_entity_list, "dag_text": dag_text}
                 except Exception as e:

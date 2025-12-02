@@ -289,7 +289,8 @@ class MMSExtractor:
     """
     
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, 
-                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='ax', extract_entity_dag=False):
+                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='ax', 
+                 entity_llm_model='ax', extract_entity_dag=False):
         """
         MMSExtractor 초기화 메소드
         
@@ -325,7 +326,7 @@ class MMSExtractor:
             # 1단계: 기본 설정 매개변수 구성
             logger.info("⚙️ 기본 설정 적용 중...")
             self._set_default_config(model_path, data_dir, product_info_extraction_mode, 
-                                   entity_extraction_mode, offer_info_data_src, llm_model, extract_entity_dag)
+                                   entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model, extract_entity_dag)
             
             # 2단계: 환경변수 로드 (API 키 등)
             logger.info("🔑 환경변수 로드 중...")
@@ -371,7 +372,8 @@ class MMSExtractor:
                 self.stop_item_names,
                 self.num_cand_pgms,
                 self.entity_extraction_mode,
-                self._initialize_multiple_llm_models
+                self._initialize_multiple_llm_models,
+                self.entity_llm_model_name
             )
             logger.info("✅ 서비스 초기화 완료")
             
@@ -403,7 +405,7 @@ class MMSExtractor:
             raise
 
     def _set_default_config(self, model_path, data_dir, product_info_extraction_mode, 
-                          entity_extraction_mode, offer_info_data_src, llm_model, extract_entity_dag):
+                          entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model, extract_entity_dag):
         """기본 설정값 적용"""
         self.data_dir = data_dir if data_dir is not None else './data/'
         self.model_path = model_path if model_path is not None else getattr(EMBEDDING_CONFIG, 'ko_sbert_model_path', 'jhgan/ko-sroberta-multitask')
@@ -411,6 +413,7 @@ class MMSExtractor:
         self.product_info_extraction_mode = product_info_extraction_mode if product_info_extraction_mode is not None else getattr(PROCESSING_CONFIG, 'product_info_extraction_mode', 'nlp')
         self.entity_extraction_mode = entity_extraction_mode if entity_extraction_mode is not None else getattr(PROCESSING_CONFIG, 'entity_extraction_mode', 'llm')
         self.llm_model_name = llm_model
+        self.entity_llm_model_name = entity_llm_model
         self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 5)
         self.extract_entity_dag = extract_entity_dag
         

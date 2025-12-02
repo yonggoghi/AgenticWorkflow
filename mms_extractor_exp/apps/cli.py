@@ -13,9 +13,38 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import json
 import logging
+import logging.handlers
 import time
 import traceback
+from pathlib import Path
 from core.mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
+
+# Configure logging with console and file handlers
+log_dir = Path(__file__).parent.parent / 'logs'
+log_dir.mkdir(exist_ok=True)
+
+root_logger = logging.getLogger()
+if not root_logger.handlers:
+    # File handler with rotation
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_dir / 'cli.log',
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=3,
+        encoding='utf-8'
+    )
+    
+    # Console handler for terminal output
+    console_handler = logging.StreamHandler()
+    
+    # Formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+    
+    # Configure root logger
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +79,9 @@ def main():
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
-                       help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
+                       help='메인 프롬프트에 사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
+    parser.add_argument('--entity-llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
+                       help='엔티티 추출에 사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
@@ -61,8 +92,12 @@ def main():
 
     args = parser.parse_args()
     
-    # 로그 레벨 설정
-    logging.getLogger().setLevel(getattr(logging, args.log_level))
+    # 로그 레벨 설정 - 루트 로거와 모든 핸들러에 적용
+    log_level = getattr(logging, args.log_level)
+    root_logger.setLevel(log_level)
+    for handler in root_logger.handlers:
+        handler.setLevel(log_level)
+
     
     # MongoDB 연결 테스트만 수행하는 경우
     if args.test_mongodb:
@@ -90,6 +125,7 @@ def main():
             product_info_extraction_mode=args.product_info_extraction_mode,
             entity_extraction_mode=args.entity_matching_mode,
             llm_model=args.llm_model,
+            entity_llm_model=args.entity_llm_model,
             extract_entity_dag=args.extract_entity_dag
         )
         
@@ -168,7 +204,7 @@ def main():
         else:
             # 단일 메시지 처리
             test_message = args.message if args.message else """
-  message: '[SK텔레콤] 공식인증대리점 혜택 안내드립니다.\t(광고)[SKT] 공식인증대리점 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점에서 상담받고 다양한 혜택을 누려 보세요.__■ 공식인증대리점 혜택_- T끼리 온가족할인, 선택약정으로 통신 요금 최대 55% 할인_- 갤럭시 폴더블/퀀텀, 아이폰 등 기기 할인 상담__■ T 멤버십 고객 감사제 안내_- 2025년 12월까지 매달 Big 3 제휴사 릴레이 할인(10일 단위)__궁금한 점이 있으면 가까운 T 월드 매장에 방문하거나 전화로 문의해 주세요.__▶ 가까운 매장 찾기: https://tworldfriends.co.kr/h/B11109__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504',
+(광고)[SKT] 9월 T day 혜택 안내__2025년 9월 17일(수)_럭키찬스!_아이폰 출시 기념 퀴즈_올리브영 기프트 카드 1만 원 응모 이벤트__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=33670&a=&u=https://bit.ly/467rn3q__■ 문의: SKT 고객센터(1558, 무료)__무료 수신거부 1504
 
 """
             

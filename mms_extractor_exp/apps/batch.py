@@ -60,7 +60,7 @@ import time
 from pathlib import Path
 
 # 로그 디렉토리 생성
-log_dir = Path(__file__).parent / 'logs'
+log_dir = Path(__file__).parent.parent / 'logs'
 log_dir.mkdir(exist_ok=True)
 
 # 배치 처리 전용 로깅 설정
@@ -683,7 +683,9 @@ def main():
     parser.add_argument('--entity-extraction-mode', choices=['logic', 'llm'], default='llm',
                        help='Entity extraction mode (default: llm)')
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
-                       help='LLM model to use (default: ax)')
+                       help='메인 프롬프트에 사용할 LLM 모델 (default: ax)')
+    parser.add_argument('--entity-llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
+                       help='엔티티 추출에 사용할 LLM 모델 (default: ax)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, 
                        help='엔티티 DAG 추출 활성화 - 메시지에서 엔티티 간 관계를 그래프로 추출하고 시각화 (default: False)')
     
@@ -720,6 +722,7 @@ def main():
         'product_info_extraction_mode': args.product_info_extraction_mode,
         'entity_extraction_mode': args.entity_extraction_mode,
         'llm_model': args.llm_model,
+        'entity_llm_model': args.entity_llm_model,
         'extract_entity_dag': args.extract_entity_dag  # DAG 추출 여부
     }
     
