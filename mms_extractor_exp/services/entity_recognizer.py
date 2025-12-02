@@ -369,11 +369,13 @@ class EntityRecognizer:
                 
                 try:
                     # Log the prompt being sent to LLM
-                    logger.debug(f"[{model_name}] Sending prompt to LLM:")
-                    logger.debug("="*100)
-                    logger.debug(prompt)
-                    logger.debug("="*100)
                     
+                    prompt_res_log_list = []
+                    prompt_res_log_list.append(f"[{model_name}] Sending prompt to LLM:")
+                    prompt_res_log_list.append("="*100)
+                    prompt_res_log_list.append(prompt)
+                    prompt_res_log_list.append("="*100)
+                                        
                     # zero_shot_prompt = PromptTemplate(input_variables=["prompt"], template="{prompt}")
                     # chain = zero_shot_prompt | llm_model
                     # response = chain.invoke({"prompt": prompt}).content
@@ -385,10 +387,12 @@ class EntityRecognizer:
                     """).content
 
                     # Log the response received from LLM
-                    logger.debug(f"[{model_name}] Received response from LLM:")
-                    logger.debug("-"*100)
-                    logger.debug(response)
-                    logger.debug("-"*100)
+                    prompt_res_log_list.append(f"[{model_name}] Received response from LLM:")
+                    prompt_res_log_list.append("-"*100)
+                    prompt_res_log_list.append(response)
+                    prompt_res_log_list.append("-"*100)
+                    
+                    logger.debug("\n".join(prompt_res_log_list))
                     
                     cand_entity_list_raw = self._parse_entity_response(response)
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
@@ -473,10 +477,10 @@ class EntityRecognizer:
                 {combined_dag_context}
 
                 ## entities in message:
-                {entities_in_message}
+                {', '.join(entities_in_message)}
 
                 ## candidate entities in vocabulary:
-                {cand_entities_voca}
+                {', '.join(cand_entities_voca)}
                 """
                 batches.append({"prompt": prompt, "llm_model": second_stage_llm, "extract_dag": False})
             
