@@ -1,0 +1,618 @@
+
+아래 명세에 따라 Python 프로그램을 작성하십시오. 코드는 유연한 실험이 가능하도록 **명령줄 인자(CLI Arguments)**를 통해 설정을 변경할 수 있어야 합니다.
+
+---
+
+### 1. 목표 (Goal)
+
+**열등한 LLM(Student)**의 출력이 **우등한 LLM(Teacher)**의 출력과 유사해지도록, **System Prompt를 자동으로 진화(Iterative Refinement)시키는 Python 스크립트**를 작성합니다.
+
+**적용 도메인:** SK텔레콤 MMS 광고 메시지 분석/처리
+
+**핵심 요구사항:**
+- 실험 대상이 되는 **초기 프롬프트 파일**과 **사용할 LLM 모델명**을 스크립트 실행 시 외부에서 주입
+- **과적합 방지**: 배치 기반 업데이트 + 앵커 샘플 회귀 테스트 + 롤백 메커니즘
+- 진화 과정의 **재현 가능성(Reproducibility)** 보장
+- 중간 결과 **체크포인트 저장**으로 장시간 실험 시 복구 가능
+
+---
+
+### 2. 환경 및 리소스 (Environment & Resources)
+
+| 항목 | 경로/값 |
+|------|---------|
+| 작업 디렉토리 | `/Users/yongwook/workspace/AgenticWorkflow/prompt_evo` |
+| 가상 환경 | `/Users/yongwook/workspace/AgenticWorkflow/venv` |
+| 입력 데이터 | `reg_test.txt` (SK텔레콤 MMS 광고 메시지, 약 15~20개) |
+| 환경 변수 | `.env` (OPENAI_API_KEY, TARGET_LLM_URL 등) |
+
+**입력 데이터 특성:**
+- SK텔레콤 MMS 마케팅 메시지 (이벤트, 요금제, 대리점 안내, 제품 출시 등)
+- 메시지 구분자: 줄바꿈(`\n`)으로 각 메시지 분리
+- 메시지 내 줄바꿈: `__` 또는 `_`로 표현됨
+- 총 메시지 수: 약 15~20개 (소규모 데이터셋)
+
+**필수 라이브러리:**
+```
+langchain>=0.1.0
+langchain-openai>=0.0.5
+pydantic>=2.0
+python-dotenv>=1.0
+argparse (표준 라이브러리)
+```
+
+---
+
+### 3. 입력 인자 및 설정 (CLI Arguments)
+
+| 인자 | 타입 | 기본값 | 설명 |
+|------|------|--------|------|
+| `--prompt_file` | str | `prompt.txt` | 최적화할 초기 프롬프트 파일 경로 |
+| `--student_model` | str | `skt/ax4` | 최적화 대상 모델명 |
+| `--teacher_model` | str | `gcp/gemini-2.5-flash` | 정답 생성(Target) 모델명 |
+| `--evaluator_model` | str | `amazon/anthropic/claude-sonnet-4-20250514` | 프롬프트 수정/평가 모델명 |
+| `--data_file` | str | `reg_test.txt` | 학습/검증 데이터 파일 |
+| `--train_ratio` | float | `0.7` | 학습 데이터 비율 (소규모 데이터이므로 70% 권장) |
+| `--output_dir` | str | `./outputs` | 결과물 저장 디렉토리 |
+| `--batch_size` | int | `3` | 배치당 메시지 수 (소규모 데이터 대응) |
+| `--anchor_count` | int | `3` | 앵커 샘플 수 (소규모 데이터 대응) |
+| `--anchor_threshold` | float | `0.90` | 앵커 점수 허용 하한 (이하 시 롤백) |
+| `--max_iterations` | int | `None` | 최대 배치 반복 횟수 (None=전체) |
+| `--checkpoint_every` | int | `2` | 체크포인트 저장 간격 (배치 단위) |
+| `--seed` | int | `42` | 데이터 분할/셔플용 랜덤 시드 |
+| `--verbose` | flag | `False` | 상세 로그 출력 |
+
+**소규모 데이터셋 대응 설정:**
+- 메시지 수가 20개 미만이므로 `batch_size=3`, `anchor_count=3`으로 축소
+- `train_ratio=0.7`로 학습 데이터 확보 (약 10~14개 학습, 5~6개 검증)
+- `anchor_threshold=0.90`으로 다소 완화 (데이터 부족 시 엄격한 threshold는 학습 저해)
+
+---
+
+### 4. 과적합 방지 전략 (Anti-Overfitting Strategy)
+
+#### A. 배치 기반 업데이트 (Mini-batch Evolution)
+
+단일 메시지가 아닌 N개 메시지를 묶어서 한 번에 평가/수정합니다.
+```
+기존: message₁ → 수정 → message₂ → 수정 → ...
+개선: [message₁, message₂, message₃] → 종합 분석 → 수정
+```
+
+**소규모 데이터 고려사항:**
+- 배치 크기 3으로 설정 시, 약 3~4개 배치로 전체 학습 데이터 커버
+- 각 배치에 다양한 메시지 유형이 포함되도록 셔플 필수
+
+#### B. 앵커 샘플 회귀 테스트 (Anchor Set Regression)
+
+train_set에서 다양성을 대표하는 소수의 "앵커 샘플"을 선정하고, 매 프롬프트 수정 시 검증합니다.
+
+**앵커 선정 기준 (MMS 메시지 특화):**
+1. 메시지 유형별 분류:
+   - 이벤트/프로모션 (예: T Day, 알람 챌린지)
+   - 제품 출시/사전예약 (예: 아이폰, 갤럭시)
+   - 대리점 안내 (예: 새샘대리점, 티원대리점)
+   - 구독 서비스 (예: T우주, wavve)
+   - 고객 안내/공지 (예: 신분증 확인 요청)
+2. 각 유형에서 1개씩 선정하여 다양성 확보
+3. 메시지 길이 분포도 고려
+
+#### C. 롤백 메커니즘 (Rollback on Regression)
+
+앵커 테스트 평균 점수가 이전 최고 점수의 `anchor_threshold`(90%) 미만으로 떨어지면 해당 수정을 거부하고 이전 프롬프트를 유지합니다.
+
+#### D. 보수적 수정 지시 (Conservative Update Policy)
+
+Evaluator에게 다음 원칙을 명시적으로 지시합니다:
+```
+프롬프트 수정 원칙:
+1. 기존 규칙을 삭제하거나 의미를 변경하지 말 것
+2. 새로운 규칙은 "추가"만 허용
+3. 추가하는 규칙은 현재 배치뿐 아니라 유사한 MMS 메시지 전반에 적용 가능해야 함
+4. 특정 제품명, 날짜, 금액 등 구체적 값을 하드코딩하지 말 것
+5. 변경이 불필요하다고 판단되면 기존 프롬프트를 그대로 반환할 것
+```
+
+---
+
+### 5. 상세 알고리즘 (Detailed Algorithm)
+
+#### A. 초기화 (Initialization)
+
+1. **환경 설정 로드**
+   - `.env` 파일에서 API Key 및 Base URL 로드
+   - 필수 환경 변수 누락 시 명확한 에러 메시지 출력 후 종료
+
+2. **프롬프트 로드**
+   - `args.prompt_file` 경로의 파일을 읽어 `current_prompt`에 저장
+   - **파일이 비어 있는 경우**: 기본 프롬프트 템플릿 사용 (섹션 11 참조)
+   - 파일 미존재 시: `FileNotFoundError` 발생, 경로 확인 안내
+
+3. **데이터 로드 및 파싱**
+```python
+   def load_messages(file_path: str) -> list[str]:
+       with open(file_path, 'r', encoding='utf-8') as f:
+           content = f.read()
+       # 각 메시지는 줄바꿈으로 구분 (단, 메시지 내 __는 유지)
+       messages = [msg.strip() for msg in content.split('\n') if msg.strip()]
+       return messages
+```
+
+4. **데이터 분할**
+   - `args.seed`를 사용해 셔플
+   - `args.train_ratio` 비율로 `train_set`과 `val_set` 분할
+   - 분할 결과 로그 출력: `"Train: {n}개, Validation: {m}개"`
+   - **예상 분할**: Train 10~14개, Validation 5~6개
+
+5. **앵커 샘플 선정**
+   - `train_set`에서 `args.anchor_count`(3개)의 대표 샘플 선정
+   - 선정 로직: 메시지 유형 다양성 우선, 길이 분포 보조
+   - 선정된 앵커 인덱스 및 메시지 요약 로그 출력
+
+6. **배치 구성**
+   - `train_set`에서 앵커를 제외한 메시지를 `args.batch_size`(3개) 단위로 분할
+   - **예상 배치 수**: (10-3)/3 ≈ 2~3개 배치
+
+#### B. 프롬프트 진화 루프 (Evolution Loop)
+```python
+best_prompt = current_prompt
+best_anchor_score = evaluate_anchors(current_prompt, anchor_set)
+history = [{"prompt": current_prompt, "anchor_score": best_anchor_score}]
+
+for batch_idx, batch in enumerate(batches):
+    # Step 1: 배치 추론
+    # Step 2: 프롬프트 수정 제안
+    # Step 3: 앵커 테스트
+    # Step 4: 수락/거부 결정
+    # Step 5: 체크포인트 저장 (조건부)
+```
+
+**Step 1: 배치 추론 (Batch Inference)**
+
+배치 내 모든 메시지에 대해 Student와 Teacher 응답을 수집합니다.
+```python
+batch_results = []
+for message in batch:
+    res_student = llm_student.invoke([
+        SystemMessage(content=current_prompt),
+        HumanMessage(content=message)
+    ])
+    res_teacher = llm_teacher.invoke([
+        HumanMessage(content=message)
+    ])
+    batch_results.append({
+        "message": message,
+        "student": res_student.content,
+        "teacher": res_teacher.content
+    })
+```
+
+**Step 2: 프롬프트 수정 제안 (Prompt Evolution)**
+
+Evaluator에게 배치 전체 결과를 전달하고 프롬프트 수정을 요청합니다. (프롬프트 전문은 섹션 10 참조)
+
+**Step 3: 앵커 테스트 (Anchor Regression Test)**
+
+제안된 프롬프트로 앵커 샘플에 대해 검증합니다.
+```python
+def evaluate_anchors(prompt: str, anchor_set: list) -> float:
+    scores = []
+    for anchor in anchor_set:
+        res_student = llm_student.invoke([
+            SystemMessage(content=prompt),
+            HumanMessage(content=anchor["message"])
+        ])
+        score = evaluate_similarity(res_student.content, anchor["teacher_response"])
+        scores.append(score)
+    return sum(scores) / len(scores)
+
+proposed_anchor_score = evaluate_anchors(proposed_prompt, anchor_set)
+```
+
+**Step 4: 수락/거부 결정 (Accept/Reject Decision)**
+```python
+if not evolution_result.has_changed:
+    log(f"[Batch {batch_idx}] No changes proposed")
+    continue
+
+if proposed_anchor_score >= best_anchor_score * args.anchor_threshold:
+    # 수락: 프롬프트 업데이트
+    current_prompt = proposed_prompt
+    if proposed_anchor_score > best_anchor_score:
+        best_anchor_score = proposed_anchor_score
+        best_prompt = proposed_prompt
+    
+    history.append({
+        "batch_idx": batch_idx,
+        "prompt": current_prompt,
+        "anchor_score": proposed_anchor_score,
+        "added_rules": evolution_result.added_rules
+    })
+    
+    log(f"[Batch {batch_idx}] ✓ Accepted (anchor: {proposed_anchor_score:.2%})")
+    log(f"  Added rules: {evolution_result.added_rules}")
+else:
+    # 거부: 롤백
+    log(f"[Batch {batch_idx}] ✗ Rejected - anchor regression")
+    log(f"  Current best: {best_anchor_score:.2%}, Proposed: {proposed_anchor_score:.2%}")
+```
+
+**Step 5: 체크포인트 저장**
+```python
+if batch_idx % args.checkpoint_every == 0:
+    save_checkpoint(
+        path=f"{args.output_dir}/checkpoints/batch_{batch_idx}.json",
+        prompt=current_prompt,
+        history=history,
+        anchor_score=best_anchor_score
+    )
+```
+
+#### C. 최종 검증 (Final Validation)
+
+1. **검증 실행**
+   - `best_prompt` (최고 앵커 점수 달성 프롬프트)로 `val_set` 전체에 대해 검증
+   - 각 (Student 응답, Teacher 응답) 쌍에 대해 유사도 평가
+
+2. **결과 출력**
+```
+=== Final Validation Results ===
+Prompt version: best (anchor score: {best_anchor_score:.2%})
+Total samples: {n}
+Average similarity: {avg_score:.2%}
+Min: {min_score:.2%}, Max: {max_score:.2%}
+Std: {std_score:.2%}
+
+=== Evolution Summary ===
+Total batches processed: {total_batches}
+Accepted updates: {accepted_count}
+Rejected updates: {rejected_count}
+Total rules added: {len(all_added_rules)}
+```
+
+---
+
+### 6. 에러 처리 (Error Handling)
+
+| 상황 | 처리 방법 |
+|------|-----------|
+| API Rate Limit | 지수 백오프(Exponential Backoff)로 재시도 (최대 3회) |
+| API 응답 파싱 실패 | 해당 배치 스킵, 로그 기록 후 다음 배치 진행 |
+| 프롬프트 파일 미존재 | 명확한 에러 메시지와 함께 즉시 종료 |
+| 프롬프트 파일 비어있음 | 기본 프롬프트 템플릿 사용 (섹션 11), 경고 로그 출력 |
+| 중간 중단 (Ctrl+C) | 현재까지의 best_prompt를 `interrupted_prompt.txt`로 저장 |
+| 앵커 샘플 부족 | train_set 크기 < anchor_count 시 경고 후 전체를 앵커로 사용 |
+| 데이터 파일 파싱 오류 | 빈 메시지 필터링, 유효 메시지 수 로그 출력 |
+
+---
+
+### 7. 최종 출력물 (Expected Output)
+
+1. **`prompt_evolution.py`**
+   - CLI 인자를 지원하는 완성된 스크립트
+   - 모듈화된 함수 구조 (테스트 용이성)
+
+2. **출력 디렉토리 구조:**
+```
+outputs/
+├── final_prompt_20241202_143052.txt    # 최종 best 프롬프트
+├── evolution_log.jsonl                  # 배치별 진화 로그
+├── validation_results.json              # 최종 검증 결과
+├── anchor_samples.json                  # 사용된 앵커 샘플 목록
+└── checkpoints/
+    ├── batch_2.json
+    └── ...
+```
+
+3. **evolution_log.jsonl 형식:**
+```json
+{"batch_idx": 0, "action": "accepted", "anchor_score": 0.82, "added_rules": ["규칙1", "규칙2"]}
+{"batch_idx": 1, "action": "rejected", "anchor_score": 0.71, "reason": "anchor_regression"}
+{"batch_idx": 2, "action": "no_change", "anchor_score": 0.82}
+```
+
+4. **실행 예시:**
+```bash
+# 기본 실행
+python prompt_evolution.py
+
+# 커스텀 설정
+python prompt_evolution.py \
+    --prompt_file my_prompt_v2.txt \
+    --student_model gpt-4o-mini \
+    --teacher_model gpt-4o \
+    --batch_size 5 \
+    --anchor_count 5 \
+    --verbose
+
+# 소규모 데이터 최적화 설정 (현재 데이터셋 권장)
+python prompt_evolution.py \
+    --batch_size 3 \
+    --anchor_count 3 \
+    --anchor_threshold 0.90 \
+    --train_ratio 0.7
+```
+
+---
+
+### 8. 비용 분석 (Cost Estimation)
+
+**현재 데이터셋 기준** (메시지 15개, batch_size=3, anchor_count=3):
+
+| 단계 | 호출 수 | 설명 |
+|------|---------|------|
+| 배치 추론 | (15×0.7-3) × 2 ≈ 16 | 학습 메시지(앵커 제외) × (Student + Teacher) |
+| 프롬프트 수정 | 3 | 배치 수 |
+| 앵커 테스트 | 3 × 3 × 2 = 18 | 배치당 앵커 검증 (Student + 유사도 평가) |
+| 최종 검증 | 5 × 2 = 10 | val_set 전체 |
+| **총계** | **~47 calls** | |
+
+소규모 데이터셋으로 비용 부담이 낮아 실험 반복이 용이합니다.
+
+---
+
+### 9. 추가 고려사항 (Optional Enhancements)
+
+- [ ] **조기 종료 (Early Stopping):** 2회 연속 no_change 또는 rejected 시 종료
+- [ ] **적응형 앵커 (Adaptive Anchors):** 실패 케이스를 동적으로 앵커에 추가
+- [ ] **병렬 처리:** 배치 내 추론을 asyncio로 동시 실행
+- [ ] **프롬프트 diff 시각화:** 각 수정 단계의 변경 내용을 diff 형식으로 출력
+- [ ] **메시지 유형 자동 분류:** Evaluator가 메시지 유형을 태깅하여 앵커 선정에 활용
+
+---
+
+### 10. Evaluator 프롬프트 명세 (Evaluator Prompts)
+
+코딩 에이전트는 아래 두 가지 Evaluator 프롬프트를 작성하여 코드에 포함하거나 별도 파일로 관리해야 합니다.
+
+**핵심 원칙:** Evaluator 프롬프트는 특정 태스크나 도메인에 의존하지 않아야 합니다. 태스크 정보는 입력으로 전달되는 System Prompt와 메시지에서 자연스럽게 파악합니다.
+
+#### A. 프롬프트 진화용 (Prompt Evolution)
+
+**파일명:** `evaluator_prompts/evolution_prompt.txt` (또는 코드 내 `EVOLUTION_PROMPT` 상수)
+
+**목적:** 배치 결과를 분석하여 System Prompt를 개선 (태스크 무관)
+
+**프롬프트 전문:**
+```
+당신은 LLM System Prompt 최적화 전문가입니다.
+
+## 역할
+Student LLM의 응답이 Teacher LLM의 응답과 유사해지도록 System Prompt를 개선합니다.
+
+## 입력 정보
+1. 현재 System Prompt (Student LLM에 적용 중)
+2. 배치 결과: 여러 (User Input, Student 응답, Teacher 응답) 쌍
+
+## 분석 방법
+1. 각 케이스에서 Student와 Teacher 응답의 차이점을 식별하시오
+2. 여러 케이스에서 반복되는 패턴을 찾으시오
+3. 패턴의 근본 원인이 System Prompt의 어떤 부분에서 기인하는지 분석하시오
+4. Teacher가 일관되게 수행하지만 Student가 놓치는 행동을 파악하시오
+
+## 수정 원칙 (필수 준수)
+1. 기존 규칙을 삭제하거나 의미를 변경하지 말 것
+2. 새로운 규칙은 "추가"만 허용
+3. 추가하는 규칙은 현재 배치뿐 아니라 유사한 입력 전반에 적용 가능해야 함
+4. 특정 입력에만 해당하는 구체적 값(고유명사, 날짜, 숫자 등)을 하드코딩하지 말 것
+5. 변경이 불필요하다고 판단되면 기존 프롬프트를 그대로 반환할 것
+6. 규칙은 명확하고 실행 가능한 지시문으로 작성할 것
+
+## 출력 형식
+반드시 아래 JSON 형식으로만 응답하시오:
+
+{
+  "reasoning": "분석 내용 및 수정 이유를 상세히 기술",
+  "identified_patterns": ["발견된 패턴1", "발견된 패턴2", ...],
+  "has_changed": true/false,
+  "new_prompt_text": "수정된 전체 프롬프트 (또는 변경 없으면 기존 프롬프트)",
+  "added_rules": ["추가된 규칙1", "추가된 규칙2", ...]
+}
+
+## 예시
+
+### 입력
+현재 System Prompt:
+"""
+사용자의 질문에 친절하게 답변하시오.
+"""
+
+배치 결과:
+[케이스 1]
+User Input: 파이썬에서 리스트 정렬하는 방법 알려줘
+Student: sort() 메서드를 사용하면 됩니다.
+Teacher: 파이썬에서 리스트를 정렬하는 방법은 두 가지입니다:
+1. list.sort(): 원본 리스트를 직접 수정
+2. sorted(list): 새로운 정렬된 리스트 반환
+예시: my_list.sort() 또는 new_list = sorted(my_list)
+
+[케이스 2]
+User Input: 자바스크립트 배열에 요소 추가하는 법
+Student: push()를 쓰세요.
+Teacher: 자바스크립트에서 배열에 요소를 추가하는 방법:
+1. push(): 배열 끝에 추가
+2. unshift(): 배열 앞에 추가
+3. splice(): 특정 위치에 추가
+예시: arr.push('새요소')
+
+### 출력
+{
+  "reasoning": "두 케이스 모두 Teacher는 여러 방법을 나열하고 각각의 차이점을 설명하며 예시 코드를 제공하는 반면, Student는 한 가지 방법만 간단히 언급함. 기술 질문에 대해 복수의 옵션과 예시를 제공하도록 규칙 추가 필요.",
+  "identified_patterns": [
+    "Student가 단일 방법만 제시, Teacher는 복수의 방법 제시",
+    "Teacher는 각 방법의 차이점/용도를 설명",
+    "Teacher는 예시 코드를 포함"
+  ],
+  "has_changed": true,
+  "new_prompt_text": "사용자의 질문에 친절하게 답변하시오.\n\n추가 지침:\n- 방법이나 해결책이 여러 개 있는 경우 주요 옵션들을 함께 제시하시오\n- 각 옵션의 차이점이나 적합한 상황을 설명하시오\n- 가능한 경우 예시를 포함하시오",
+  "added_rules": [
+    "방법이나 해결책이 여러 개 있는 경우 주요 옵션들을 함께 제시하시오",
+    "각 옵션의 차이점이나 적합한 상황을 설명하시오",
+    "가능한 경우 예시를 포함하시오"
+  ]
+}
+```
+
+**Pydantic 스키마:**
+```python
+class PromptEvolutionResult(BaseModel):
+    reasoning: str                    # 배치 분석 및 수정 이유
+    identified_patterns: list[str]    # 발견된 공통 패턴/문제점
+    has_changed: bool                 # 프롬프트 변경 여부
+    new_prompt_text: str              # 수정된 (또는 기존) 프롬프트
+    added_rules: list[str]            # 새로 추가된 규칙 목록
+```
+
+---
+
+#### B. 유사도 평가용 (Similarity Evaluation)
+
+**파일명:** `evaluator_prompts/similarity_prompt.txt` (또는 코드 내 `SIMILARITY_PROMPT` 상수)
+
+**목적:** Student 응답과 Teacher 응답의 유사도를 0.0~1.0 점수로 평가 (태스크 무관)
+
+**프롬프트 전문:**
+```
+당신은 두 텍스트의 유사도를 평가하는 전문가입니다.
+
+## 역할
+Student LLM의 응답이 Teacher LLM의 응답과 얼마나 유사한지 평가합니다.
+Teacher의 응답을 정답(Ground Truth)으로 간주하고, Student가 얼마나 근접했는지 측정합니다.
+
+## 평가 기준
+다음 요소들을 종합적으로 고려하여 0.0 ~ 1.0 사이의 점수를 산출하시오:
+
+| 요소 | 가중치 | 설명 |
+|------|--------|------|
+| 내용 완전성 | 40% | Teacher가 포함한 핵심 정보를 Student도 포함하는가 |
+| 구조/형식 일치 | 30% | 응답의 구조, 포맷, 구성 방식이 유사한가 |
+| 정확성 | 20% | Student의 정보에 오류나 왜곡이 없는가 |
+| 톤/스타일 | 10% | 어조, 상세함의 정도, 표현 방식이 유사한가 |
+
+## 점수 기준
+
+| 점수 범위 | 기준 |
+|-----------|------|
+| 0.9 ~ 1.0 | 핵심 내용과 구조가 거의 동일, 사소한 표현 차이만 존재 |
+| 0.7 ~ 0.9 | 대부분의 핵심 정보 포함, 구조가 유사하나 일부 누락 또는 형식 차이 |
+| 0.5 ~ 0.7 | 주요 정보 일부 포함, 구조가 다르거나 중요 정보 누락 |
+| 0.3 ~ 0.5 | 주제/의도는 파악했으나 상세 내용 대부분 누락 |
+| 0.0 ~ 0.3 | 거의 불일치, 핵심 내용 미포함 또는 완전히 다른 응답 |
+
+## 출력 형식
+반드시 아래 JSON 형식으로만 응답하시오:
+
+{
+  "score": 0.0~1.0 사이의 숫자,
+  "explanation": "점수 산출 근거를 구체적으로 기술"
+}
+
+## 예시
+
+### 입력
+User Input: 파이썬에서 리스트 정렬하는 방법 알려줘
+
+Student 응답:
+"""
+sort() 메서드를 사용하면 됩니다.
+"""
+
+Teacher 응답:
+"""
+파이썬에서 리스트를 정렬하는 방법은 두 가지입니다:
+1. list.sort(): 원본 리스트를 직접 수정
+2. sorted(list): 새로운 정렬된 리스트 반환
+예시: my_list.sort() 또는 new_list = sorted(my_list)
+"""
+
+### 출력
+{
+  "score": 0.35,
+  "explanation": "Student는 sort() 메서드를 언급하여 하나의 정답을 제시했으나(부분적 정확성), Teacher가 제공한 두 가지 방법 중 sorted()는 누락됨(내용 불완전). 각 방법의 차이점 설명 없음. 예시 코드 없음. 번호 매긴 구조화된 형식도 따르지 않음(구조 불일치)."
+}
+```
+
+**Pydantic 스키마:**
+```python
+class SimilarityScore(BaseModel):
+    score: float              # 0.0 ~ 1.0
+    explanation: str          # 점수 근거
+```
+
+---
+
+#### C. 프롬프트 관리 방식
+
+**권장 구현:**
+```python
+import os
+
+def load_evaluator_prompt(prompt_type: str) -> str:
+    """
+    프롬프트 로드 우선순위:
+    1. evaluator_prompts/{prompt_type}.txt 파일
+    2. 코드 내 기본값 (DEFAULT_PROMPTS)
+    """
+    file_path = f"evaluator_prompts/{prompt_type}.txt"
+    if os.path.exists(file_path):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    return DEFAULT_PROMPTS[prompt_type]
+
+DEFAULT_PROMPTS = {
+    "evolution": """...(위 프롬프트 전문)...""",
+    "similarity": """...(위 프롬프트 전문)...""",
+}
+```
+---
+
+### 11. 초기 프롬프트 템플릿 (Default Initial Prompt)
+
+`prompt.txt`가 비어 있는 경우 사용할 기본 프롬프트입니다.
+
+**파일명:** 코드 내 `DEFAULT_INITIAL_PROMPT` 상수
+```
+당신은 SK텔레콤 MMS 마케팅 메시지를 분석하는 AI입니다.
+
+입력된 MMS 메시지를 분석하여 핵심 정보를 추출하시오.
+```
+
+**코드 구현:**
+```python
+DEFAULT_INITIAL_PROMPT = """당신은 SK텔레콤 MMS 마케팅 메시지를 분석하는 AI입니다.
+
+입력된 MMS 메시지를 분석하여 핵심 정보를 추출하시오.
+"""
+
+def load_initial_prompt(file_path: str) -> str:
+    """초기 프롬프트 로드. 파일이 비어있으면 기본값 사용."""
+    if os.path.exists(file_path):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+        if content:
+            return content
+        else:
+            print(f"Warning: {file_path} is empty. Using default initial prompt.")
+            return DEFAULT_INITIAL_PROMPT
+    raise FileNotFoundError(f"Prompt file not found: {file_path}")
+```
+
+---
+
+### 12. 디렉토리 구조 (Project Structure)
+```
+prompt_evo/
+├── prompt_evolution.py          # 메인 스크립트
+├── evaluator_prompts/           # Evaluator 프롬프트 (선택적)
+│   ├── evolution_prompt.txt
+│   └── similarity_prompt.txt
+├── prompt.txt                   # 초기 프롬프트 (비어있으면 기본값 사용)
+├── reg_test.txt                 # MMS 메시지 데이터 (15개)
+├── .env                         # API 키 및 설정
+└── outputs/                     # 실행 결과 (자동 생성)
+    ├── final_prompt_*.txt
+    ├── evolution_log.jsonl
+    ├── validation_results.json
+    ├── anchor_samples.json
+    └── checkpoints/
+```

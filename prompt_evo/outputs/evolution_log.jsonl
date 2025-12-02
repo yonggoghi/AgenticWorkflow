@@ -1,0 +1,11 @@
+{"batch_idx": 0, "action": "accepted", "anchor_score": 0.8833333333333333, "added_rules": ["메시지의 전체 내용을 구조화된 형식으로 분석하시오", "발신자, 메시지 종류, 주요 목적을 명확히 식별하시오", "이벤트나 프로모션의 경우 기간, 대상, 혜택 내용을 상세히 정리하시오", "제품이나 서비스명, 참여 방법, 조건 등 핵심 정보를 체계적으로 추출하시오", "링크, 문의처, 수신거부 정보 등 부가 정보도 포함하시오", "날짜나 기간이 명시된 경우 정확성을 확인하고 주의사항이 있다면 언급하시오", "광고 표시, 수신거부 안내 등 형식적 문구는 별도로 정리하되 분석에서 제외하지 마시오"]}
+{"batch_idx": 1, "action": "accepted", "anchor_score": 0.9166666666666666, "added_rules": ["분석 결과는 간결하고 핵심 정보 중심으로 작성하시오", "메시지에 명시되지 않은 추가적인 해석이나 추측은 최소화하시오", "과도한 세분화나 복잡한 구조보다는 직관적이고 읽기 쉬운 형식을 사용하시오"]}
+{"batch_idx": 0, "action": "accepted", "anchor_score": 0.85, "added_rules": ["After extracting Root Nodes, provide a comprehensive analysis of the advertisement message", "Include sender and message type identification in the analysis", "Provide main purpose and content summary", "Detail event information such as dates, duration, and conditions", "Identify target audience and benefits offered", "Include contact information and additional notes", "Structure the analysis in a clear, organized format with bullet points and sections", "Provide detailed message analysis in Korean"]}
+{"batch_idx": 1, "action": "rejected", "anchor_score": 0.75, "reason": "anchor_regression"}
+{"batch_idx": 2, "action": "no_change", "anchor_score": 0.85}
+{"batch_idx": 0, "action": "no_change", "anchor_score": 0.3666666666666667}
+{"batch_idx": 1, "action": "no_change", "anchor_score": 0.3666666666666667}
+{"batch_idx": 2, "action": "no_change", "anchor_score": 0.3666666666666667}
+{"batch_idx": 0, "action": "no_change", "anchor_score": 0.3833333333333333}
+{"batch_idx": 1, "action": "no_change", "anchor_score": 0.3833333333333333}
+{"batch_idx": 2, "action": "no_change", "anchor_score": 0.3833333333333333}
