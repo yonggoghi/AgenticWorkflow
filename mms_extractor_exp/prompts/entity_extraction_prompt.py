@@ -39,7 +39,7 @@ Guidelines:
 5. Refer to the 'DAG Context' which describes the user action flow. 이를 **사용자의 최종 획득/응모 대상인 핵심 혜택(Core Offering)**을 구별하는 데 사용하십시오. (e.g., 퀴즈 주제인 '아이폰'이 아닌, 최종 혜택인 '올리브영 기프트 카드'와 관련된 개체를 식별)
 
 Return format: Do not use Markdown formatting. Use plain text.
-REASON: Brief explanation (max 100 chars Korean)
+REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
 ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match
 """
 
