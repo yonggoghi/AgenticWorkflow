@@ -22,7 +22,7 @@ DETAILED_ENTITY_EXTRACTION_PROMPT = """
     - **Ignore Enablers:** Payment methods (e.g., 'Hyundai Card', 'Apple Pay') unless they are the sole subject of the ad.
     - **Ignore Labels:** 'Shortcut', 'Link', 'View Details'.
 
-    ## Return format
+    ## Return format: Do not use Markdown formatting. Use plain text.
     ENTITY: comma-separated list of Root Nodes only.
     """
 
@@ -38,7 +38,7 @@ Guidelines:
 4. Multiple entities in 'entities in message' may combine into one composite entity
 5. Refer to the 'DAG Context' which describes the user action flow. 이를 **사용자의 최종 획득/응모 대상인 핵심 혜택(Core Offering)**을 구별하는 데 사용하십시오. (e.g., 퀴즈 주제인 '아이폰'이 아닌, 최종 혜택인 '올리브영 기프트 카드'와 관련된 개체를 식별)
 
-Return format:
+Return format: Do not use Markdown formatting. Use plain text.
 REASON: Brief explanation (max 100 chars Korean)
 ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match
 """
@@ -88,10 +88,9 @@ Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
 * Ignore navigational labels ('바로 가기', '링크', 'Shortcut').
 * Ignore generic partners ('스타벅스', 'CU') unless they are the main subscription target.
 
-## Output Format
+## Output Format: Do not use Markdown formatting. Use plain text.
 ENTITY: <comma-separated list of all Nodes in original text>
-DAG:
-<DAG representation line by line in original text>
+DAG: <DAG representation line by line in original text>
 """
 
 # LLM 기반 엔티티 추출 프롬프트 템플릿
