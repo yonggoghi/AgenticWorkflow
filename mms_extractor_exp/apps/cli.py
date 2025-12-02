@@ -87,6 +87,8 @@ def main():
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
     parser.add_argument('--save-to-mongodb', action='store_true', default=True, 
                        help='추출 결과를 MongoDB에 저장 (utils/mongodb_utils.py 필요)')
+    parser.add_argument('--save-batch-results', action='store_true', default=False,
+                       help='배치 처리 결과를 JSON 파일로 저장 (results/ 디렉토리에 저장)')
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')
 
@@ -188,11 +190,18 @@ def main():
                 print(f"❌ 실패: {failed}개")
                 print(f"📈 성공률: {(successful/len(results)*100):.1f}%")
                 
-                # 결과를 JSON 파일로 저장
-                output_file = f"batch_results_{int(time.time())}.json"
-                with open(output_file, 'w', encoding='utf-8') as f:
-                    json.dump(results, f, indent=4, ensure_ascii=False)
-                print(f"💾 결과 저장: {output_file}")
+                # 결과를 JSON 파일로 저장 (옵션이 활성화된 경우만)
+                if args.save_batch_results:
+                    # results 디렉토리 생성
+                    results_dir = Path(__file__).parent.parent / 'results'
+                    results_dir.mkdir(exist_ok=True)
+                    
+                    output_file = results_dir / f"batch_results_{int(time.time())}.json"
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        json.dump(results, f, indent=4, ensure_ascii=False)
+                    print(f"💾 결과 저장: {output_file}")
+                else:
+                    logger.info("💾 배치 결과 JSON 파일 저장 생략 (--save-batch-results 옵션으로 활성화 가능)")
                 
             except FileNotFoundError:
                 logger.error(f"배치 파일을 찾을 수 없습니다: {args.batch_file}")

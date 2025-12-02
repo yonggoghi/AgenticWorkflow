@@ -97,7 +97,7 @@ class BatchProcessor:
     Batch processor for MMS message extraction
     """
     
-    def __init__(self, result_file_path="./data/batch_results.csv", max_workers=None, enable_multiprocessing=True, save_to_mongodb=False):
+    def __init__(self, result_file_path="./results/batch_results.csv", max_workers=None, enable_multiprocessing=True, save_to_mongodb=False, save_results_enabled=False):
         """
         Initialize batch processor
         
@@ -106,6 +106,7 @@ class BatchProcessor:
             max_workers: Maximum number of worker processes/threads (default: CPU count)
             enable_multiprocessing: Whether to use multiprocessing for batch processing
             save_to_mongodb: Whether to save results to MongoDB
+            save_results_enabled: Whether to save results to CSV file
         """
         self.result_file_path = result_file_path
         self.extractor = None
@@ -113,6 +114,7 @@ class BatchProcessor:
         self.max_workers = max_workers or multiprocessing.cpu_count()
         self.enable_multiprocessing = enable_multiprocessing
         self.save_to_mongodb = save_to_mongodb
+        self.save_results_enabled = save_results_enabled
         self.extract_entity_dag = False
         
     def initialize_extractor(self, **extractor_kwargs):
@@ -496,6 +498,11 @@ class BatchProcessor:
         
         results_df = pd.DataFrame(results)
         
+        # results 디렉토리 생성
+        result_dir = os.path.dirname(self.result_file_path)
+        if result_dir:
+            os.makedirs(result_dir, exist_ok=True)
+        
         # Check if result file exists
         if os.path.exists(self.result_file_path):
             logger.info(f"Appending {len(results_df)} results to existing file: {self.result_file_path}")
@@ -599,8 +606,12 @@ class BatchProcessor:
             results = self.process_messages(sampled_messages)
             processing_time = time.time() - processing_start_time
             
-            # Save results and log summary
-            self.save_results(results)
+            # Save results and log summary (옵션이 활성화된 경우만)
+            if self.save_results_enabled:
+                self.save_results(results)
+            else:
+                logger.info("💾 배치 결과 CSV 파일 저장 생략 (--save-results 옵션으로 활성화 가능)")
+            
             processed_msg_ids = [r['msg_id'] for r in results if not self._is_error_result(r.get('extraction_result', ''))]
             self.log_processing_summary(processed_msg_ids)
             
@@ -666,8 +677,10 @@ def main():
     # Batch processing arguments
     parser.add_argument('--batch-size', '-b', type=int, default=10,
                        help='Number of messages to process (default: 10)')
-    parser.add_argument('--output-file', '-o', type=str, default='./data/batch_results.csv',
-                       help='Output CSV file for results (default: batch_results.csv)')
+    parser.add_argument('--output-file', '-o', type=str, default='./results/batch_results.csv',
+                       help='Output CSV file for results (default: results/batch_results.csv)')
+    parser.add_argument('--save-results', action='store_true', default=False,
+                       help='배치 처리 결과를 CSV 파일로 저장 (results/ 디렉토리에 저장)')
     
     # Parallel processing arguments
     parser.add_argument('--max-workers', '-w', type=int, default=None,
@@ -689,6 +702,10 @@ def main():
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, 
                        help='엔티티 DAG 추출 활성화 - 메시지에서 엔티티 간 관계를 그래프로 추출하고 시각화 (default: False)')
     
+    # Logging arguments
+    parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
+                       help='로그 레벨 설정 (DEBUG: 상세, INFO: 일반, WARNING: 경고, ERROR: 오류만)')
+    
     # MongoDB arguments
     parser.add_argument('--save-to-mongodb', action='store_true', default=True,
                        help='추출 결과를 MongoDB에 저장 (utils/mongodb_utils.py 필요)')
@@ -696,6 +713,14 @@ def main():
                        help='MongoDB 연결 테스트만 수행하고 종료')
 
     args = parser.parse_args()
+    
+    # 로그 레벨 설정 - 루트 로거와 모든 핸들러에 적용
+    log_level = getattr(logging, args.log_level)
+    root_logger.setLevel(log_level)
+    for handler in root_logger.handlers:
+        handler.setLevel(log_level)
+    
+    logger.info(f"로그 레벨 설정: {args.log_level}")
     
     # MongoDB 연결 테스트만 수행하는 경우
     if args.test_mongodb:
@@ -749,7 +774,8 @@ def main():
         result_file_path=args.output_file,
         max_workers=max_workers,
         enable_multiprocessing=enable_multiprocessing,
-        save_to_mongodb=args.save_to_mongodb
+        save_to_mongodb=args.save_to_mongodb,
+        save_results_enabled=args.save_results
     )
     summary = processor.run_batch(args.batch_size, **extractor_kwargs)
     
