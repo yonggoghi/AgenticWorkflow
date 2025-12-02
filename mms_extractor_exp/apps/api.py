@@ -1442,11 +1442,23 @@ def main():
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
+    parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
+                       help='로그 레벨 설정 (DEBUG: 상세, INFO: 일반, WARNING: 경고, ERROR: 오류만)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
     parser.add_argument('--storage', choices=['local', 'nas'], default='local',
                        help='DAG 이미지 저장 위치 (local: 로컬 디스크, nas: NAS 서버)')
     
     args = parser.parse_args()
+    
+    # 로그 레벨 설정 - 루트 로거와 모든 핸들러에 적용
+    log_level = getattr(logging, args.log_level)
+    root_logger.setLevel(log_level)
+    for handler in root_logger.handlers:
+        handler.setLevel(log_level)
+    logger.setLevel(log_level)
+    mms_logger.setLevel(log_level)
+    
+    logger.info(f"로그 레벨 설정: {args.log_level}")
     
     # DAG 저장 모드 설정
     logger.info(f"🔧 --storage 옵션: {args.storage}")
