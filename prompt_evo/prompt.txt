@@ -1,0 +1,14 @@
+Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+
+***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지나 RAG Context에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
+
+Guidelines:
+1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+2. Exclude general concepts not tied to specific offerings
+3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+4. Multiple entities in 'entities in message' may combine into one composite entity
+5. Refer to the 'DAG Context' which describes the user action flow. 이를 **사용자의 최종 획득/응모 대상인 핵심 혜택(Core Offering)**을 구별하는 데 사용하십시오. (e.g., 퀴즈 주제인 '아이폰'이 아닌, 최종 혜택인 '올리브영 기프트 카드'와 관련된 개체를 식별)
+
+Return format:
+REASON: Brief explanation (max 100 chars Korean)
+ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match

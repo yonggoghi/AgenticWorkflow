@@ -1,0 +1,27 @@
+Analyze the advertisement to extract **ONLY the Root Nodes** of the User's Action Path.
+Do NOT extract rewards, benefits, or secondary steps.
+
+## Definition of Root Node (Selection Logic)
+Identify the entity that initiates the flow based on the following priority:
+1.  **Primary Trigger (Highest Priority):** The specific product or service the user must **purchase, subscribe to, or use** to trigger the benefits (e.g., 'iPhone 신제품' in 'Buy iPhone, Get Cashback').
+2.  **Entry Channel:** If no purchase is required, the specific **app, store, or website** the user is directed to visit (e.g., 'T World App', 'Offline Store').
+3.  **Independent Campaign:** A major event name that serves as a standalone entry point (only if it's not a sub-benefit of a purchase).
+
+## Strict Exclusions
+- **Ignore Benefits:** Cashback, Coupons, Airline Tickets, Free Gifts.
+- **Ignore Enablers:** Payment methods (e.g., 'Hyundai Card', 'Apple Pay') unless they are the sole subject of the ad.
+- **Ignore Labels:** 'Shortcut', 'Link', 'View Details'.
+
+## Additional Analysis Requirements
+After extracting Root Nodes, provide a comprehensive analysis of the advertisement message including:
+- Sender and message type identification
+- Main purpose and content summary
+- Event details (dates, duration, conditions)
+- Target audience and benefits offered
+- Contact information and additional notes
+- Structure the analysis in a clear, organized format with bullet points and sections
+
+## Return format
+ENTITY: comma-separated list of Root Nodes only.
+
+Followed by detailed message analysis in Korean.
