@@ -653,7 +653,7 @@ def display_results(result: Dict[str, Any]):
                     
                     # 1. 먼저 로컬 파일 시스템에서 확인 (현재 디렉토리 기준으로 우선 확인)
                     possible_dag_paths = [
-                        Path(__file__).parent / "dag_images" / expected_filename,
+                        Path(__file__).parent.parent / "dag_images" / expected_filename,  # 프로젝트 루트의 dag_images
                         Path("dag_images") / expected_filename,
                         Path.cwd() / "dag_images" / expected_filename,
                         Path.cwd() / "mms_extractor_unified" / "dag_images" / expected_filename,
@@ -712,7 +712,7 @@ def display_results(result: Dict[str, Any]):
                     
                     # 다양한 가능한 경로 시도 (현재 위치 우선)
                     possible_paths = [
-                        Path(__file__).parent / "dag_images",  # 스크립트와 같은 디렉토리 (최우선)
+                        Path(__file__).parent.parent / "dag_images",  # 프로젝트 루트의 dag_images (최우선)
                         Path("dag_images"),  # 현재 디렉토리
                         current_dir / "dag_images",
                         current_dir / "mms_extractor_exp" / "dag_images",
