@@ -504,7 +504,7 @@ def display_results(result: Dict[str, Any]):
                                         new_column_order = available_columns + remaining_columns
                                         df = df[new_column_order]
                                     
-                                    st.dataframe(df, width='stretch')
+                                    st.dataframe(df)
                                 else:
                                     # 딕셔너리가 아닌 항목들이 있으면 단순 값들을 DataFrame으로 변환 시도
                                     simple_items = []
@@ -522,7 +522,7 @@ def display_results(result: Dict[str, Any]):
                                                 simple_items.append({"항목": i+1, "내용": str(item)})
                                     
                                     df = pd.DataFrame(simple_items)
-                                    st.dataframe(df, width='stretch')
+                                    st.dataframe(df)
                             except Exception as e:
                                 # DataFrame 변환 실패 시 개별 항목으로 표시
                                 st.info(f"테이블 형태로 표시할 수 없어 개별 항목으로 표시합니다.")
@@ -550,7 +550,7 @@ def display_results(result: Dict[str, Any]):
                                         else:
                                             dict_items.append({"속성": key, "값": str(value)})
                                     df = pd.DataFrame(dict_items)
-                                    st.dataframe(df, width='stretch')
+                                    st.dataframe(df)
                                 else:
                                     # 단일 값을 DataFrame으로 표시
                                     if category.lower() in ['entity_dag', 'purpose', 'title']:
@@ -559,7 +559,7 @@ def display_results(result: Dict[str, Any]):
                                     else:
                                         single_item = [{"항목": 1, "내용": str(items)}]
                                     df = pd.DataFrame(single_item)
-                                    st.dataframe(df, width='stretch')
+                                    st.dataframe(df)
                             except Exception as e:
                                 # DataFrame 변환 실패 시 기본 표시
                                 if isinstance(items, dict):
@@ -630,7 +630,7 @@ def display_results(result: Dict[str, Any]):
                     dag_response = requests.get(full_dag_url, timeout=10)
                     
                     if dag_response.status_code == 200:
-                        st.image(dag_response.content, caption="오퍼 관계 DAG", width='stretch')
+                        st.image(dag_response.content, caption="오퍼 관계 DAG")
                         break  # 성공하면 루프 종료
                     else:
                         st.warning(f"DAG 이미지 응답 오류: {dag_response.status_code}")
@@ -664,7 +664,7 @@ def display_results(result: Dict[str, Any]):
                     for dag_path in possible_dag_paths:
                         if dag_path.exists():
                             try:
-                                st.image(str(dag_path), caption=f"메시지별 DAG 이미지 ({expected_filename})", width='stretch')
+                                st.image(str(dag_path), caption=f"메시지별 DAG 이미지 ({expected_filename})")
                                 dag_found = True
                                 local_file_found = True
                                 break
@@ -682,7 +682,7 @@ def display_results(result: Dict[str, Any]):
                                 content_type = dag_response.headers.get('Content-Type', '')
                                 
                                 if 'image' in content_type:
-                                    st.image(dag_response.content, caption=f"메시지별 DAG 이미지 ({expected_filename})", width='stretch')
+                                    st.image(dag_response.content, caption=f"메시지별 DAG 이미지 ({expected_filename})")
                                     dag_found = True
                                 else:
                                     st.warning(f"⚠️ 이미지가 아닌 응답: {content_type}")
@@ -736,7 +736,7 @@ def display_results(result: Dict[str, Any]):
                             # 우선 로컬 파일 직접 읽기 시도
                             try:
                                 if latest_file.exists() and latest_file.is_file():
-                                    st.image(str(latest_file), caption=f"DAG 이미지 (로컬) - {latest_file.name}", width='stretch')
+                                    st.image(str(latest_file), caption=f"DAG 이미지 (로컬) - {latest_file.name}")
                                     dag_found = True
                                     pass  # 성공 메시지 제거
                                 else:
@@ -745,7 +745,7 @@ def display_results(result: Dict[str, Any]):
                                     
                                     image_response = requests.get(latest_dag_url, timeout=5)
                                     if image_response.status_code == 200:
-                                        st.image(image_response.content, caption=f"DAG 이미지 ({latest_file.name})", width='stretch')
+                                        st.image(image_response.content, caption=f"DAG 이미지 ({latest_file.name})")
                                         dag_found = True
                                         pass  # 성공 메시지 제거
                                     else:
@@ -772,7 +772,7 @@ def display_results(result: Dict[str, Any]):
                                     
                                     image_response = requests.get(latest_dag_url, timeout=10)
                                     if image_response.status_code == 200:
-                                        st.image(image_response.content, caption=f"DAG 이미지 ({latest_image['filename']})", width='stretch')
+                                        st.image(image_response.content, caption=f"DAG 이미지 ({latest_image['filename']})")
                                         dag_found = True
                         except Exception as api_error:
                             pass  # 오류 메시지 숨김
@@ -1040,7 +1040,7 @@ def display_single_processing_ui(api_status: bool, args):
         
         # 샘플 메시지 선택
         for i, sample in enumerate(SAMPLE_MESSAGES):
-            if st.button(sample["title"], key=f"sample_{i}", width='stretch'):
+            if st.button(sample["title"], key=f"sample_{i}"):
                 st.session_state['message_input'] = sample["content"]
                 st.rerun()
         
@@ -1064,7 +1064,7 @@ def display_single_processing_ui(api_status: bool, args):
         st.write(f"🔍 API 상태: {api_status}")
         st.write(f"📝 메시지 길이: {len(message.strip()) if message else 0}")
         
-        if st.button("🚀 정보 추출 실행", type="primary", width='stretch', disabled=not api_status):
+        if st.button("🚀 정보 추출 실행", type="primary", disabled=not api_status):
             st.write("🎯 버튼이 클릭되었습니다!")
             
             if not message.strip():
