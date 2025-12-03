@@ -127,6 +127,7 @@ from services.entity_recognizer import EntityRecognizer
 from services.program_classifier import ProgramClassifier
 from services.store_matcher import StoreMatcher
 from services.result_builder import ResultBuilder
+from core.mms_extractor_data import MMSExtractorDataMixin
 
 
 # 유틸리티 함수 모듈 임포트
@@ -226,7 +227,7 @@ class DataLoader(ABC):
 
 # ===== 개선된 MMSExtractor 클래스 =====
 
-class MMSExtractor:
+class MMSExtractor(MMSExtractorDataMixin):
     """
     MMS 광고 텍스트 AI 분석 시스템 - 메인 추출 엔진
     ================================================================
