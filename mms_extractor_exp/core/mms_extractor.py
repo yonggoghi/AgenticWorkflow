@@ -1322,7 +1322,7 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False,
             logger.info("순차적 처리로 메인 추출 및 DAG 추출 수행")
             
             # 2. DAG 추출
-            dag_result = make_entity_dag(message, extractor.llm_model)
+            dag_result = make_entity_dag(message, extractor.llm_model, message_id=message_id)
             dag_list = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
 
         extracted_result = result.get('ext_result', {})
@@ -1435,7 +1435,7 @@ def process_messages_batch(extractor, messages: List[Union[str, Dict[str, Any]]]
     
     return results
 
-def make_entity_dag(msg: str, llm_model, save_dag_image=True):
+def make_entity_dag(msg: str, llm_model, save_dag_image=True, message_id: str = '#'):
 
     # 메시지에서 엔티티 간의 관계를 방향성 있는 그래프로 추출
     # 예: (고객:가입) -[하면]-> (혜택:수령) -[통해]-> (만족도:향상)
@@ -1452,7 +1452,7 @@ def make_entity_dag(msg: str, llm_model, save_dag_image=True):
         # 시각적 다이어그램 생성 (utils.py)
         dag_filename = ""
         if save_dag_image:
-            dag_filename = f'dag_{sha256_hash(msg)}'
+            dag_filename = f'dag_{message_id}_{sha256_hash(msg)}'
             create_dag_diagram(dag, filename=dag_filename)
             logger.info(f"✅ DAG 추출 완료: {dag_filename}")
 

@@ -649,27 +649,36 @@ def display_results(result: Dict[str, Any]):
                     from pathlib import Path
                     
                     message_hash = hashlib.sha256(current_message.encode('utf-8')).hexdigest()
-                    expected_filename = f"dag_{message_hash}.png"
+                    expected_pattern = f"dag_*_{message_hash}.png"
+                    expected_filename = f"dag_#_{message_hash}.png" # Default for display
                     
                     # 1. 먼저 로컬 파일 시스템에서 확인 (현재 디렉토리 기준으로 우선 확인)
-                    possible_dag_paths = [
-                        Path(__file__).parent.parent / "dag_images" / expected_filename,  # 프로젝트 루트의 dag_images
-                        Path("dag_images") / expected_filename,
-                        Path.cwd() / "dag_images" / expected_filename,
-                        Path.cwd() / "mms_extractor_unified" / "dag_images" / expected_filename,
-                        Path.cwd() / "mms_extractor_exp" / "dag_images" / expected_filename
+                    dag_dirs = [
+                        Path(__file__).parent.parent / "dag_images",  # 프로젝트 루트의 dag_images
+                        Path("dag_images"),
+                        Path.cwd() / "dag_images",
+                        Path.cwd() / "mms_extractor_unified" / "dag_images",
+                        Path.cwd() / "mms_extractor_exp" / "dag_images"
                     ]
                     
+                    dag_path = None
                     local_file_found = False
-                    for dag_path in possible_dag_paths:
-                        if dag_path.exists():
-                            try:
-                                st.image(str(dag_path), caption=f"메시지별 DAG 이미지 ({expected_filename})")
-                                dag_found = True
-                                local_file_found = True
+                    for dag_dir in dag_dirs:
+                        if dag_dir.exists():
+                            # 패턴 매칭으로 파일 찾기
+                            matches = list(dag_dir.glob(expected_pattern))
+                            if matches:
+                                dag_path = matches[0]
+                                expected_filename = dag_path.name
                                 break
-                            except Exception as local_error:
-                                continue
+                    
+                    if dag_path and dag_path.exists():
+                        try:
+                            st.image(str(dag_path), caption=f"메시지별 DAG 이미지 ({expected_filename})")
+                            dag_found = True
+                            local_file_found = True
+                        except Exception as local_error:
+                            pass
                     
                     # 2. 로컬에서 찾지 못한 경우 Demo Server를 통해 시도
                     if not local_file_found:

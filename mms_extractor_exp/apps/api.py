@@ -1082,14 +1082,14 @@ def extract_dag_endpoint():
                 from config import settings
                 
                 dag_hash = sha256_hash(message)
-                dag_image_filename = f'dag_{dag_hash}.png'
+                dag_image_filename = f'dag_{message_id}_{dag_hash}.png'
                 
                 # 설정에 따라 저장 위치 결정 (재생성된 STORAGE_CONFIG 사용)
                 dag_dir = settings.STORAGE_CONFIG.get_dag_images_dir()
                 output_dir = f'./{dag_dir}'
                 
                 # DAG 다이어그램 생성 및 저장 (output_dir 명시적으로 전달)
-                create_dag_diagram(dag, filename=f'dag_{dag_hash}', output_dir=output_dir)
+                create_dag_diagram(dag, filename=f'dag_{message_id}_{dag_hash}', output_dir=output_dir)
                 
                 # HTTP URL 생성 (스토리지 모드에 따라 URL 결정)
                 # - local 모드: API 서버 고정 주소 사용 (http://skt-tosaipoc01:8000)
