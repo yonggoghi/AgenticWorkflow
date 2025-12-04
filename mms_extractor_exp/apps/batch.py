@@ -244,13 +244,15 @@ class BatchProcessor:
         for idx, row in sampled_messages.iterrows():
             msg = row.get('msg', '')
             msg_id = row.get('msg_id', str(idx))
+            # message_id 컬럼이 있으면 사용, 없으면 msg_id 사용
+            message_id = row.get('message_id', msg_id)
             
             # Skip empty messages (safety check)
             if not msg or msg.strip() == '' or msg == 'nan':
                 logger.warning(f"Skipping empty message with ID: {msg_id}")
                 continue
                 
-            messages_list.append({'msg': msg, 'msg_id': msg_id})
+            messages_list.append({'msg': msg, 'msg_id': msg_id, 'message_id': message_id})
         
         if self.enable_multiprocessing and len(messages_list) > 1:
             logger.info(f"🚀 병렬 처리 모드로 {len(messages_list)}개 메시지 처리 시작 (워커: {self.max_workers}개)")
