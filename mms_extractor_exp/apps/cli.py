@@ -84,6 +84,8 @@ def main():
                        help='엔티티 추출에 사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
+    parser.add_argument('--message-id', type=str, default='#',
+                       help='메시지 식별자 (기본값: #)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
     parser.add_argument('--save-to-mongodb', action='store_true', default=True, 
                        help='추출 결과를 MongoDB에 저장 (utils/mongodb_utils.py 필요)')
@@ -217,11 +219,11 @@ def main():
 
 """
             
-            # 단일 메시지 처리 (멀티스레드)
-            logger.info("단일 메시지 처리 시작 (멀티스레드)")
-            result = process_message_with_dag(extractor, test_message, args.extract_entity_dag)
-                    
-            # MongoDB 저장 (단일 메시지)
+            if args.extract_entity_dag:
+                logger.info("DAG 추출과 함께 병렬 처리 시작")
+                result = process_message_with_dag(extractor, test_message, args.extract_entity_dag, args.message_id)
+            else:
+                result = extractor.process_message(test_message, args.message_id)
             if args.save_to_mongodb:
                 print("\n📄 MongoDB 저장 중...")
                 args.processing_mode = 'single'

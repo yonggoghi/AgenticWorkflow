@@ -33,6 +33,7 @@ class WorkflowState:
     # Input fields (set at initialization)
     mms_msg: str
     extractor: Any  # MMSExtractor instance (avoid circular import)
+    message_id: str = "#"  # 메시지 식별자 (기본값: '#')
     
     # Processing fields (set during workflow)
     msg: str = ""  # Validated/trimmed message

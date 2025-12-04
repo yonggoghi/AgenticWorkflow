@@ -326,6 +326,10 @@ class ResponseParsingStep(WorkflowStep):
         
         raw_result = copy.deepcopy(json_objects)
         
+        # message_id 추가
+        message_id = state.get("message_id", "#")
+        raw_result['message_id'] = message_id
+        
         state.set("json_objects", json_objects)
         state.set("raw_result", raw_result)
         
@@ -353,9 +357,10 @@ class ResultConstructionStep(WorkflowStep):
         pgm_info = state.get("pgm_info")
         entities_from_kiwi = state.get("entities_from_kiwi")
         extractor = state.get("extractor")
+        message_id = state.get("message_id", "#")  # message_id 가져오기
         
         # 최종 결과 구성
-        final_result = self.result_builder.build_final_result(json_objects, msg, pgm_info, entities_from_kiwi)
+        final_result = self.result_builder.build_final_result(json_objects, msg, pgm_info, entities_from_kiwi, message_id)
         
         state.set("final_result", final_result)
         

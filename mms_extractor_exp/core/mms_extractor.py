@@ -1094,12 +1094,12 @@ class MMSExtractor(MMSExtractorDataMixin):
             return result
 
     @log_performance
-    def process_message(self, mms_msg: str) -> Dict[str, Any]:
+    def process_message(self, message: str, message_id: str = '#') -> Dict[str, Any]:
         """
         MMS 메시지 전체 처리 (Workflow 기반)
         
         Args:
-            mms_msg: 처리할 MMS 메시지 텍스트
+            message: 처리할 MMS 메시지 텍스트
         
         Returns:
             dict: 추출된 정보가 담긴 JSON 구조
@@ -1107,8 +1107,9 @@ class MMSExtractor(MMSExtractorDataMixin):
         try:
             # 초기 상태 생성 (typed dataclass)
             initial_state = WorkflowState(
-                mms_msg=mms_msg,
-                extractor=self
+                mms_msg=message,
+                extractor=self,
+                message_id=message_id # message_id 추가
             )
             
             # Workflow 실행
@@ -1117,11 +1118,15 @@ class MMSExtractor(MMSExtractorDataMixin):
             # Fallback 처리
             if final_state.get("is_fallback"):
                 logger.warning("Workflow에서 Fallback 결과 반환")
-                return self._create_fallback_result(mms_msg)
+                return self._create_fallback_result(message, message_id) # message_id 전달
             
             # 결과 추출
             final_result = final_state.get("final_result", {})
             raw_result = final_state.get("raw_result", {})
+
+            # message_id를 결과에 포함
+            final_result['message_id'] = message_id
+            raw_result['message_id'] = message_id
             
             # 프롬프트 정보 가져오기
             actual_prompts = PromptManager.get_stored_prompts_from_thread()
@@ -1135,7 +1140,7 @@ class MMSExtractor(MMSExtractorDataMixin):
         except Exception as e:
             logger.error(f"메시지 처리 실패: {e}")
             logger.error(traceback.format_exc())
-            return self._create_fallback_result(mms_msg)
+            return self._create_fallback_result(message, message_id) # message_id 전달
     
     @log_performance
     def extract_json_objects_only(self, mms_msg: str) -> Dict[str, Any]:
@@ -1270,9 +1275,10 @@ class MMSExtractor(MMSExtractorDataMixin):
             result.append(item_dict)
         return result
 
-    def _create_fallback_result(self, msg: str) -> Dict[str, Any]:
+    def _create_fallback_result(self, msg: str, message_id: str = '#') -> Dict[str, Any]:
         """처리 실패 시 기본 결과 생성"""
         return {
+            "message_id": message_id,
             "title": "광고 메시지",
             "purpose": ["정보 제공"],
             "sales_script": "",
@@ -1287,7 +1293,7 @@ class MMSExtractor(MMSExtractorDataMixin):
 
 
 
-def process_message_with_dag(extractor, message: str, extract_dag: bool = False) -> Dict[str, Any]:
+def process_message_with_dag(extractor, message: str, extract_dag: bool = False, message_id: str = '#') -> Dict[str, Any]:
     """
     단일 메시지를 처리하는 워커 함수 (멀티프로세스용)
     
@@ -1295,6 +1301,7 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
         extractor: MMSExtractor 인스턴스
         message: 처리할 메시지
         extract_dag: DAG 추출 여부
+        message_id: 메시지 ID (선택 사항)
     
     Returns:
         dict: 처리 결과 (프롬프트 정보 포함)
@@ -1306,7 +1313,7 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
         logger.info(f"워커 프로세스에서 메시지 처리 시작: {message[:50]}...")
 
         # 1. 메인 추출
-        result = extractor.process_message(message)
+        result = extractor.process_message(message, message_id) # message_id 전달
         dag_list = []
         
         if extract_dag:
@@ -1335,6 +1342,7 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
         logger.error(f"워커 프로세스에서 메시지 처리 실패: {e}")
         return {
             "ext_result": {
+                "message_id": message_id, # message_id 추가
                 "title": "처리 실패",
                 "purpose": ["오류"],
                 "sales_script": "",
@@ -1344,7 +1352,9 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False)
                 "offer": {"type": "product", "value": []},
                 "entity_dag": []
             },
-            "raw_result": {},
+            "raw_result": {
+                "message_id": message_id, # message_id 추가
+            },
             "prompts": {},
             "error": str(e)
         }
@@ -1375,7 +1385,7 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # 모든 메시지에 대해 작업 제출 (인덱스와 함께)
         future_to_index = {
-            executor.submit(process_message_with_dag, extractor, msg, extract_dag): idx 
+            executor.submit(process_message_with_dag, extractor, msg, extract_dag, f"batch_{idx}"): idx # message_id 전달
             for idx, msg in enumerate(messages)
         }
         
@@ -1392,6 +1402,7 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
                 logger.error(f"배치 처리 중 오류 발생 (메시지 {idx+1}): {e}")
                 results[idx] = {
                     "ext_result": {
+                        "message_id": f"batch_{idx}", # message_id 추가
                         "title": "처리 실패",
                         "purpose": ["오류"],
                         "sales_script": "",
@@ -1401,7 +1412,9 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
                         "offer": {"type": "product", "value": []},
                         "entity_dag": []
                     },
-                    "raw_result": {},
+                    "raw_result": {
+                        "message_id": f"batch_{idx}", # message_id 추가
+                    },
                     "prompts": {},
                     "error": str(e)
                 }

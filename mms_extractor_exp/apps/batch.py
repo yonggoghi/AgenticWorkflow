@@ -394,6 +394,8 @@ class BatchProcessor:
         for i, msg_info in enumerate(messages_list, 1):
             msg = msg_info['msg']
             msg_id = msg_info['msg_id']
+            # message_id 필드가 있으면 사용, 없으면 msg_id 사용
+            message_id = msg_info.get('message_id', msg_id if msg_id else '#')
             
             try:
                 logger.info(f"처리 중 ({i}/{len(messages_list)}): {msg_id} - {msg[:50]}...")
@@ -403,10 +405,11 @@ class BatchProcessor:
                     extraction_result = process_message_with_dag(
                         self.extractor, 
                         msg, 
-                        extract_dag=True
+                        extract_dag=True,
+                        message_id=message_id
                     )
                 else:
-                    extraction_result = self.extractor.process_message(msg)
+                    extraction_result = self.extractor.process_message(msg, message_id=message_id)
                 
                 # Create result record
                 result_record = {
