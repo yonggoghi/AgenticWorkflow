@@ -1359,13 +1359,13 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False,
             "error": str(e)
         }
 
-def process_messages_batch(extractor, messages: List[str], extract_dag: bool = False, max_workers: int = None) -> List[Dict[str, Any]]:
+def process_messages_batch(extractor, messages: List[Union[str, Dict[str, Any]]], extract_dag: bool = False, max_workers: int = None) -> List[Dict[str, Any]]:
     """
     여러 메시지를 배치로 처리하는 함수
     
     Args:
         extractor: MMSExtractor 인스턴스
-        messages: 처리할 메시지 리스트
+        messages: 처리할 메시지 리스트 (문자열 또는 {'message': str, 'message_id': str} 딕셔너리)
         extract_dag: DAG 추출 여부
         max_workers: 최대 워커 수 (None이면 CPU 코어 수)
     
@@ -1383,26 +1383,36 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
     results = [None] * len(messages)  # 결과를 원래 순서대로 저장하기 위한 리스트
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # 모든 메시지에 대해 작업 제출 (인덱스와 함께)
-        future_to_index = {
-            executor.submit(process_message_with_dag, extractor, msg, extract_dag, f"batch_{idx}"): idx # message_id 전달
-            for idx, msg in enumerate(messages)
-        }
+        # 모든 메시지에 대해 작업 제출
+        future_to_index = {}
+        for idx, item in enumerate(messages):
+            if isinstance(item, dict):
+                # 딕셔너리인 경우 (batch.py, cli.py JSONL 등에서 전달)
+                # 키 이름이 다양할 수 있으므로 확인 (msg/message, msg_id/message_id)
+                msg = item.get('message') or item.get('msg') or ''
+                msg_id = item.get('message_id') or item.get('msg_id') or f"batch_{idx}"
+            else:
+                # 문자열인 경우
+                msg = str(item)
+                msg_id = f"batch_{idx}"
+                
+            future = executor.submit(process_message_with_dag, extractor, msg, extract_dag, msg_id)
+            future_to_index[future] = (idx, msg_id)
         
         # 완료된 작업들 수집
         completed = 0
         for future in as_completed(future_to_index):
-            idx = future_to_index[future]
+            idx, msg_id = future_to_index[future]
             try:
                 result = future.result()
                 results[idx] = result
                 completed += 1
                 logger.info(f"배치 처리 진행률: {completed}/{len(messages)} ({(completed/len(messages)*100):.1f}%)")
             except Exception as e:
-                logger.error(f"배치 처리 중 오류 발생 (메시지 {idx+1}): {e}")
+                logger.error(f"배치 처리 중 오류 발생 (메시지 {msg_id}): {e}")
                 results[idx] = {
                     "ext_result": {
-                        "message_id": f"batch_{idx}", # message_id 추가
+                        "message_id": msg_id,
                         "title": "처리 실패",
                         "purpose": ["오류"],
                         "sales_script": "",
@@ -1413,7 +1423,7 @@ def process_messages_batch(extractor, messages: List[str], extract_dag: bool = F
                         "entity_dag": []
                     },
                     "raw_result": {
-                        "message_id": f"batch_{idx}", # message_id 추가
+                        "message_id": msg_id,
                     },
                     "prompts": {},
                     "error": str(e)
