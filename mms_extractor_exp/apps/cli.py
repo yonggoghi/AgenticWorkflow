@@ -139,17 +139,44 @@ def main():
             logger.info(f"배치 파일에서 메시지 로드: {args.batch_file}")
             try:
                 with open(args.batch_file, 'r', encoding='utf-8') as f:
-                    messages = [line.strip() for line in f if line.strip()]
+                    lines = [line.strip() for line in f if line.strip()]
                 
-                logger.info(f"로드된 메시지 수: {len(messages)}개")
+                # JSON Lines 형식인지 확인 (첫 줄이 JSON인지 체크)
+                messages = []
+                message_ids = []
+                is_jsonl = False
                 
-                # 배치 처리 실행
-                results = process_messages_batch(
-                    extractor, 
-                    messages, 
-                    extract_dag=args.extract_entity_dag,
-                    max_workers=args.max_workers
-                )
+                if lines and lines[0].startswith('{'):
+                    # JSON Lines 형식
+                    is_jsonl = True
+                    for idx, line in enumerate(lines):
+                        try:
+                            data = json.loads(line)
+                            if isinstance(data, dict):
+                                messages.append(data.get('message', ''))
+                                message_ids.append(data.get('message_id', f'batch_{idx}'))
+                            else:
+                                messages.append(str(data))
+                                message_ids.append(f'batch_{idx}')
+                        except json.JSONDecodeError:
+                            # JSON 파싱 실패 시 일반 텍스트로 처리
+                            messages.append(line)
+                            message_ids.append(f'batch_{idx}')
+                else:
+                    # 일반 텍스트 형식
+                    messages = lines
+                    message_ids = [f'batch_{idx}' for idx in range(len(messages))]
+                
+                logger.info(f"로드된 메시지 수: {len(messages)}개 (형식: {'JSON Lines' if is_jsonl else '일반 텍스트'})")
+                
+                # 배치 처리 실행 (message_id와 함께)
+                results = []
+                for message, message_id in zip(messages, message_ids):
+                    if args.extract_entity_dag:
+                        result = process_message_with_dag(extractor, message, args.extract_entity_dag, message_id)
+                    else:
+                        result = extractor.process_message(message, message_id=message_id)
+                    results.append(result)
                 
                 # MongoDB 저장 (배치 처리)
                 if args.save_to_mongodb:
