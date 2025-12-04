@@ -243,16 +243,15 @@ class BatchProcessor:
         # Convert DataFrame to list of messages
         for idx, row in sampled_messages.iterrows():
             msg = row.get('msg', '')
-            msg_id = row.get('msg_id', str(idx))
-            # message_id 컬럼이 있으면 사용, 없으면 msg_id 사용
-            message_id = row.get('message_id', msg_id)
+            # message_id: DataFrame에 message_id 컴럼이 있으면 사용, 없으면 msg_id 사용, 둘 다 없으면 idx 사용
+            message_id = row.get('message_id', row.get('msg_id', str(idx)))
             
             # Skip empty messages (safety check)
             if not msg or msg.strip() == '' or msg == 'nan':
-                logger.warning(f"Skipping empty message with ID: {msg_id}")
+                logger.warning(f"Skipping empty message with ID: {message_id}")
                 continue
                 
-            messages_list.append({'msg': msg, 'msg_id': msg_id, 'message_id': message_id})
+            messages_list.append({'msg': msg, 'message_id': message_id})
         
         if self.enable_multiprocessing and len(messages_list) > 1:
             logger.info(f"🚀 병렬 처리 모드로 {len(messages_list)}개 메시지 처리 시작 (워커: {self.max_workers}개)")
@@ -290,7 +289,7 @@ class BatchProcessor:
             
             results = []
             for i, msg_info in enumerate(messages_list):
-                msg_id = msg_info['msg_id']
+                message_id = msg_info['message_id']
                 msg = msg_info['msg']
                 
                 if i < len(batch_result):
@@ -304,7 +303,7 @@ class BatchProcessor:
                     
                     # Create result record
                     result_record = {
-                        'msg_id': msg_id,
+                        'message_id': message_id,
                         'msg': msg,
                         'extraction_result': json.dumps(extraction_result, ensure_ascii=False),
                         'processed_at': processing_time,
@@ -395,12 +394,10 @@ class BatchProcessor:
         
         for i, msg_info in enumerate(messages_list, 1):
             msg = msg_info['msg']
-            msg_id = msg_info['msg_id']
-            # message_id 필드가 있으면 사용, 없으면 msg_id 사용
-            message_id = msg_info.get('message_id', msg_id if msg_id else '#')
+            message_id = msg_info['message_id']
             
             try:
-                logger.info(f"처리 중 ({i}/{len(messages_list)}): {msg_id} - {msg[:50]}...")
+                logger.info(f"처리 중 ({i}/{len(messages_list)}): {message_id} - {msg[:50]}...")
                 
                 # DAG 추출이 활성화된 경우 병렬로 처리
                 if self.extract_entity_dag:
@@ -415,7 +412,7 @@ class BatchProcessor:
                 
                 # Create result record
                 result_record = {
-                    'msg_id': msg_id,
+                    'message_id': message_id,
                     'msg': msg,
                     'extraction_result': json.dumps(extraction_result, ensure_ascii=False),
                     'processed_at': processing_time,
@@ -617,7 +614,7 @@ class BatchProcessor:
             else:
                 logger.info("💾 배치 결과 CSV 파일 저장 생략 (--save-results 옵션으로 활성화 가능)")
             
-            processed_msg_ids = [r['msg_id'] for r in results if not self._is_error_result(r.get('extraction_result', ''))]
+            processed_msg_ids = [r['message_id'] for r in results if not self._is_error_result(r.get('extraction_result', ''))]
             self.log_processing_summary(processed_msg_ids)
             
             total_time = time.time() - overall_start_time
