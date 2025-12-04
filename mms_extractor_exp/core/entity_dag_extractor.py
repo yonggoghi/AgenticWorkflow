@@ -969,8 +969,8 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True, prompt_mode=
 
     if save_dag_image and dag is not None:
         try:
-            create_dag_diagram(dag, filename=f'dag_{sha256_hash(msg)}')
-            print(f"DAG 이미지가 저장되었습니다: {f'dag_{sha256_hash(msg)}.png'}")
+            create_dag_diagram(dag, filename=f'dag_#_{sha256_hash(msg)}')
+            print(f"DAG 이미지가 저장되었습니다: {f'dag_#_{sha256_hash(msg)}.png'}")
         except Exception as e:
             print(f"DAG 이미지 저장 실패: {e}")
     elif save_dag_image and dag is None:
@@ -1031,7 +1031,7 @@ if __name__ == "__main__":
             print(f"엣지 수: {result['dag'].number_of_edges()}")
             
             if args.save_dag_image and result['dag'].number_of_nodes() > 0:
-                dag_filename = f"dag_{sha256_hash(args.message)}"
+                dag_filename = f"dag_#_{sha256_hash(args.message)}"
                 create_dag_diagram(result['dag'], filename=dag_filename)
                 print(f"✅ DAG 이미지 저장: {dag_filename}.png")
                 
@@ -1083,7 +1083,7 @@ if __name__ == "__main__":
                     print(f"✅ 노드: {result['dag'].number_of_nodes()}개, 엣지: {result['dag'].number_of_edges()}개")
                     
                     if args.save_dag_image and result['dag'].number_of_nodes() > 0:
-                        dag_filename = f"dag_{idx}_{sha256_hash(msg)}"
+                        dag_filename = f"dag_batch_{idx}_{sha256_hash(msg)}"
                         create_dag_diagram(result['dag'], filename=dag_filename)
                         print(f"✅ 이미지 저장: {dag_filename}.png")
                         
