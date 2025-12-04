@@ -340,24 +340,24 @@ class BatchProcessor:
                     if self.extract_entity_dag and 'entity_dag' in extraction_result:
                         dag_items = extraction_result['entity_dag']
                         if dag_items and len(dag_items) > 0:
-                            logger.info(f"✅ 메시지 {msg_id} DAG 추출 성공 - {len(dag_items)}개 관계")
+                            logger.info(f"✅ 메시지 {message_id} DAG 추출 성공 - {len(dag_items)}개 관계")
                         else:
-                            logger.warning(f"⚠️ 메시지 {msg_id} DAG 추출 요청되었으나 결과가 비어있음")
+                            logger.warning(f"⚠️ 메시지 {message_id} DAG 추출 요청되었으나 결과가 비어있음")
                     
                     results.append(result_record)
                     
                     # 성공/실패 여부 확인 및 로깅
                     is_error = self._is_error_result(result_record['extraction_result'])
-                    logger.debug(f"메시지 {msg_id} 에러 판단 결과: {is_error}")
+                    logger.debug(f"메시지 {message_id} 에러 판단 결과: {is_error}")
                     
                     if is_error:
-                        logger.error(f"❌ 메시지 {msg_id} 병렬 처리 실패 - 추출 결과에 에러 포함")
+                        logger.error(f"❌ 메시지 {message_id} 처리 실패")
                     else:
-                        logger.info(f"✅ 메시지 {msg_id} 병렬 처리 완료")
+                        logger.info(f"✅ 메시지 {message_id} 처리 성공")
                 else:
                     # 처리 실패한 경우 (배치 결과에 해당 메시지가 없는 경우)
                     error_record = {
-                        'msg_id': msg_id,
+                        'message_id': message_id,
                         'message': msg,
                         'extraction_result': json.dumps({'error': 'Processing failed - no result returned'}, ensure_ascii=False),
                         'processed_at': processing_time,
@@ -368,7 +368,7 @@ class BatchProcessor:
                         'pgm': '[]'
                     }
                     results.append(error_record)
-                    logger.error(f"❌ 메시지 {msg_id} 병렬 처리 실패 - 배치 결과 없음")
+                    logger.error(f"❌ 메시지 {message_id} 병렬 처리 실패 - 배치 결과 없음")
             
             elapsed_time = time.time() - start_time
             logger.info(f"🎯 병렬 처리 완료: {len(results)}개 메시지, {elapsed_time:.2f}초 소요")
@@ -451,24 +451,24 @@ class BatchProcessor:
                 if self.extract_entity_dag and 'entity_dag' in extraction_result:
                     dag_items = extraction_result['entity_dag']
                     if dag_items and len(dag_items) > 0:
-                        logger.info(f"✅ 메시지 {msg_id} DAG 추출 성공 - {len(dag_items)}개 관계")
+                        logger.info(f"✅ 메시지 {message_id} DAG 추출 성공 - {len(dag_items)}개 관계")
                     else:
-                        logger.warning(f"⚠️ 메시지 {msg_id} DAG 추출 요청되었으나 결과가 비어있음")
+                        logger.warning(f"⚠️ 메시지 {message_id} DAG 추출 요청되었으나 결과가 비어있음")
                 
                 # 성공/실패 여부 확인 및 로깅
                 is_error = self._is_error_result(result_record['extraction_result'])
-                logger.debug(f"메시지 {msg_id} 에러 판단 결과: {is_error}")
+                logger.debug(f"메시지 {message_id} 에러 판단 결과: {is_error}")
                 
                 if is_error:
-                    logger.error(f"❌ 메시지 {msg_id} 순차 처리 실패 - 추출 결과에 에러 포함")
+                    logger.error(f"❌ 메시지 {message_id} 처리 실패")
                 else:
-                    logger.info(f"✅ 메시지 {msg_id} 순차 처리 완료")
+                    logger.info(f"✅ 메시지 {message_id} 처리 성공")
                 
             except Exception as e:
-                logger.error(f"❌ 메시지 {msg_id} 처리 실패: {str(e)}")
+                logger.error(f"❌ 메시지 {message_id} 처리 실패: {str(e)}")
                 # Add error record
                 error_record = {
-                    'message_id': msg_id,
+                    'message_id': message_id,
                     'message': msg,
                     'extraction_result': json.dumps({'error': str(e)}, ensure_ascii=False),
                     'processed_at': processing_time,
