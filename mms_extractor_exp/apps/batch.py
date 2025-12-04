@@ -243,8 +243,15 @@ class BatchProcessor:
         # Convert DataFrame to list of messages
         for idx, row in sampled_messages.iterrows():
             msg = row.get('msg', '')
-            # message_id: DataFrame에 message_id 컴럼이 있으면 사용, 없으면 msg_id 사용, 둘 다 없으면 idx 사용
-            message_id = row.get('message_id', row.get('msg_id', str(idx)))
+            # message_id: DataFrame에 message_id 컬럼이 있으면 사용, 없으면 msg_id 사용, 둘 다 없으면 idx 사용
+            # row는 Series이므로 .get() 사용, 없으면 None 반환
+            message_id = row.get('message_id')
+            if message_id is None or pd.isna(message_id):
+                message_id = row.get('msg_id')
+            if message_id is None or pd.isna(message_id):
+                message_id = str(idx)
+            else:
+                message_id = str(message_id)
             
             # Skip empty messages (safety check)
             if not msg or msg.strip() == '' or msg == 'nan':
