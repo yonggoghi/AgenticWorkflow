@@ -304,7 +304,7 @@ class BatchProcessor:
                     # Create result record
                     result_record = {
                         'message_id': message_id,
-                        'msg': msg,
+                        'message': msg,
                         'extraction_result': json.dumps(extraction_result, ensure_ascii=False),
                         'processed_at': processing_time,
                         'title': extraction_result.get('title', ''),
@@ -358,7 +358,7 @@ class BatchProcessor:
                     # 처리 실패한 경우 (배치 결과에 해당 메시지가 없는 경우)
                     error_record = {
                         'msg_id': msg_id,
-                        'msg': msg,
+                        'message': msg,
                         'extraction_result': json.dumps({'error': 'Processing failed - no result returned'}, ensure_ascii=False),
                         'processed_at': processing_time,
                         'title': '',
@@ -413,7 +413,7 @@ class BatchProcessor:
                 # Create result record
                 result_record = {
                     'message_id': message_id,
-                    'msg': msg,
+                    'message': msg,
                     'extraction_result': json.dumps(extraction_result, ensure_ascii=False),
                     'processed_at': processing_time,
                     'title': extraction_result.get('title', ''),
@@ -468,8 +468,8 @@ class BatchProcessor:
                 logger.error(f"❌ 메시지 {msg_id} 처리 실패: {str(e)}")
                 # Add error record
                 error_record = {
-                    'msg_id': msg_id,
-                    'msg': msg,
+                    'message_id': msg_id,
+                    'message': msg,
                     'extraction_result': json.dumps({'error': str(e)}, ensure_ascii=False),
                     'processed_at': processing_time,
                     'title': '',
