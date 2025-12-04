@@ -1554,8 +1554,10 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args_or_data, 
         
         # MongoDB에 저장
         user_id = getattr(args, 'user_id', 'DEFAULT_USER')
+        # result에서 message_id 추출 (ext_result 또는 raw_result에서)
+        message_id = result.get('ext_result', {}).get('message_id') or result.get('raw_result', {}).get('message_id') or '#'
         saved_id = save_to_mongodb(message, extraction_result, raw_result_data, extraction_prompts, 
-                                 user_id=user_id, message_id=None)
+                         user_id=user_id, message_id=message_id)
         
         if saved_id:
             print(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")
