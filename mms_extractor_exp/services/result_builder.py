@@ -31,7 +31,7 @@ class ResultBuilder:
         self.llm_initializer = llm_initializer
         self.llm_model = llm_model
 
-    def build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str]) -> Dict[str, Any]:
+    def build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str], message_id: str = '#') -> Dict[str, Any]:
         """최종 결과 구성"""
         try:
             logger.info("=" * 80)
@@ -179,6 +179,9 @@ class ResultBuilder:
             logger.info(f"   최종 final_result['product'] 개수: {len(final_result.get('product', []))}개")
             logger.info("=" * 80)
 
+            # message_id 추가
+            final_result['message_id'] = message_id
+            
             return final_result
             
         except Exception as e:

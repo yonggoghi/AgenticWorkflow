@@ -445,6 +445,7 @@ def extract_message():
         extract_entity_dag = data.get('extract_entity_dag', False)
         save_to_mongodb = data.get('save_to_mongodb', True)
         result_type = data.get('result_type', 'ext')
+        message_id = data.get('message_id', '#')  # 메시지 ID (기본값: '#')
 
         data['save_to_mongodb'] = save_to_mongodb
         data['result_type'] = result_type
@@ -453,6 +454,10 @@ def extract_message():
         # DAG 추출 요청 로깅
         if extract_entity_dag:
             logger.info(f"🎯 DAG 추출 요청됨 - LLM: {llm_model}, 메시지 길이: {len(message)}자")
+        
+        # 메시지 ID 로깅
+        if message_id != '#':
+            logger.info(f"📋 메시지 ID: {message_id}")
         
         # 파라미터 유효성 검증
         valid_sources = ['local', 'db']
@@ -492,9 +497,9 @@ def extract_message():
         # DAG 추출 여부에 따라 병렬 처리 또는 단일 처리
         if extract_entity_dag:
             logger.info("DAG 추출과 함께 순차 처리 시작")
-            result = process_message_with_dag(extractor, message, extract_dag=True)
+            result = process_message_with_dag(extractor, message, extract_dag=True, message_id=message_id)
         else:
-            result = extractor.process_message(message)
+            result = extractor.process_message(message, message_id=message_id)
             result['ext_result']['entity_dag'] = []
             result['raw_result']['entity_dag'] = []  # DAG 추출하지 않은 경우 빈 배열
 
@@ -666,12 +671,22 @@ def extract_batch():
         current_thread = threading.current_thread()
         current_thread.stored_prompts = {}
         
-        # 빈 메시지 필터링
+        # 빈 메시지 필터링 및 message_id 추출
         valid_messages = []
+        message_ids = []
         message_indices = []
-        for i, message in enumerate(messages):
+        for i, msg_item in enumerate(messages):
+            # 메시지가 문자열이거나 딕셔너리일 수 있음
+            if isinstance(msg_item, dict):
+                message = msg_item.get('message', '')
+                message_id = msg_item.get('message_id', '#')
+            else:
+                message = msg_item
+                message_id = '#'
+            
             if message and message.strip():
                 valid_messages.append(message)
+                message_ids.append(message_id)
                 message_indices.append(i)
         
         logger.info(f"배치 처리 시작: {len(valid_messages)}/{len(messages)}개 유효한 메시지")
@@ -680,20 +695,35 @@ def extract_batch():
         saved_count = 0
         
         try:
-            # 멀티프로세스 배치 처리 실행
-            batch_results = process_messages_batch(
-                extractor, 
-                valid_messages, 
-                extract_dag=extract_entity_dag,
-                max_workers=max_workers
-            )
+            # 각 메시지를 message_id와 함께 처리
+            batch_results = []
+            for message, message_id in zip(valid_messages, message_ids):
+                if extract_entity_dag:
+                    result = process_message_with_dag(
+                        extractor, 
+                        message, 
+                        extract_dag=True,
+                        message_id=message_id
+                    )
+                else:
+                    result = extractor.process_message(message, message_id=message_id)
+                    result['ext_result']['entity_dag'] = []
+                    result['raw_result']['entity_dag'] = []
+                
+                batch_results.append(result)
             
             # 결과를 원래 인덱스와 매핑 및 MongoDB 저장
             results = []
             valid_result_idx = 0
             
-            for i, message in enumerate(messages):
-                if not message or not message.strip():
+            for i, msg_item in enumerate(messages):
+                # 메시지가 문자열이거나 딕셔너리일 수 있음
+                if isinstance(msg_item, dict):
+                    message_text = msg_item.get('message', '')
+                else:
+                    message_text = msg_item
+                
+                if not message_text or not message_text.strip():
                     results.append({
                         "index": i,
                         "success": False,
@@ -723,7 +753,7 @@ def extract_batch():
                             # MongoDB 저장 (배치 처리에서는 각 메시지별로 저장)
                             if save_to_mongodb:
                                 try:
-                                    saved_id = save_result_to_mongodb_if_enabled(message, batch_result, data, extractor)
+                                    saved_id = save_result_to_mongodb_if_enabled(message_text, batch_result, data, extractor)
                                     if saved_id:
                                         saved_count += 1
                                         logger.debug(f"메시지 {i} MongoDB 저장 완료 (ID: {saved_id[:8]}...)")
@@ -1007,6 +1037,7 @@ def extract_dag_endpoint():
         # 선택적 파라미터 추출
         llm_model_name = data.get('llm_model', 'ax')
         save_dag_image = data.get('save_dag_image', False)
+        message_id = data.get('message_id', '#')  # 메시지 ID (기본값: '#')
         
         # 파라미터 유효성 검증
         valid_llm_models = ['ax', 'gem', 'cld', 'gen', 'gpt']
@@ -1024,6 +1055,10 @@ def extract_dag_endpoint():
         llm_model = llm_model_map[llm_model_name]
         
         logger.info(f"🎯 DAG 추출 요청 - LLM: {llm_model_name}, 메시지 길이: {len(message)}자")
+        
+        # 메시지 ID 로깅
+        if message_id != '#':
+            logger.info(f"📋 메시지 ID: {message_id}")
         
         # DAG 파서 초기화
         parser = DAGParser()
@@ -1073,6 +1108,7 @@ def extract_dag_endpoint():
         response = {
             "success": True,
             "result": {
+                "message_id": message_id,  # message_id 추가
                 "dag_section": result['dag_section'],
                 "dag_raw": result['dag_raw'],
                 "dag_json": json.loads(dag_json),
@@ -1158,6 +1194,7 @@ def quick_extract():
         method = data.get('method', 'textrank')
         use_llm = data.get('use_llm', method == 'llm')
         llm_model = data.get('llm_model', 'ax')
+        message_id = data.get('message_id', '#')  # 메시지 ID (기본값: '#')
         
         # 메서드 검증
         valid_methods = ['textrank', 'tfidf', 'first_bracket', 'llm']
@@ -1180,6 +1217,9 @@ def quick_extract():
         # 메타데이터에 처리 시간 추가
         result['metadata']['processing_time_seconds'] = round(processing_time, 3)
         result['metadata']['timestamp'] = time.time()
+        
+        # message_id 추가
+        result['data']['message_id'] = message_id
         
         logger.info(f"✅ Quick Extract 완료: {processing_time:.3f}초, 제목={result['data']['title'][:50]}...")
         return jsonify(result)
@@ -1287,7 +1327,15 @@ def quick_extract_batch():
         results = []
         msg_processing_times = []
         
-        for idx, message in enumerate(messages):
+        for idx, msg_item in enumerate(messages):
+            # 메시지가 문자열이거나 딕셔너리일 수 있음
+            if isinstance(msg_item, dict):
+                message = msg_item.get('message', '')
+                message_id = msg_item.get('message_id', '#')
+            else:
+                message = msg_item
+                message_id = '#'
+            
             msg_start_time = time.time()
             result = extractor.process_single_message(message, method=method)
             msg_processing_time = time.time() - msg_start_time
@@ -1295,6 +1343,7 @@ def quick_extract_batch():
             # 결과에 메시지 ID와 처리 시간 추가
             message_result = {
                 'msg_id': idx,
+                'message_id': message_id,  # message_id 추가
                 'title': result['data']['title'],
                 'unsubscribe_phone': result['data']['unsubscribe_phone'],
                 'message': result['data']['message'],
