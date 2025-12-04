@@ -289,7 +289,7 @@ class BatchProcessor:
             # process_messages_batch 함수를 사용하여 병렬 처리
             batch_result = process_messages_batch(
                 self.extractor,
-                message_texts,
+                messages_list,
                 extract_dag=self.extract_entity_dag,
                 max_workers=self.max_workers
             )
