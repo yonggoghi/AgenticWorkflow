@@ -82,6 +82,8 @@ def main():
                        help='메인 프롬프트에 사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
     parser.add_argument('--entity-llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='엔티티 추출에 사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
+    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none'], default='dag',
+                       help='엔티티 추출 컨텍스트 모드 (dag: DAG 컨텍스트, pairing: PAIRING 컨텍스트, none: 컨텍스트 없음)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
     parser.add_argument('--message-id', type=str, default='#',
@@ -130,7 +132,8 @@ def main():
             entity_extraction_mode=args.entity_matching_mode,
             llm_model=args.llm_model,
             entity_llm_model=args.entity_llm_model,
-            extract_entity_dag=args.extract_entity_dag
+            extract_entity_dag=args.extract_entity_dag,
+            entity_extraction_context_mode=args.entity_extraction_context_mode
         )
         
         # 배치 처리 또는 단일 메시지 처리
