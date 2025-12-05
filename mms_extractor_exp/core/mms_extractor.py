@@ -101,8 +101,10 @@ from prompts import (
     build_entity_extraction_prompt,
     DEFAULT_ENTITY_EXTRACTION_PROMPT,
     DETAILED_ENTITY_EXTRACTION_PROMPT,
-    SIMPLE_ENTITY_EXTRACTION_PROMPT,
-    HYBRID_DAG_EXTRACTION_PROMPT
+    CONTEXT_BASED_ENTITY_EXTRACTION_PROMPT,
+    build_context_based_entity_extraction_prompt,
+    HYBRID_DAG_EXTRACTION_PROMPT,
+    SIMPLE_ENTITY_EXTRACTION_PROMPT
     )
 
 
@@ -291,7 +293,7 @@ class MMSExtractor(MMSExtractorDataMixin):
     
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, 
                  entity_extraction_mode=None, offer_info_data_src='local', llm_model='ax', 
-                 entity_llm_model='ax', extract_entity_dag=False):
+                 entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='dag'):
         """
         MMSExtractor 초기화 메소드
         
@@ -309,7 +311,9 @@ class MMSExtractor(MMSExtractorDataMixin):
             entity_extraction_mode (str, optional): 엔티티 추출 모드 ('nlp', 'llm', 'hybrid')
             offer_info_data_src (str, optional): 데이터 소스 타입 ('local' 또는 'db')
             llm_model (str, optional): 사용할 LLM 모델. 기본값: 'ax'
+            entity_llm_model (str, optional): 엔티티 추출용 LLM 모델. 기본값: 'ax'
             extract_entity_dag (bool, optional): DAG 추출 여부. 기본값: False
+            entity_extraction_context_mode (str, optional): 엔티티 추출 컨텍스트 모드 ('dag', 'pairing', 'none'). 기본값: 'dag'
             
         Raises:
             Exception: 초기화 과정에서 발생하는 모든 오류
@@ -327,7 +331,8 @@ class MMSExtractor(MMSExtractorDataMixin):
             # 1단계: 기본 설정 매개변수 구성
             logger.info("⚙️ 기본 설정 적용 중...")
             self._set_default_config(model_path, data_dir, product_info_extraction_mode, 
-                                   entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model, extract_entity_dag)
+                                   entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model, 
+                                   extract_entity_dag, entity_extraction_context_mode)
             
             # 2단계: 환경변수 로드 (API 키 등)
             logger.info("🔑 환경변수 로드 중...")
@@ -374,7 +379,8 @@ class MMSExtractor(MMSExtractorDataMixin):
                 self.num_cand_pgms,
                 self.entity_extraction_mode,
                 self._initialize_multiple_llm_models,
-                self.entity_llm_model_name
+                self.entity_llm_model_name,
+                self.entity_extraction_context_mode
             )
             logger.info("✅ 서비스 초기화 완료")
             
@@ -406,7 +412,8 @@ class MMSExtractor(MMSExtractorDataMixin):
             raise
 
     def _set_default_config(self, model_path, data_dir, product_info_extraction_mode, 
-                          entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model, extract_entity_dag):
+                          entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model, 
+                          extract_entity_dag, entity_extraction_context_mode):
         """기본 설정값 적용"""
         self.data_dir = data_dir if data_dir is not None else './data/'
         self.model_path = model_path if model_path is not None else getattr(EMBEDDING_CONFIG, 'ko_sbert_model_path', 'jhgan/ko-sroberta-multitask')
@@ -417,6 +424,7 @@ class MMSExtractor(MMSExtractorDataMixin):
         self.entity_llm_model_name = entity_llm_model
         self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 5)
         self.extract_entity_dag = extract_entity_dag
+        self.entity_extraction_context_mode = entity_extraction_context_mode
         
         # DAG 추출 설정 로깅
         # extract_entity_dag: 엔티티 간 관계를 DAG(Directed Acyclic Graph)로 추출

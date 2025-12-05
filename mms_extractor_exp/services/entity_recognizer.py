@@ -29,8 +29,11 @@ from utils import (
 
 # Prompt imports
 from prompts import (
+    SIMPLE_ENTITY_EXTRACTION_PROMPT,
     HYBRID_DAG_EXTRACTION_PROMPT,
-    SIMPLE_ENTITY_EXTRACTION_PROMPT
+    CONTEXT_BASED_ENTITY_EXTRACTION_PROMPT,
+    build_context_based_entity_extraction_prompt,
+    HYBRID_PAIRING_EXTRACTION_PROMPT
 )
 
 # Config imports
@@ -351,35 +354,61 @@ class EntityRecognizer:
             return max(base_size // 2, 25)
 
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None, external_cand_entities: List[str] = []) -> pd.DataFrame:
-        """LLM-based entity extraction with multi-model support"""
+    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None, 
+                                external_cand_entities: List[str] = [], context_mode: str = 'dag') -> pd.DataFrame:
+        """
+        LLM-based entity extraction with multi-model support and configurable context mode.
+        
+        Args:
+            msg_text: Message text to extract entities from
+            rank_limit: Maximum rank for entity candidates
+            llm_models: List of LLM models to use (defaults to self.llm_model)
+            external_cand_entities: External candidate entities to include
+            context_mode: Context extraction mode - 'dag', 'pairing', or 'none' (default: 'dag')
+        
+        Returns:
+            DataFrame with extracted entities and similarity scores
+        """
 
         try:
             logger.info("=== LLM Entity Extraction Started ===")
+            logger.info(f"Context mode: {context_mode}")
             msg_text = validate_text_input(msg_text)
             
             if llm_models is None:
                 llm_models = [self.llm_model]
             
+            # Validate context_mode
+            if context_mode not in ['dag', 'pairing', 'none']:
+                logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'dag'")
+                context_mode = 'dag'
+            
+            # Select prompt based on context_mode
+            if context_mode == 'dag':
+                first_stage_prompt = HYBRID_DAG_EXTRACTION_PROMPT
+                context_keyword = 'DAG'
+            elif context_mode == 'pairing':
+                first_stage_prompt = HYBRID_PAIRING_EXTRACTION_PROMPT
+                context_keyword = 'PAIRING'
+            else:  # 'none'
+                first_stage_prompt = SIMPLE_ENTITY_EXTRACTION_PROMPT
+                context_keyword = None
+            
             # Internal function for parallel execution
-            def get_entities_and_dag_by_llm(args_dict):
+            def get_entities_and_context_by_llm(args_dict):
                 llm_model, prompt = args_dict['llm_model'], args_dict['prompt']
-                extract_dag = args_dict.get('extract_dag', True)
+                extract_context = args_dict.get('extract_context', True)
+                context_kw = args_dict.get('context_keyword', None)
                 model_name = getattr(llm_model, 'model_name', 'Unknown')
                 
                 try:
                     # Log the prompt being sent to LLM
-                    
                     prompt_res_log_list = []
                     prompt_res_log_list.append(f"[{model_name}] Sending prompt to LLM:")
                     prompt_res_log_list.append("="*100)
                     prompt_res_log_list.append(prompt)
                     prompt_res_log_list.append("="*100)
-                                        
-                    # zero_shot_prompt = PromptTemplate(input_variables=["prompt"], template="{prompt}")
-                    # chain = zero_shot_prompt | llm_model
-                    # response = chain.invoke({"prompt": prompt}).content
-
+                    
                     response = llm_model.invoke(f"""
                     
                     {prompt}
@@ -399,49 +428,52 @@ class EntityRecognizer:
                     
                     logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities: {cand_entity_list}")
                     
-                    dag_text = ""
-                    if extract_dag:
-                        dag_match = re.search(r'DAG:\s*(.*)', response, re.DOTALL | re.IGNORECASE)
-                        if dag_match:
-                            dag_text = dag_match.group(1).strip()
-                            logger.info(f"[{model_name}] Extracted DAG text ({len(dag_text)} chars)")
+                    context_text = ""
+                    if extract_context and context_kw:
+                        context_match = re.search(rf'{context_kw}:\s*(.*)', response, re.DOTALL | re.IGNORECASE)
+                        if context_match:
+                            context_text = context_match.group(1).strip()
+                            logger.info(f"[{model_name}] Extracted {context_kw} text ({len(context_text)} chars)")
                         else:
-                            logger.debug(f"[{model_name}] No DAG found in response")
+                            logger.debug(f"[{model_name}] No {context_kw} found in response")
                     
-                    return {"entities": cand_entity_list, "dag_text": dag_text}
+                    return {"entities": cand_entity_list, "context_text": context_text}
                 except Exception as e:
                     logger.error(f"LLM extraction failed for {model_name}: {e}")
-                    return {"entities": [], "dag_text": ""}
+                    return {"entities": [], "context_text": ""}
 
             def get_entities_only_by_llm(args_dict):
-                result = get_entities_and_dag_by_llm(args_dict)
+                result = get_entities_and_context_by_llm(args_dict)
                 return result['entities']
 
-            # 1. First Stage: Extract entities and DAG
+            # 1. First Stage: Extract entities and context
             batches = []
             for llm_model in llm_models:
-                prompt = f"{HYBRID_DAG_EXTRACTION_PROMPT}\n\n## message:\n{msg_text}"
-                batches.append({"prompt": prompt, "llm_model": llm_model, "extract_dag": True})
+                prompt = f"{first_stage_prompt}\n\n## message:\n{msg_text}"
+                batches.append({
+                    "prompt": prompt, 
+                    "llm_model": llm_model, 
+                    "extract_context": (context_mode != 'none'),
+                    "context_keyword": context_keyword
+                })
             
             n_jobs = min(len(batches), 3)
             with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                batch_results_dicts = parallel(delayed(get_entities_and_dag_by_llm)(args) for args in batches)
+                batch_results_dicts = parallel(delayed(get_entities_and_context_by_llm)(args) for args in batches)
             
             all_entities = []
-            all_dags = []
+            all_contexts = []
             for result_dict in batch_results_dicts:
                 all_entities.extend(result_dict['entities'])
-                if result_dict['dag_text']:
-                    all_dags.append(result_dict['dag_text'])
+                if result_dict['context_text']:
+                    all_contexts.append(result_dict['context_text'])
             
-            combined_dag_context = "\n".join(all_dags)
+            combined_context = "\n".join(all_contexts)
             
             if external_cand_entities:
                 all_entities.extend(external_cand_entities)
             
             cand_entity_list = list(set(all_entities))
-
-            # print(cand_entity_list)
             
             # N-gram expansion
             cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
@@ -459,38 +491,49 @@ class EntityRecognizer:
             entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
             cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
             optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=10)
-
-            # print(entities_in_message)
             
             second_stage_llm = llm_models[0] if llm_models else self.llm_model
             
             batches = []
             for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
                 cand_entities_voca = cand_entities_voca_all[i:i+optimal_batch_size]
+                
+                # Build context section based on mode
+                if context_mode == 'none' or not combined_context:
+                    context_section = ""
+                else:
+                    context_label = f"{context_keyword} Context (User Action Paths)" if context_keyword else "Context"
+                    context_section = f"\n## {context_label}:\n{combined_context}\n"
+                
+                # Build dynamic prompt based on context_keyword
+                second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
+                
                 prompt = f"""
-                {SIMPLE_ENTITY_EXTRACTION_PROMPT}
+                {second_stage_prompt}
                 
                 ## message:                
                 {msg_text}
-
-                ## DAG Context (User Action Paths):
-                {combined_dag_context}
-
+                
+                {context_section}
+                
                 ## entities in message:
                 {', '.join(entities_in_message)}
 
                 ## candidate entities in vocabulary:
                 {', '.join(cand_entities_voca)}
                 """
-                batches.append({"prompt": prompt, "llm_model": second_stage_llm, "extract_dag": False})
+                batches.append({
+                    "prompt": prompt, 
+                    "llm_model": second_stage_llm, 
+                    "extract_context": False,
+                    "context_keyword": None
+                })
             
             n_jobs = min(len(batches), 3)
             with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
                 batch_results = parallel(delayed(get_entities_only_by_llm)(args) for args in batches)
             
             cand_entity_list = list(set(sum(batch_results, [])))
-            
-            # print(cand_entity_list)
             
             cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list")
             

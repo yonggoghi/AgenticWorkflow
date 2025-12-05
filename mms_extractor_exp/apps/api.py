@@ -228,7 +228,8 @@ def initialize_global_extractor(offer_info_data_src='local'):
             llm_model='gemini',                      # 기본 LLM: Gemini (CLI와 동일)
             product_info_extraction_mode='llm',      # 기본 상품 추출 모드: LLM (CLI와 동일)
             entity_extraction_mode='llm',            # 기본 엔티티 매칭 모드: LLM (CLI와 동일)
-            extract_entity_dag=False
+            extract_entity_dag=False,
+            entity_extraction_context_mode='dag'     # 기본 컨텍스트 모드: DAG
         )
         
         logger.info("전역 추출기 초기화 완료")
@@ -283,7 +284,7 @@ def get_configured_quick_extractor(use_llm=False, llm_model='ax'):
     
     return global_quick_extractor
 
-def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=False):
+def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='dag'):
     """
     런타임 설정으로 전역 추출기 구성
     
@@ -295,6 +296,7 @@ def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='l
         product_info_extraction_mode: 상품 정보 추출 모드 ('nlp', 'llm', 'rag')
         entity_matching_mode: 엔티티 매칭 모드 ('logic', 'llm')
         entity_llm_model: 엔티티 추출에 사용할 LLM 모델 ('gemma', 'ax', 'claude', 'gpt', 'gemini')
+        entity_extraction_context_mode: 엔티티 추출 컨텍스트 모드 ('dag', 'pairing', 'none')
     
     Returns:
         MMSExtractor: 구성된 추출기 인스턴스
@@ -315,6 +317,7 @@ def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='l
     global_extractor.product_info_extraction_mode = product_info_extraction_mode
     global_extractor.entity_extraction_mode = entity_matching_mode
     global_extractor.extract_entity_dag = extract_entity_dag
+    global_extractor.entity_extraction_context_mode = entity_extraction_context_mode
     
     # ResultBuilder의 llm_model도 업데이트
     if hasattr(global_extractor, 'result_builder'):
@@ -443,6 +446,7 @@ def extract_message():
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', False)
+        entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'dag')
         save_to_mongodb = data.get('save_to_mongodb', True)
         result_type = data.get('result_type', 'ext')
         message_id = data.get('message_id', '#')  # 메시지 ID (기본값: '#')
@@ -485,7 +489,7 @@ def extract_message():
         
         # 구성된 추출기로 메시지 처리 (프롬프트 캡처 포함)
         start_time = time.time()
-        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, entity_llm_model, extract_entity_dag)
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, entity_llm_model, extract_entity_dag, entity_extraction_context_mode)
         
         logger.info(f"데이터 소스로 메시지 처리 중: {offer_info_data_src}")
         
@@ -631,6 +635,7 @@ def extract_batch():
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', False)
+        entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'dag')
         max_workers = data.get('max_workers', None)
         save_to_mongodb = data.get('save_to_mongodb', True)
         result_type = data.get('result_type', 'ext')
@@ -657,7 +662,7 @@ def extract_batch():
             return jsonify({"error": f"잘못된 entity_matching_mode입니다. 사용 가능: {valid_entity_modes}"}), 400
         
         # 구성된 추출기 가져오기
-        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, entity_llm_model, extract_entity_dag)
+        extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, entity_llm_model, extract_entity_dag, entity_extraction_context_mode)
         
         # DAG 추출 요청 로깅
         if extract_entity_dag:
@@ -1103,6 +1108,43 @@ def extract_dag_endpoint():
                 logger.info(f"🌐 DAG 이미지 URL: {dag_image_url}")
             except Exception as e:
                 logger.warning(f"⚠️ DAG 이미지 저장 실패: {e}")
+        
+        # MongoDB 저장 (선택 사항)
+        save_to_mongodb = data.get('save_to_mongodb', False)
+        if save_to_mongodb:
+            try:
+                # save_result_to_mongodb_if_enabled 함수가 기대하는 형식으로 결과 구성
+                # ext_result와 raw_result에 DAG 정보 포함
+                dag_list = sorted([d for d in result['dag_section'].split('\n') if d!=''])
+                
+                mock_result = {
+                    'ext_result': {
+                        'message_id': message_id,
+                        'entity_dag': dag_list,
+                        'dag_json': json.loads(dag_json),
+                        'dag_analysis': analysis
+                    },
+                    'raw_result': {
+                        'message_id': message_id,
+                        'dag_raw': result['dag_raw']
+                    },
+                    'processing_time': processing_time
+                }
+                
+                # 가짜 args 객체 생성 (함수 시그니처 맞추기 위함)
+                mock_args = {
+                    'save_to_mongodb': True,
+                    'llm_model': llm_model_name,
+                    'processing_mode': 'api_dag',
+                    'user_id': 'API_USER'
+                }
+                
+                logger.info("MongoDB 저장 중...")
+                saved_id = save_result_to_mongodb_if_enabled(message, mock_result, mock_args)
+                if saved_id:
+                    logger.info(f"MongoDB 저장 완료! ID: {saved_id}")
+            except Exception as e:
+                logger.error(f"MongoDB 저장 실패: {e}")
         
         # 응답 구성
         response = {

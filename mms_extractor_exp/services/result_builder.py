@@ -21,7 +21,8 @@ class ResultBuilder:
 
     def __init__(self, entity_recognizer, store_matcher, alias_pdf_raw: pd.DataFrame, 
                  stop_item_names: List[str], num_cand_pgms: int, entity_extraction_mode: str,
-                 llm_initializer: Optional[callable] = None, llm_model: str = 'ax'):
+                 llm_initializer: Optional[callable] = None, llm_model: str = 'ax', 
+                 entity_extraction_context_mode: str = 'dag'):
         self.entity_recognizer = entity_recognizer
         self.store_matcher = store_matcher
         self.alias_pdf_raw = alias_pdf_raw
@@ -30,6 +31,7 @@ class ResultBuilder:
         self.entity_extraction_mode = entity_extraction_mode
         self.llm_initializer = llm_initializer
         self.llm_model = llm_model
+        self.entity_extraction_context_mode = entity_extraction_context_mode
 
     def build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str], message_id: str = '#') -> Dict[str, Any]:
         """최종 결과 구성"""
@@ -80,7 +82,13 @@ class ResultBuilder:
                     logger.warning("⚠️ llm_initializer가 설정되지 않았습니다. 빈 리스트를 사용합니다.")
                     default_llm_models = []
                 logger.info(f"   - 초기화된 LLM 모델 수: {len(default_llm_models)}개")
-                similarities_fuzzy = self.entity_recognizer.extract_entities_by_llm(msg, llm_models=default_llm_models, rank_limit=100, external_cand_entities=list(set(entities_from_kiwi+primary_llm_extracted_entities)))
+                similarities_fuzzy = self.entity_recognizer.extract_entities_by_llm(
+                    msg, 
+                    llm_models=default_llm_models, 
+                    rank_limit=100, 
+                    external_cand_entities=list(set(entities_from_kiwi+primary_llm_extracted_entities)),
+                    context_mode=self.entity_extraction_context_mode
+                )
                 logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
             
             if not similarities_fuzzy.empty:
