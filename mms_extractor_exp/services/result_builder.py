@@ -245,6 +245,11 @@ class ResultBuilder:
                             for o in store_info
                         ]
                         offer_object['value'] = org_tmp
+                    else:
+                        if "대리점/매장 방문 유도" in json_objects['purpose']:
+                            offer_object['type'] = 'org'
+                            org_tmp = [{'item_nm':d['value'], 'item_id':'#', 'item_name_in_msg':d['value'], 'expected_action':['방문']}]
+                            offer_object['value'] = org_tmp
                 else:
                     d['store_info'] = []
                 channel_tag.append(d)
