@@ -34,11 +34,14 @@ class StoreMatcher:
     def match_store(self, store_name: str) -> List[Dict]:
         """Match store name to organization info"""
         try:
+            # Define threshold from config, defaulting to 0.5 if not found
+            threshold = getattr(PROCESSING_CONFIG, 'store_matching_threshold', 0.5)
+
             org_pdf_cand = safe_execute(
                 parallel_fuzzy_similarity,
                 [preprocess_text(store_name.lower())],
                 self.org_pdf['item_nm'].unique(),
-                threshold=0.5,
+                threshold=threshold, # Replaced hardcoded 0.5 with config value
                 text_col_nm='org_nm_in_msg',
                 item_col_nm='item_nm',
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),

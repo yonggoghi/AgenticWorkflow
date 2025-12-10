@@ -41,13 +41,23 @@ try:
     from config.settings import PROCESSING_CONFIG
 except ImportError:
     logging.warning("Config file not found. Using defaults.")
-    class PROCESSING_CONFIG:
+    class PROCESSING_CONFIG:        # 임계값 설정 (config에서 로드)
+        # If config.settings is not found, these are the default values.
+        # The original instruction's intent to import PROCESSING_CONFIG inside this block
+        # would cause an infinite ImportError loop.
+        # Assuming the intent is to define default entity-specific thresholds
+        # if the main config is not available.
         fuzzy_threshold = 0.5
         n_jobs = 4
         batch_size = 100
         similarity_threshold = 0.2
         combined_similarity_threshold = 0.2
         high_similarity_threshold = 1.0
+        entity_fuzzy_threshold = 0.5
+        entity_similarity_threshold = 0.2
+        entity_combined_similarity_threshold = 0.2
+        entity_high_similarity_threshold = 1.0
+        entity_llm_fuzzy_threshold = 0.6  # LLM-based entity extraction threshold
 
 logger = logging.getLogger(__name__)
 
@@ -548,10 +558,11 @@ class EntityRecognizer:
         """Match candidate entities with product database"""
         try:
             # print(cand_entity_list)
+            # LLM 기반 엔티티 추출을 위한 Fuzzy 유사도 계산
             similarities_fuzzy = parallel_fuzzy_similarity(
                 cand_entity_list,
                 self.item_pdf_all['item_nm_alias'].unique(),
-                threshold=0.6,
+                threshold=getattr(PROCESSING_CONFIG, 'entity_llm_fuzzy_threshold', 0.6),
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
                 n_jobs=6,
