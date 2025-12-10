@@ -653,7 +653,7 @@ source venv/bin/activate  # 가상환경 활성화 (있는 경우)
 python apps/cli.py --message "[SKT] 테스트 메시지"
 
 # 3. 배치 테스트
-python apps/cli.py --batch-file test_messages.txt --max-workers 4
+python apps/cli.py --batch-file data/reg_test.txt --max-workers 4
 
 # 4. 특정 설정으로 테스트
 python apps/cli.py \
