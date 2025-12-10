@@ -8,6 +8,7 @@ MMS Workflow Steps - MMS 추출기 워크플로우 단계 구현
 
 import logging
 import copy
+import traceback
 from typing import Any, Dict
 from .workflow_core import WorkflowStep, WorkflowState
 from utils import (
@@ -414,14 +415,100 @@ class ValidationStep(WorkflowStep):
 
 class DAGExtractionStep(WorkflowStep):
     """
-    DAG 추출 단계 (선택적)
+    DAG 추출 단계 - 엔티티 간 관계 그래프 생성
     
-    현재는 process_message_with_dag에서 별도로 처리됨
-    향후 workflow에 통합 가능
+    LLM을 사용하여 메시지에서 엔티티 간의 관계를 분석하고
+    DAG(Directed Acyclic Graph) 형태로 추출합니다.
     """
     
+    def __init__(self, dag_parser=None):
+        """
+        Args:
+            dag_parser: DAGParser 인스턴스 (선택사항, None이면 자동 생성)
+        """
+        from .entity_dag_extractor import DAGParser
+        self.dag_parser = dag_parser or DAGParser()
+    
     def execute(self, state: WorkflowState) -> WorkflowState:
-        # DAG 추출은 process_message_with_dag에서 별도로 처리되므로
-        # 여기서는 스킵
-        # 필요시 나중에 구현 가능
+        """
+        DAG 추출 실행
+        
+        Args:
+            state: 현재 워크플로우 상태
+            
+        Returns:
+            업데이트된 워크플로우 상태 (entity_dag 필드 추가)
+        """
+        # extract_entity_dag 플래그 확인
+        extractor = state.get("extractor")
+        if not extractor.extract_entity_dag:
+            logger.info("DAG 추출이 비활성화되어 있습니다")
+            # 비활성화된 경우 빈 배열로 설정
+            final_result = state.get("final_result", {})
+            final_result['entity_dag'] = []
+            state.set("final_result", final_result)
+            
+            raw_result = state.get("raw_result", {})
+            raw_result['entity_dag'] = []
+            state.set("raw_result", raw_result)
+            return state
+        
+        msg = state.get("msg")
+        message_id = state.get("message_id", "#")
+        
+        logger.info("🔗 DAG 추출 시작...")
+        
+        try:
+            # entity_dag_extractor의 extract_dag 함수 호출
+            from .entity_dag_extractor import extract_dag
+            
+            dag_result = extract_dag(
+                self.dag_parser,
+                msg,
+                extractor.llm_model,
+                prompt_mode='cot'
+            )
+            
+            # DAG 섹션을 리스트로 변환 (빈 줄 제거 및 정렬)
+            dag_list = sorted([
+                d.strip() for d in dag_result['dag_section'].split('\n') 
+                if d.strip()
+            ])
+            
+            logger.info(f"✅ DAG 추출 완료: {len(dag_list)}개 엣지")
+            
+            # final_result에 entity_dag 추가
+            final_result = state.get("final_result", {})
+            final_result['entity_dag'] = dag_list
+            state.set("final_result", final_result)
+            
+            # raw_result에도 추가
+            raw_result = state.get("raw_result", {})
+            raw_result['entity_dag'] = dag_list
+            state.set("raw_result", raw_result)
+            
+            # DAG 다이어그램 생성 (선택적)
+            if dag_result['dag'].number_of_nodes() > 0:
+                try:
+                    from utils import create_dag_diagram, sha256_hash
+                    dag_filename = f'dag_{message_id}_{sha256_hash(msg)}'
+                    create_dag_diagram(dag_result['dag'], filename=dag_filename)
+                    logger.info(f"📊 DAG 다이어그램 저장: {dag_filename}.png")
+                except Exception as e:
+                    logger.warning(f"DAG 다이어그램 생성 실패 (무시): {e}")
+            
+        except Exception as e:
+            logger.error(f"❌ DAG 추출 실패: {e}")
+            logger.error(f"상세 오류: {traceback.format_exc()}")
+            
+            # 실패 시 빈 배열로 설정
+            final_result = state.get("final_result", {})
+            final_result['entity_dag'] = []
+            state.set("final_result", final_result)
+            
+            raw_result = state.get("raw_result", {})
+            raw_result['entity_dag'] = []
+            state.set("raw_result", raw_result)
+        
         return state
+
