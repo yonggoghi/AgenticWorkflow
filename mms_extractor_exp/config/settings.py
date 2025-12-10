@@ -228,6 +228,20 @@ class ProcessingConfig:
     # Processing mode configurations
     product_info_extraction_mode: str = 'llm'  # Product extraction strategy: 'rag', 'llm', 'nlp'
     entity_extraction_mode: str = 'llm'  # Entity matching strategy: 'llm', 'logic'
+    
+    # === Threshold Settings (임계값 설정) ===
+    # Entity Recognition Thresholds (엔티티 인식 임계값)
+    entity_fuzzy_threshold: float = 0.5  # Fuzzy matching threshold for entity recognition
+    entity_similarity_threshold: float = 0.2  # Sequence similarity threshold
+    entity_combined_similarity_threshold: float = 0.2  # Combined similarity threshold
+    entity_high_similarity_threshold: float = 1.0  # High similarity threshold for filtering
+    entity_llm_fuzzy_threshold: float = 0.6  # Fuzzy threshold for LLM-based entity extraction
+    
+    # Store Matching Thresholds (매장 매칭 임계값)
+    store_matching_threshold: float = 0.5  # Threshold for store name matching
+    
+    # Parallel Processing Thresholds (병렬 처리 임계값)
+    parallel_fuzzy_threshold: float = 0.5  # Default threshold for parallel fuzzy similarity
 
     # 엔티티 추출 프롬프트는 이제 prompts 디렉토리에서 관리됩니다.
     # prompts.DETAILED_ENTITY_EXTRACTION_PROMPT 를 사용하세요.

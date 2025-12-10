@@ -378,8 +378,16 @@ def get_fuzzy_similarities(args_dict):
     ]
     return filtered_results
 
-def parallel_fuzzy_similarity(texts, entities, threshold=0.5, text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=None, batch_size=None):
+def parallel_fuzzy_similarity(texts, entities, threshold=None, text_col_nm='sent', item_col_nm='item_nm_alias', n_jobs=None, batch_size=None):
     """병렬 처리를 통한 퍼지 유사도 계산"""
+    # threshold가 None이면 config에서 로드
+    if threshold is None:
+        try:
+            from config.settings import PROCESSING_CONFIG
+            threshold = getattr(PROCESSING_CONFIG, 'parallel_fuzzy_threshold', 0.5)
+        except ImportError:
+            threshold = 0.5
+    
     if n_jobs is None:
         n_jobs = min(os.cpu_count()-1, 8)
     if batch_size is None:
