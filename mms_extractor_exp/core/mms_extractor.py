@@ -609,202 +609,36 @@ class MMSExtractor(MMSExtractorDataMixin):
             raise
 
     def _load_and_prepare_item_data(self):
-        """상품 정보 로드 및 준비 (ipynb 코드 기준으로 통합)"""
+        """
+        상품 정보 로드 및 준비 (ItemDataLoader로 위임)
+        
+        기존 197줄의 복잡한 로직을 ItemDataLoader 서비스로 분리하여
+        재사용성과 테스트 용이성을 향상시켰습니다.
+        """
         try:
-            logger.info(f"=== 상품 정보 로드 및 준비 시작 (모드: {self.offer_info_data_src}) ===")
+            from services.item_data_loader import ItemDataLoader
             
-            # ===== 1단계: 데이터 소스에서 원본 데이터 로드 =====
-            if self.offer_info_data_src == "local":
-                logger.info("📁 로컬 CSV 파일에서 로드")
-                csv_path = getattr(METADATA_CONFIG, 'offer_data_path', './data/items.csv')
-                item_pdf_raw = pd.read_csv(csv_path)
-            elif self.offer_info_data_src == "db":
-                logger.info("🗄️ 데이터베이스에서 로드")
-                with self._database_connection() as conn:
-                    sql = "SELECT * FROM TCAM_RC_OFER_MST"
-                    item_pdf_raw = pd.read_sql(sql, conn)
-            
-            logger.info(f"원본 데이터 크기: {item_pdf_raw.shape}")
-            
-            # ===== 2단계: 공통 전처리 (데이터 소스 무관) =====
-            # ITEM_DESC를 str로 변환
-            item_pdf_raw['ITEM_DESC'] = item_pdf_raw['ITEM_DESC'].astype('str')
-            
-            # 단말기인 경우 설명을 상품명으로 사용
-            item_pdf_raw['ITEM_NM'] = item_pdf_raw.apply(
-                lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], axis=1
+            # ItemDataLoader 인스턴스 생성
+            loader = ItemDataLoader(
+                data_source=self.offer_info_data_src,
+                db_loader=self._load_offer_info_from_db if self.offer_info_data_src == 'db' else None
             )
             
-            # 컬럼명을 소문자로 변환
-            item_pdf_all = item_pdf_raw.rename(columns={c: c.lower() for c in item_pdf_raw.columns})
-            logger.info(f"컬럼명 소문자 변환 완료")
+            # 전체 파이프라인 실행
+            self.item_pdf_all = loader.prepare_item_data()
             
-            # 추가 컬럼 생성
-            item_pdf_all['item_ctg'] = None
-            item_pdf_all['item_emb_vec'] = None
-            item_pdf_all['ofer_cd'] = item_pdf_all['item_id']
-            item_pdf_all['oper_dt_hms'] = '20250101000000'
+            # 별칭 규칙 원본 저장 (다른 컴포넌트에서 사용)
+            self.alias_pdf_raw = loader.alias_pdf_raw
             
-            # 제외할 도메인 코드 필터링
-            excluded_domains = getattr(PROCESSING_CONFIG, 'excluded_domain_codes_for_items', [])
-            if excluded_domains:
-                before_filter = len(item_pdf_all)
-                item_pdf_all = item_pdf_all.query("item_dmn not in @excluded_domains")
-                logger.info(f"도메인 필터링: {before_filter} -> {len(item_pdf_all)}")
-            
-            # ===== 3단계: 별칭 규칙 로드 및 처리 (데이터 소스 무관) =====
-            logger.info("🔗 별칭 규칙 로드 중...")
-            self.alias_pdf_raw = pd.read_csv(getattr(METADATA_CONFIG, 'alias_rules_path', './data/alias_rules.csv'))
-            alias_pdf = self.alias_pdf_raw.copy()
-            alias_pdf['alias_1'] = alias_pdf['alias_1'].str.split("&&")
-            alias_pdf['alias_2'] = alias_pdf['alias_2'].str.split("&&")
-            alias_pdf = alias_pdf.explode('alias_1')
-            alias_pdf = alias_pdf.explode('alias_2')
-            
-            # build 타입 별칭 확장
-            alias_list_ext = alias_pdf.query("type=='build'")[['alias_1','category','direction','type']].to_dict('records')
-            for alias in alias_list_ext:
-                adf = item_pdf_all.query(
-                    "item_nm.str.contains(@alias['alias_1']) and item_dmn==@alias['category']"
-                )[['item_nm','item_desc','item_dmn']].rename(
-                    columns={'item_nm':'alias_2','item_desc':'description','item_dmn':'category'}
-                ).drop_duplicates()
-                adf['alias_1'] = alias['alias_1']
-                adf['direction'] = alias['direction']
-                adf['type'] = alias['type']
-                adf = adf[alias_pdf.columns]
-                alias_pdf = pd.concat([alias_pdf.query(f"alias_1!='{alias['alias_1']}'"), adf])
-            
-            alias_pdf = alias_pdf.drop_duplicates()
-            
-            # 양방향(B) 별칭 추가
-            alias_pdf = pd.concat([
-                alias_pdf, 
-                alias_pdf.query("direction=='B'").rename(
-                    columns={'alias_1':'alias_2', 'alias_2':'alias_1'}
-                )[alias_pdf.columns]
-            ])
-            
-            alias_rule_set = list(zip(alias_pdf['alias_1'], alias_pdf['alias_2'], alias_pdf['type']))
-            logger.info(f"별칭 규칙 수: {len(alias_rule_set)}개")
-            
-            # ===== 4단계: 별칭 규칙 연쇄 적용 (병렬 처리) =====
-            def apply_alias_rule_cascade_parallel(args_dict):
-                """별칭 규칙을 연쇄적으로 적용"""
-                item_nm = args_dict['item_nm']
-                max_depth = args_dict['max_depth']
-                
-                processed = set()
-                result_dict = {item_nm: '#' * len(item_nm)}
-                to_process = [(item_nm, 0, frozenset())]
-                
-                while to_process:
-                    current_item, depth, path_applied_rules = to_process.pop(0)
-                    
-                    if depth >= max_depth or current_item in processed:
-                        continue
-                    
-                    processed.add(current_item)
-                    
-                    for r in alias_rule_set:
-                        alias_from, alias_to, alias_type = r[0], r[1], r[2]
-                        rule_key = (alias_from, alias_to, alias_type)
-                        
-                        if rule_key in path_applied_rules:
-                            continue
-                        
-                        # 타입에 따른 매칭
-                        if alias_type == 'exact':
-                            matched = (current_item == alias_from)
-                        else:
-                            matched = (alias_from in current_item)
-                        
-                        if matched:
-                            new_item = alias_to.strip() if alias_type == 'exact' else current_item.replace(alias_from.strip(), alias_to.strip())
-                            
-                            if new_item not in result_dict:
-                                result_dict[new_item] = alias_from.strip()
-                                to_process.append((new_item, depth + 1, path_applied_rules | {rule_key}))
-                
-                item_nm_list = [{'item_nm': k, 'item_nm_alias': v} for k, v in result_dict.items()]
-                adf = pd.DataFrame(item_nm_list)
-                selected_alias = select_most_comprehensive(adf['item_nm_alias'].tolist())
-                result_aliases = list(adf.query("item_nm_alias in @selected_alias")['item_nm'].unique())
-                
-                if item_nm not in result_aliases:
-                    result_aliases.append(item_nm)
-                
-                return {'item_nm': item_nm, 'item_nm_alias': result_aliases}
-            
-            def parallel_alias_rule_cascade(texts, max_depth=5, n_jobs=None):
-                """병렬 별칭 규칙 적용"""
-                if n_jobs is None:
-                    n_jobs = min(os.cpu_count()-1, 4)
-                
-                batches = [{"item_nm": text, "max_depth": max_depth} for text in texts]
-                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                    batch_results = parallel(delayed(apply_alias_rule_cascade_parallel)(args) for args in batches)
-                
-                return pd.DataFrame(batch_results)
-            
-            logger.info("🔄 별칭 규칙 연쇄 적용 중...")
-            item_alias_pdf = parallel_alias_rule_cascade(item_pdf_all['item_nm'], max_depth=3)
-            
-            # 별칭 병합 및 explode
-            item_pdf_all = item_pdf_all.merge(item_alias_pdf, on='item_nm', how='left')
-            before_explode = len(item_pdf_all)
-            item_pdf_all = item_pdf_all.explode('item_nm_alias').drop_duplicates()
-            logger.info(f"별칭 explode: {before_explode} -> {len(item_pdf_all)}")
-            
-            # ===== 5단계: 사용자 정의 엔티티 추가 =====
-            user_defined_entity = ['AIA Vitality', '부스트 파크 건대입구', 'Boost Park 건대입구']
-            item_pdf_ext = pd.DataFrame([{
-                'item_nm': e, 'item_id': e, 'item_desc': e, 'item_dmn': 'user_defined',
-                'start_dt': 20250101, 'end_dt': 99991231, 'rank': 1, 'item_nm_alias': e
-            } for e in user_defined_entity])
-            item_pdf_all = pd.concat([item_pdf_all, item_pdf_ext])
-            
-            # ===== 6단계: item_dmn_nm 컬럼 추가 =====
-            item_dmn_map = pd.DataFrame([
-                {"item_dmn": 'P', 'item_dmn_nm': '요금제 및 관련 상품'},
-                {"item_dmn": 'E', 'item_dmn_nm': '단말기'},
-                {"item_dmn": 'S', 'item_dmn_nm': '구독 상품'},
-                {"item_dmn": 'C', 'item_dmn_nm': '쿠폰'},
-                {"item_dmn": 'X', 'item_dmn_nm': '가상 상품'}
-            ])
-            item_pdf_all = item_pdf_all.merge(item_dmn_map, on='item_dmn', how='left')
-            item_pdf_all['item_dmn_nm'] = item_pdf_all['item_dmn_nm'].fillna('기타')
-            
-            # ===== 7단계: TEST 필터링 =====
-            before_test = len(item_pdf_all)
-            item_pdf_all = item_pdf_all.query("not item_nm_alias.str.contains('TEST', case=False, na=False)")
-            logger.info(f"TEST 필터링: {before_test} -> {len(item_pdf_all)}")
-            
-            self.item_pdf_all = item_pdf_all
-            
-            # 최종 확인
-            logger.info(f"=== 상품 정보 준비 완료 ===")
-            logger.info(f"최종 데이터 크기: {self.item_pdf_all.shape}")
-            logger.info(f"최종 컬럼들: {list(self.item_pdf_all.columns)}")
-            
-            # 중요 컬럼 확인
-            critical_columns = ['item_nm', 'item_id', 'item_nm_alias']
-            missing_columns = [col for col in critical_columns if col not in self.item_pdf_all.columns]
-            if missing_columns:
-                logger.error(f"중요 컬럼 누락: {missing_columns}")
-            else:
-                logger.info("✅ 모든 중요 컬럼 존재")
-            
-            # 샘플 데이터 확인
-            if not self.item_pdf_all.empty:
-                logger.info(f"상품명 샘플: {self.item_pdf_all['item_nm'].dropna().head(3).tolist()}")
-                logger.info(f"별칭 샘플: {self.item_pdf_all['item_nm_alias'].dropna().head(3).tolist()}")
+            logger.info(f"✅ ItemDataLoader를 통한 상품 정보 준비 완료: {self.item_pdf_all.shape}")
             
         except Exception as e:
-            logger.error(f"상품 정보 로드 및 준비 실패: {e}")
+            logger.error(f"ItemDataLoader 실행 실패: {e}")
+            import traceback
             logger.error(f"오류 상세: {traceback.format_exc()}")
             # 빈 DataFrame으로 fallback
             self.item_pdf_all = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias'])
+            self.alias_pdf_raw = pd.DataFrame()
             logger.warning("빈 DataFrame으로 fallback 설정됨")
 
     # Database methods moved to utils/db_utils.py
