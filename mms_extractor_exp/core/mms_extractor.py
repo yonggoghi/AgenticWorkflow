@@ -111,6 +111,7 @@ from prompts import (
 
 # Helpers 모듈 임포트
 from utils import PromptManager
+from utils.llm_factory import LLMFactory
 
 # Workflow 모듈 임포트
 from .workflow_core import WorkflowEngine, WorkflowState
@@ -354,6 +355,11 @@ class MMSExtractor(MMSExtractorDataMixin):
             logger.info("📁 데이터 로드 중...")
             self._load_data()
             
+            # Initialize LLM Factory
+            logger.info("🏭 LLM Factory 초기화 중...")
+            self.llm_factory = LLMFactory()
+            logger.info("✅ LLM Factory 초기화 완료")
+            
             # Initialize Services
             logger.info("🛠️ 서비스 초기화 중...")
             self.entity_recognizer = EntityRecognizer(
@@ -378,7 +384,7 @@ class MMSExtractor(MMSExtractorDataMixin):
                 self.stop_item_names,
                 self.num_cand_pgms,
                 self.entity_extraction_mode,
-                self._initialize_multiple_llm_models,
+                self.llm_factory,  # LLMFactory 인스턴스 전달
                 self.entity_llm_model_name,
                 self.entity_extraction_context_mode
             )
@@ -509,7 +515,10 @@ class MMSExtractor(MMSExtractorDataMixin):
 
     def _initialize_multiple_llm_models(self, model_names: List[str]) -> List:
         """
-        복수의 LLM 모델을 초기화하는 헬퍼 메서드
+        복수의 LLM 모델을 초기화하는 헬퍼 메서드 (LLMFactory로 위임)
+        
+        Note:
+            이 메서드는 하위 호환성을 위해 유지되며, 내부적으로 LLMFactory를 사용합니다.
         
         Args:
             model_names (List[str]): 초기화할 모델명 리스트 (예: ['ax', 'gpt', 'gen'])
@@ -517,39 +526,7 @@ class MMSExtractor(MMSExtractorDataMixin):
         Returns:
             List: 초기화된 LLM 모델 객체 리스트
         """
-        llm_models = []
-        
-        # 모델명 매핑 (기존 LLM 초기화 로직과 동일)
-        model_mapping = {
-            "cld": getattr(MODEL_CONFIG, 'anthropic_model', 'amazon/anthropic/claude-sonnet-4-20250514'),
-            "ax": getattr(MODEL_CONFIG, 'ax_model', 'skt/ax4'),
-            "gpt": getattr(MODEL_CONFIG, 'gpt_model', 'azure/openai/gpt-4o-2024-08-06'),
-            "gen": getattr(MODEL_CONFIG, 'gemini_model', 'gcp/gemini-2.5-flash')
-        }
-        
-        for model_name in model_names:
-            try:
-                actual_model_name = model_mapping.get(model_name, model_name)
-                
-                # 모델별 설정 (기존 로직과 동일)
-                model_kwargs = {
-                    "temperature": 0.0,
-                    "openai_api_key": getattr(API_CONFIG, 'llm_api_key', os.getenv('OPENAI_API_KEY')),
-                    "openai_api_base": getattr(API_CONFIG, 'llm_api_url', None),
-                    "model": actual_model_name,
-                    "max_tokens": getattr(MODEL_CONFIG, 'llm_max_tokens', 4000),
-                    "seed": getattr(MODEL_CONFIG, 'llm_seed', 42)
-                }
-                
-                llm_model = ChatOpenAI(**model_kwargs)
-                llm_models.append(llm_model)
-                logger.info(f"✅ LLM 모델 초기화 완료: {model_name} ({actual_model_name})")
-                
-            except Exception as e:
-                logger.error(f"❌ LLM 모델 초기화 실패: {model_name} - {e}")
-                continue
-        
-        return llm_models
+        return self.llm_factory.create_models(model_names)
 
     @log_performance
     def _initialize_kiwi(self):
