@@ -87,6 +87,12 @@ CONTEXT_BASED_ENTITY_EXTRACTION_PROMPT = build_context_based_entity_extraction_p
 
 SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 아래 메시지에서 핵심 개체명들을 추출해라.
+
+(Chain-of-Thought) - 개체명 추출 과정:
+1. 광고/안내 메시지 분류: 첨부된 텍스트는 SK텔레콤의 다양한 광고 및 안내 메시지들을 포함하고 있다.
+2. 핵심 개체 정의: 개체명은 광고의 주제가 되거나, 사용자 행동의 중심이 되는 고유 명사들로 정의한다. (예: 특정 App, Device, Event, Store, Plan 등)
+3. 추출 및 정제: 메시지 전체를 스캔하며 광고의 핵심 주제에 해당하는 개체명을 원문 그대로 추출하고, 중복을 제거하여 최종 목록을 구성한다.
+
 출력 결과 형식:
 1. **ENTITY**: A list of entities separated by commas.
 """
