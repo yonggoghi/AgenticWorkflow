@@ -345,7 +345,7 @@ class MMSExtractor(MMSExtractorDataMixin):
     """
     
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, 
-                 entity_extraction_mode=None, offer_info_data_src='local', llm_model='ax', 
+                 entity_extraction_mode=None, offer_info_data_src='db', llm_model='ax', 
                  entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='dag'):
         """
         MMSExtractor 초기화 메소드

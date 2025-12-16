@@ -283,7 +283,7 @@ global_quick_extractor = None
 # CLI에서 설정된 데이터 소스 (전역 변수)
 CLI_DATA_SOURCE = 'local'
 
-def initialize_global_extractor(offer_info_data_src='local'):
+def initialize_global_extractor(offer_info_data_src='db'):
     """
     전역 추출기 인스턴스를 서버 시작 시 한 번만 초기화
     
@@ -999,7 +999,7 @@ def get_prompts():
         
         # 설정 파라미터 추출
         llm_model = data.get('llm_model', 'ax')
-        offer_info_data_src = data.get('offer_info_data_src', 'local')
+        offer_info_data_src = data.get('offer_info_data_src', 'db')
         product_info_extraction_mode = data.get('product_info_extraction_mode', 'llm')
         entity_matching_mode = data.get('entity_matching_mode', 'logic')
         extract_entity_dag = data.get('extract_entity_dag', True)
@@ -1606,8 +1606,8 @@ def main():
     parser.add_argument('--debug', action='store_true', help='디버그 모드 활성화')
     parser.add_argument('--test', action='store_true', help='테스트 추출 실행')
     parser.add_argument('--message', type=str, help='테스트할 메시지')
-    parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
-                       help='데이터 소스 선택 (local: CSV 파일, db: 데이터베이스)')
+    parser.add_argument('--offer-data-source', choices=['local', 'db'], default='db',
+                       help='데이터 소스 (local: CSV 파일, db: 데이터베이스)')
     parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm' ,'rag'], default='nlp',
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',

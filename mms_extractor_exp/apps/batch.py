@@ -698,8 +698,8 @@ def main():
                        help='Disable multiprocessing and use sequential processing')
     
     # MMSExtractor arguments
-    parser.add_argument('--offer-data-source', choices=['local', 'db'], default='local',
-                       help='Data source for offer information (default: local)')
+    parser.add_argument('--offer-data-source', choices=['local', 'db'], default='db',
+                       help='데이터 소스 (local: CSV 파일, db: 데이터베이스)')
     parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm', 'rag'], default='llm',
                        help='Product information extraction mode (default: llm)')
     parser.add_argument('--entity-extraction-mode', choices=['logic', 'llm'], default='llm',
