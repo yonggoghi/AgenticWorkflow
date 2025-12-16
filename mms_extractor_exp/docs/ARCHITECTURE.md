@@ -28,19 +28,19 @@ MMS Extractor는 MMS 광고 메시지에서 구조화된 정보를 추출하는 
 
 ```mermaid
 graph TB
-    subgraph "Entry Points"
+    subgraph EntryPoints["Entry Points"]
         CLI[CLI Interface]
         API[REST API Server]
         BATCH[Batch Processor]
     end
     
-    subgraph "Core Layer"
+    subgraph CoreLayer["Core Layer"]
         EXTRACTOR[MMSExtractor]
         ENGINE[WorkflowEngine]
         STATE[WorkflowState]
     end
     
-    subgraph "Workflow Steps"
+    subgraph WorkflowSteps["Workflow Steps"]
         STEP1[InputValidationStep]
         STEP2[EntityExtractionStep]
         STEP3[ProgramClassificationStep]
@@ -52,7 +52,7 @@ graph TB
         STEP9[DAGExtractionStep]
     end
     
-    subgraph "Service Layer"
+    subgraph ServiceLayer["Service Layer"]
         RECOGNIZER[EntityRecognizer]
         LOADER[ItemDataLoader]
         CLASSIFIER[ProgramClassifier]
@@ -61,13 +61,13 @@ graph TB
         TRANSFORMER[SchemaTransformer]
     end
     
-    subgraph "Infrastructure"
+    subgraph Infrastructure["Infrastructure"]
         LLM_FACTORY[LLMFactory]
         CONFIG[Settings]
         PROMPTS[Prompt Templates]
     end
     
-    subgraph "Data Sources"
+    subgraph DataSources["Data Sources"]
         CSV[Local CSV Files]
         DB[(Oracle Database)]
     end
@@ -134,37 +134,37 @@ sequenceDiagram
     participant LLM as LLM Models
     
     User->>Extractor: process_message(msg)
-    Extractor->>State: 초기 상태 생성
+    Extractor->>State: Create initial state
     Extractor->>Engine: execute(state)
     
     loop 9 Workflow Steps
         Engine->>Steps: execute(state)
-        Steps->>Services: 서비스 호출
-        Services-->>Steps: 처리 결과
-        Steps->>LLM: LLM 호출 (필요시)
-        LLM-->>Steps: LLM 응답
-        Steps->>State: 상태 업데이트
-        State-->>Engine: 업데이트된 상태
+        Steps->>Services: Call service
+        Services-->>Steps: Return result
+        Steps->>LLM: Call LLM if needed
+        LLM-->>Steps: LLM response
+        Steps->>State: Update state
+        State-->>Engine: Updated state
     end
     
-    Engine-->>Extractor: 최종 상태
-    Extractor->>Extractor: 결과 포맷팅
-    Extractor-->>User: 추출 결과 (JSON)
+    Engine-->>Extractor: Final state
+    Extractor->>Extractor: Format result
+    Extractor-->>User: Extraction result JSON
 ```
 
 ### 데이터 변환 과정
 
 ```mermaid
 graph LR
-    A[원본 MMS 텍스트] --> B[검증된 메시지]
-    B --> C[Kiwi 엔티티]
-    C --> D[매칭된 상품]
-    D --> E[RAG 컨텍스트]
-    E --> F[LLM 프롬프트]
-    F --> G[LLM 응답 JSON]
-    G --> H[파싱된 객체]
-    H --> I[스키마 변환]
-    I --> J[최종 결과 JSON]
+    A[Original MMS Text] --> B[Validated Message]
+    B --> C[Kiwi Entities]
+    C --> D[Matched Products]
+    D --> E[RAG Context]
+    E --> F[LLM Prompt]
+    F --> G[LLM Response JSON]
+    G --> H[Parsed Objects]
+    H --> I[Schema Transform]
+    I --> J[Final Result JSON]
     
     style A fill:#f9f,stroke:#333
     style J fill:#9f9,stroke:#333
