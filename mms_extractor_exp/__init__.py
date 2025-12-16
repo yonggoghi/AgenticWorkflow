@@ -116,9 +116,6 @@ graph TB
 - `SIMPLE_ENTITY_EXTRACTION_PROMPT`: SIMPLE 모드 프롬프트
 - `build_context_based_entity_extraction_prompt`: 동적 프롬프트 생성
 
-작성자: MMS 분석팀
-최종 수정: 2024-12
-버전: 2.0.0
 """
 
 from .main_extraction_prompt import (

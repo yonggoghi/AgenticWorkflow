@@ -181,9 +181,6 @@ final_response = llm.invoke(prompt)
 - 모든 프롬프트는 plain text 출력 (Markdown 금지)
 - REASON 필드는 핵심 혜택(Core Offering) 명시 필수
 
-작성자: MMS 분석팀
-최종 수정: 2024-12
-버전: 2.1.0
 """
 
 # 기본 엔티티 추출 프롬프트

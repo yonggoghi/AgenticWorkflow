@@ -43,9 +43,6 @@ dag_prompt = build_dag_extraction_prompt(message)
 2. 새로운 프롬프트 추가 시 __init__.py에 임포트 추가
 3. 버전 관리를 위해 변경 내역 문서화
 
-작성자: MMS 분석팀
-최종 수정: 2024-09
-버전: 2.0.0
 """
 
 from .main_extraction_prompt import (

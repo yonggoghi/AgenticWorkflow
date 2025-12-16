@@ -260,9 +260,6 @@ LOCAL_PORT=8000
 - 글로벌 싱글톤 인스턴스로 제공 (API_CONFIG, MODEL_CONFIG 등)
 - 타입 힌트로 IDE 자동완성 지원
 
-작성자: MMS 분석팀
-최종 수정: 2024-12
-버전: 2.1.0
 """
 import os
 import socket

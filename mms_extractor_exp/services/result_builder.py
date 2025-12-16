@@ -162,9 +162,6 @@ print(f"Offer 타입: {final_result['offer']['type']}")
 - 매칭 실패 시 LLM 원본 결과 사용 (item_id='#')
 - 모든 리스트 필드는 중복 제거 적용
 
-작성자: MMS 분석팀
-최종 수정: 2024-12
-버전: 2.1.0
 """
 
 import logging

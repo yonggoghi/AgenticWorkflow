@@ -86,9 +86,6 @@ llm = factory.create_model('ax')  # 환경변수에서 API 키 로드
 - 모델명 매핑은 `__init__`에서 설정 가능
 - 하위 호환성을 위해 MMSExtractor의 `_initialize_multiple_llm_models` 유지
 
-작성자: MMS 분석팀
-최종 수정: 2024-12
-버전: 2.1.0
 """
 
 import logging

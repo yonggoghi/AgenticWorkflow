@@ -142,9 +142,6 @@ WorkflowState 초기화
 - 실행 히스토리를 통해 성능 분석 가능
 - Backward compatibility를 위해 get/set 메서드 제공
 
-작성자: MMS 분석팀
-최종 수정: 2024-12
-버전: 2.1.0
 """
 
 

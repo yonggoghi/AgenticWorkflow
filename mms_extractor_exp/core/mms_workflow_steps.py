@@ -167,9 +167,6 @@ else:
 - DAGExtractionStep은 `extract_entity_dag=True`일 때만 실행
 - 모든 단계는 WorkflowState를 통해 데이터 공유
 
-작성자: MMS 분석팀
-최종 수정: 2024-12
-버전: 2.1.0
 """
 
 import logging

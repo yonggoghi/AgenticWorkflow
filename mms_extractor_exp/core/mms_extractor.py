@@ -41,15 +41,6 @@ AI 기반 시스템입니다. LLM(Large Language Model)을 활용하여 비정�
 - Oracle Database 연동 (선택사항)
 - GPU 가속 (CUDA 지원 시)
 
-📊 성능 지표
------------
-- 평균 처리 시간: ~30초/메시지
-- 정확도: 85%+ (수동 검증 기준)
-- 처리량: ~120 메시지/시간 (단일 프로세스)
-
-작성자: MMS 분석팀
-최종 수정: 2024-09
-버전: 2.0.0
 """
 
 from concurrent.futures import ThreadPoolExecutor
