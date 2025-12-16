@@ -1,7 +1,268 @@
 """
-Configuration settings for MMS Extractor.
-This module contains all configuration settings for the MMS Extractor system,
-organized into logical groups using dataclasses.
+MMS Extractor Configuration Settings
+=====================================
+
+📋 개요
+-------
+MMS Extractor 시스템의 모든 설정을 관리하는 중앙 설정 모듈입니다.
+Dataclass 기반으로 구조화되어 타입 안전성과 IDE 지원을 제공합니다.
+
+🔗 의존성
+---------
+**사용되는 곳:**
+- `core.mms_extractor`: MMSExtractor 초기화 시 설정 로드
+- `utils.llm_factory`: LLM 모델 설정
+- `services.*`: 각 서비스의 임계값 및 경로 설정
+- `apps.*`: API/CLI 애플리케이션 설정
+
+🏗️ 설정 그룹
+------------
+
+### 1. API_CONFIG (APIConfig)
+**목적**: LLM API 키 및 엔드포인트 관리
+
+**환경변수:**
+- `CUSTOM_API_KEY`: 커스텀 LLM API 키
+- `CUSTOM_BASE_URL`: 커스텀 LLM API URL
+- `OPENAI_API_KEY`: OpenAI API 키
+- `ANTHROPIC_API_KEY`: Anthropic API 키
+
+**사용 예시:**
+```python
+from config.settings import API_CONFIG
+
+# API 키 접근
+api_key = API_CONFIG.llm_api_key
+api_url = API_CONFIG.llm_api_url
+```
+
+---
+
+### 2. MODEL_CONFIG (ModelConfig)
+**목적**: AI 모델 설정 및 파라미터 관리
+
+**주요 설정:**
+- `embedding_model`: 임베딩 모델 (ko-sbert-nli)
+- `llm_model`: 활성 LLM 모델 (ax, gpt, gemini 등)
+- `llm_max_tokens`: 최대 토큰 수 (기본 4000)
+- `temperature`: 생성 온도 (기본 0.0)
+- `model_loading_mode`: 모델 로딩 전략 (auto/local/remote)
+
+**모델 로딩 모드:**
+| 모드 | 설명 | 사용 시나리오 |
+|------|------|--------------|
+| **auto** | 로컬 우선, 없으면 다운로드 | 일반적인 사용 (기본값) |
+| **local** | 로컬만 사용, 없으면 실패 | 오프라인 환경 |
+| **remote** | 항상 다운로드 | 최신 모델 강제 사용 |
+
+**사용 예시:**
+```python
+from config.settings import MODEL_CONFIG
+
+# 모델 설정 접근
+llm_model = MODEL_CONFIG.llm_model  # 'skt/ax4'
+max_tokens = MODEL_CONFIG.llm_max_tokens  # 4000
+temperature = MODEL_CONFIG.temperature  # 0.0
+
+# 로딩 모드 확인
+mode_desc = MODEL_CONFIG.get_loading_mode_description()
+```
+
+---
+
+### 3. PROCESSING_CONFIG (ProcessingConfig)
+**목적**: 엔티티 추출 및 매칭 동작 제어
+
+**임계값 설정:**
+```python
+# 엔티티 인식 임계값
+entity_fuzzy_threshold: 0.5           # Fuzzy 매칭
+entity_similarity_threshold: 0.2      # Sequence 유사도
+entity_combined_similarity_threshold: 0.2  # 결합 유사도
+entity_high_similarity_threshold: 1.0 # 최종 필터링
+entity_llm_fuzzy_threshold: 0.6       # LLM 기반 추출
+
+# 매장 매칭 임계값
+store_matching_threshold: 0.5
+similarity_threshold_for_store: 0.6
+similarity_threshold_for_store_secondary: 0.3
+```
+
+**추출 모드:**
+| 설정 | 옵션 | 설명 |
+|------|------|------|
+| `product_info_extraction_mode` | rag/llm/nlp | 상품 정보 추출 전략 |
+| `entity_extraction_mode` | llm/logic | 엔티티 매칭 전략 |
+
+**사용 예시:**
+```python
+from config.settings import PROCESSING_CONFIG
+
+# 임계값 접근
+fuzzy_threshold = PROCESSING_CONFIG.entity_fuzzy_threshold
+extraction_mode = PROCESSING_CONFIG.entity_extraction_mode
+
+# Chain of Thought 가져오기
+cot = PROCESSING_CONFIG.chain_of_thought
+
+# 추출 가이드 생성
+guide = PROCESSING_CONFIG.get_extraction_guide(
+    candidate_items=['아이폰 17', '갤럭시']
+)
+```
+
+---
+
+### 4. METADATA_CONFIG (METADATAConfig)
+**목적**: 데이터 파일 경로 관리
+
+**환경변수:**
+- `ALIAS_RULE_PATH`: 별칭 규칙 CSV
+- `STOP_ITEM_PATH`: 불용어 CSV
+- `OFFER_DATA_PATH`: 상품 정보 CSV
+- `ORG_INFO_PATH`: 조직 정보 CSV
+- `PGM_INFO_PATH`: 프로그램 분류 CSV
+- `MMS_MSG_PATH`: MMS 메시지 샘플 CSV
+
+**사용 예시:**
+```python
+from config.settings import METADATA_CONFIG
+
+# 파일 경로 접근
+alias_path = METADATA_CONFIG.alias_rules_path
+offer_path = METADATA_CONFIG.offer_data_path
+```
+
+---
+
+### 5. EMBEDDING_CONFIG (EmbeddingConfig)
+**목적**: 임베딩 및 모델 파일 경로 관리
+
+**캐시 파일:**
+- `item_embeddings_path`: 상품 임베딩 (.npz)
+- `org_all_embeddings_path`: 조직 전체 임베딩
+- `org_nm_embeddings_path`: 조직명 임베딩
+
+**모델 경로:**
+- `local_model_base_path`: 로컬 모델 기본 경로
+- `ko_sbert_model_path`: 한국어 SBERT 모델 경로
+
+---
+
+### 6. STORAGE_CONFIG (StorageConfig)
+**목적**: DAG 이미지 저장 및 URL 관리
+
+**저장 모드:**
+| 모드 | 설명 | URL 형식 |
+|------|------|---------|
+| **local** | API 서버에서 제공 | `http://{server_ip}:8000/dag_images/{filename}` |
+| **nas** | NAS 서버에서 제공 | `http://172.27.7.58/dag_images/{filename}` |
+
+**환경변수:**
+- `DAG_STORAGE_MODE`: 저장 모드 (local/nas)
+- `LOCAL_BASE_URL`: 로컬 서버 URL (자동 감지 가능)
+- `LOCAL_PORT`: 로컬 서버 포트 (기본 8000)
+- `NAS_BASE_URL`: NAS 서버 URL
+- `NAS_URL_PATH`: NAS URL 경로
+
+**사용 예시:**
+```python
+from config.settings import STORAGE_CONFIG
+
+# DAG 이미지 URL 생성
+dag_url = STORAGE_CONFIG.get_dag_image_url('dag_12345.png')
+# local 모드: http://192.168.1.100:8000/dag_images/dag_12345.png
+# nas 모드: http://172.27.7.58/dag_images/dag_12345.png
+
+# 저장 디렉토리
+dag_dir = STORAGE_CONFIG.get_dag_images_dir()  # 'dag_images'
+
+# 모드 설명
+desc = STORAGE_CONFIG.get_storage_description()
+```
+
+---
+
+## 💡 전체 사용 예시
+
+```python
+from config.settings import (
+    API_CONFIG,
+    MODEL_CONFIG,
+    PROCESSING_CONFIG,
+    METADATA_CONFIG,
+    EMBEDDING_CONFIG,
+    STORAGE_CONFIG
+)
+
+# 1. LLM 초기화
+from utils.llm_factory import LLMFactory
+
+factory = LLMFactory(
+    api_config=API_CONFIG,
+    model_config=MODEL_CONFIG
+)
+llm = factory.create_model(MODEL_CONFIG.llm_model)
+
+# 2. 데이터 로드
+from services.item_data_loader import ItemDataLoader
+
+loader = ItemDataLoader(data_source='local')
+item_df, alias_df = loader.prepare_item_data(
+    offer_data_path=METADATA_CONFIG.offer_data_path,
+    alias_rules_path=METADATA_CONFIG.alias_rules_path,
+    excluded_domains=PROCESSING_CONFIG.excluded_domain_codes_for_items,
+    user_entities=PROCESSING_CONFIG.user_defined_entities
+)
+
+# 3. 엔티티 추출 설정
+extraction_mode = PROCESSING_CONFIG.entity_extraction_mode
+fuzzy_threshold = PROCESSING_CONFIG.entity_fuzzy_threshold
+
+# 4. DAG 이미지 URL 생성
+dag_url = STORAGE_CONFIG.get_dag_image_url('dag_example.png')
+```
+
+---
+
+## ⚙️ 환경변수 우선순위
+
+모든 설정은 다음 우선순위로 결정됩니다:
+1. **환경변수** (`.env` 파일 또는 시스템 환경변수)
+2. **기본값** (dataclass 필드 기본값)
+
+### .env 파일 예시
+```bash
+# API 설정
+CUSTOM_API_KEY=your_api_key_here
+CUSTOM_BASE_URL=https://api.platform.a15t.com/v1
+
+# 모델 설정
+LLM_MODEL=skt/ax4
+MODEL_LOADING_MODE=auto
+
+# 처리 설정
+ENTITY_EXTRACTION_MODE=llm
+PRODUCT_INFO_EXTRACTION_MODE=llm
+
+# 저장 설정
+DAG_STORAGE_MODE=local
+LOCAL_PORT=8000
+```
+
+---
+
+## 📝 참고사항
+
+- 모든 설정 클래스는 `@dataclass` 데코레이터 사용
+- `__post_init__` 메서드로 초기화 후 검증 수행
+- 환경변수는 `os.getenv()`로 안전하게 로드
+- 글로벌 싱글톤 인스턴스로 제공 (API_CONFIG, MODEL_CONFIG 등)
+- 타입 힌트로 IDE 자동완성 지원
+
+작성자: MMS 분석팀
+최종 수정: 2024-12
+버전: 2.1.0
 """
 import os
 import socket

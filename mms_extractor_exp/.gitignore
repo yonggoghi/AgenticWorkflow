@@ -25,3 +25,4 @@ batch_results_*.json
 py_test.py
 logs/
 apps/logs/
+results/

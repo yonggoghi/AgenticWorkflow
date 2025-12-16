@@ -1,6 +1,10 @@
 """
-MMS Extractor - Store Matcher Service
-====================================
+Store Matcher Service - 매장 매칭 서비스
+======================================
+
+📋 개요: 매장/대리점명을 조직 DB와 매칭
+🔗 사용: ResultBuilder에서 대리점 감지 시 호출
+⚙️ 방식: Fuzzy + Sequence similarity 조합
 """
 
 import logging
@@ -26,7 +30,13 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class StoreMatcher:
-    """Service for matching store/agency names to organization database"""
+    """
+    매장 매칭 서비스
+    
+    책임: 매장/대리점명을 조직 데이터베이스와 매칭
+    방법: Fuzzy similarity + Sequence similarity
+    출력: 매칭된 조직 정보 (org_cd, org_nm)
+    """
 
     def __init__(self, org_pdf: pd.DataFrame):
         self.org_pdf = org_pdf

@@ -2,8 +2,174 @@
 MMS Workflow Steps - MMS 추출기 워크플로우 단계 구현
 ===================================================
 
+📋 개요
+-------
 이 모듈은 MMS 메시지 처리의 각 단계를 독립적인 클래스로 구현합니다.
-각 단계는 WorkflowStep을 상속받아 execute 메서드를 구현합니다.
+각 단계는 `WorkflowStep`을 상속받아 `execute` 메서드를 구현하며,
+`WorkflowState`를 통해 데이터를 주고받습니다.
+
+🔗 의존성
+---------
+**사용하는 모듈:**
+- `workflow_core`: WorkflowStep, WorkflowState 기반 클래스
+- `services.*`: 각 단계에서 사용하는 서비스 (EntityRecognizer, ProgramClassifier 등)
+- `utils`: 검증, 파싱, 프롬프트 관리 유틸리티
+
+**사용되는 곳:**
+- `core.mms_extractor`: MMSExtractor 초기화 시 워크플로우 엔진에 단계 등록
+
+🏗️ 워크플로우 단계 순서
+-----------------------
+
+```mermaid
+graph TB
+    A[InputValidationStep] -->|msg| B[EntityExtractionStep]
+    B -->|entities_from_kiwi, cand_item_list| C[ProgramClassificationStep]
+    C -->|pgm_info| D[ContextPreparationStep]
+    D -->|rag_context, product_element| E[LLMExtractionStep]
+    E -->|result_json_text| F[ResponseParsingStep]
+    F -->|json_objects, raw_result| G[ResultConstructionStep]
+    G -->|final_result| H[ValidationStep]
+    H -->|validated final_result| I{extract_entity_dag?}
+    I -->|Yes| J[DAGExtractionStep]
+    I -->|No| K[End]
+    J -->|entity_dag| K
+    
+    style A fill:#e1f5ff
+    style E fill:#ffe1e1
+    style G fill:#fff4e1
+    style J fill:#e1ffe1
+    style K fill:#d4edda
+```
+
+📊 각 단계별 역할
+----------------
+
+### 1. InputValidationStep
+**목적**: 입력 메시지 검증 및 설정 로깅
+**입력**: mms_msg (원본 메시지)
+**출력**: msg (검증된 메시지)
+**주요 작업**:
+- 메시지 유효성 검사
+- 추출기 설정 상태 로깅
+- 메시지 길이 및 내용 확인
+
+### 2. EntityExtractionStep
+**목적**: Kiwi 기반 엔티티 추출
+**입력**: msg
+**출력**: entities_from_kiwi, cand_item_list, extra_item_pdf
+**주요 작업**:
+- Kiwi 형태소 분석 (NNP 태그 추출)
+- 임베딩 유사도 매칭
+- DB 모드 진단 및 결과 분석
+
+### 3. ProgramClassificationStep
+**목적**: 프로그램 카테고리 분류
+**입력**: msg
+**출력**: pgm_info (프로그램 분류 정보)
+**주요 작업**:
+- 임베딩 기반 프로그램 유사도 계산
+- 상위 N개 후보 프로그램 선택
+
+### 4. ContextPreparationStep
+**목적**: RAG 컨텍스트 및 제품 정보 준비
+**입력**: pgm_info, cand_item_list, extra_item_pdf
+**출력**: rag_context, product_element
+**주요 작업**:
+- RAG 컨텍스트 구성 (프로그램 정보 포함)
+- 모드별 제품 정보 준비 (nlp/llm/rag)
+- NLP 모드: 제품 요소 직접 생성
+
+### 5. LLMExtractionStep
+**목적**: LLM 호출 및 정보 추출
+**입력**: msg, rag_context, product_element
+**출력**: result_json_text (LLM 응답)
+**주요 작업**:
+- 프롬프트 구성 (build_extraction_prompt)
+- LLM 호출 (safe_llm_invoke)
+- 프롬프트 저장 (디버깅용)
+
+### 6. ResponseParsingStep
+**목적**: LLM 응답 JSON 파싱
+**입력**: result_json_text
+**출력**: json_objects, raw_result
+**주요 작업**:
+- JSON 파싱 (extract_json_objects)
+- 스키마 응답 감지 (detect_schema_response)
+- raw_result 생성
+
+### 7. ResultConstructionStep
+**목적**: 최종 결과 구성
+**입력**: json_objects, msg, pgm_info, entities_from_kiwi
+**출력**: final_result
+**주요 작업**:
+- 엔티티 매칭 (ResultBuilder)
+- 채널 정보 추출 및 보강
+- 프로그램 매핑
+- offer 객체 생성
+
+### 8. ValidationStep
+**목적**: 결과 검증 및 요약
+**입력**: final_result
+**출력**: validated final_result
+**주요 작업**:
+- 결과 유효성 검증 (validate_extraction_result)
+- 최종 결과 요약 로깅
+
+### 9. DAGExtractionStep (선택적)
+**목적**: 엔티티 간 관계 그래프 생성
+**입력**: msg, extract_entity_dag 플래그
+**출력**: entity_dag (DAG 리스트)
+**주요 작업**:
+- LLM 기반 DAG 추출 (extract_dag)
+- NetworkX 그래프 생성
+- Graphviz 다이어그램 생성
+
+💡 사용 예시
+-----------
+```python
+from core.workflow_core import WorkflowEngine, WorkflowState
+from core.mms_workflow_steps import (
+    InputValidationStep,
+    EntityExtractionStep,
+    # ... 기타 단계들
+)
+
+# 워크플로우 엔진 초기화
+engine = WorkflowEngine("MMS Extraction")
+
+# 단계 등록
+engine.add_step(InputValidationStep())
+engine.add_step(EntityExtractionStep(entity_recognizer))
+engine.add_step(ProgramClassificationStep(program_classifier))
+# ... 기타 단계들
+
+# 초기 상태 설정
+state = WorkflowState()
+state.set("mms_msg", "샘플 MMS 메시지")
+state.set("extractor", extractor_instance)
+
+# 워크플로우 실행
+final_state = engine.execute(state)
+
+# 결과 확인
+if final_state.has_error():
+    errors = final_state.get_errors()
+else:
+    result = final_state.get("final_result")
+```
+
+📝 참고사항
+----------
+- 각 단계는 독립적으로 테스트 가능
+- 에러 발생 시 `state.add_error()`로 기록
+- 에러가 있으면 후속 단계는 자동으로 스킵
+- DAGExtractionStep은 `extract_entity_dag=True`일 때만 실행
+- 모든 단계는 WorkflowState를 통해 데이터 공유
+
+작성자: MMS 분석팀
+최종 수정: 2024-12
+버전: 2.1.0
 """
 
 import logging
@@ -24,10 +190,20 @@ logger = logging.getLogger(__name__)
 
 class InputValidationStep(WorkflowStep):
     """
-    입력 메시지 검증 단계
+    입력 메시지 검증 단계 (Step 1/9)
     
-    - 메시지 유효성 검사
-    - 추출기 설정 상태 로깅
+    책임:
+        - 원본 MMS 메시지 유효성 검사
+        - 텍스트 정규화 및 전처리
+        - 추출기 설정 상태 로깅
+    
+    데이터 흐름:
+        입력: mms_msg (원본 메시지), extractor (추출기 인스턴스)
+        출력: msg (검증된 메시지)
+    
+    에러 처리:
+        - 검증 실패 시 is_fallback=True 설정
+        - 에러 메시지를 state에 기록
     """
     
     def execute(self, state: WorkflowState) -> WorkflowState:
@@ -65,11 +241,26 @@ class InputValidationStep(WorkflowStep):
 
 class EntityExtractionStep(WorkflowStep):
     """
-    엔티티 추출 단계
+    엔티티 추출 단계 (Step 2/9)
     
-    - Kiwi 형태소 분석
-    - 임베딩 유사도 매칭
-    - DB 모드 진단
+    책임:
+        - Kiwi 형태소 분석을 통한 NNP 태그 추출
+        - 임베딩 기반 유사도 매칭
+        - 후보 상품 목록 생성
+        - DB 모드 진단 및 데이터 품질 검증
+    
+    협력 객체:
+        - EntityRecognizer: 엔티티 추출 및 매칭 수행
+    
+    데이터 흐름:
+        입력: msg (검증된 메시지)
+        출력: entities_from_kiwi (Kiwi 추출 엔티티)
+              cand_item_list (후보 상품 리스트)
+              extra_item_pdf (매칭된 상품 정보)
+    
+    특이사항:
+        - DB 모드에서는 별칭 데이터 품질 진단 수행
+        - 후보 엔티티가 없으면 경고 로그 출력
     """
     
     def __init__(self, entity_recognizer):
@@ -136,9 +327,21 @@ class EntityExtractionStep(WorkflowStep):
 
 class ProgramClassificationStep(WorkflowStep):
     """
-    프로그램 분류 단계
+    프로그램 분류 단계 (Step 3/9)
     
-    - 메시지를 프로그램 카테고리로 분류
+    책임:
+        - 메시지를 사전 정의된 프로그램 카테고리로 분류
+        - 임베딩 기반 유사도 계산
+        - 상위 N개 후보 프로그램 선택
+    
+    협력 객체:
+        - ProgramClassifier: 프로그램 분류 수행
+    
+    데이터 흐름:
+        입력: msg (검증된 메시지)
+        출력: pgm_info (프로그램 분류 정보)
+              - pgm_cand_info: 후보 프로그램 정보
+              - pgm_pdf_tmp: 후보 프로그램 DataFrame
     """
     
     def __init__(self, program_classifier):
@@ -161,10 +364,22 @@ class ProgramClassificationStep(WorkflowStep):
 
 class ContextPreparationStep(WorkflowStep):
     """
-    RAG 컨텍스트 및 제품 정보 준비 단계
+    RAG 컨텍스트 및 제품 정보 준비 단계 (Step 4/9)
     
-    - RAG 컨텍스트 구성
-    - 제품 정보 준비 (모드별: nlp/llm/rag)
+    책임:
+        - RAG 컨텍스트 구성 (프로그램 분류 정보 포함)
+        - 모드별 제품 정보 준비 (nlp/llm/rag)
+        - NLP 모드: 제품 요소 직접 생성
+    
+    데이터 흐름:
+        입력: pgm_info, cand_item_list, extra_item_pdf
+        출력: rag_context (RAG 컨텍스트 문자열)
+              product_element (NLP 모드 제품 요소, 선택적)
+    
+    모드별 동작:
+        - rag: 후보 상품 목록을 RAG 컨텍스트에 추가
+        - llm: 참고용 후보 상품 목록 추가
+        - nlp: product_element 직접 생성 (name, action)
     """
     
     def execute(self, state: WorkflowState) -> WorkflowState:
@@ -252,11 +467,25 @@ class ContextPreparationStep(WorkflowStep):
 
 class LLMExtractionStep(WorkflowStep):
     """
-    LLM 호출 및 추출 단계
+    LLM 호출 및 추출 단계 (Step 5/9)
     
-    - 프롬프트 구성
-    - LLM 호출
-    - 프롬프트 저장 (디버깅용)
+    책임:
+        - 최종 프롬프트 구성 (메시지 + RAG 컨텍스트 + 제품 정보)
+        - LLM 호출 및 응답 수신
+        - 프롬프트 저장 (디버깅 및 검토용)
+    
+    데이터 흐름:
+        입력: msg, rag_context, product_element
+        출력: result_json_text (LLM JSON 응답)
+    
+    주요 작업:
+        1. build_extraction_prompt()로 프롬프트 생성
+        2. PromptManager.store_prompt_for_preview()로 저장
+        3. safe_llm_invoke()로 LLM 호출
+    
+    특이사항:
+        - 프롬프트는 스레드 로컬 저장소에 캐시됨
+        - LLM 호출 실패 시 재시도 메커니즘 적용
     """
     
     def execute(self, state: WorkflowState) -> WorkflowState:
@@ -288,10 +517,25 @@ class LLMExtractionStep(WorkflowStep):
 
 class ResponseParsingStep(WorkflowStep):
     """
-    LLM 응답 JSON 파싱 단계
+    LLM 응답 JSON 파싱 단계 (Step 6/9)
     
-    - JSON 파싱
-    - 스키마 응답 감지 (helpers 모듈 사용)
+    책임:
+        - LLM 응답에서 JSON 객체 추출
+        - 스키마 응답 감지 및 필터링
+        - raw_result 생성
+    
+    데이터 흐름:
+        입력: result_json_text (LLM 응답)
+        출력: json_objects (파싱된 JSON)
+              raw_result (원본 결과, message_id 포함)
+    
+    에러 처리:
+        - JSON 파싱 실패: is_fallback=True 설정
+        - 스키마 응답 감지: is_fallback=True 설정
+    
+    특이사항:
+        - 여러 JSON 객체가 있으면 마지막 것 사용
+        - detect_schema_response()로 스키마 정의 필터링
     """
     
     def execute(self, state: WorkflowState) -> WorkflowState:
@@ -339,11 +583,26 @@ class ResponseParsingStep(WorkflowStep):
 
 class ResultConstructionStep(WorkflowStep):
     """
-    최종 결과 구성 단계
+    최종 결과 구성 단계 (Step 7/9)
     
-    - 엔티티 매칭
-    - 채널 추출
-    - 프로그램 매핑
+    책임:
+        - 엔티티 매칭 및 상품 정보 보강
+        - 채널 정보 추출 및 매장 정보 매칭
+        - 프로그램 분류 매핑
+        - offer 객체 생성 (product/org 타입)
+    
+    협력 객체:
+        - ResultBuilder: 결과 구성 로직 수행
+    
+    데이터 흐름:
+        입력: json_objects, msg, pgm_info, entities_from_kiwi, message_id
+        출력: final_result (최종 추출 결과)
+    
+    주요 작업:
+        1. 엔티티 매칭 (logic/llm 모드)
+        2. 상품 정보 매핑 (item_id, item_name_in_msg 추가)
+        3. 채널 정보 추출 (대리점 감지 시 store_info 추가)
+        4. offer 객체 생성 (type: product/org)
     """
     
     def __init__(self, result_builder):
@@ -370,10 +629,26 @@ class ResultConstructionStep(WorkflowStep):
 
 class ValidationStep(WorkflowStep):
     """
-    결과 검증 단계
+    결과 검증 단계 (Step 8/9)
     
-    - 결과 유효성 검증 (helpers 모듈 사용)
-    - 최종 결과 요약 로깅
+    책임:
+        - 최종 결과 유효성 검증
+        - 필수 필드 존재 여부 확인
+        - 결과 요약 로깅
+    
+    데이터 흐름:
+        입력: final_result
+        출력: validated final_result
+    
+    검증 항목:
+        - 필수 필드: title, purpose, product, channel, pgm, offer
+        - 데이터 타입 검증
+        - 빈 값 처리
+    
+    로깅 정보:
+        - 제목, 목적, 판매 스크립트
+        - 상품/채널/프로그램 개수
+        - offer 타입 및 항목 수
     """
     
     def execute(self, state: WorkflowState) -> WorkflowState:
@@ -415,10 +690,32 @@ class ValidationStep(WorkflowStep):
 
 class DAGExtractionStep(WorkflowStep):
     """
-    DAG 추출 단계 - 엔티티 간 관계 그래프 생성
+    DAG 추출 단계 (Step 9/9, 선택적)
     
-    LLM을 사용하여 메시지에서 엔티티 간의 관계를 분석하고
-    DAG(Directed Acyclic Graph) 형태로 추출합니다.
+    책임:
+        - LLM 기반 엔티티 간 관계 분석
+        - DAG(Directed Acyclic Graph) 생성
+        - NetworkX 그래프 구조 생성
+        - Graphviz 다이어그램 이미지 생성
+    
+    협력 객체:
+        - DAGParser: DAG 텍스트 파싱
+        - extract_dag: LLM 기반 DAG 추출
+    
+    데이터 흐름:
+        입력: msg, extract_entity_dag 플래그, message_id
+        출력: entity_dag (DAG 엣지 리스트)
+    
+    출력 형식:
+        entity_dag: [
+            "(상품A:구매) -[획득]-> (혜택B:제공)",
+            "(이벤트C:참여) -[응모]-> (혜택B:제공)"
+        ]
+    
+    특이사항:
+        - extract_entity_dag=False이면 빈 배열 반환
+        - DAG 다이어그램은 ./dag_images/ 디렉토리에 저장
+        - 실패 시에도 빈 배열로 처리 (에러 전파 안 함)
     """
     
     def __init__(self, dag_parser=None):

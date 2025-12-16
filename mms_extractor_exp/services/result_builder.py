@@ -1,3 +1,172 @@
+"""
+Result Builder Service
+=======================
+
+📋 개요
+-------
+최종 추출 결과를 구성하는 서비스 클래스입니다.
+엔티티 매칭, 채널 정보 추출, 프로그램 분류 매핑, offer 객체 생성을 담당합니다.
+
+🔗 의존성
+---------
+**사용하는 모듈:**
+- `services.entity_recognizer`: 엔티티 매칭 및 상품 정보 매핑
+- `services.store_matcher`: 대리점/매장 정보 매칭
+- `utils.llm_factory`: LLM 모델 생성
+- `utils`: 텍스트 정규화 및 성능 로깅
+
+**사용되는 곳:**
+- `core.mms_workflow_steps.ResultConstructionStep`: 워크플로우에서 최종 결과 구성
+
+🏗️ 결과 구성 프로세스
+--------------------
+```mermaid
+graph TB
+    A[JSON Objects from LLM] --> B[Extract Product Items]
+    B --> C{Entity Extraction Mode}
+    C -->|logic| D[Logic-based Matching]
+    C -->|llm| E[LLM-based Matching]
+    D --> F[Similarity DataFrame]
+    E --> F
+    F --> G[Map Products with Similarity]
+    G --> H[Create Offer Object]
+    H --> I[Extract Channels]
+    I --> J{Channel Type}
+    J -->|대리점| K[Match Store Info]
+    J -->|기타| L[Keep Original]
+    K --> M[Update Offer to org type]
+    L --> M
+    M --> N[Map Program Classification]
+    N --> O[Final Result]
+    
+    style B fill:#e1f5ff
+    style G fill:#ffe1e1
+    style H fill:#fff4e1
+    style O fill:#e1ffe1
+```
+
+📊 스키마 변환
+------------
+
+### raw_result (LLM 직접 출력)
+```json
+{
+  "product": [
+    {"name": "아이폰 17", "action": "구매"}
+  ],
+  "channel": [
+    {"type": "대리점", "value": "새샘대리점 역곡점"}
+  ],
+  "pgm": ["5GX 프라임"],
+  "purpose": "대리점/매장 방문 유도"
+}
+```
+
+### ext_result (변환 후 최종 결과)
+```json
+{
+  "product": [
+    {
+      "item_nm": "아이폰 17",
+      "item_id": ["ITEM001"],
+      "item_name_in_msg": ["아이폰 17"],
+      "expected_action": ["구매"]
+    }
+  ],
+  "channel": [
+    {
+      "type": "대리점",
+      "value": "새샘대리점 역곡점",
+      "store_info": [
+        {"org_nm": "새샘대리점 역곡점", "org_cd": "ORG001"}
+      ]
+    }
+  ],
+  "offer": {
+    "type": "org",  // or "product"
+    "value": [...]
+  },
+  "pgm": [
+    {"pgm_nm": "5GX 프라임", "pgm_id": "PGM001"}
+  ],
+  "entity_dag": [],
+  "message_id": "MSG001"
+}
+```
+
+### 스키마 변환 규칙
+
+1. **product 변환**:
+   - `name` → `item_nm`
+   - DB 매칭으로 `item_id` 추가 (리스트)
+   - `name` → `item_name_in_msg` (리스트)
+   - `action` → `expected_action` (리스트)
+
+2. **offer 객체 생성**:
+   - 기본: `type='product'`, `value=product 리스트`
+   - 대리점 감지 시: `type='org'`, `value=매장 정보`
+
+3. **channel 보강**:
+   - 대리점 타입: `store_info` 추가 (StoreMatch 결과)
+   - 기타 타입: `store_info=[]`
+
+4. **pgm 매핑**:
+   - LLM 추출 프로그램명 → DB 매칭
+   - `pgm_nm`, `pgm_id` 추가
+
+🏗️ 주요 컴포넌트
+----------------
+- **ResultBuilder**: 결과 구성 서비스 클래스
+  - `build_final_result()`: 전체 결과 구성 파이프라인
+  - `_map_program_classification()`: 프로그램 분류 매핑
+  - `_extract_channels()`: 채널 정보 추출 및 offer 업데이트
+
+💡 사용 예시
+-----------
+```python
+from services.result_builder import ResultBuilder
+from utils.llm_factory import LLMFactory
+
+# 초기화
+llm_factory = LLMFactory()
+builder = ResultBuilder(
+    entity_recognizer=recognizer,
+    store_matcher=matcher,
+    alias_pdf_raw=alias_df,
+    stop_item_names=['광고', '이벤트'],
+    num_cand_pgms=10,
+    entity_extraction_mode='llm',
+    llm_factory=llm_factory,
+    llm_model='ax',
+    entity_extraction_context_mode='dag'
+)
+
+# 최종 결과 구성
+final_result = builder.build_final_result(
+    json_objects=llm_response,
+    msg="아이폰 17 구매 시 캐시백 제공",
+    pgm_info=program_info,
+    entities_from_kiwi=['아이폰', '캐시백'],
+    message_id='MSG001'
+)
+
+print(f"추출된 상품 수: {len(final_result['product'])}")
+print(f"Offer 타입: {final_result['offer']['type']}")
+```
+
+📝 참고사항
+----------
+- entity_extraction_mode='logic': Fuzzy + Sequence 유사도 사용
+- entity_extraction_mode='llm': LLM 기반 2단계 추출
+- 대리점 감지 시 offer 타입이 자동으로 'org'로 변경
+- 매칭 실패 시 LLM 원본 결과 사용 (item_id='#')
+- 모든 리스트 필드는 중복 제거 적용
+
+작성자: MMS 분석팀
+최종 수정: 2024-12
+버전: 2.1.0
+"""
+
 import logging
 import pandas as pd
 import re

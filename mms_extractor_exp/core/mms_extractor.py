@@ -245,9 +245,38 @@ class MMSExtractor(MMSExtractorDataMixin):
     -----------
     1. **다단계 엔티티 추출**: Kiwi NLP + 임베딩 유사도 + LLM 기반 추출
     2. **지능형 프로그램 분류**: 사전 정의된 카테고리와의 유사도 매칭
-    3. **RAG 기반 컬텍스트 증강**: 관련 데이터를 활용한 정확도 향상
-    4. **다중 LLM 지원**: OpenAI, Anthropic 등 다양한 모델 지원
+    3. **RAG 기반 컨텍스트 증강**: 관련 데이터를 활용한 정확도 향상
+    4. **다중 LLM 지원**: OpenAI, Anthropic, Gemini, AX 등
     5. **DAG 생성**: 엔티티 간 관계를 방향성 그래프로 시각화
+    
+    🏗️ 아키텍처 (Workflow 기반)
+    --------------------------
+    ```
+    MMSExtractor
+        ├─ WorkflowEngine (9 Steps)
+        │   ├─ InputValidationStep
+        │   ├─ EntityExtractionStep → EntityRecognizer
+        │   ├─ ProgramClassificationStep → ProgramClassifier
+        │   ├─ ContextPreparationStep
+        │   ├─ LLMExtractionStep → LLM Model
+        │   ├─ ResponseParsingStep
+        │   ├─ ResultConstructionStep → ResultBuilder
+        │   ├─ ValidationStep
+        │   └─ DAGExtractionStep (선택적)
+        │
+        ├─ Services
+        │   ├─ EntityRecognizer (엔티티 추출/매칭)
+        │   ├─ ItemDataLoader (데이터 로딩)
+        │   ├─ ProgramClassifier (프로그램 분류)
+        │   ├─ StoreMatcher (매장 매칭)
+        │   └─ ResultBuilder (결과 구성)
+        │
+        └─ Data Components
+            ├─ item_pdf_all (상품 데이터)
+            ├─ pgm_pdf (프로그램 데이터)
+            ├─ org_pdf (조직 데이터)
+            └─ embeddings (임베딩 캐시)
+    ```
     
     📊 성능 특징
     -----------
@@ -258,38 +287,70 @@ class MMSExtractor(MMSExtractorDataMixin):
     
     ⚙️ 주요 개선사항
     --------------
-    - **아키텍처 모듈화**: 대형 메소드를 기능별 모듈로 분리하여 유지보수성 향상
-    - **프롬프트 외부화**: 하드코딩된 프롬프트를 별도 모듈로 분리하여 관리 효율성 증대
+    - **워크플로우 엔진 도입**: 9단계 처리 파이프라인으로 구조화
+    - **서비스 분리**: EntityRecognizer, ResultBuilder 등 독립 서비스화
+    - **프롬프트 외부화**: prompts 모듈로 분리하여 관리 효율성 증대
     - **다층 예외 처리**: LLM API 실패, 네트워크 오류 등에 대한 robust한 에러 복구
     - **상세 로깅**: 성능 모니터링, 디버깅, 감사 로그를 위한 포괄적 로깅 시스템
     - **데이터 검증**: 입력/출력 데이터 품질 보장을 위한 다단계 검증
     - **하이브리드 데이터 소스**: CSV 파일과 Oracle DB를 모두 지원하는 유연한 데이터 로딩
     
+    🤝 협력 객체
+    -----------
+    - **WorkflowEngine**: 9단계 처리 파이프라인 실행
+    - **EntityRecognizer**: Kiwi + LLM 기반 엔티티 추출
+    - **ItemDataLoader**: 상품 데이터 로딩 및 전처리
+    - **ProgramClassifier**: 임베딩 기반 프로그램 분류
+    - **StoreMatcher**: 매장 정보 매칭
+    - **ResultBuilder**: 최종 결과 구성 및 스키마 변환
+    - **LLMFactory**: LLM 모델 생성 및 관리
+    
     📝 사용 예시
     -----------
     ```python
-    # 기본 초기화
+    # 1. 기본 초기화
     extractor = MMSExtractor(
         llm_model='ax',
         entity_extraction_mode='llm',
         extract_entity_dag=True
     )
     
-    # 메시지 처리
+    # 2. 단일 메시지 처리
     result = extractor.process_message("샘플 MMS 텍스트")
     
-    # 결과 활용
-    products = result['product']
-    channels = result['channel']
-    entity_dag = result.get('entity_dag', [])
+    # 3. 결과 활용
+    products = result['ext_result']['product']
+    channels = result['ext_result']['channel']
+    entity_dag = result['ext_result'].get('entity_dag', [])
+    
+    # 4. 배치 처리
+    messages = ["메시지1", "메시지2", "메시지3"]
+    results = [extractor.process_message(msg) for msg in messages]
+    
+    # 5. 런타임 설정 변경
+    extractor.llm_model_name = 'gpt'
+    extractor.entity_extraction_mode = 'logic'
+    extractor._initialize_llm()  # LLM 재초기화
     ```
     
     💼 의존성
     ---------
-    - LangChain (LLM 인터페이스)
-    - SentenceTransformers (임베딩)
-    - KiwiPiePy (NLP)
-    - cx_Oracle (데이터베이스 연동)
+    - **LangChain**: LLM 인터페이스
+    - **SentenceTransformers**: 임베딩 모델
+    - **KiwiPiePy**: 한국어 형태소 분석
+    - **cx_Oracle**: 데이터베이스 연동 (선택적)
+    - **pandas**: 데이터 처리
+    - **torch**: 딥러닝 프레임워크
+    
+    📌 주요 속성
+    -----------
+    - `workflow_engine`: WorkflowEngine 인스턴스
+    - `entity_recognizer`: EntityRecognizer 서비스
+    - `program_classifier`: ProgramClassifier 서비스
+    - `result_builder`: ResultBuilder 서비스
+    - `llm_model`: 활성 LLM 모델
+    - `item_pdf_all`: 전체 상품 데이터
+    - `extract_entity_dag`: DAG 추출 활성화 여부
     """
     
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, 

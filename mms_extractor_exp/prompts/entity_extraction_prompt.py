@@ -1,6 +1,189 @@
 """
-엔티티 추출 관련 프롬프트 템플릿
-NLP 기반 엔티티 추출에 사용되는 프롬프트들
+Entity Extraction Prompt Templates
+===================================
+
+📋 개요
+-------
+엔티티 추출에 사용되는 다양한 LLM 프롬프트 템플릿을 제공합니다.
+메시지 복잡도와 컨텍스트 요구사항에 따라 적절한 프롬프트를 선택할 수 있습니다.
+
+🔗 의존성
+---------
+**사용되는 곳:**
+- `services.entity_recognizer`: LLM 기반 엔티티 추출 시 프롬프트 선택
+- `core.mms_workflow_steps`: EntityExtractionStep에서 사용
+
+🏗️ 프롬프트 템플릿 종류
+-----------------------
+
+### 1. 컨텍스트 모드별 프롬프트
+
+| 모드 | 프롬프트 | 용도 | 컨텍스트 |
+|------|---------|------|---------|
+| **DAG** | HYBRID_DAG_EXTRACTION_PROMPT | 사용자 행동 경로 분석 | DAG (Directed Acyclic Graph) |
+| **PAIRING** | HYBRID_PAIRING_EXTRACTION_PROMPT | 혜택-제공물 매핑 | PAIRING (Offer → Benefit) |
+| **NONE** | SIMPLE_ENTITY_EXTRACTION_PROMPT | 단순 엔티티 추출 | 없음 |
+
+### 2. 프롬프트 선택 가이드
+
+```python
+# 복잡한 광고 (다단계 행동 경로)
+context_mode = 'dag'
+prompt = HYBRID_DAG_EXTRACTION_PROMPT
+# 예: "T world 앱 접속 → 퀴즈 참여 → 올리브영 기프티콘 획득"
+
+# 혜택 중심 광고 (제공물 → 혜택)
+context_mode = 'pairing'
+prompt = HYBRID_PAIRING_EXTRACTION_PROMPT
+# 예: "아이폰 17 구매 → 최대 22만원 캐시백"
+
+# 단순 광고 (명확한 상품명)
+context_mode = 'none'
+prompt = SIMPLE_ENTITY_EXTRACTION_PROMPT
+# 예: "5GX 프라임 요금제 가입 혜택"
+```
+
+### 3. 2단계 엔티티 추출 프로세스
+
+**1단계: 초기 추출 (HYBRID_DAG/PAIRING_EXTRACTION_PROMPT)**
+```
+입력: 원본 메시지
+출력: 
+  - ENTITY: 추출된 엔티티 목록
+  - DAG/PAIRING: 컨텍스트 정보
+```
+
+**2단계: 필터링 (build_context_based_entity_extraction_prompt)**
+```
+입력:
+  - 원본 메시지
+  - 1단계 컨텍스트 (DAG/PAIRING)
+  - entities in message (1단계 결과)
+  - candidate entities in vocabulary (DB 매칭 결과)
+
+출력:
+  - REASON: 선택 이유
+  - ENTITY: 최종 필터링된 엔티티
+```
+
+📊 프롬프트 구조 비교
+-------------------
+
+### HYBRID_DAG_EXTRACTION_PROMPT
+**목적**: 사용자 행동 경로를 DAG로 구조화
+**출력 형식**:
+```
+ENTITY: 상품A, 상품B, 이벤트C
+DAG:
+(상품A:구매) -[획득]-> (혜택B:제공)
+(이벤트C:참여) -[응모]-> (혜택B:제공)
+```
+
+**특징**:
+- Root Node 우선순위: 매장 > 서비스 > 이벤트 > 앱 > 제품
+- 원문 언어 보존 (번역 금지)
+- 독립적인 Root 모두 추출
+
+### HYBRID_PAIRING_EXTRACTION_PROMPT
+**목적**: 제공물과 혜택을 직접 매핑
+**출력 형식**:
+```
+ENTITY: 상품A, 상품B
+PAIRING:
+상품A -> 캐시백 22만원
+상품B -> CU 기프티콘
+```
+
+**특징**:
+- 최종 혜택(Primary Benefit) 중심
+- 전환율(Conversion Rate) 측정 가능
+- 재무적/실질적 혜택만 포함
+
+### SIMPLE_ENTITY_EXTRACTION_PROMPT
+**목적**: 빠른 엔티티 추출
+**출력 형식**:
+```
+ENTITY: 상품A, 상품B, 이벤트C
+```
+
+**특징**:
+- Chain-of-Thought 없음
+- 컨텍스트 추출 없음
+- 가장 빠른 처리
+
+💡 사용 예시
+-----------
+```python
+from prompts.entity_extraction_prompt import (
+    build_context_based_entity_extraction_prompt,
+    HYBRID_DAG_EXTRACTION_PROMPT,
+    HYBRID_PAIRING_EXTRACTION_PROMPT,
+    SIMPLE_ENTITY_EXTRACTION_PROMPT
+)
+
+# 1. 컨텍스트 모드 선택
+context_mode = 'dag'  # 'dag', 'pairing', 'none'
+
+# 2. 1단계 프롬프트 선택
+if context_mode == 'dag':
+    first_stage_prompt = HYBRID_DAG_EXTRACTION_PROMPT
+    context_keyword = 'DAG'
+elif context_mode == 'pairing':
+    first_stage_prompt = HYBRID_PAIRING_EXTRACTION_PROMPT
+    context_keyword = 'PAIRING'
+else:
+    first_stage_prompt = SIMPLE_ENTITY_EXTRACTION_PROMPT
+    context_keyword = None
+
+# 3. 1단계 실행
+prompt = f"{first_stage_prompt}\n\n## message:\n{message}"
+response = llm.invoke(prompt)
+
+# 4. 2단계 프롬프트 생성 (필터링)
+second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
+
+# 5. 2단계 실행
+prompt = f"""
+{second_stage_prompt}
+
+## message:
+{message}
+
+## DAG Context:
+{extracted_dag_context}
+
+## entities in message:
+{entities_from_stage1}
+
+## candidate entities in vocabulary:
+{candidates_from_db}
+"""
+final_response = llm.invoke(prompt)
+```
+
+📝 프롬프트 설계 원칙
+-------------------
+
+### 핵심 제약사항
+1. **원문 보존**: 엔티티는 메시지 원문 그대로 추출 (번역 금지)
+2. **Vocabulary 제한**: 2단계에서는 vocabulary에 있는 엔티티만 반환
+3. **핵심 혜택 중심**: 이벤트 참여 수단이 아닌 최종 획득 대상 추출
+
+### 제외 대상
+- 네비게이션 라벨: '바로 가기', '링크', 'Shortcut'
+- 결제 수단: 'Hyundai Card', 'Apple Pay' (단독 주제가 아닌 경우)
+- 일반 파트너: '스타벅스', 'CU' (구독 대상이 아닌 경우)
+
+📝 참고사항
+----------
+- `build_context_based_entity_extraction_prompt()`는 동적으로 프롬프트 생성
+- context_keyword가 None이면 컨텍스트 참조 없는 간단한 프롬프트
+- 모든 프롬프트는 plain text 출력 (Markdown 금지)
+- REASON 필드는 핵심 혜택(Core Offering) 명시 필수
+
+작성자: MMS 분석팀
+최종 수정: 2024-12
+버전: 2.1.0
 """
 
 # 기본 엔티티 추출 프롬프트

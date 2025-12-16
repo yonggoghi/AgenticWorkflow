@@ -1,6 +1,16 @@
 """
-Apps Package
-============
+Apps Package - MMS 추출기 애플리케이션
+====================================
 
-This package contains all application entry points for the MMS Extractor.
+📋 개요: 사용자 인터페이스 및 애플리케이션
+🔗 구성: 5개 애플리케이션
+
+애플리케이션 목록:
+- api.py: REST API 서비스 (Flask)
+- cli.py: 명령줄 인터페이스
+- quick_extractor.py: 빠른 추출 도구
+- demo_streamlit.py: Streamlit 데모
+- batch_processor.py: 배치 처리기
 """
+
+__all__ = []

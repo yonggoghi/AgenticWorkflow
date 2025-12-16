@@ -2,12 +2,93 @@
 LLM Factory - LLM 모델 초기화 전담 클래스
 ============================================
 
+📋 개요
+-------
 순환 의존성을 제거하고 LLM 초기화 로직을 중앙화합니다.
+다양한 LLM 모델을 일관된 인터페이스로 생성하고 관리합니다.
 
-주요 기능:
-- 단일/복수 LLM 모델 생성
-- 모델명 매핑 관리
-- 일관된 설정 적용 (temperature, seed, max_tokens)
+🔗 의존성
+---------
+**사용하는 모듈:**
+- `langchain_openai.ChatOpenAI`: LLM 모델 인터페이스
+- `config.settings`: API 및 모델 설정 (API_CONFIG, MODEL_CONFIG)
+- `os`: 환경변수 접근
+
+**사용되는 곳:**
+- `core.mms_extractor`: MMSExtractor 초기화 시 LLM 생성
+- `services.result_builder`: ResultBuilder에서 동적 LLM 생성
+- `services.entity_recognizer`: 멀티모델 엔티티 추출
+
+🏗️ 주요 기능
+------------
+- **단일/복수 LLM 모델 생성**: 하나 또는 여러 모델을 동시에 초기화
+- **모델명 매핑 관리**: 짧은 별칭(ax, gpt 등)을 실제 모델명으로 변환
+- **일관된 설정 적용**: temperature, seed, max_tokens 통일
+
+📊 지원 모델 매핑
+----------------
+
+| 별칭 | 실제 모델명 | 제공사 | 용도 |
+|------|------------|--------|------|
+| **ax** | skt/ax4 | SK Telecom | 기본 추출 모델 (빠름) |
+| **gpt** | azure/openai/gpt-4o-2024-08-06 | OpenAI | 고품질 추출 |
+| **gen** | gcp/gemini-2.5-flash | Google | 빠른 처리 |
+| **cld** | amazon/anthropic/claude-sonnet-4 | Anthropic | 복잡한 추론 |
+| **gem** | gemma-7b | Google | 경량 모델 |
+
+### 모델 선택 가이드
+- **빠른 처리**: ax, gen
+- **높은 정확도**: gpt, cld
+- **비용 효율**: gem, gen
+- **멀티모델 앙상블**: [ax, gpt, gen]
+
+💡 사용 예시
+-----------
+```python
+from utils.llm_factory import LLMFactory
+
+# 1. 기본 사용 (config.settings 자동 로드)
+factory = LLMFactory()
+
+# 단일 모델 생성
+llm = factory.create_model('ax')
+response = llm.invoke("광고 메시지 분석...")
+
+# 2. 복수 모델 생성 (멀티모델 앙상블)
+llms = factory.create_models(['ax', 'gpt', 'gen'])
+for llm in llms:
+    response = llm.invoke("...")
+
+# 3. 커스텀 설정 사용
+from config.settings import API_CONFIG, MODEL_CONFIG
+
+factory = LLMFactory(
+    api_config=API_CONFIG,
+    model_config=MODEL_CONFIG
+)
+llm = factory.create_model('cld')
+
+# 4. 환경변수만 사용 (config 없이)
+factory = LLMFactory(api_config=None, model_config=None)
+llm = factory.create_model('ax')  # 환경변수에서 API 키 로드
+```
+
+⚙️ 설정 우선순위
+---------------
+1. **API 키**: `api_config.llm_api_key` → `OPENAI_API_KEY` → `LLM_API_KEY`
+2. **API URL**: `api_config.llm_api_url` → `LLM_BASE_URL`
+3. **모델 설정**: `model_config` → 기본값 (max_tokens=4000, seed=42)
+
+📝 참고사항
+----------
+- 모든 모델은 temperature=0.0 (결정론적 출력)
+- 실패한 모델은 자동으로 건너뛰고 로그 기록
+- 모델명 매핑은 `__init__`에서 설정 가능
+- 하위 호환성을 위해 MMSExtractor의 `_initialize_multiple_llm_models` 유지
+
+작성자: MMS 분석팀
+최종 수정: 2024-12
+버전: 2.1.0
 """
 
 import logging
@@ -19,7 +100,24 @@ logger = logging.getLogger(__name__)
 
 
 class LLMFactory:
-    """LLM 모델 생성 Factory 클래스"""
+    """
+    LLM 모델 생성 Factory 클래스
+    
+    책임:
+        - LLM 모델 인스턴스 생성 및 초기화
+        - 모델명 별칭 관리 (ax, gpt, gen 등)
+        - API 키 및 설정 관리
+        - 멀티모델 생성 지원
+    
+    협력 객체:
+        - **ChatOpenAI**: LangChain OpenAI 인터페이스
+        - **config.settings**: API 및 모델 설정 제공
+    
+    Attributes:
+        api_config: API 설정 객체 (llm_api_key, llm_api_url)
+        model_config: 모델 설정 객체 (max_tokens, seed, 모델명)
+        model_mapping (Dict[str, str]): 별칭 → 실제 모델명 매핑
+    """
     
     def __init__(self, api_config=None, model_config=None):
         """

@@ -8,18 +8,40 @@ MMS 추출기 REST API 서비스 (MMS Extractor API Service)
 이 모듈은 MMS 광고 텍스트 분석 시스템을 RESTful API 서비스로 제공하는
 엔터프라이즈급 웹 서비스입니다. Flask 기반으로 구축되어 고성능과 확장성을 보장합니다.
 
+🔗 의존성
+---------
+**사용하는 모듈:**
+- `core.mms_extractor`: MMSExtractor 메인 엔진
+- `config.settings`: API, 모델, 처리 설정
+- `flask`: 웹 프레임워크
+- `flask_cors`: CORS 지원
+
+**아키텍처:**
+```
+Client Request
+    ↓
+Flask API Server (api.py)
+    ↓
+global_extractor (MMSExtractor)
+    ↓
+WorkflowEngine → 9 Steps
+    ↓
+JSON Response
+```
+
 🚀 핵심 기능
 -----------
 • **단일 메시지 처리**: `POST /extract` - 실시간 메시지 분석
 • **배치 처리**: `POST /extract/batch` - 대량 메시지 일괄 처리
+• **DAG 추출**: `POST /dag` - 엔티티 관계 그래프 생성
 • **서비스 모니터링**: `GET /health`, `GET /status` - 서비스 상태 및 성능 지표
 • **모델 관리**: `GET /models` - 사용 가능한 LLM 모델 목록
-• **다중 LLM 지원**: OpenAI GPT, Anthropic Claude, Gemma 등
+• **다중 LLM 지원**: OpenAI GPT, Anthropic Claude, Gemini, AX 등
 • **실시간 설정**: 런타임 중 설정 변경 지원
 
 📊 성능 특징
 -----------
-• **고성능**: 비동기 처리 및 멀티프로세싱 지원
+• **고성능**: 전역 추출기 재사용으로 초기화 오버헤드 제거
 • **확장성**: 마이크로서비스 아키텍처 지원
 • **안정성**: 포괄적인 에러 처리 및 로깅
 • **보안**: CORS 설정 및 입력 검증
@@ -31,10 +53,13 @@ MMS 추출기 REST API 서비스 (MMS Extractor API Service)
 python api.py --host 0.0.0.0 --port 8000
 
 # 특정 LLM 모델로 시작
-python api.py --llm-model gpt-4 --port 8080
+python api.py --llm-model ax --port 8080
 
 # 엔티티 매칭 모드 설정
-python api.py --entity-matching-mode hybrid
+python api.py --entity-matching-mode llm
+
+# 데이터 소스 지정
+python api.py --data-source db
 
 # 테스트 모드
 python api.py --test --message "샘플 MMS 텍스트"
@@ -42,26 +67,85 @@ python api.py --test --message "샘플 MMS 텍스트"
 
 🏗️ API 엔드포인트
 --------------
-- `POST /extract`: 단일 메시지 분석
-- `POST /extract/batch`: 배치 메시지 분석
-- `POST /dag`: Entity DAG 추출
-- `GET /dag_images/<filename>`: DAG 이미지 파일 제공
-- `POST /quick/extract`: 제목/수신거부 번호 추출 (단일)
-- `POST /quick/extract/batch`: 제목/수신거부 번호 추출 (배치)
-- `GET /health`: 서비스 상태 확인
-- `GET /status`: 상세 성능 지표
-- `GET /models`: 사용 가능한 모델 목록
+
+### 메인 추출 API
+- **POST /extract**: 단일 메시지 분석
+  - Request: `{"message": "...", "llm_model": "ax", ...}`
+  - Response: `{"success": true, "result": {...}, "metadata": {...}}`
+
+- **POST /extract/batch**: 배치 메시지 분석
+  - Request: `{"messages": ["...", "..."], ...}`
+  - Response: `{"success": true, "results": [...], "summary": {...}}`
+
+### DAG 추출 API
+- **POST /dag**: Entity DAG 추출
+  - Request: `{"message": "...", "llm_models": ["ax", "gpt"]}`
+  - Response: `{"dag_section": "...", "entities": [...], ...}`
+
+- **GET /dag_images/<filename>**: DAG 이미지 파일 제공
+
+### Quick Extractor API
+- **POST /quick/extract**: 제목/수신거부 번호 추출 (단일)
+- **POST /quick/extract/batch**: 제목/수신거부 번호 추출 (배치)
+
+### 모니터링 API
+- **GET /health**: 서비스 상태 확인
+  - Response: `{"status": "healthy", "service": "MMS Extractor API", ...}`
+
+- **GET /status**: 상세 성능 지표
+- **GET /models**: 사용 가능한 모델 목록
+  - Response: `{"available_llm_models": ["ax", "gpt", ...], ...}`
 
 📈 모니터링
 -----------
-- 요청/응답 로깅
-- 성능 메트릭스
-- 에러 추적
-- 자원 사용량 모니터링
+- **로깅**: 회전 로그 파일 (api_server.log, 5MB x 10개)
+- **성능 메트릭스**: 처리 시간, 성공/실패율
+- **에러 추적**: 상세 스택 트레이스
+- **자원 사용량**: 메모리, CPU 모니터링
+
+💡 사용 예시
+-----------
+```python
+import requests
+
+# 1. 단일 메시지 추출
+response = requests.post('http://localhost:8000/extract', json={
+    "message": "아이폰 17 구매 시 최대 22만원 캐시백",
+    "llm_model": "ax",
+    "entity_matching_mode": "llm"
+})
+result = response.json()
+
+# 2. 배치 처리
+response = requests.post('http://localhost:8000/extract/batch', json={
+    "messages": ["메시지1", "메시지2", "메시지3"],
+    "llm_model": "ax"
+})
+results = response.json()
+
+# 3. DAG 추출
+response = requests.post('http://localhost:8000/dag', json={
+    "message": "T world 앱 접속 후 퀴즈 참여하면 올리브영 기프티콘 획득",
+    "llm_models": ["ax", "gpt"]
+})
+dag_result = response.json()
+
+# 4. 헬스체크
+response = requests.get('http://localhost:8000/health')
+health = response.json()
+```
+
+📝 참고사항
+----------
+- 전역 추출기는 서버 시작 시 한 번만 초기화됨
+- 런타임 설정 변경은 데이터 재로딩 없이 가능
+- MongoDB 저장은 선택적 (save_to_mongodb 파라미터)
+- DAG 이미지는 ./dag_images/ 디렉토리에 저장
+- 프롬프트는 스레드 로컬 저장소에 캐시됨
 
 작성자: MMS 분석팀
-최종 수정: 2024-09
-버전: 2.0.0
+최종 수정: 2024-12
+버전: 2.1.0
 """
 # =============================================================================
 # 필수 라이브러리 임포트

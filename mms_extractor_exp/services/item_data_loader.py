@@ -2,9 +2,140 @@
 Item Data Loader Service
 =========================
 
+📋 개요
+-------
 상품 데이터 로딩 및 전처리를 전담하는 서비스 클래스.
-기존 MMSExtractor의 _load_and_prepare_item_data 메서드(197줄)를 
+기존 MMSExtractor의 `_load_and_prepare_item_data` 메서드(197줄)를 
 모듈화하여 재사용성과 테스트 용이성을 향상시킵니다.
+
+🔗 의존성
+---------
+**사용하는 모듈:**
+- `pandas`: 데이터 처리 및 변환
+- `joblib.Parallel`: 병렬 처리로 별칭 규칙 적용 최적화
+- `utils.select_most_comprehensive`: 중복 제거 로직
+
+**사용되는 곳:**
+- `core.mms_extractor`: MMSExtractor 초기화 시 데이터 로드
+- `services.entity_recognizer`: 상품 데이터베이스 참조
+
+🏗️ 데이터 파이프라인
+-------------------
+```mermaid
+graph LR
+    A[Raw Data Source] -->|CSV/DB| B[load_raw_data]
+    B --> C[normalize_columns]
+    C --> D[filter_by_domain]
+    D --> E[load_alias_rules]
+    E --> F[expand_build_type_aliases]
+    F --> G[add_bidirectional_aliases]
+    G --> H[apply_alias_cascade]
+    H --> I[add_user_defined_entities]
+    I --> J[add_domain_name_column]
+    J --> K[filter_test_items]
+    K --> L[Final DataFrame]
+    
+    style B fill:#e1f5ff
+    style H fill:#ffe1e1
+    style L fill:#e1ffe1
+```
+
+### 파이프라인 단계 설명
+
+1. **load_raw_data**: CSV 또는 DB에서 원시 데이터 로드
+2. **normalize_columns**: 컬럼명 정규화 (item_nm, item_id 등)
+3. **filter_by_domain**: 도메인 코드로 필터링 (제외 도메인 적용)
+4. **load_alias_rules**: 별칭 규칙 CSV 로드
+5. **expand_build_type_aliases**: 'build' 타입 별칭 확장
+6. **add_bidirectional_aliases**: 양방향(B) 별칭 추가
+7. **apply_alias_cascade**: 별칭 규칙 연쇄 적용 (병렬 처리, 최대 3단계)
+8. **add_user_defined_entities**: 사용자 정의 엔티티 추가
+9. **add_domain_name_column**: 도메인명 컬럼 추가
+10. **filter_test_items**: TEST 문자열 포함 항목 제거
+
+🏗️ 주요 컴포넌트
+----------------
+- **ItemDataLoader**: 상품 데이터 로딩 및 전처리 서비스
+  - `prepare_item_data()`: 전체 파이프라인 실행
+  - `apply_alias_cascade()`: 병렬 별칭 규칙 적용 (성능 최적화)
+
+💡 사용 예시
+-----------
+```python
+from services.item_data_loader import ItemDataLoader
+
+# 1. Local CSV 모드
+loader = ItemDataLoader(data_source='local')
+item_df, alias_df = loader.prepare_item_data(
+    offer_data_path='./data/offer_info.csv',
+    alias_rules_path='./data/alias_rules.csv',
+    excluded_domains=['TEST', 'DEV'],
+    user_entities=['특별상품A', '특별상품B']
+)
+
+# 2. DB 모드
+def my_db_loader():
+    return pd.read_sql("SELECT * FROM offer_info", conn)
+
+loader = ItemDataLoader(data_source='db', db_loader=my_db_loader)
+item_df, alias_df = loader.prepare_item_data()
+
+# 3. 결과 확인
+print(f"로드된 상품 수: {len(item_df)}")
+print(f"별칭 규칙 수: {len(alias_df)}")
+print(f"컬럼: {list(item_df.columns)}")
+```
+
+📊 데이터 스키마
+--------------
+
+### 입력 스키마 (Raw Data)
+```
+offer_info.csv:
+- item_nm: 상품명
+- item_id: 상품 ID
+- item_dmn_cd: 도메인 코드
+- ... (기타 컬럼)
+
+alias_rules.csv:
+- item_nm: 원본 상품명
+- alias: 별칭
+- alias_type: 별칭 타입 ('build', 'B', 'F' 등)
+```
+
+### 출력 스키마 (Processed Data)
+```
+item_pdf_all:
+- item_nm: 정규화된 상품명
+- item_nm_alias: 적용된 별칭 (연쇄 규칙 적용 후)
+- item_id: 상품 ID
+- item_dmn_cd: 도메인 코드
+- item_dmn_nm: 도메인명 (추가됨)
+- ... (기타 컬럼)
+```
+
+⚙️ 성능 최적화
+-------------
+**병렬 처리 (apply_alias_cascade):**
+- joblib.Parallel 사용
+- 기본 n_jobs: CPU 코어 수
+- 배치 단위 처리로 메모리 효율성 향상
+
+**연쇄 깊이 제한:**
+- 기본 max_depth: 3
+- 무한 루프 방지
+
+📝 참고사항
+----------
+- 별칭 규칙은 최대 3단계까지 연쇄 적용
+- 'build' 타입은 상품명 조합으로 자동 확장
+- 양방향(B) 별칭은 A→B, B→A 모두 생성
+- TEST 문자열 포함 항목은 자동 제거
+- 도메인 필터링으로 불필요한 데이터 사전 제거
+
+작성자: MMS 분석팀
+최종 수정: 2024-12
+버전: 2.1.0
 """
 
 import logging

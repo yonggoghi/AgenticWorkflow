@@ -1,6 +1,10 @@
 """
-MMS Extractor - Program Classifier Service
-=========================================
+Program Classifier Service - 프로그램 분류 서비스
+==============================================
+
+📋 개요: 임베딩 기반 프로그램 카테고리 분류
+🔗 사용: ProgramClassificationStep에서 호출
+⚙️ 방식: Cosine similarity로 상위 N개 후보 선택
 """
 
 import logging
@@ -12,7 +16,13 @@ import torch
 logger = logging.getLogger(__name__)
 
 class ProgramClassifier:
-    """Service for classifying messages into program categories"""
+    """
+    프로그램 분류 서비스
+    
+    책임: 메시지를 사전 정의된 프로그램 카테고리로 분류
+    방법: 임베딩 코사인 유사도 계산
+    출력: 상위 N개 후보 프로그램 정보
+    """
 
     def __init__(self, emb_model, pgm_pdf: pd.DataFrame, clue_embeddings: torch.Tensor, num_cand_pgms: int = 5):
         self.emb_model = emb_model

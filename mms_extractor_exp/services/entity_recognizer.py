@@ -1,9 +1,122 @@
 """
 MMS Extractor - Entity Recognizer Service
-========================================
+==========================================
 
-This service handles entity extraction and matching logic, decoupled from the main MMSExtractor.
+📋 개요
+-------
+이 서비스는 MMS 메시지에서 상품/서비스 엔티티를 추출하고 데이터베이스와 매칭하는
+핵심 로직을 담당합니다. MMSExtractor로부터 분리되어 독립적으로 테스트 및 재사용 가능합니다.
+
+🔗 의존성
+---------
+**사용하는 모듈:**
+- `utils`: 유사도 계산 (parallel_fuzzy_similarity, parallel_seq_similarity)
+- `prompts`: 엔티티 추출 프롬프트 템플릿
+- `config.settings`: 임계값 및 처리 설정 (PROCESSING_CONFIG)
+- `Kiwi`: 한국어 형태소 분석
+- `LangChain`: LLM 모델 인터페이스
+
+**사용되는 곳:**
+- `core.mms_workflow_steps.EntityExtractionStep`: 워크플로우 단계에서 사용
+- `core.mms_extractor`: MMSExtractor 초기화 시 생성
+
+🏗️ 엔티티 추출 모드 비교
+------------------------
+
+| 모드 | 방법 | 속도 | 정확도 | 사용 시나리오 |
+|------|------|------|--------|--------------|
+| **Kiwi** | 형태소 분석 + Fuzzy/Sequence 매칭 | 빠름 | 중간 | 명확한 상품명, 빠른 처리 필요 |
+| **Logic** | Fuzzy + Sequence 유사도 조합 | 중간 | 중간 | 후보 엔티티 목록이 있을 때 |
+| **LLM** | 2단계 LLM 추출 + 필터링 | 느림 | 높음 | 복잡한 문맥, 높은 정확도 필요 |
+
+### LLM 모드 상세 흐름
+```
+1단계: 초기 추출
+  ├─ DAG/PAIRING/SIMPLE 프롬프트 선택 (context_mode)
+  ├─ 멀티모델 병렬 실행 (최대 3개)
+  └─ 엔티티 + 컨텍스트 추출
+
+2단계: 정제 및 필터링
+  ├─ N-gram 확장
+  ├─ 상품 DB와 Fuzzy/Sequence 매칭
+  ├─ 배치 단위로 LLM 재검증
+  └─ 최종 엔티티 목록 반환
+```
+
+🏗️ 주요 컴포넌트
+----------------
+- **EntityRecognizer**: 엔티티 추출 및 매칭 서비스 클래스
+  - `extract_entities_from_kiwi()`: Kiwi 기반 추출
+  - `extract_entities_by_logic()`: 로직 기반 추출
+  - `extract_entities_by_llm()`: LLM 기반 추출 (2단계)
+  - `map_products_with_similarity()`: 유사도 기반 상품 매핑
+
+💡 사용 예시
+-----------
+```python
+from services.entity_recognizer import EntityRecognizer
+
+# 초기화
+recognizer = EntityRecognizer(
+    kiwi=kiwi_instance,
+    item_pdf_all=product_dataframe,
+    stop_item_names=['광고', '이벤트'],
+    llm_model=llm_instance,
+    entity_extraction_mode='llm'
+)
+
+# Kiwi 기반 추출
+entities, candidates, extra_df = recognizer.extract_entities_from_kiwi(
+    "아이폰 17 구매 시 캐시백 제공"
+)
+
+# LLM 기반 추출 (DAG 컨텍스트 모드)
+similarity_df = recognizer.extract_entities_by_llm(
+    msg_text="아이폰 17 구매 시 캐시백 제공",
+    rank_limit=50,
+    llm_models=[llm1, llm2],
+    context_mode='dag'
+)
+
+# 상품 매핑
+products = recognizer.map_products_with_similarity(
+    similarities_fuzzy=similarity_df,
+    json_objects=llm_response
+)
+```
+
+📊 유사도 계산 알고리즘
+---------------------
+**Fuzzy Similarity**: RapidFuzz 기반 문자열 유사도
+- 임계값: `PROCESSING_CONFIG.fuzzy_threshold` (기본 0.5)
+- 용도: 초기 후보 필터링
+
+**Sequence Similarity**: 시퀀스 매칭 (s1, s2)
+- s1: 정규화 방식 1
+- s2: 정규화 방식 2
+- Combined: s1 + s2 (임계값: 1.0)
+
+**최종 점수**: 
+```
+final_sim = sim_s1 + sim_s2
+필터: final_sim >= high_similarity_threshold (기본 1.0)
+```
+
+📝 참고사항
+----------
+- LLM 모드는 context_mode에 따라 다른 프롬프트 사용
+  - 'dag': HYBRID_DAG_EXTRACTION_PROMPT (사용자 행동 경로)
+  - 'pairing': HYBRID_PAIRING_EXTRACTION_PROMPT (혜택 매핑)
+  - 'none': SIMPLE_ENTITY_EXTRACTION_PROMPT (단순 추출)
+- 병렬 처리로 성능 최적화 (joblib Parallel)
+- 메시지 길이에 따라 배치 크기 자동 조정
+- Stop words 필터링으로 노이즈 제거
+
+작성자: MMS 분석팀
+최종 수정: 2024-12
+버전: 2.1.0
 """
+
 
 import logging
 import traceback
@@ -64,8 +177,45 @@ logger = logging.getLogger(__name__)
 
 class EntityRecognizer:
     """
-    Service for extracting entities from text using Kiwi (NLP) and LLMs,
-    and matching them against a product database.
+    엔티티 추출 및 매칭 서비스 클래스
+    
+    책임:
+        - MMS 메시지에서 상품/서비스 엔티티 추출
+        - 추출된 엔티티를 상품 데이터베이스와 매칭
+        - 다양한 추출 모드 지원 (Kiwi, Logic, LLM)
+        - 유사도 기반 후보 필터링 및 랭킹
+    
+    협력 객체:
+        - **Kiwi**: 한국어 형태소 분석 (NNP 태그 추출)
+        - **LLM Model**: 컨텍스트 기반 엔티티 추출
+        - **ItemDataLoader**: 상품 데이터 제공 (item_pdf_all)
+        - **Parallel (joblib)**: 병렬 처리로 성능 최적화
+    
+    데이터 흐름:
+        ```
+        MMS 메시지
+            ↓
+        [Kiwi/Logic/LLM 추출]
+            ↓
+        후보 엔티티 목록
+            ↓
+        [Fuzzy + Sequence 유사도 계산]
+            ↓
+        유사도 DataFrame
+            ↓
+        [임계값 필터링 + 랭킹]
+            ↓
+        최종 매칭 결과
+        ```
+    
+    Attributes:
+        kiwi: Kiwi 형태소 분석기 인스턴스
+        item_pdf_all (pd.DataFrame): 전체 상품 정보 (item_nm, item_nm_alias, item_id 등)
+        stop_item_names (List[str]): 제외할 불용어 목록
+        llm_model: LangChain LLM 모델 인스턴스
+        alias_pdf_raw (pd.DataFrame): 별칭 규칙 (선택사항)
+        entity_extraction_mode (str): 추출 모드 ('llm', 'nlp', 'logic')
+        exc_tag_patterns (List): Kiwi 제외 태그 패턴
     """
 
     def __init__(self, kiwi, item_pdf_all: pd.DataFrame, stop_item_names: List[str], 
