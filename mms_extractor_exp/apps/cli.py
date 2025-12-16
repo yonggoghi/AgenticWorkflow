@@ -88,7 +88,7 @@ def main():
                        help='로그 레벨 설정')
     parser.add_argument('--message-id', type=str, default='#',
                        help='메시지 식별자 (기본값: #)')
-    parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
+    parser.add_argument('--extract-entity-dag', action='store_true', default=True, help='Entity DAG extraction (default: True)')
     parser.add_argument('--save-to-mongodb', action='store_true', default=True, 
                        help='추출 결과를 MongoDB에 저장 (utils/mongodb_utils.py 필요)')
     parser.add_argument('--save-batch-results', action='store_true', default=False,

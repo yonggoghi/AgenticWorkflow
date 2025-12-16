@@ -115,7 +115,7 @@ class BatchProcessor:
         self.enable_multiprocessing = enable_multiprocessing
         self.save_to_mongodb = save_to_mongodb
         self.save_results_enabled = save_results_enabled
-        self.extract_entity_dag = False
+        self.extract_entity_dag = True
         
     def initialize_extractor(self, **extractor_kwargs):
         """
@@ -126,7 +126,7 @@ class BatchProcessor:
         """
         logger.info("Initializing MMS Extractor...")
         try:
-            self.extract_entity_dag = extractor_kwargs.get('extract_entity_dag', False)
+            self.extract_entity_dag = extractor_kwargs.get('extract_entity_dag', True)
             self.extractor = MMSExtractor(**extractor_kwargs)
             logger.info(f"MMS Extractor initialized successfully (DAG 추출: {'ON' if self.extract_entity_dag else 'OFF'})")
         except Exception as e:

@@ -309,7 +309,7 @@ def initialize_global_extractor(offer_info_data_src='local'):
             llm_model='gemini',                      # 기본 LLM: Gemini (CLI와 동일)
             product_info_extraction_mode='llm',      # 기본 상품 추출 모드: LLM (CLI와 동일)
             entity_extraction_mode='llm',            # 기본 엔티티 매칭 모드: LLM (CLI와 동일)
-            extract_entity_dag=False,
+            extract_entity_dag=True,
             entity_extraction_context_mode='dag'     # 기본 컨텍스트 모드: DAG
         )
         
@@ -365,7 +365,7 @@ def get_configured_quick_extractor(use_llm=False, llm_model='ax'):
     
     return global_quick_extractor
 
-def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='dag'):
+def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=True, entity_extraction_context_mode='dag'):
     """
     런타임 설정으로 전역 추출기 구성
     
@@ -482,7 +482,7 @@ def extract_message():
         - offer_info_data_src (optional): 데이터 소스 (기본값: CLI 설정값)
         - product_info_extraction_mode (optional): 상품 추출 모드 (기본값: 'nlp')
         - entity_matching_mode (optional): 엔티티 매칭 모드 (기본값: 'logic')
-        - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: False)
+        - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: True)
                                          True일 경우 메시지에서 엔티티 간 관계를 DAG 형태로 추출하고
                                          시각적 다이어그램도 함께 생성합니다.
         - result_type (optional): 추출 결과 타입 (기본값: 'ext')
@@ -526,7 +526,7 @@ def extract_message():
         entity_llm_model = data.get('entity_llm_model', 'ax')
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
-        extract_entity_dag = data.get('extract_entity_dag', False)
+        extract_entity_dag = data.get('extract_entity_dag', True)
         entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'dag')
         save_to_mongodb = data.get('save_to_mongodb', True)
         result_type = data.get('result_type', 'ext')
@@ -673,7 +673,7 @@ def extract_batch():
         - offer_info_data_src (optional): 데이터 소스
         - product_info_extraction_mode (optional): 상품 추출 모드
         - entity_matching_mode (optional): 엔티티 매칭 모드
-        - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: False)
+        - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: True)
         - max_workers (optional): 병렬 처리 워커 수 (기본값: CPU 코어 수)
     
     Returns:
@@ -715,7 +715,7 @@ def extract_batch():
         entity_llm_model = data.get('entity_llm_model', 'ax')
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
-        extract_entity_dag = data.get('extract_entity_dag', False)
+        extract_entity_dag = data.get('extract_entity_dag', True)
         entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'dag')
         max_workers = data.get('max_workers', None)
         save_to_mongodb = data.get('save_to_mongodb', True)
@@ -1002,7 +1002,7 @@ def get_prompts():
         offer_info_data_src = data.get('offer_info_data_src', 'local')
         product_info_extraction_mode = data.get('product_info_extraction_mode', 'llm')
         entity_matching_mode = data.get('entity_matching_mode', 'logic')
-        extract_entity_dag = data.get('extract_entity_dag', False)
+        extract_entity_dag = data.get('extract_entity_dag', True)
         
         # 추출기 설정 업데이트
         extractor = get_configured_extractor(llm_model, product_info_extraction_mode, entity_matching_mode, extract_entity_dag)
