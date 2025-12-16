@@ -22,23 +22,25 @@ DETAILED_ENTITY_EXTRACTION_PROMPT = """
     - **Ignore Enablers:** Payment methods (e.g., 'Hyundai Card', 'Apple Pay') unless they are the sole subject of the ad.
     - **Ignore Labels:** 'Shortcut', 'Link', 'View Details'.
 
-    ## Return format
+    ## Return format: Do not use Markdown formatting. Use plain text.
     ENTITY: comma-separated list of Root Nodes only.
     """
 
 SIMPLE_ENTITY_EXTRACTION_PROMPT = """
-Select product/service names from 'candidate entities' that are directly mentioned and promoted in the message.
+Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+
+***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지나 RAG Context에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
 
 Guidelines:
-1. Only include entities explicitly offered/promoted in the advertisement
-2. Exclude general concepts not tied to specific offerings  
+1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+2. Exclude general concepts not tied to specific offerings
 3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
 4. Multiple entities in 'entities in message' may combine into one composite entity
-5. **Refer to the 'DAG Context' which describes the user action flow.** Use it to distinguish between core offerings and navigational/informational elements.
+5. Refer to the 'DAG Context' which describes the user action flow. 이를 **사용자의 최종 획득/응모 대상인 핵심 혜택(Core Offering)**을 구별하는 데 사용하십시오. (e.g., 퀴즈 주제인 '아이폰'이 아닌, 최종 혜택인 '올리브영 기프트 카드'와 관련된 개체를 식별)
 
-Return format:
-REASON: Brief explanation (max 50 chars Korean)
-ENTITY: comma-separated list from candidates, or empty if none match
+Return format: Do not use Markdown formatting. Use plain text.
+REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
+ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match
 """
 
 HYBRID_DAG_EXTRACTION_PROMPT = """
@@ -72,16 +74,23 @@ Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
     * **Root:** The entry point identified above (Original Text).
     * **Core:** The product/service being used or bought (Original Text).
     * **Value:** The final reward or benefit (Original Text).
+* **Edges:**
+    * **Definition:** A verb describing the relationship between two nodes.
+    * **Purpose:** Represents the action or transition from one node to the next.
+    * **Examples:**
+        * `가입` (subscribe), `구매` (purchase), `사용` (use)
+        * `획득` (obtain), `제공` (provide), `지급` (grant)
+        * `방문` (visit), `다운로드` (download), `신청` (apply)
+    * **Guidelines:** Use concise action verbs that clearly describe how the user moves from one step to the next in the flow.
 * **Logic:** Represent the shortest path from the Root action to the Final Benefit.
 
 ## Strict Exclusions
 * Ignore navigational labels ('바로 가기', '링크', 'Shortcut').
 * Ignore generic partners ('스타벅스', 'CU') unless they are the main subscription target.
 
-## Output Format
+## Output Format: Do not use Markdown formatting. Use plain text.
 ENTITY: <comma-separated list of all Nodes in original text>
-DAG:
-<DAG representation line by line in original text>
+DAG: <DAG representation line by line in original text>
 """
 
 # LLM 기반 엔티티 추출 프롬프트 템플릿

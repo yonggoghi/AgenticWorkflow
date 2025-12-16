@@ -122,6 +122,7 @@ class ModelConfig:
     # LLM generation parameters
     llm_max_tokens: int = 4000  # Maximum tokens for LLM responses
     temperature: float = 0.0  # Temperature for LLM generation (0.0 = deterministic, 1.0 = creative)
+    llm_seed: int = 42  # Seed for LLM generation
     
     def __post_init__(self):
         """Validate model loading mode after initialization."""
@@ -208,8 +209,10 @@ class ProcessingConfig:
     
     # Similarity thresholds for matching
     similarity_threshold: float = 0.7  # Minimum similarity score for entity matching (0.0-1.0)
-    similarity_threshold_for_store: float = 0.4  # Minimum similarity score for entity matching (0.0-1.0)
+    similarity_threshold_for_store: float = 0.6  # Minimum similarity score for entity matching (0.0-1.0)
+    similarity_threshold_for_store_secondary: float = 0.3  # Minimum similarity score for entity matching (0.0-1.0)
     fuzzy_threshold: float = 0.4  # Minimum fuzzy matching score for initial filtering (0.0-1.0)
+    combined_similarity_threshold: float = 0.4  # Minimum threshold for combined similarity scores (s1, s2)
     high_similarity_threshold: float = 1.1  # Minimum high similarity score for final entity filtering (0.0-2.0)
     
     # Processing parameters

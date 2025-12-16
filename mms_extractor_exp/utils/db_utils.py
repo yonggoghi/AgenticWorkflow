@@ -216,7 +216,7 @@ def load_org_from_database() -> pd.DataFrame:
         logger.info("데이터베이스 연결 시도 중...")
         
         with database_connection() as conn:
-            sql = "SELECT * FROM TCAM_RC_OFER_MST WHERE ITEM_DMN='R'"
+            sql = "SELECT * FROM TCIC.TCIC_RC_OFER_MST WHERE ITEM_DMN='R'"
             logger.info(f"실행할 SQL: {sql}")
             
             org_pdf = pd.read_sql(sql, conn)
