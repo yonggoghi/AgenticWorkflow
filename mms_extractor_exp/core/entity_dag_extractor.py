@@ -187,7 +187,7 @@ except Exception as e:
 PAT = re.compile(r"\((.*?)\)\s*-\[(.*?)\]->\s*\((.*?)\)")
 NODE_ONLY = re.compile(r"\((.*?)\)\s*$")
 
-def parse_block(text: str):
+def parse_dag_block(text: str):
     nodes: Set[str] = set()
     edges: List[Tuple[str,str,str]] = []
     for line in filter(None, map(str.strip, text.splitlines())):
@@ -209,7 +209,7 @@ def parse_block(text: str):
 ###############################################################################
 # 2) 개선된 노드 스플리터 – 유연한 파트 처리
 ###############################################################################
-def split_node(raw: str) -> Dict[str,str]:
+def split_node_parts(raw: str) -> Dict[str,str]:
     parts = [p.strip() for p in raw.split(":")]
     
     if len(parts) == 1:                       # entity only
@@ -238,13 +238,13 @@ def split_node(raw: str) -> Dict[str,str]:
 ###############################################################################
 # 3) 기존 DAG 빌더 (하위 호환성 유지)
 ###############################################################################
-def build_dag(nodes: List[str], edges: List[Tuple[str,str,str]]) -> nx.DiGraph:
+def build_dag_graph(nodes: List[str], edges: List[Tuple[str,str,str]]) -> nx.DiGraph:
     g = nx.DiGraph()
     
     # Add nodes with error handling
     for n in nodes:
         try:
-            node_attrs = split_node(n)
+            node_attrs = split_node_parts(n)
             g.add_node(n, **node_attrs)
         except ValueError as e:
             print(f"Warning: {e}")
@@ -260,7 +260,7 @@ def build_dag(nodes: List[str], edges: List[Tuple[str,str,str]]) -> nx.DiGraph:
 ###############################################################################
 # 4) 기존 Path Finder (하위 호환성 유지)
 ###############################################################################
-def get_root_to_leaf_paths(dag):
+def extract_root_to_leaf_paths(dag):
     """Generate all paths from root nodes (no predecessors) to leaf nodes (no successors)"""
     # Find root nodes (no incoming edges)
     root_nodes = [node for node in dag.nodes() if dag.in_degree(node) == 0]
@@ -900,12 +900,12 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True, prompt_mode=
                         print(f"Enhanced parser 실패, 기본 파서로 전환: {e}")
                         f.write(f"Enhanced parser 실패, 기본 파서로 전환: {e}\n")
                         # 기본 파서로 폴백
-                        nodes, edges = parse_block(re.sub(r'^```|```$', '', dag_raw.strip()))
-                        dag = build_dag(nodes, edges)
+                        nodes, edges = parse_dag_block(re.sub(r'^```|```$', '', dag_raw.strip()))
+                        dag = build_dag_graph(nodes, edges)
                 else:
                     # 기본 파서 사용
-                    nodes, edges = parse_block(re.sub(r'^```|```$', '', dag_raw.strip()))
-                    dag = build_dag(nodes, edges)
+                    nodes, edges = parse_dag_block(re.sub(r'^```|```$', '', dag_raw.strip()))
+                    dag = build_dag_graph(nodes, edges)
 
                 # Root Nodes 출력
                 root_header = "==="*15+" Root Nodes "+"==="*15
@@ -922,7 +922,7 @@ def dag_finder(num_msgs=50, llm_model_nm='ax', save_dag_image=True, prompt_mode=
                 paths_header = "==="*15+" Paths "+"==="*15
                 print(paths_header)
                 f.write(paths_header + "\n")
-                paths, roots, leaves = get_root_to_leaf_paths(dag)
+                paths, roots, leaves = extract_root_to_leaf_paths(dag)
                 
                 if not paths:
                     print("No paths found.")

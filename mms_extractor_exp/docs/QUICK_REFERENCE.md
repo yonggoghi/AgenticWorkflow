@@ -196,8 +196,8 @@ config/settings.py
 
 # 2. 추출 로직 개선
 services/entity_recognizer.py
-    → extract_entities_from_kiwi()  # Kiwi 기반
-    → extract_entities_by_llm()     # LLM 기반
+    → extract_entities_with_kiwi()  # Kiwi 기반
+    → extract_entities_with_llm()     # LLM 기반
     → match_entities()              # 매칭 로직
 
 # 3. 프롬프트 개선
@@ -281,9 +281,9 @@ def execute(self, state: WorkflowState) -> WorkflowState:
         state.events = json_objects['event']  # ← 추가
 
 # STEP 4: 결과 구성에 포함
-# 파일: services/result_builder.py → build_final_result()
+# 파일: services/result_builder.py → build_extraction_result()
 
-def build_final_result(self, state: WorkflowState) -> Dict:
+def build_extraction_result(self, state: WorkflowState) -> Dict:
     result = {
         # 기존 필드들...
         "event": state.events  # ← 추가
@@ -508,7 +508,7 @@ class ModelConfig:
 **Before (197줄 메서드)**:
 ```python
 # core/mms_extractor.py
-def _load_and_prepare_item_data(self):
+def _load_item_data(self):
     # 1. 데이터 로드 (30줄)
     # 2. 전처리 (20줄)
     # 3. 별칭 처리 (70줄)
@@ -522,14 +522,14 @@ def _load_and_prepare_item_data(self):
 class ItemDataLoader:
     def load_raw_data(self) -> pd.DataFrame: ...
     def normalize_columns(self, df) -> pd.DataFrame: ...
-    def apply_alias_cascade(self, df) -> pd.DataFrame: ...
+    def apply_cascading_alias_rules(self, df) -> pd.DataFrame: ...
     def filter_and_clean(self, df) -> pd.DataFrame: ...
-    def prepare_item_data(self) -> pd.DataFrame: ...  # 전체 파이프라인
+    def load_and_prepare_items(self) -> pd.DataFrame: ...  # 전체 파이프라인
 
 # core/mms_extractor.py (33줄로 축소)
-def _load_and_prepare_item_data(self):
+def _load_item_data(self):
     loader = ItemDataLoader(...)
-    self.item_pdf_all = loader.prepare_item_data()
+    self.item_pdf_all = loader.load_and_prepare_items()
 ```
 
 **리팩토링 체크리스트**:

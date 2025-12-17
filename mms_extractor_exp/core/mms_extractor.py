@@ -134,8 +134,8 @@ from utils import (
     dataframe_to_markdown_prompt,
     extract_json_objects,
     preprocess_text,
-    fuzzy_similarities,
-    get_fuzzy_similarities,
+    calculate_fuzzy_similarity,
+    calculate_fuzzy_similarity_batch,
     parallel_fuzzy_similarity,
     longest_common_subsequence_ratio,
     sequence_matcher_similarity,
@@ -610,18 +610,18 @@ class MMSExtractor(MMSExtractorDataMixin):
             
             # 상품 정보 로드 및 준비 (별칭 규칙 적용 포함)
             logger.info("1️⃣ 상품 정보 로드 및 준비 중...")
-            self._load_and_prepare_item_data()
+            self._load_item_data()
             logger.info(f"상품 정보 최종 데이터 크기: {self.item_pdf_all.shape}")
             logger.info(f"상품 정보 컬럼들: {list(self.item_pdf_all.columns)}")
             
             # 정지어 로드
             logger.info("2️⃣ 정지어 로드 중...")
-            self._load_stop_words()
+            self._load_stopwords()
             logger.info(f"로드된 정지어 수: {len(self.stop_item_names)}개")
             
             # Kiwi에 상품명 등록
             logger.info("3️⃣ Kiwi에 상품명 등록 중...")
-            self._register_items_to_kiwi()
+            self._register_items_in_kiwi()
             
             # 프로그램 분류 정보 로드
             logger.info("4️⃣ 프로그램 분류 정보 로드 중...")
@@ -660,9 +660,9 @@ class MMSExtractor(MMSExtractorDataMixin):
             logger.error(f"오류 상세: {traceback.format_exc()}")
             raise
 
-    def _load_and_prepare_item_data(self):
+    def _load_item_data(self):
         """
-        상품 정보 로드 및 준비 (ItemDataLoader로 위임)
+        상품 정보 로드 (ItemDataLoader로 위임)
         
         기존 197줄의 복잡한 로직을 ItemDataLoader 서비스로 분리하여
         재사용성과 테스트 용이성을 향상시켰습니다.
@@ -677,7 +677,7 @@ class MMSExtractor(MMSExtractorDataMixin):
             )
             
             # 전체 파이프라인 실행
-            self.item_pdf_all = loader.prepare_item_data()
+            self.item_pdf_all, _ = loader.load_and_prepare_items()
             
             # 별칭 규칙 원본 저장 (다른 컴포넌트에서 사용)
             self.alias_pdf_raw = loader.alias_pdf_raw
@@ -695,7 +695,7 @@ class MMSExtractor(MMSExtractorDataMixin):
 
     # Database methods moved to utils/db_utils.py
 
-    def _load_stop_words(self):
+    def _load_stopwords(self):
         """정지어 목록 로드"""
         try:
             self.stop_item_names = pd.read_csv(getattr(METADATA_CONFIG, 'stop_items_path', './data/stop_words.csv'))['stop_words'].to_list()
@@ -704,7 +704,7 @@ class MMSExtractor(MMSExtractorDataMixin):
             logger.warning(f"정지어 로드 실패: {e}")
             self.stop_item_names = []
 
-    def _register_items_to_kiwi(self):
+    def _register_items_in_kiwi(self):
         """Kiwi에 상품명들을 고유명사로 등록"""
         try:
             logger.info("=== Kiwi에 상품명 등록 시작 ===")
@@ -866,7 +866,7 @@ class MMSExtractor(MMSExtractorDataMixin):
                 json_objects_list = extract_json_objects(result_text)
                 if json_objects_list:
                     json_objects = json_objects_list[-1]
-                    if self._detect_schema_response(json_objects):
+                    if self._is_schema_response(json_objects):
                         logger.warning(f"시도 {attempt + 1}: LLM이 스키마를 반환했습니다. 재시도합니다.")
                         
                         # 스키마 응답인 경우 더 강한 지시사항으로 재시도
@@ -1029,15 +1029,18 @@ class MMSExtractor(MMSExtractorDataMixin):
             logger.info(f"JSON 객체 추출 시작 - 메시지 길이: {len(msg)}자")
             
             # 1-4단계: 기존 프로세스
-            pgm_info = self._prepare_program_classification(msg)
+            pgm_info = self._classify_program(msg)
             
             # RAG 컨텍스트 준비 (product_info_extraction_mode가 'rag'인 경우)
+            # TODO: This method is outdated and needs refactoring to use the workflow-based approach
+            # The _prepare_rag_context method no longer exists - it was moved to ContextPreparationStep
             rag_context = ""
-            if self.product_info_extraction_mode == 'rag':
-                rag_context = self._prepare_rag_context(msg)
+            # if self.product_info_extraction_mode == 'rag':
+            #     rag_context = self._prepare_rag_context(msg)  # This function doesn't exist
             
             # 5단계: 프롬프트 구성 및 LLM 호출
-            prompt = self._build_extraction_prompt(msg, pgm_info, rag_context)
+            # Note: _build_extraction_prompt expects (msg, rag_context, product_element)
+            prompt = self._build_extraction_prompt(msg, rag_context, None)
             result_json_text = self._safe_llm_invoke(prompt)
             
             # 6단계: JSON 파싱
@@ -1050,7 +1053,7 @@ class MMSExtractor(MMSExtractorDataMixin):
             json_objects = json_objects_list[-1]
             
             # 스키마 응답 감지
-            is_schema_response = self._detect_schema_response(json_objects)
+            is_schema_response = self._is_schema_response(json_objects)
             if is_schema_response:
                 logger.warning("LLM이 스키마 정의를 반환했습니다")
                 return {}
@@ -1062,8 +1065,8 @@ class MMSExtractor(MMSExtractorDataMixin):
             logger.error(f"JSON 객체 추출 중 오류 발생: {e}")
             return {}
     
-    def _prepare_program_classification(self, mms_msg: str) -> Dict[str, Any]:
-        """프로그램 분류 준비 (_classify_programs 메소드와 동일)"""
+    def _classify_program(self, mms_msg: str) -> Dict[str, Any]:
+        """프로그램 분류 수행 (ProgramClassifier.classify와 동일한 로직)"""
         try:
             if self.emb_model is None or self.clue_embeddings.numel() == 0:
                 return {"pgm_cand_info": "", "similarities": []}
@@ -1093,8 +1096,8 @@ class MMSExtractor(MMSExtractorDataMixin):
             logger.error(f"프로그램 분류 실패: {e}")
             return {"pgm_cand_info": "", "similarities": [], "pgm_pdf_tmp": pd.DataFrame()}
 
-    def _detect_schema_response(self, json_objects: Dict) -> bool:
-        """LLM이 스키마 정의를 반환했는지 감지"""
+    def _is_schema_response(self, json_objects: Dict) -> bool:
+        """LLM 응답이 스키마 정의인지 확인"""
         try:
             # purpose 필드가 스키마 구조인지 확인
             purpose = json_objects.get('purpose', {})
@@ -1188,13 +1191,20 @@ def process_message_with_dag(extractor, message: str, extract_dag: bool = False,
         dag_list = []
         
         if extract_dag:
-            # 순차적 처리로 변경 (프롬프트 캡처를 위해)
-            # 멀티스레드를 사용하면 스레드 로컬 저장소가 분리되어 프롬프트 캡처가 안됨
-            logger.info("순차적 처리로 메인 추출 및 DAG 추출 수행")
+            # Check if DAG was already extracted by the workflow
+            existing_dag = result.get('ext_result', {}).get('entity_dag')
             
-            # 2. DAG 추출
-            dag_result = make_entity_dag(message, extractor.llm_model, message_id=message_id)
-            dag_list = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
+            if existing_dag and len(existing_dag) > 0:
+                logger.info("✅ 워크플로우에서 이미 추출된 DAG가 존재합니다. 중복 추출을 건너뜁니다.")
+                dag_list = existing_dag
+            else:
+                # 순차적 처리로 변경 (프롬프트 캡처를 위해)
+                # 멀티스레드를 사용하면 스레드 로컬 저장소가 분리되어 프롬프트 캡처가 안됨
+                logger.info("순차적 처리로 메인 추출 및 DAG 추출 수행")
+                
+                # 2. DAG 추출
+                dag_result = make_entity_dag(message, extractor.llm_model, message_id=message_id)
+                dag_list = sorted([d for d in dag_result['dag_section'].split('\n') if d!=''])
 
         extracted_result = result.get('ext_result', {})
         extracted_result['entity_dag'] = dag_list

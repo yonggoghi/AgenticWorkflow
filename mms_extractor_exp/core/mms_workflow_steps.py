@@ -196,7 +196,7 @@ class InputValidationStep(WorkflowStep):
     
     데이터 흐름:
         입력: mms_msg (원본 메시지), extractor (추출기 인스턴스)
-        출력: msg (검증된 메시지)
+        출력: msg (전처리된 메시지)
     
     에러 처리:
         - 검증 실패 시 is_fallback=True 설정
@@ -275,7 +275,7 @@ class EntityExtractionStep(WorkflowStep):
             self._diagnose_db_mode(extractor)
         
         # 엔티티 추출
-        entities_from_kiwi, cand_item_list, extra_item_pdf = self.entity_recognizer.extract_entities_from_kiwi(msg)
+        entities_from_kiwi, cand_item_list, extra_item_pdf = self.entity_recognizer.extract_entities_with_kiwi(msg)
         
         self._log_extraction_results(entities_from_kiwi, cand_item_list, extra_item_pdf)
         
@@ -389,14 +389,14 @@ class ContextPreparationStep(WorkflowStep):
         extra_item_pdf = state.get("extra_item_pdf")
         
         # RAG 컨텍스트 구성
-        rag_context = self._build_rag_context(extractor, pgm_info)
+        rag_context = self._build_ad_classification_rag_context(extractor, pgm_info)
         
         # 제품 정보 준비
         product_element = None
         
         if not safe_check_empty(cand_item_list):
             self._log_candidate_items(cand_item_list, extra_item_pdf)
-            rag_context, product_element = self._prepare_product_info(
+            rag_context, product_element = self._build_product_rag_context(
                 extractor, rag_context, cand_item_list, extra_item_pdf
             )
         else:
@@ -407,8 +407,8 @@ class ContextPreparationStep(WorkflowStep):
         
         return state
     
-    def _build_rag_context(self, extractor, pgm_info) -> str:
-        """RAG 컨텍스트 구성"""
+    def _build_ad_classification_rag_context(self, extractor, pgm_info) -> str:
+        """광고 분류용 RAG 컨텍스트 구성"""
         rag_context = f"\n### 광고 분류 기준 정보 ###\n\t{pgm_info['pgm_cand_info']}" if extractor.num_cand_pgms > 0 else ""
         logger.info(f"프로그램 분류 컨텍스트 길이: {len(rag_context)} 문자")
         return rag_context
@@ -422,8 +422,8 @@ class ContextPreparationStep(WorkflowStep):
             logger.info(f"extra_item_pdf 컬럼들: {list(extra_item_pdf.columns)}")
             logger.info(f"extra_item_pdf 샘플: {extra_item_pdf.head(2).to_dict('records')}")
     
-    def _prepare_product_info(self, extractor, rag_context, cand_item_list, extra_item_pdf):
-        """제품 정보 준비 (모드별)"""
+    def _build_product_rag_context(self, extractor, rag_context, cand_item_list, extra_item_pdf):
+        """제품 정보용 RAG 컨텍스트 구성 (모드별)"""
         product_element = None
         
         if extractor.product_info_extraction_mode == 'rag':
@@ -433,12 +433,12 @@ class ContextPreparationStep(WorkflowStep):
             rag_context += f"\n\n### 참고용 후보 상품 이름 목록 ###\n\t{cand_item_list}"
             logger.info("LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가")
         elif extractor.product_info_extraction_mode == 'nlp':
-            product_element = self._prepare_nlp_product_element(extractor, extra_item_pdf)
+            product_element = self._build_nlp_product_element(extractor, extra_item_pdf)
         
         return rag_context, product_element
     
-    def _prepare_nlp_product_element(self, extractor, extra_item_pdf):
-        """NLP 모드 제품 요소 준비"""
+    def _build_nlp_product_element(self, extractor, extra_item_pdf):
+        """NLP 모드 제품 요소 구성"""
         if not extra_item_pdf.empty and 'item_nm' in extra_item_pdf.columns:
             product_df = extra_item_pdf.rename(columns={'item_nm': 'name'}).query(
                 "not name in @extractor.stop_item_names"
@@ -617,7 +617,7 @@ class ResultConstructionStep(WorkflowStep):
         message_id = state.get("message_id", "#")  # message_id 가져오기
         
         # 최종 결과 구성
-        final_result = self.result_builder.build_final_result(json_objects, msg, pgm_info, entities_from_kiwi, message_id)
+        final_result = self.result_builder.build_extraction_result(json_objects, msg, pgm_info, entities_from_kiwi, message_id)
         
         state.set("final_result", final_result)
         

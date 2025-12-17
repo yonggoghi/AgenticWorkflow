@@ -186,13 +186,13 @@ class EntityRecognizer:
     - Fuzzy/Sequence 유사도 기반 상품 매칭
     
     주요 메서드:
-    - extract_entities_from_kiwi(): Kiwi 기반 추출
-    - extract_entities_by_llm(): LLM 기반 추출
+    - extract_entities_with_kiwi(): Kiwi 기반 추출
+    - extract_entities_with_llm(): LLM 기반 추출
     - match_entities(): 상품 DB와 매칭
     
     사용 예시:
         recognizer = EntityRecognizer(kiwi, item_pdf, stop_words, llm)
-        entities = recognizer.extract_entities_from_kiwi(message)
+        entities = recognizer.extract_entities_with_kiwi(message)
     """
 ```
 
@@ -210,10 +210,10 @@ class EntityRecognizer:
 **개선 방안**:
 ```python
 # tests/test_entity_recognizer.py (필요)
-def test_extract_entities_from_kiwi():
+def test_extract_entities_with_kiwi():
     """Kiwi 기반 엔티티 추출 테스트"""
     recognizer = EntityRecognizer(...)
-    entities = recognizer.extract_entities_from_kiwi("테스트 메시지")
+    entities = recognizer.extract_entities_with_kiwi("테스트 메시지")
     assert len(entities) > 0
 ```
 
@@ -326,12 +326,12 @@ self.workflow_engine.add_step(NewProcessingStep(dep1, dep2))
 
 | 서비스 | 역할 | 주요 메서드 |
 |--------|------|-------------|
-| `EntityRecognizer` | 엔티티 인식 | `extract_entities_from_kiwi()`, `extract_entities_by_llm()` |
-| `ResultBuilder` | 결과 구성 | `build_final_result()` |
+| `EntityRecognizer` | 엔티티 인식 | `extract_entities_with_kiwi()`, `extract_entities_with_llm()` |
+| `ResultBuilder` | 결과 구성 | `build_extraction_result()` |
 | `ProgramClassifier` | 프로그램 분류 | `classify()` |
 | `StoreMatcher` | 매장 매칭 | `match_store()` |
-| `ItemDataLoader` | 상품 데이터 로딩 | `prepare_item_data()` |
-| `SchemaTransformer` | 스키마 변환 | `transform_to_item_centric()` |
+| `ItemDataLoader` | 상품 데이터 로딩 | `load_and_prepare_items()` |
+| `SchemaTransformer` | 스키마 변환 | `transform_to_item_schema()` |
 
 **서비스 수정 가이드**:
 1. 단일 책임 유지

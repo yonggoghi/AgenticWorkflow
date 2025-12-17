@@ -117,7 +117,7 @@ graph TB
 🏗️ 주요 컴포넌트
 ----------------
 - **ResultBuilder**: 결과 구성 서비스 클래스
-  - `build_final_result()`: 전체 결과 구성 파이프라인
+  - `build_extraction_result()`: 전체 결과 구성 파이프라인
   - `_map_program_classification()`: 프로그램 분류 매핑
   - `_extract_channels()`: 채널 정보 추출 및 offer 업데이트
 
@@ -142,7 +142,7 @@ builder = ResultBuilder(
 )
 
 # 최종 결과 구성
-final_result = builder.build_final_result(
+final_result = builder.build_extraction_result(
     json_objects=llm_response,
     msg="아이폰 17 구매 시 캐시백 제공",
     pgm_info=program_info,
@@ -200,11 +200,11 @@ class ResultBuilder:
         self.llm_model = llm_model
         self.entity_extraction_context_mode = entity_extraction_context_mode
 
-    def build_final_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str], message_id: str = '#') -> Dict[str, Any]:
+    def build_extraction_result(self, json_objects: Dict, msg: str, pgm_info: Dict, entities_from_kiwi: List[str], message_id: str = '#') -> Dict[str, Any]:
         """최종 결과 구성"""
         try:
             logger.info("=" * 80)
-            logger.info("🔍 [PRODUCT DEBUG] build_final_result 시작")
+            logger.info("🔍 [PRODUCT DEBUG] build_extraction_result 시작")
             logger.info("=" * 80)
             
             final_result = json_objects.copy()
@@ -237,7 +237,7 @@ class ResultBuilder:
                 # 로직 기반: 퍼지 + 시퀀스 유사도
                 cand_entities = list(set(entities_from_kiwi+[item.get('name', '') for item in product_items if item.get('name')]))
                 logger.info(f"   - cand_entities: {cand_entities}")
-                similarities_fuzzy = self.entity_recognizer.extract_entities_by_logic(cand_entities)
+                similarities_fuzzy = self.entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)
                 logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
             else:
                 logger.info("🔍 [STEP 3] LLM 기반 엔티티 매칭 시작")
@@ -252,7 +252,7 @@ class ResultBuilder:
                     logger.warning("⚠️ llm_factory가 설정되지 않았습니다. 빈 리스트를 사용합니다.")
                     default_llm_models = []
                 logger.info(f"   - 초기화된 LLM 모델 수: {len(default_llm_models)}개")
-                similarities_fuzzy = self.entity_recognizer.extract_entities_by_llm(
+                similarities_fuzzy = self.entity_recognizer.extract_entities_with_llm(
                     msg, 
                     llm_models=default_llm_models, 
                     rank_limit=100, 
@@ -302,7 +302,7 @@ class ResultBuilder:
             
             if not similarities_fuzzy.empty:
                 logger.info("   ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출")
-                final_result['product'] = self.entity_recognizer.map_products_with_similarity(similarities_fuzzy, json_objects)
+                final_result['product'] = self.entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)
                 logger.info(f"   ✅ 최종 product 개수: {len(final_result['product'])}개")
                 logger.info(f"   ✅ 최종 product 내용: {final_result['product']}")
             else:
@@ -336,11 +336,11 @@ class ResultBuilder:
             logger.info(f"🏷️  [STEP 7] offer_object 초기화: type=product, value 개수={len(offer_object['value'])}개")
 
             # 프로그램 분류 정보 매핑
-            final_result['pgm'] = self._map_program_classification(json_objects, pgm_info)
+            final_result['pgm'] = self._map_programs_to_result(json_objects, pgm_info)
             
             # 채널 정보 처리 (offer_object도 함께 전달 및 반환)
             logger.info("🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트")
-            final_result['channel'], offer_object = self._extract_channels(json_objects, msg, offer_object)
+            final_result['channel'], offer_object = self._extract_and_enrich_channels(json_objects, msg, offer_object)
             logger.info(f"   ✅ 최종 channel 개수: {len(final_result['channel'])}개")
             logger.info(f"   ✅ 최종 offer_object type: {offer_object.get('type', 'N/A')}")
             logger.info(f"   ✅ 최종 offer_object value 개수: {len(offer_object.get('value', []))}개")
@@ -353,7 +353,7 @@ class ResultBuilder:
             final_result['entity_dag'] = []
             
             logger.info("=" * 80)
-            logger.info("✅ [PRODUCT DEBUG] build_final_result 완료")
+            logger.info("✅ [PRODUCT DEBUG] build_extraction_result 완료")
             logger.info(f"   최종 final_result['product'] 개수: {len(final_result.get('product', []))}개")
             logger.info("=" * 80)
 
@@ -366,7 +366,7 @@ class ResultBuilder:
             logger.error(f"최종 결과 구성 실패: {e}")
             return json_objects
 
-    def _map_program_classification(self, json_objects: Dict, pgm_info: Dict) -> List[Dict]:
+    def _map_programs_to_result(self, json_objects: Dict, pgm_info: Dict) -> List[Dict]:
         """프로그램 분류 정보 매핑"""
         try:
             if (self.num_cand_pgms > 0 and 
@@ -388,7 +388,7 @@ class ResultBuilder:
             logger.error(f"프로그램 분류 매핑 실패: {e}")
             return []
 
-    def _extract_channels(self, json_objects: Dict, msg: str, offer_object: Dict) -> Tuple[List[Dict], Dict]:
+    def _extract_and_enrich_channels(self, json_objects: Dict, msg: str, offer_object: Dict) -> Tuple[List[Dict], Dict]:
         """채널 정보 추출 및 매칭 (offer_object도 함께 반환)"""
         try:
             channel_tag = []

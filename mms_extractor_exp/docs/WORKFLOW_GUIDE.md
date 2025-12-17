@@ -67,7 +67,7 @@ graph TD
 ```
 
 **출력**:
-- `state.msg`: 검증된 메시지 (str)
+- `state.msg`: 전처리된 메시지 (str)
 
 **에러 처리**:
 - 빈 메시지 → `state.is_fallback = True`
@@ -92,17 +92,17 @@ state.mms_msg = ""
 **목적**: Kiwi 형태소 분석기 또는 LLM을 사용한 엔티티 추출
 
 **입력**:
-- `state.msg`: 검증된 메시지
+- `state.msg`: 전처리된 메시지
 - `state.extractor.entity_recognizer`: EntityRecognizer 서비스
 
 **처리 로직**:
 ```python
 if entity_extraction_mode == 'logic':
     # Kiwi 형태소 분석기 사용
-    entities = recognizer.extract_entities_from_kiwi(msg)
+    entities = recognizer.extract_entities_with_kiwi(msg)
 elif entity_extraction_mode == 'llm':
     # LLM 기반 추출
-    entities = recognizer.extract_entities_by_llm(msg)
+    entities = recognizer.extract_entities_with_llm(msg)
 ```
 
 **출력**:
@@ -135,7 +135,7 @@ elif entity_extraction_mode == 'llm':
 **목적**: 메시지를 프로그램 카테고리로 분류
 
 **입력**:
-- `state.msg`: 검증된 메시지
+- `state.msg`: 전처리된 메시지
 - `state.extractor.program_classifier`: ProgramClassifier 서비스
 
 **처리 로직**:
@@ -170,17 +170,16 @@ elif entity_extraction_mode == 'llm':
 **목적**: RAG (Retrieval-Augmented Generation) 컨텍스트 준비
 
 **입력**:
-- `state.msg`: 검증된 메시지
+- `state.msg`: 전처리된 메시지
 - `state.entities_from_kiwi`: 추출된 엔티티
 - `state.pgm_info`: 프로그램 정보
 
 **처리 로직**:
 ```python
-if product_info_extraction_mode == 'rag':
-    # 상품 정보를 컨텍스트로 구성
-    context = extractor._prepare_rag_context(entities, msg)
-else:
-    context = ""
+# RAG 컨텍스트는 ContextPreparationStep에서 자동으로 구성됩니다
+# - 광고 분류 정보 (_build_ad_classification_rag_context)
+# - 제품 정보 (_build_product_rag_context)
+# - NLP 모드 제품 요소 (_build_nlp_product_element)
 ```
 
 **출력**:
@@ -206,7 +205,7 @@ else:
 **목적**: LLM을 사용한 정보 추출
 
 **입력**:
-- `state.msg`: 검증된 메시지
+- `state.msg`: 전처리된 메시지
 - `state.rag_context`: RAG 컨텍스트
 - `state.pgm_info`: 프로그램 정보
 
@@ -391,7 +390,7 @@ class WorkflowState:
     message_id: str = '#'           # 메시지 ID
     
     # === 중간 결과 (단계별 출력) ===
-    msg: str = ""                   # 검증된 메시지 (Step 1)
+    msg: str = ""                   # 전처리된 메시지 (Step 1)
     entities_from_kiwi: List = field(default_factory=list)  # 엔티티 (Step 2)
     pgm_info: Dict = field(default_factory=dict)  # 프로그램 정보 (Step 3)
     rag_context: str = ""           # RAG 컨텍스트 (Step 4)

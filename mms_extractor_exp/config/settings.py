@@ -208,7 +208,7 @@ llm = factory.create_model(MODEL_CONFIG.llm_model)
 from services.item_data_loader import ItemDataLoader
 
 loader = ItemDataLoader(data_source='local')
-item_df, alias_df = loader.prepare_item_data(
+item_df, alias_df = loader.load_and_prepare_items(
     offer_data_path=METADATA_CONFIG.offer_data_path,
     alias_rules_path=METADATA_CONFIG.alias_rules_path,
     excluded_domains=PROCESSING_CONFIG.excluded_domain_codes_for_items,

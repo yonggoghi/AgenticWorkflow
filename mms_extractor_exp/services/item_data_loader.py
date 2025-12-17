@@ -5,7 +5,7 @@ Item Data Loader Service
 📋 개요
 -------
 상품 데이터 로딩 및 전처리를 전담하는 서비스 클래스.
-기존 MMSExtractor의 `_load_and_prepare_item_data` 메서드(197줄)를 
+기존 MMSExtractor의 `_load_item_data` 메서드(197줄)를 
 모듈화하여 재사용성과 테스트 용이성을 향상시킵니다.
 
 🔗 의존성
@@ -27,9 +27,9 @@ graph LR
     B --> C[normalize_columns]
     C --> D[filter_by_domain]
     D --> E[load_alias_rules]
-    E --> F[expand_build_type_aliases]
-    F --> G[add_bidirectional_aliases]
-    G --> H[apply_alias_cascade]
+    E --> F[expand_build_aliases]
+    F --> G[create_bidirectional_aliases]
+    G --> H[apply_cascading_alias_rules]
     H --> I[add_user_defined_entities]
     I --> J[add_domain_name_column]
     J --> K[filter_test_items]
@@ -46,9 +46,9 @@ graph LR
 2. **normalize_columns**: 컬럼명 정규화 (item_nm, item_id 등)
 3. **filter_by_domain**: 도메인 코드로 필터링 (제외 도메인 적용)
 4. **load_alias_rules**: 별칭 규칙 CSV 로드
-5. **expand_build_type_aliases**: 'build' 타입 별칭 확장
-6. **add_bidirectional_aliases**: 양방향(B) 별칭 추가
-7. **apply_alias_cascade**: 별칭 규칙 연쇄 적용 (병렬 처리, 최대 3단계)
+5. **expand_build_aliases**: 'build' 타입 별칭 확장
+6. **create_bidirectional_aliases**: 양방향(B) 별칭 추가
+7. **apply_cascading_alias_rules**: 별칭 규칙 연쇄 적용 (병렬 처리, 최대 3단계)
 8. **add_user_defined_entities**: 사용자 정의 엔티티 추가
 9. **add_domain_name_column**: 도메인명 컬럼 추가
 10. **filter_test_items**: TEST 문자열 포함 항목 제거
@@ -56,8 +56,8 @@ graph LR
 🏗️ 주요 컴포넌트
 ----------------
 - **ItemDataLoader**: 상품 데이터 로딩 및 전처리 서비스
-  - `prepare_item_data()`: 전체 파이프라인 실행
-  - `apply_alias_cascade()`: 병렬 별칭 규칙 적용 (성능 최적화)
+  - `load_and_prepare_items()`: 전체 파이프라인 실행
+  - `apply_cascading_alias_rules()`: 병렬 별칭 규칙 적용 (성능 최적화)
 
 💡 사용 예시
 -----------
@@ -66,7 +66,7 @@ from services.item_data_loader import ItemDataLoader
 
 # 1. Local CSV 모드
 loader = ItemDataLoader(data_source='local')
-item_df, alias_df = loader.prepare_item_data(
+item_df, alias_df = loader.load_and_prepare_items(
     offer_data_path='./data/offer_info.csv',
     alias_rules_path='./data/alias_rules.csv',
     excluded_domains=['TEST', 'DEV'],
@@ -78,7 +78,7 @@ def my_db_loader():
     return pd.read_sql("SELECT * FROM offer_info", conn)
 
 loader = ItemDataLoader(data_source='db', db_loader=my_db_loader)
-item_df, alias_df = loader.prepare_item_data()
+item_df, alias_df = loader.load_and_prepare_items()
 
 # 3. 결과 확인
 print(f"로드된 상품 수: {len(item_df)}")
@@ -116,7 +116,7 @@ item_pdf_all:
 
 ⚙️ 성능 최적화
 -------------
-**병렬 처리 (apply_alias_cascade):**
+**병렬 처리 (apply_cascading_alias_rules):**
 - joblib.Parallel 사용
 - 기본 n_jobs: CPU 코어 수
 - 배치 단위 처리로 메모리 효율성 향상
@@ -274,9 +274,9 @@ class ItemDataLoader:
         
         return alias_pdf
     
-    def expand_build_type_aliases(self, alias_pdf: pd.DataFrame, item_df: pd.DataFrame) -> pd.DataFrame:
+    def expand_build_aliases(self, alias_pdf: pd.DataFrame, item_df: pd.DataFrame) -> pd.DataFrame:
         """
-        'build' 타입 별칭 확장
+        Type='build' 별칭 확장
         
         Args:
             alias_pdf: 별칭 규칙 데이터프레임
@@ -311,9 +311,9 @@ class ItemDataLoader:
         alias_pdf = alias_pdf.drop_duplicates()
         return alias_pdf
     
-    def add_bidirectional_aliases(self, alias_pdf: pd.DataFrame) -> pd.DataFrame:
+    def create_bidirectional_aliases(self, alias_pdf: pd.DataFrame) -> pd.DataFrame:
         """
-        양방향(B) 별칭 추가
+        방향성 'B'인 별칭에 대해 역방향 추가
         
         Args:
             alias_pdf: 별칭 규칙 데이터프레임
@@ -330,16 +330,15 @@ class ItemDataLoader:
         alias_pdf = pd.concat([alias_pdf, bidirectional])
         return alias_pdf
     
-    def apply_alias_cascade(self, item_df: pd.DataFrame, alias_pdf: pd.DataFrame, 
-                           max_depth: int = 3, n_jobs: int = None) -> pd.DataFrame:
+    def apply_cascading_alias_rules(self, item_df: pd.DataFrame, alias_pdf: pd.DataFrame, 
+                               max_depth: int = 3) -> pd.DataFrame:
         """
-        별칭 규칙 연쇄 적용 (병렬 처리)
+        별칭 규칙을 연쇄적으로 적용 (병렬 처리)
         
         Args:
             item_df: 상품 데이터프레임
             alias_pdf: 별칭 규칙 데이터프레임
             max_depth: 최대 연쇄 깊이
-            n_jobs: 병렬 작업 수
             
         Returns:
             pd.DataFrame: 별칭이 적용된 상품 데이터프레임
@@ -412,7 +411,7 @@ class ItemDataLoader:
             return pd.DataFrame(batch_results)
         
         # 별칭 적용
-        item_alias_pdf = parallel_alias_rule_cascade(item_df['item_nm'], max_depth=max_depth, n_jobs=n_jobs)
+        item_alias_pdf = parallel_alias_rule_cascade(item_df['item_nm'], max_depth=max_depth)
         
         # 별칭 병합 및 explode
         item_df = item_df.merge(item_alias_pdf, on='item_nm', how='left')
@@ -491,21 +490,21 @@ class ItemDataLoader:
         
         return item_df
     
-    def prepare_item_data(self, offer_data_path: str = None, 
-                         alias_rules_path: str = None,
-                         excluded_domains: List[str] = None,
-                         user_entities: List[str] = None) -> pd.DataFrame:
+    def load_and_prepare_items(self, offer_data_path: str = None, 
+                          alias_rules_path: str = None,
+                          output_path: str = None,
+                          data_source: str = 'local') -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
-        전체 파이프라인 실행: 데이터 로드부터 최종 전처리까지
+        상품 정보 로드 및 전처리 메인 파이프라인
         
         Args:
             offer_data_path: 상품 데이터 CSV 경로
             alias_rules_path: 별칭 규칙 CSV 경로
-            excluded_domains: 제외할 도메인 코드 리스트
-            user_entities: 사용자 정의 엔티티 리스트
+            output_path: (사용되지 않음)
+            data_source: (사용되지 않음)
             
         Returns:
-            pd.DataFrame: 최종 전처리된 상품 데이터
+            Tuple[pd.DataFrame, pd.DataFrame]: 최종 전처리된 상품 데이터와 별칭 규칙 데이터프레임
         """
         try:
             logger.info("=" * 50)
@@ -519,15 +518,18 @@ class ItemDataLoader:
             normalized_data = self.normalize_columns(raw_data)
             
             # 3. 도메인 필터링
-            filtered_data = self.filter_by_domain(normalized_data, excluded_domains)
+            filtered_data = self.filter_by_domain(normalized_data)
             
-            # 4. 별칭 규칙 로드 및 처리
+            # 4. 별칭 규칙 로드
             alias_pdf = self.load_alias_rules(alias_rules_path)
-            alias_pdf = self.expand_build_type_aliases(alias_pdf, filtered_data)
-            alias_pdf = self.add_bidirectional_aliases(alias_pdf)
+
+            # 4. build 타입 별칭 확장
+            logger.info("4️⃣ build 타입 별칭 확장")
+            alias_pdf = self.expand_build_aliases(alias_pdf, filtered_data)
+            alias_pdf = self.create_bidirectional_aliases(alias_pdf)
             
             # 5. 별칭 연쇄 적용
-            with_aliases = self.apply_alias_cascade(filtered_data, alias_pdf)
+            with_aliases = self.apply_cascading_alias_rules(filtered_data, alias_pdf)
             
             # 6. 사용자 정의 엔티티 추가
             with_user_entities = self.add_user_defined_entities(with_aliases, user_entities)
@@ -559,11 +561,11 @@ class ItemDataLoader:
             
             logger.info("=" * 50)
             
-            return final_data
+            return final_data, alias_pdf
             
         except Exception as e:
             logger.error(f"상품 정보 로드 및 준비 실패: {e}")
             import traceback
             logger.error(f"오류 상세: {traceback.format_exc()}")
             # 빈 DataFrame으로 fallback
-            return pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias'])
+            return pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias']), pd.DataFrame()

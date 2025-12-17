@@ -213,18 +213,18 @@ class MMSExtractorDataMixin:
             
             # 상품 정보 로드 및 준비
             logger.info("1️⃣ 상품 정보 로드 및 준비 중...")
-            self._load_and_prepare_item_data()
+            self._load_item_data()
             logger.info(f"상품 정보 최종 데이터 크기: {self.item_pdf_all.shape}")
             logger.info(f"상품 정보 컬럼들: {list(self.item_pdf_all.columns)}")
             
             # 정지어 로드
             logger.info("2️⃣ 정지어 로드 중...")
-            self._load_stop_words()
+            self._load_stopwords()
             logger.info(f"로드된 정지어 수: {len(self.stop_item_names)}개")
             
             # Kiwi에 상품명 등록
             logger.info("3️⃣ Kiwi에 상품명 등록 중...")
-            self._register_items_to_kiwi()
+            self._register_items_in_kiwi()
             
             # 프로그램 분류 정보 로드
             logger.info("4️⃣ 프로그램 분류 정보 로드 중...")
@@ -263,8 +263,13 @@ class MMSExtractorDataMixin:
             logger.error(f"오류 상세: {traceback.format_exc()}")
             raise
 
-    def _load_and_prepare_item_data(self):
-        """상품 정보 로드 및 준비"""
+    def _load_item_data(self):
+        """
+        상품 정보 로드 (ItemDataLoader로 위임)
+        
+        기존 197줄의 복잡한 로직을 ItemDataLoader 서비스로 분리하여
+        재사용성과 테스트 용이성을 향상시켰습니다.
+        """
         try:
             logger.info(f"=== 상품 정보 로드 및 준비 시작 (모드: {self.offer_info_data_src}) ===")
             
@@ -616,7 +621,7 @@ class MMSExtractorDataMixin:
             self.pgm_pdf = pd.DataFrame(columns=['pgm_nm', 'clue_tag', 'pgm_id'])
             raise
 
-    def _load_stop_words(self):
+    def _load_stopwords(self):
         """정지어 목록 로드"""
         try:
             self.stop_item_names = pd.read_csv(getattr(METADATA_CONFIG, 'stop_items_path', './data/stop_words.csv'))['stop_words'].to_list()
@@ -625,7 +630,7 @@ class MMSExtractorDataMixin:
             logger.warning(f"정지어 로드 실패: {e}")
             self.stop_item_names = []
 
-    def _register_items_to_kiwi(self):
+    def _register_items_in_kiwi(self):
         """Kiwi에 상품명들을 고유명사로 등록"""
         try:
             logger.info("=== Kiwi에 상품명 등록 시작 ===")

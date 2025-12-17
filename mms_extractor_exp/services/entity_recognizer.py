@@ -46,9 +46,9 @@ MMS Extractor - Entity Recognizer Service
 🏗️ 주요 컴포넌트
 ----------------
 - **EntityRecognizer**: 엔티티 추출 및 매칭 서비스 클래스
-  - `extract_entities_from_kiwi()`: Kiwi 기반 추출
-  - `extract_entities_by_logic()`: 로직 기반 추출
-  - `extract_entities_by_llm()`: LLM 기반 추출 (2단계)
+  - `extract_entities_with_kiwi()`: Kiwi 기반 추출
+  - `extract_entities_with_fuzzy_matching()`: 퍼지 매칭 기반 추출
+  - `extract_entities_with_llm()`: LLM 기반 추출 (2단계)
   - `map_products_with_similarity()`: 유사도 기반 상품 매핑
 
 💡 사용 예시
@@ -66,12 +66,12 @@ recognizer = EntityRecognizer(
 )
 
 # Kiwi 기반 추출
-entities, candidates, extra_df = recognizer.extract_entities_from_kiwi(
+entities, candidates, extra_df = recognizer.extract_entities_with_kiwi(
     "아이폰 17 구매 시 캐시백 제공"
 )
 
 # LLM 기반 추출 (DAG 컨텍스트 모드)
-similarity_df = recognizer.extract_entities_by_llm(
+similarity_df = recognizer.extract_entities_with_llm(
     msg_text="아이폰 17 구매 시 캐시백 제공",
     rank_limit=50,
     llm_models=[llm1, llm2],
@@ -244,8 +244,8 @@ class EntityRecognizer:
         ]
 
     @log_performance
-    def extract_entities_from_kiwi(self, mms_msg: str) -> Tuple[List[str], List[str], pd.DataFrame]:
-        """Extract entities using Kiwi morphological analyzer"""
+    def extract_entities_with_kiwi(self, mms_msg: str) -> Tuple[List[str], List[str], pd.DataFrame]:
+        """Kiwi 형태소 분석기를 사용한 엔티티 추출"""
         try:
             logger.info("=== Kiwi Entity Extraction Started ===")
             mms_msg = validate_text_input(mms_msg)
@@ -376,8 +376,8 @@ class EntityRecognizer:
             logger.error(f"Details: {traceback.format_exc()}")
             return [], [], pd.DataFrame()
 
-    def extract_entities_by_logic(self, cand_entities: List[str], threshold_for_fuzzy: float = 0.5) -> pd.DataFrame:
-        """Logic-based entity extraction (Fuzzy + Sequence)"""
+    def extract_entities_with_fuzzy_matching(self, cand_entities: List[str], threshold_for_fuzzy: float = 0.5) -> pd.DataFrame:
+        """퍼지 유사도 + 시퀀스 유사도 기반 엔티티 추출"""
         try:
             if not cand_entities:
                 return pd.DataFrame()
@@ -414,7 +414,7 @@ class EntityRecognizer:
                 item_col_nm='item_nm_alias',
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=30,
-                normalizaton_value='s1',
+                normalization_value='s1',
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s1'})
             
@@ -425,7 +425,7 @@ class EntityRecognizer:
                 item_col_nm='item_nm_alias',
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
                 batch_size=30,
-                normalizaton_value='s2',
+                normalization_value='s2',
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s2'})
             
@@ -511,7 +511,7 @@ class EntityRecognizer:
             return max(base_size // 2, 25)
 
     @log_performance
-    def extract_entities_by_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None, 
+    def extract_entities_with_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None, 
                                 external_cand_entities: List[str] = [], context_mode: str = 'dag') -> pd.DataFrame:
         """
         LLM-based entity extraction with multi-model support and configurable context mode.
@@ -729,7 +729,7 @@ class EntityRecognizer:
                 item_col_nm='item_nm_alias',
                 n_jobs=6,
                 batch_size=30,
-                normalizaton_value='s1'
+                normalization_value='s1'
             ).rename(columns={'sim': 'sim_s1'})
             
             sim_s2 = parallel_seq_similarity(
@@ -738,7 +738,7 @@ class EntityRecognizer:
                 item_col_nm='item_nm_alias',
                 n_jobs=6,
                 batch_size=30,
-                normalizaton_value='s2'
+                normalization_value='s2'
             ).rename(columns={'sim': 'sim_s2'})
             
             cand_entities_sim = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
@@ -780,10 +780,10 @@ class EntityRecognizer:
             logger.error(f"Entity-product matching failed: {e}")
             return pd.DataFrame()
 
-    def map_products_with_similarity(self, similarities_fuzzy: pd.DataFrame, json_objects: Dict = None) -> List[Dict]:
-        """Map products based on similarity results"""
+    def map_products_to_entities(self, similarities_fuzzy: pd.DataFrame, json_objects: Dict = None) -> List[Dict]:
+        """유사도 결과를 기반으로 상품을 엔티티에 매핑"""
         try:
-            logger.info("🔍 [map_products_with_similarity] Started")
+            logger.info("🔍 [map_products_to_entities] Started")
             logger.info(f"   - Input similarities_fuzzy shape: {similarities_fuzzy.shape}")
             
             # Filter high similarity items

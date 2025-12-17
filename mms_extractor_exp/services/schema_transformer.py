@@ -40,15 +40,15 @@ class ProductSchemaTransformer:
         """Initialize the transformer"""
         pass
     
-    def transform_to_item_centric(
+    def transform_to_item_schema(
         self,
-        products_df: pd.DataFrame
+        df: pd.DataFrame
     ) -> List[Dict[str, Any]]:
         """
-        Transform products from DataFrame to item_nm-centric JSON list
+        데이터프레임을 Item Centric 스키마로 변환
         
         Args:
-            products_df: DataFrame with columns: 
+            df: DataFrame with columns: 
                          item_nm, item_id, item_name_in_msg, expected_action (optional)
         
         Returns:
@@ -59,7 +59,7 @@ class ProductSchemaTransformer:
             ...     {"item_nm": "갤럭시S24", "item_id": "P1", "item_name_in_msg": "갤럭시"},
             ...     {"item_nm": "갤럭시S24", "item_id": "P2", "item_name_in_msg": "S24"}
             ... ])
-            >>> transformer.transform_to_item_centric(df)
+            >>> transformer.transform_to_item_schema(df)
             [
                 {
                     "item_nm": "갤럭시S24",
@@ -68,16 +68,16 @@ class ProductSchemaTransformer:
                 }
             ]
         """
-        if products_df.empty:
+        if df.empty:
             logger.debug("Empty products DataFrame, returning empty list")
             return []
         
-        logger.debug(f"Transforming {len(products_df)} product rows to item-centric schema")
+        logger.debug(f"Transforming {len(df)} product rows to item-centric schema")
         
         result = []
         
         # Group by item_nm
-        grouped = products_df.groupby('item_nm')
+        grouped = df.groupby('item_nm')
         
         for item_nm, group in grouped:
             item_dict = self._aggregate_group(item_nm, group)
@@ -126,32 +126,32 @@ class ProductSchemaTransformer:
         
         return item_dict
     
-    def transform_from_llm_output(
+    def transform_llm_products_to_schema(
         self,
-        llm_products: List[Dict[str, Any]],
+        product_list: List[Dict],
         matched_entities_df: pd.DataFrame
     ) -> List[Dict[str, Any]]:
         """
-        Transform LLM product output to final schema using matched entities
+        LLM 추출 결과(List[Dict])를 최종 스키마로 변환
         
         Args:
-            llm_products: List of products from LLM (item_name_in_msg-centric)
+            product_list: List of products from LLM (item_name_in_msg-centric)
             matched_entities_df: DataFrame with matched entity information
                                  Columns: item_nm, item_id, item_name_in_msg, similarity
         
         Returns:
             List of products in item_nm-centric schema
         """
-        if not llm_products or matched_entities_df.empty:
+        if not product_list or matched_entities_df.empty:
             logger.debug("No products or matched entities, returning empty list")
             return []
         
-        logger.debug(f"Transforming {len(llm_products)} LLM products with {len(matched_entities_df)} matched entities")
+        logger.debug(f"Transforming {len(product_list)} LLM products with {len(matched_entities_df)} matched entities")
         
         # Create a mapping DataFrame combining LLM output with matched entities
         transformation_rows = []
         
-        for llm_product in llm_products:
+        for llm_product in product_list:
             item_name_in_msg = llm_product.get('item_name_in_msg') or llm_product.get('name')
             expected_action = llm_product.get('expected_action') or llm_product.get('action')
             
@@ -183,4 +183,4 @@ class ProductSchemaTransformer:
         
         # Convert to DataFrame and transform
         transformation_df = pd.DataFrame(transformation_rows)
-        return self.transform_to_item_centric(transformation_df)
+        return self.transform_to_item_schema(transformation_df)

@@ -143,7 +143,7 @@ response = llm.invoke(prompt)
 second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
 
 # 5. 2단계 실행
-prompt = f"""
+prompt = f"
 {second_stage_prompt}
 
 ## message:
@@ -157,7 +157,7 @@ prompt = f"""
 
 ## candidate entities in vocabulary:
 {candidates_from_db}
-"""
+"
 final_response = llm.invoke(prompt)
 ```
 
