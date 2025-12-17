@@ -183,12 +183,32 @@ class ItemDataLoader:
                 raise ValueError("DB 모드에서는 db_loader가 필요합니다")
             logger.info("데이터베이스에서 로드 중...")
             item_pdf_raw = self.db_loader()
-        else:
-            if not offer_data_path:
+        elif self.data_source == 'local':
+            if offer_data_path is None:
                 from config.settings import METADATA_CONFIG
                 offer_data_path = getattr(METADATA_CONFIG, 'offer_data_path', './data/offer_master_data.csv')
-            logger.info(f"CSV 파일에서 로드 중: {offer_data_path}")
-            item_pdf_raw = pd.read_csv(offer_data_path, encoding='cp949')
+            
+            logger.info(f"로컬 CSV 파일에서 상품 데이터 로드: {offer_data_path}")
+            
+            # Try multiple encodings to handle various file formats
+            encodings = ['utf-8', 'cp949', 'euc-kr', 'utf-8-sig']
+            item_pdf_raw = None
+            
+            for encoding in encodings:
+                try:
+                    item_pdf_raw = pd.read_csv(offer_data_path, encoding=encoding)
+                    logger.info(f"CSV 파일 로드 성공 (encoding: {encoding})")
+                    break
+                except UnicodeDecodeError:
+                    logger.debug(f"인코딩 {encoding} 실패, 다음 인코딩 시도...")
+                    continue
+                except Exception as e:
+                    logger.error(f"CSV 파일 로드 실패 (encoding: {encoding}): {e}")
+                    continue
+            
+            if item_pdf_raw is None:
+                logger.error(f"모든 인코딩 시도 실패. 파일: {offer_data_path}")
+                return pd.DataFrame()
         
         logger.info(f"원시 데이터 로드 완료: {item_pdf_raw.shape}")
         return item_pdf_raw
@@ -357,6 +377,10 @@ class ItemDataLoader:
             item_nm = args_dict['item_nm']
             max_depth = args_dict['max_depth']
             
+            # Skip NaN values and ensure item_nm is a string
+            if pd.isna(item_nm) or not isinstance(item_nm, str):
+                return {'item_nm': item_nm, 'item_nm_alias': [item_nm]} # Return original if invalid
+            
             processed = set()
             result_dict = {item_nm: '#' * len(item_nm)}
             to_process = [(item_nm, 0, frozenset())]
@@ -402,11 +426,23 @@ class ItemDataLoader:
         def parallel_alias_rule_cascade(texts, max_depth=5, n_jobs=None):
             """병렬 별칭 규칙 적용"""
             if n_jobs is None:
-                n_jobs = min(os.cpu_count()-1, 4)
+                n_jobs = min(os.cpu_count() - 1, 8)
             
-            batches = [{"item_nm": text, "max_depth": max_depth} for text in texts]
-            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                batch_results = parallel(delayed(apply_alias_rule_cascade_parallel)(args) for args in batches)
+            # Filter out NaN values before processing
+            valid_texts = [t for t in texts if pd.notna(t) and isinstance(t, str)]
+            
+            if not valid_texts:
+                logger.warning("유효한 텍스트가 없습니다. 빈 결과 반환.")
+                return pd.DataFrame()
+            
+            batches = []
+            batch_size = max(1, len(valid_texts) // (n_jobs * 2))
+            for i in range(0, len(valid_texts), batch_size):
+                batch = valid_texts[i:i + batch_size]
+                batches.append([{'item_nm': text, 'max_depth': max_depth} for text in batch])
+            
+            with Parallel(n_jobs=n_jobs) as parallel:
+                batch_results = parallel(delayed(apply_alias_rule_cascade_parallel)(args) for batch in batches for args in batch)
             
             return pd.DataFrame(batch_results)
         
@@ -532,7 +568,7 @@ class ItemDataLoader:
             with_aliases = self.apply_cascading_alias_rules(filtered_data, alias_pdf)
             
             # 6. 사용자 정의 엔티티 추가
-            with_user_entities = self.add_user_defined_entities(with_aliases, user_entities)
+            with_user_entities = self.add_user_defined_entities(with_aliases, None)
             
             # 7. 도메인명 컬럼 추가
             with_domain_names = self.add_domain_name_column(with_user_entities)
