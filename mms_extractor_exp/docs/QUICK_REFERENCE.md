@@ -196,7 +196,7 @@ config/settings.py
 
 # 2. 추출 로직 개선
 services/entity_recognizer.py
-    → extract_entities_with_kiwi()  # Kiwi 기반
+    → extract_entities_hybrid()  # 하이브리드 (Kiwi + Fuzzy + Sequence)
     → extract_entities_with_llm()     # LLM 기반
     → match_entities()              # 매칭 로직
 

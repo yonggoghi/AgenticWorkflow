@@ -50,6 +50,20 @@ def update_execution_flow_doc():
     # Line numbers mapping (start line only)
     line_numbers = {
         'apps/cli.py': {'main()': 'L52'},
+        'apps/batch.py': {
+            'main()': 'L680',
+            'BatchProcessor.__init__()': 'L100',
+            'BatchProcessor.run_batch()': 'L582',
+            'BatchProcessor.load_mms_data()': 'L136',
+            'BatchProcessor.initialize_extractor()': 'L120',
+            'BatchProcessor.sample_unprocessed_messages()': 'L197',
+            'BatchProcessor.get_processed_msg_ids()': 'L173',
+            'BatchProcessor.process_messages()': 'L227',
+            'BatchProcessor._process_messages_parallel()': 'L272',
+            'BatchProcessor._process_messages_sequential()': 'L388',
+            'BatchProcessor.save_results()': 'L494',
+            'BatchProcessor.log_processing_summary()': 'L569',
+        },
         'core/mms_extractor.py': {
             'MMSExtractor.__init__()': 'L347',
             '_set_default_config()': 'L472',
@@ -65,6 +79,7 @@ def update_execution_flow_doc():
             '_load_organization_data()': 'L786',
             'process_message_with_dag()': 'L1170',
             'MMSExtractor.process_message()': 'L1000',
+            'process_messages_batch()': 'L1280',
         },
         'services/item_data_loader.py': {
             'ItemDataLoader.load_and_prepare_items()': 'L529',
@@ -79,16 +94,19 @@ def update_execution_flow_doc():
             'add_domain_name_column()': 'L486',
             'filter_test_items()': 'L511',
         },
+        'services/entity_recognizer.py': {
+            'EntityRecognizer.extract_entities_hybrid()': 'L247',
+        },
         'core/mms_workflow_steps.py': {
             'InputValidationStep.execute()': 'L206',
             'EntityExtractionStep.execute()': 'L266',
             'ProgramClassificationStep.execute()': 'L347',
-            'ContextPreparationStep.execute()': 'L362',
-            'LLMExtractionStep.execute()': 'L447',
-            'ResponseParsingStep.execute()': 'L545',
+            'ContextPreparationStep.execute()': 'L382',
+            'LLMExtractionStep.execute()': 'L488',
+            'ResponseParsingStep.execute()': 'L538',
             'ResultConstructionStep.execute()': 'L608',
-            'ValidationStep.execute()': 'L680',
-            'DAGExtractionStep.execute()': 'L715',
+            'ValidationStep.execute()': 'L651',
+            'DAGExtractionStep.execute()': 'L726',
         },
         'apps/api.py': {
             'initialize_global_extractor()': 'L286',

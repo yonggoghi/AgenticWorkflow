@@ -46,7 +46,7 @@ MMS Extractor - Entity Recognizer Service
 🏗️ 주요 컴포넌트
 ----------------
 - **EntityRecognizer**: 엔티티 추출 및 매칭 서비스 클래스
-  - `extract_entities_with_kiwi()`: Kiwi 기반 추출
+  - `extract_entities_hybrid()`: 하이브리드 추출 (Kiwi + Fuzzy + Sequence)
   - `extract_entities_with_fuzzy_matching()`: 퍼지 매칭 기반 추출
   - `extract_entities_with_llm()`: LLM 기반 추출 (2단계)
   - `map_products_with_similarity()`: 유사도 기반 상품 매핑
@@ -66,7 +66,7 @@ recognizer = EntityRecognizer(
 )
 
 # Kiwi 기반 추출
-entities, candidates, extra_df = recognizer.extract_entities_with_kiwi(
+entities, candidates, extra_df = recognizer.extract_entities_hybrid(
     "아이폰 17 구매 시 캐시백 제공"
 )
 
@@ -244,8 +244,8 @@ class EntityRecognizer:
         ]
 
     @log_performance
-    def extract_entities_with_kiwi(self, mms_msg: str) -> Tuple[List[str], List[str], pd.DataFrame]:
-        """Kiwi 형태소 분석기를 사용한 엔티티 추출"""
+    def extract_entities_hybrid(self, mms_msg: str) -> Tuple[List[str], List[str], pd.DataFrame]:
+        """하이브리드 엔티티 추출 (Kiwi 형태소 분석 + Fuzzy Matching + Sequence Similarity)"""
         try:
             logger.info("=== Kiwi Entity Extraction Started ===")
             mms_msg = validate_text_input(mms_msg)

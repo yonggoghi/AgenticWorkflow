@@ -446,7 +446,7 @@ class BatchProcessor:
                         'offer_data_source': getattr(self.extractor, 'offer_info_data_src', 'unknown'),
                         'product_info_extraction_mode': getattr(self.extractor, 'product_info_extraction_mode', 'unknown'),
                         'entity_matching_mode': getattr(self.extractor, 'entity_extraction_mode', 'unknown'),
-                        'extract_entity_dag': getattr(self.extractor, 'extract_entity_dag', False),
+                        'extract_entity_dag': getattr(self.extractor, 'extract_entity_dag', True),
                         'user_id': 'BATCH_USER',
                         'processing_mode': 'batch'
                     }

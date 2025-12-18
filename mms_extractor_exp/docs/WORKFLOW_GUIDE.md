@@ -99,7 +99,7 @@ state.mms_msg = ""
 ```python
 if entity_extraction_mode == 'logic':
     # Kiwi 형태소 분석기 사용
-    entities = recognizer.extract_entities_with_kiwi(msg)
+    entities = recognizer.extract_entities_hybrid(msg)
 elif entity_extraction_mode == 'llm':
     # LLM 기반 추출
     entities = recognizer.extract_entities_with_llm(msg)

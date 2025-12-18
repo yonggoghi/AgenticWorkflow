@@ -7,7 +7,8 @@
 ## 목차
 1. [CLI 실행 흐름](#cli-실행-흐름)
 2. [API 실행 흐름](#api-실행-흐름)
-3. [공통 실행 흐름](#공통-실행-흐름)
+3. [Batch 실행 흐름](#batch-실행-흐름)
+4. [공통 실행 흐름](#공통-실행-흐름)
 
 ---
 
@@ -176,7 +177,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   - `extractor.process_message()` 호출
   - DAG 추출 (필요 시)
 
-#### 3.1.1 [`MMSExtractor.process_message()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L1000)
+#### 3.1.1 [`MMSExtractor.process_message()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L968)
 - **입력**: `message`, `message_id`
 - **출력**: `result` - 처리 결과 딕셔너리
 - **주요 작업**: 워크플로우 엔진을 통한 9단계 처리 실행
@@ -208,11 +209,11 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   - 임베딩 기반 유사도 매칭
   - 후보 상품 목록 생성
 
-#### 2.1 [`EntityRecognizer.extract_entities()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/entity_recognizer.py)
+#### 2.1 [`EntityRecognizer.extract_entities_hybrid()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/entity_recognizer.py#L247)
 - **파일**: [services/entity_recognizer.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/entity_recognizer.py)
-- **입력**: `msg`
-- **출력**: `(entities_from_kiwi, cand_item_list, extra_item_pdf)`
-- **주요 작업**: Kiwi + 임베딩 기반 엔티티 추출
+- **입력**: `mms_msg` (str)
+- **출력**: `(entities_from_kiwi, cand_item_list, extra_item_pdf)` - Tuple[List[str], List[str], pd.DataFrame]
+- **주요 작업**: 하이브리드 엔티티 추출 (Kiwi 형태소 분석 + Fuzzy Matching + Sequence Similarity)
 
 ### Step 3: [`ProgramClassificationStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L347)
 - **입력**: `state`
@@ -225,7 +226,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 - **출력**: `pgm_info` - 프로그램 분류 정보 딕셔너리
 - **주요 작업**: 임베딩 기반 프로그램 유사도 계산 및 상위 N개 선택
 
-### Step 4: [`ContextPreparationStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L362)
+### Step 4: [`ContextPreparationStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L382)
 - **입력**: `state`
 - **출력**: 없음 (state에 `rag_context`, `product_element` 추가)
 - **주요 작업**:
@@ -233,7 +234,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   - 제품 정보 요소 생성
   - 프롬프트 구성 요소 준비
 
-### Step 5: [`LLMExtractionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L447)
+### Step 5: [`LLMExtractionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L488)
 - **입력**: `state`
 - **출력**: 없음 (state에 `llm_response` 추가)
 - **주요 작업**:
@@ -247,7 +248,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 - **출력**: `prompt` - 구성된 프롬프트 문자열
 - **주요 작업**: LLM 추출용 프롬프트 생성
 
-### Step 6: [`ResponseParsingStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L545)
+### Step 6: [`ResponseParsingStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L538)
 - **입력**: `state`
 - **출력**: 없음 (state에 `parsed_response` 추가)
 - **주요 작업**:
@@ -280,7 +281,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   - 프로그램 매핑
   - Offer 객체 생성
 
-### Step 8: [`ValidationStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L680)
+### Step 8: [`ValidationStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L651)
 - **입력**: `state`
 - **출력**: 없음 (state 검증)
 - **주요 작업**:
@@ -293,7 +294,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 - **출력**: `is_valid` - 검증 결과 (bool)
 - **주요 작업**: 결과 스키마 및 데이터 유효성 검증
 
-### Step 9: [`DAGExtractionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L715)
+### Step 9: [`DAGExtractionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L726)
 - **입력**: `state`
 - **출력**: 없음 (state의 `final_result`에 `entity_dag` 추가)
 - **주요 작업**:
@@ -545,6 +546,299 @@ REST API를 통한 메시지 처리 시 호출되는 모든 클래스와 함수�
 | **배치 처리** | `--batch-file` 옵션 | `POST /extract/batch` 엔드포인트 |
 | **성능** | 초기화 오버헤드 있음 | 전역 추출기 재사용으로 빠름 |
 | **메시지 처리** | **동일** ([3단계](#3단계-메시지-처리) 이후) | **동일** ([3단계](#3단계-메시지-처리) 이후) |
+
+---
+
+# Batch 실행 흐름
+
+## 명령어
+```bash
+python apps/batch.py --offer-data-source local --batch-size 3
+```
+
+## Batch 실행 흐름 개요
+
+배치 처리 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로 정리합니다. 배치 처리는 여러 메시지를 병렬 또는 순차적으로 처리하며, MongoDB 저장 및 CSV 결과 저장을 지원합니다.
+
+---
+
+## Batch 1단계: 배치 진입점
+
+### Batch 1.1 [`main()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L680)
+- **파일**: [apps/batch.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py)
+- **입력**: 없음 (커맨드라인 인자 파싱)
+- **출력**: `summary` - 배치 처리 결과 요약 딕셔너리
+- **주요 작업**:
+  - 커맨드라인 인자 파싱 (`argparse`)
+  - 로그 레벨 설정
+  - MongoDB 연결 테스트 (옵션)
+  - `BatchProcessor` 인스턴스 생성
+  - 배치 처리 실행
+
+---
+
+## Batch 2단계: BatchProcessor 초기화
+
+### Batch 2.1 [`BatchProcessor.__init__()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L100)
+- **파일**: [apps/batch.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py)
+- **입력**:
+  - `result_file_path` = './results/batch_results.csv'
+  - `max_workers` = CPU 코어 수 (기본값)
+  - `enable_multiprocessing` = True (기본값)
+  - `save_to_mongodb` = True (기본값)
+  - `save_results_enabled` = False (기본값)
+- **출력**: `BatchProcessor` 인스턴스
+- **주요 작업**:
+  - 배치 처리 설정 초기화
+  - 워커 수 설정
+  - 병렬/순차 처리 모드 설정
+
+---
+
+## Batch 3단계: 배치 처리 실행
+
+### Batch 3.1 [`BatchProcessor.run_batch()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L582)
+- **입력**: `batch_size`, `**extractor_kwargs`
+- **출력**: `summary` - 처리 결과 요약 딕셔너리
+- **주요 작업**:
+  - MMS 데이터 로드
+  - MMSExtractor 초기화
+  - 미처리 메시지 샘플링
+  - 메시지 처리 (병렬 또는 순차)
+  - 결과 저장 (옵션)
+  - 성능 메트릭 계산
+
+#### Batch 3.1.1 [`BatchProcessor.load_mms_data()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L136)
+- **입력**: 없음
+- **출력**: 없음 (`self.mms_pdf` 설정)
+- **주요 작업**:
+  - CSV 파일에서 MMS 메시지 로드
+  - 컬럼명 정규화 (`mms_phrs` → `msg`)
+  - 빈 메시지 필터링
+  - `msg_id` 컬럼 추가
+
+#### Batch 3.1.2 [`BatchProcessor.initialize_extractor()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L120)
+- **입력**: `**extractor_kwargs`
+- **출력**: 없음 (`self.extractor` 설정)
+- **주요 작업**:
+  - `MMSExtractor` 인스턴스 생성
+  - **이 단계에서 [2단계: MMSExtractor 초기화](#2단계-mmsextractor-초기화)의 모든 하위 단계가 실행됨**
+  - DAG 추출 모드 설정
+
+#### Batch 3.1.3 [`BatchProcessor.sample_unprocessed_messages()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L197)
+- **입력**: `batch_size`
+- **출력**: `sampled_messages` - 샘플링된 메시지 DataFrame
+- **주요 작업**:
+  - 이전 처리 결과 파일에서 처리된 메시지 ID 로드
+  - 미처리 메시지 필터링
+  - 랜덤 샘플링
+
+##### Batch 3.1.3.1 [`BatchProcessor.get_processed_msg_ids()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L173)
+- **입력**: 없음
+- **출력**: `processed_ids` - 처리된 메시지 ID 집합
+- **주요 작업**: 결과 CSV 파일에서 처리된 메시지 ID 추출
+
+---
+
+## Batch 4단계: 메시지 처리 (병렬 또는 순차)
+
+### Batch 4.1 [`BatchProcessor.process_messages()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L227)
+- **입력**: `sampled_messages`
+- **출력**: `results` - 처리 결과 리스트
+- **주요 작업**:
+  - 메시지 리스트 변환
+  - 병렬/순차 처리 모드 선택
+  - 처리 실행
+
+### Batch 4.2 병렬 처리 모드
+
+#### Batch 4.2.1 [`BatchProcessor._process_messages_parallel()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L272)
+- **입력**: `messages_list`, `processing_time`
+- **출력**: `results` - 처리 결과 리스트
+- **주요 작업**:
+  - `process_messages_batch()` 함수 호출
+  - 병렬 처리 실행 (ThreadPoolExecutor)
+  - MongoDB 저장 (옵션)
+  - DAG 추출 결과 검증
+
+##### Batch 4.2.1.1 [`process_messages_batch()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L1280)
+- **파일**: [core/mms_extractor.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py)
+- **입력**: `extractor`, `messages_list`, `extract_dag`, `max_workers`
+- **출력**: `results` - 배치 처리 결과 리스트
+- **주요 작업**:
+  - ThreadPoolExecutor를 사용한 병렬 처리
+  - 각 메시지마다 `process_message_with_dag()` 호출
+  - 에러 처리 및 결과 수집
+
+### Batch 4.3 순차 처리 모드
+
+#### Batch 4.3.1 [`BatchProcessor._process_messages_sequential()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L388)
+- **입력**: `messages_list`, `processing_time`
+- **출력**: `results` - 처리 결과 리스트
+- **주요 작업**:
+  - 메시지를 하나씩 순차 처리
+  - DAG 추출 시 `process_message_with_dag()` 호출
+  - 일반 처리 시 `extractor.process_message()` 호출
+  - MongoDB 저장 (옵션)
+  - 에러 처리
+
+> **💡 중요**: 병렬/순차 처리 모두 각 메시지 처리 시 [3단계: 메시지 처리](#3단계-메시지-처리) 및 [4단계: 워크플로우 단계별 실행](#4단계-워크플로우-단계별-실행)과 **완전히 동일한 흐름**을 따릅니다.
+
+---
+
+## Batch 5단계: 결과 저장 및 요약
+
+### Batch 5.1 [`BatchProcessor.save_results()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L494)
+- **입력**: `results`
+- **출력**: `result_file_path` - 저장된 결과 파일 경로
+- **주요 작업**:
+  - 결과를 DataFrame으로 변환
+  - 기존 결과 파일에 추가 (append) 또는 새 파일 생성
+  - CSV 파일로 저장
+
+### Batch 5.2 [`BatchProcessor.log_processing_summary()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L569)
+- **입력**: `processed_msg_ids`
+- **출력**: 없음
+- **주요 작업**:
+  - 처리 성공/실패 통계 로깅
+  - 처리된 메시지 ID 로깅
+
+### Batch 5.3 성능 메트릭 계산
+- **메트릭**:
+  - 총 처리 시간
+  - 메시지당 평균 처리 시간
+  - 처리량 (메시지/초)
+  - 성공률 (%)
+
+---
+
+## Batch 배치 처리 흐름도
+
+```mermaid
+graph TB
+    A[Batch 시작] --> B[BatchProcessor 초기화]
+    B --> C[MMS 데이터 로드]
+    C --> D[MMSExtractor 초기화]
+    D --> E[미처리 메시지 샘플링]
+    E --> F{병렬 처리 모드?}
+    
+    F -->|Yes| G[병렬 처리]
+    F -->|No| H[순차 처리]
+    
+    G --> G1[process_messages_batch 호출]
+    G1 --> G2[ThreadPoolExecutor 생성]
+    G2 --> G3[각 메시지마다 process_message_with_dag 병렬 호출]
+    G3 --> I[결과 수집]
+    
+    H --> H1[메시지 루프]
+    H1 --> H2{DAG 추출?}
+    H2 -->|Yes| H3[process_message_with_dag 호출]
+    H2 -->|No| H4[process_message 호출]
+    H3 --> I
+    H4 --> I
+    
+    I --> J{MongoDB 저장?}
+    J -->|Yes| K[save_result_to_mongodb_if_enabled]
+    J -->|No| L
+    K --> L{CSV 저장?}
+    L -->|Yes| M[save_results]
+    L -->|No| N[성능 메트릭 계산]
+    M --> N
+    N --> O[배치 요약 출력]
+    
+    style A fill:#e1f5ff
+    style B fill:#ffe1e1
+    style F fill:#fff4e1
+    style G fill:#e1ffe1
+    style H fill:#e1ffe1
+    style O fill:#ffe1ff
+```
+
+---
+
+## Batch 처리 모드 비교
+
+| 항목 | 병렬 처리 | 순차 처리 |
+|------|----------|----------|
+| **활성화 조건** | `--disable-multiprocessing` 없음 | `--disable-multiprocessing` 플래그 |
+| **워커 수** | `--max-workers` 또는 CPU 코어 수 | 1 (단일 스레드) |
+| **처리 함수** | `process_messages_batch()` | 메시지별 개별 호출 |
+| **실행 방식** | ThreadPoolExecutor | for 루프 |
+| **성능** | 빠름 (병렬 실행) | 느림 (순차 실행) |
+| **에러 처리** | 개별 메시지 에러 격리 | 즉시 에러 처리 |
+| **적합한 경우** | 대량 메시지 처리 | 디버깅, 소량 메시지 |
+
+---
+
+## Batch 주요 설정 옵션
+
+### 배치 처리 옵션
+- `--batch-size`: 처리할 메시지 수 (기본값: 10)
+- `--output-file`: 결과 CSV 파일 경로 (기본값: ./results/batch_results.csv)
+- `--save-results`: CSV 파일 저장 활성화 (기본값: False)
+
+### 병렬 처리 옵션
+- `--max-workers`: 최대 워커 수 (기본값: CPU 코어 수)
+- `--disable-multiprocessing`: 병렬 처리 비활성화
+
+### MMSExtractor 옵션
+- `--offer-data-source`: 데이터 소스 (local/db, 기본값: db)
+- `--product-info-extraction-mode`: 제품 정보 추출 모드 (기본값: llm)
+- `--entity-extraction-mode`: 엔티티 추출 모드 (기본값: llm)
+- `--llm-model`: 메인 LLM 모델 (기본값: ax)
+- `--entity-llm-model`: 엔티티 추출 LLM 모델 (기본값: ax)
+- `--extract-entity-dag`: DAG 추출 활성화 (기본값: False)
+- `--entity-extraction-context-mode`: 엔티티 컨텍스트 모드 (기본값: dag)
+
+### 저장 옵션
+- `--save-to-mongodb`: MongoDB 저장 활성화 (기본값: True)
+- `--log-level`: 로그 레벨 (DEBUG/INFO/WARNING/ERROR, 기본값: INFO)
+
+---
+
+## Batch 결과 구조
+
+배치 처리 결과는 다음 구조를 가집니다:
+
+```python
+{
+    'status': 'completed',
+    'processed_count': int,           # 총 처리 메시지 수
+    'successful_count': int,          # 성공한 메시지 수
+    'failed_count': int,              # 실패한 메시지 수
+    'results_file': str,              # 결과 파일 경로
+    'processing_mode': str,           # '병렬 처리' 또는 '순차 처리'
+    'max_workers': int,               # 사용된 워커 수
+    'dag_extraction': bool,           # DAG 추출 여부
+    'total_time_seconds': float,      # 총 처리 시간
+    'processing_time_seconds': float, # 메시지 처리 시간
+    'avg_time_per_message': float,    # 메시지당 평균 시간
+    'throughput_messages_per_second': float,  # 처리량
+    'success_rate': float             # 성공률 (%)
+}
+```
+
+### CSV 결과 파일 구조
+
+```csv
+message_id,message,extraction_result,processed_at,title,purpose,product_count,channel_count,pgm
+msg_001,"(광고)[SKT] ...","{...}","2025-12-18 14:00:00","T day 혜택","[\"프로모션\"]",3,2,"[...]"
+```
+
+---
+
+## Batch vs CLI vs API 비교
+
+| 항목 | Batch | CLI | API |
+|------|-------|-----|-----|
+| **진입점** | [`main()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/batch.py#L680) | [`main()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/cli.py#L52) | [`extract_message()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/api.py#L472) |
+| **처리 방식** | 다중 메시지 (병렬/순차) | 단일 메시지 | 단일 메시지 (요청당) |
+| **추출기 초기화** | 배치 실행마다 1회 | 매 실행마다 | 서버 시작 시 1회 |
+| **병렬 처리** | 지원 (ThreadPoolExecutor) | 미지원 | 미지원 (요청별 처리) |
+| **결과 저장** | CSV + MongoDB (옵션) | 콘솔 출력 | JSON 응답 + MongoDB (옵션) |
+| **성능 메트릭** | 상세 (처리량, 평균 시간 등) | 없음 | 처리 시간만 |
+| **적합한 용도** | 대량 메시지 일괄 처리 | 개별 메시지 테스트 | 실시간 서비스 |
+| **메시지 처리** | **동일** ([3단계](#3단계-메시지-처리) 이후) | **동일** ([3단계](#3단계-메시지-처리) 이후) | **동일** ([3단계](#3단계-메시지-처리) 이후) |
 
 ---
 

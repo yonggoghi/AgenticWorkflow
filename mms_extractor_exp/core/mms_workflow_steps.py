@@ -275,7 +275,7 @@ class EntityExtractionStep(WorkflowStep):
             self._diagnose_db_mode(extractor)
         
         # 엔티티 추출
-        entities_from_kiwi, cand_item_list, extra_item_pdf = self.entity_recognizer.extract_entities_with_kiwi(msg)
+        entities_from_kiwi, cand_item_list, extra_item_pdf = self.entity_recognizer.extract_entities_hybrid(msg)
         
         self._log_extraction_results(entities_from_kiwi, cand_item_list, extra_item_pdf)
         
