@@ -1017,6 +1017,7 @@ def display_single_processing_ui(api_status: bool, args):
         data_source = st.selectbox(
             "데이터 소스",
             ["local", "db"],
+            index=1,  # default: 'db' (cli.py와 동일)
             format_func=lambda x: "Local (CSV)" if x == "local" else "Database"
         )
         
@@ -1024,6 +1025,7 @@ def display_single_processing_ui(api_status: bool, args):
         product_mode = st.selectbox(
             "상품 추출 모드",
             ["nlp", "llm", "rag"],
+            index=1,  # default: 'llm' (cli.py와 동일)
             format_func=lambda x: {
                 "nlp": "NLP (형태소 분석)",
                 "llm": "LLM 기반",
@@ -1035,6 +1037,7 @@ def display_single_processing_ui(api_status: bool, args):
         entity_mode = st.selectbox(
             "개체명 추출 모드", 
             ["logic", "llm"],
+            index=1,  # default: 'llm' (cli.py와 동일)
             format_func=lambda x: "통합 LLM 기반" if x == "logic" else "분리 LLM 기반"
         )
         
@@ -1167,6 +1170,7 @@ def display_batch_processing_ui(api_status: bool, args):
         batch_data_source = st.selectbox(
             "데이터 소스 (배치)",
             ["local", "db"],
+            index=1,  # default: 'db' (cli.py와 동일)
             format_func=lambda x: "Local (CSV)" if x == "local" else "Database",
             key="batch_data_source"
         )
@@ -1175,6 +1179,7 @@ def display_batch_processing_ui(api_status: bool, args):
         batch_product_mode = st.selectbox(
             "상품 추출 모드 (배치)",
             ["nlp", "llm", "rag"],
+            index=1,  # default: 'llm' (cli.py와 동일)
             format_func=lambda x: {
                 "nlp": "NLP (형태소 분석)",
                 "llm": "LLM 기반",
@@ -1187,6 +1192,7 @@ def display_batch_processing_ui(api_status: bool, args):
         batch_entity_mode = st.selectbox(
             "엔티티 매칭 모드 (배치)",
             ["logic", "llm"],
+            index=1,  # default: 'llm' (cli.py와 동일)
             format_func=lambda x: "통합 LLM 기반" if x == "logic" else "분리 LLM 기반",
             key="batch_entity_mode"
         )
