@@ -168,7 +168,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 
 ## 3단계: 메시지 처리
 
-### 3.1 [`process_message_with_dag()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L1170)
+### 3.1 [`process_message_worker()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L1170)
 - **파일**: [core/mms_extractor.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py)
 - **입력**: `extractor`, `message`, `extract_dag`, `message_id`
 - **출력**: `result` - 처리 결과 딕셔너리
@@ -356,7 +356,7 @@ graph TB
     B --> C[데이터 로드]
     C --> D[서비스 초기화]
     D --> E[워크플로우 엔진 초기화]
-    E --> F[process_message_with_dag 호출]
+    E --> F[process_message_worker 호출]
     F --> G[WorkflowEngine.execute]
     
     G --> H1[Step 1: 입력 검증]
@@ -473,7 +473,7 @@ REST API를 통한 메시지 처리 시 호출되는 모든 클래스와 함수�
 ### API 3.1 메시지 처리 호출
 - **파일**: [apps/api.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/apps/api.py)
 - **주요 작업**:
-  - `extract_entity_dag=True`인 경우: [`process_message_with_dag()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L1170) 호출
+  - `extract_entity_dag=True`인 경우: [`process_message_worker()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L1170) 호출
   - `extract_entity_dag=False`인 경우: [`extractor.process_message()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py) 호출
 
 > **💡 중요**: 이 시점부터 [3단계: 메시지 처리](#3단계-메시지-처리) 및 [4단계: 워크플로우 단계별 실행](#4단계-워크플로우-단계별-실행)과 **완전히 동일한 흐름**을 따릅니다.
@@ -667,7 +667,7 @@ python apps/batch.py --offer-data-source local --batch-size 3
 - **출력**: `results` - 배치 처리 결과 리스트
 - **주요 작업**:
   - ThreadPoolExecutor를 사용한 병렬 처리
-  - 각 메시지마다 `process_message_with_dag()` 호출
+  - 각 메시지마다 `process_message_worker()` 호출
   - 에러 처리 및 결과 수집
 
 ### Batch 4.3 순차 처리 모드
@@ -677,7 +677,7 @@ python apps/batch.py --offer-data-source local --batch-size 3
 - **출력**: `results` - 처리 결과 리스트
 - **주요 작업**:
   - 메시지를 하나씩 순차 처리
-  - DAG 추출 시 `process_message_with_dag()` 호출
+  - DAG 추출 시 `process_message_worker()` 호출
   - 일반 처리 시 `extractor.process_message()` 호출
   - MongoDB 저장 (옵션)
   - 에러 처리
@@ -727,12 +727,12 @@ graph TB
     
     G --> G1[process_messages_batch 호출]
     G1 --> G2[ThreadPoolExecutor 생성]
-    G2 --> G3[각 메시지마다 process_message_with_dag 병렬 호출]
+    G2 --> G3[각 메시지마다 process_message_worker 병렬 호출]
     G3 --> I[결과 수집]
     
     H --> H1[메시지 루프]
     H1 --> H2{DAG 추출?}
-    H2 -->|Yes| H3[process_message_with_dag 호출]
+    H2 -->|Yes| H3[process_message_worker 호출]
     H2 -->|No| H4[process_message 호출]
     H3 --> I
     H4 --> I

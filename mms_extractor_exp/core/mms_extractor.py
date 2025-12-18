@@ -1167,7 +1167,7 @@ class MMSExtractor(MMSExtractorDataMixin):
 
 
 
-def process_message_with_dag(extractor, message: str, extract_dag: bool = False, message_id: str = '#') -> Dict[str, Any]:
+def process_message_worker(extractor, message: str, extract_dag: bool = False, message_id: str = '#') -> Dict[str, Any]:
     """
     단일 메시지를 처리하는 워커 함수 (멀티프로세스용)
     
@@ -1277,7 +1277,7 @@ def process_messages_batch(extractor, messages: List[Union[str, Dict[str, Any]]]
                 msg = str(item)
                 msg_id = f"batch_{idx}"
                 
-            future = executor.submit(process_message_with_dag, extractor, msg, extract_dag, msg_id)
+            future = executor.submit(process_message_worker, extractor, msg, extract_dag, msg_id)
             future_to_index[future] = (idx, msg_id)
         
         # 완료된 작업들 수집

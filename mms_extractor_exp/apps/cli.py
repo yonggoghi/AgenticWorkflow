@@ -17,7 +17,7 @@ import logging.handlers
 import time
 import traceback
 from pathlib import Path
-from core.mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
+from core.mms_extractor import MMSExtractor, process_message_worker, process_messages_batch, save_result_to_mongodb_if_enabled
 
 # Configure logging with console and file handlers
 log_dir = Path(__file__).parent.parent / 'logs'
@@ -176,7 +176,7 @@ def main():
                 results = []
                 for message, message_id in zip(messages, message_ids):
                     if args.extract_entity_dag:
-                        result = process_message_with_dag(extractor, message, args.extract_entity_dag, message_id)
+                        result = process_message_worker(extractor, message, args.extract_entity_dag, message_id)
                     else:
                         result = extractor.process_message(message, message_id=message_id)
                     results.append(result)
@@ -251,7 +251,7 @@ def main():
             
             if args.extract_entity_dag:
                 logger.info("DAG 추출과 함께 병렬 처리 시작")
-                result = process_message_with_dag(extractor, test_message, args.extract_entity_dag, args.message_id)
+                result = process_message_worker(extractor, test_message, args.extract_entity_dag, args.message_id)
             else:
                 result = extractor.process_message(test_message, args.message_id)
             if args.save_to_mongodb:

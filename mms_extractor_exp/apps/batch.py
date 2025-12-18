@@ -48,7 +48,7 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.settings import METADATA_CONFIG
-from core.mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
+from core.mms_extractor import MMSExtractor, process_message_worker, process_messages_batch, save_result_to_mongodb_if_enabled
 
 # MongoDB 유틸리티는 필요할 때 동적으로 임포트
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
@@ -408,7 +408,7 @@ class BatchProcessor:
                 
                 # DAG 추출이 활성화된 경우 병렬로 처리
                 if self.extract_entity_dag:
-                    extraction_result = process_message_with_dag(
+                    extraction_result = process_message_worker(
                         self.extractor, 
                         msg, 
                         extract_dag=True,

@@ -183,7 +183,7 @@ sys.path.insert(0, str(current_dir))
 # =============================================================================
 # MMS 추출기 및 설정 모듈 임포트
 try:
-    from core.mms_extractor import MMSExtractor, process_message_with_dag, process_messages_batch, save_result_to_mongodb_if_enabled
+    from core.mms_extractor import MMSExtractor, process_message_worker, process_messages_batch, save_result_to_mongodb_if_enabled
     from config.settings import API_CONFIG, MODEL_CONFIG, PROCESSING_CONFIG
     # Lazy import for DAG extractor
     from core.entity_dag_extractor import DAGParser, extract_dag, llm_ax, llm_gem, llm_cld, llm_gen, llm_gpt
@@ -582,7 +582,7 @@ def extract_message():
         # DAG 추출 여부에 따라 병렬 처리 또는 단일 처리
         if extract_entity_dag:
             logger.info("DAG 추출과 함께 순차 처리 시작")
-            result = process_message_with_dag(extractor, message, extract_dag=True, message_id=message_id)
+            result = process_message_worker(extractor, message, extract_dag=True, message_id=message_id)
         else:
             result = extractor.process_message(message, message_id=message_id)
             result['ext_result']['entity_dag'] = []
@@ -785,7 +785,7 @@ def extract_batch():
             batch_results = []
             for message, message_id in zip(valid_messages, message_ids):
                 if extract_entity_dag:
-                    result = process_message_with_dag(
+                    result = process_message_worker(
                         extractor, 
                         message, 
                         extract_dag=True,
@@ -1016,7 +1016,7 @@ def get_prompts():
         
         # 추출 수행
         if extract_entity_dag:
-            result = process_message_with_dag(extractor, message, extract_dag=True)['extracted_result']
+            result = process_message_worker(extractor, message, extract_dag=True)['extracted_result']
         else:
             result = extractor.process_message(message)['extracted_result']
         
@@ -1682,7 +1682,7 @@ def main():
             # DAG 추출 여부에 따라 병렬 처리 또는 단일 처리
             if args.extract_entity_dag:
                 logger.info("DAG 추출과 함께 병렬 처리 시작")
-                result = process_message_with_dag(extractor, message, extract_dag=True)
+                result = process_message_worker(extractor, message, extract_dag=True)
             else:
                 result = extractor.process_message(message)
                 result['entity_dag'] = []

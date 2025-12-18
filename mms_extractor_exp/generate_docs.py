@@ -77,7 +77,7 @@ def update_execution_flow_doc():
             '_register_items_in_kiwi()': 'L707',
             '_load_program_data()': 'L746',
             '_load_organization_data()': 'L786',
-            'process_message_with_dag()': 'L1170',
+            'process_message_worker()': 'L1170',
             'MMSExtractor.process_message()': 'L1000',
             'process_messages_batch()': 'L1280',
         },
