@@ -686,13 +686,14 @@ class MMSExtractor(MMSExtractorDataMixin):
             logger.info(f"✅ ItemDataLoader를 통한 상품 정보 준비 완료: {self.item_pdf_all.shape}")
             
         except Exception as e:
-            logger.error(f"ItemDataLoader 실행 실패: {e}")
+            logger.error(f"❌ 상품 데이터 로드 실패: {e}")
             import traceback
             logger.error(f"오류 상세: {traceback.format_exc()}")
-            # 빈 DataFrame으로 fallback
-            self.item_pdf_all = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn', 'item_nm_alias'])
-            self.alias_pdf_raw = pd.DataFrame()
-            logger.warning("빈 DataFrame으로 fallback 설정됨")
+            raise RuntimeError(
+                f"상품 데이터 로드 중 오류 발생. "
+                f"데이터 소스({self.offer_info_data_src})를 확인하세요. "
+                f"시스템을 초기화할 수 없습니다. 원인: {e}"
+            ) from e
 
     # Database methods moved to utils/db_utils.py
 
@@ -702,8 +703,13 @@ class MMSExtractor(MMSExtractorDataMixin):
             self.stop_item_names = pd.read_csv(getattr(METADATA_CONFIG, 'stop_items_path', './data/stop_words.csv'))['stop_words'].to_list()
             logger.info(f"정지어 로드 완료: {len(self.stop_item_names)}개")
         except Exception as e:
-            logger.warning(f"정지어 로드 실패: {e}")
-            self.stop_item_names = []
+            logger.error(f"❌ 정지어 로드 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
+            raise RuntimeError(
+                f"정지어 데이터 로드 중 오류 발생. "
+                f"파일 경로를 확인하세요. "
+                f"시스템을 초기화할 수 없습니다. 원인: {e}"
+            ) from e
 
     def _register_items_in_kiwi(self):
         """Kiwi에 상품명들을 고유명사로 등록"""
@@ -779,10 +785,13 @@ class MMSExtractor(MMSExtractorDataMixin):
                 self.clue_embeddings = torch.tensor([])
             
         except Exception as e:
-            logger.error(f"프로그램 데이터 로드 실패: {e}")
-            # 빈 데이터로 fallback
-            self.pgm_pdf = pd.DataFrame(columns=['pgm_nm', 'clue_tag', 'pgm_id'])
-            self.clue_embeddings = torch.tensor([])
+            logger.error(f"❌ 프로그램 데이터 로드 실패: {e}")
+            logger.error(f"오류 상세: {traceback.format_exc()}")
+            raise RuntimeError(
+                f"프로그램 데이터 로드 중 오류 발생. "
+                f"데이터 소스({self.offer_info_data_src})를 확인하세요. "
+                f"시스템을 초기화할 수 없습니다. 원인: {e}"
+            ) from e
 
     def _load_organization_data(self):
         """조직/매장 정보 로드"""
@@ -839,12 +848,13 @@ class MMSExtractor(MMSExtractorDataMixin):
                 logger.warning("조직 데이터가 비어있습니다. 조직/매장 추출이 동작하지 않을 수 있습니다.")
             
         except Exception as e:
-            logger.error(f"조직 정보 로드 실패: {e}")
+            logger.error(f"❌ 조직 데이터 로드 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
-            # 빈 DataFrame으로 fallback (조직 데이터에 필요한 컬럼들 포함)
-            self.org_pdf = pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
-            logger.warning("빈 조직 DataFrame으로 fallback 설정됨")
-            logger.warning("이로 인해 조직/매장 추출 기능이 비활성화됩니다.")
+            raise RuntimeError(
+                f"조직 데이터 로드 중 오류 발생. "
+                f"데이터 소스({self.offer_info_data_src})를 확인하세요. "
+                f"시스템을 초기화할 수 없습니다. 원인: {e}"
+            ) from e
 
     def _load_org_from_database(self):
         """데이터베이스에서 조직 정보 로드 (ITEM_DMN='R')"""
