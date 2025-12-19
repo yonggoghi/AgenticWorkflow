@@ -280,8 +280,10 @@ class MMSExtractorDataMixin:
                 item_pdf_raw = pd.read_csv(csv_path)
             elif self.offer_info_data_src == "db":
                 logger.info("🗄️ 데이터베이스에서 로드")
+                # Import DATABASE_CONFIG
+                from config.settings import DATABASE_CONFIG
                 with self._database_connection() as conn:
-                    sql = "SELECT * FROM TCIC.TCIC_RC_OFER_MST"
+                    sql = DATABASE_CONFIG.get_offer_table_query()
                     item_pdf_raw = pd.read_sql(sql, conn)
             
             logger.info(f"원본 데이터 크기: {item_pdf_raw.shape}")
@@ -571,15 +573,17 @@ class MMSExtractorDataMixin:
         try:
             logger.info("=== 데이터베이스에서 프로그램 분류 정보 로드 시작 ===")
             
+            # Import DATABASE_CONFIG
+            from config.settings import DATABASE_CONFIG
+            
             with self._database_connection() as conn:
                 # 프로그램 분류 정보 쿼리
-                sql = """SELECT CMPGN_PGM_NUM pgm_id, CMPGN_PGM_NM pgm_nm, RMK clue_tag 
-                         FROM TCAM_CMPGN_PGM_INFO
-                         WHERE DEL_YN = 'N' 
+                where_clause = """DEL_YN = 'N' 
                          AND APRV_OP_RSLT_CD = 'APPR'
                          AND EXPS_YN = 'Y'
                          AND CMPGN_PGM_NUM like '2025%' 
                          AND RMK is not null"""
+                sql = DATABASE_CONFIG.get_program_table_query(where_clause)
                 
                 logger.info(f"실행할 SQL: {sql}")
                 
@@ -776,8 +780,11 @@ class MMSExtractorDataMixin:
         try:
             logger.info("데이터베이스 연결 시도 중...")
             
+            # Import DATABASE_CONFIG
+            from config.settings import DATABASE_CONFIG
+            
             with self._database_connection() as conn:
-                sql = "SELECT * FROM TCIC.TCIC_RC_OFER_MST WHERE ITEM_DMN='R'"
+                sql = DATABASE_CONFIG.get_offer_table_query("ITEM_DMN='R'")
                 logger.info(f"실행할 SQL: {sql}")
                 
                 self.org_pdf = pd.read_sql(sql, conn)

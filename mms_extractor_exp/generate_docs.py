@@ -43,9 +43,41 @@ def update_execution_flow_doc():
         
         return f"{prefix}{file_uri}"
     
+    # Replace existing absolute file:// URIs with current system paths
+    # This allows the script to work across different machines (macOS, Linux, etc.)
+    def replace_absolute_uri(match):
+        prefix = match.group(1)
+        old_uri = match.group(2)
+        
+        # Extract the relative path from the old URI
+        # Pattern: file:///any/path/to/mms_extractor_*/...
+        # We want to extract everything after mms_extractor_*/
+        path_match = re.search(r'mms_extractor[^/]*/(.+)', old_uri)
+        if path_match:
+            rel_path = path_match.group(1)
+            # Remove any fragment (#L123) from the path
+            rel_path = rel_path.split('#')[0]
+            abs_path = project_root / rel_path
+            file_uri = abs_path.as_uri()
+            
+            # Preserve the fragment if it exists
+            if '#' in old_uri:
+                fragment = '#' + old_uri.split('#')[1]
+                file_uri += fragment
+            
+            return f"{prefix}{file_uri}"
+        
+        # If we can't parse it, return original
+        return match.group(0)
+    
     # Replace patterns like (../apps/cli.py) and [text](../apps/cli.py)
-    pattern = r'(\[.*?\]\(|[\(])(\.\./[^\)]+\.py)'
+    pattern = r'(\[.*?\]\(|[\(])(\.\.\/[^\)]+\.py)'
     updated_content = re.sub(pattern, replace_relative_path, content)
+    
+    # Replace existing file:// URIs to update them to current system
+    # Pattern: [text](file:///path/to/file) or (file:///path/to/file)
+    absolute_pattern = r'(\[.*?\]\(|[\(])(file:///[^\)]+)'
+    updated_content = re.sub(absolute_pattern, replace_absolute_uri, updated_content)
     
     # Line numbers mapping (start line only)
     line_numbers = {
@@ -158,5 +190,6 @@ def main():
     return 0
 
 
-if __name__ == "__main__":
-    exit(main())
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())

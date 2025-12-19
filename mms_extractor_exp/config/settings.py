@@ -575,3 +575,4 @@ PROCESSING_CONFIG = ProcessingConfig()  # Processing behavior settings
 METADATA_CONFIG = METADATAConfig()  # Data file paths
 EMBEDDING_CONFIG = EmbeddingConfig()  # Embedding and model file paths
 STORAGE_CONFIG = StorageConfig()  # Storage configuration for DAG images
+DATABASE_CONFIG = DatabaseConfig()  # Database table names and queries
