@@ -461,6 +461,47 @@ class StorageConfig:
             # Use API server absolute URL (fixed server address)
             return f"{self.local_base_url.rstrip('/')}/dag_images/{filename}"
 
+
+@dataclass
+class DatabaseConfig:
+    """Database configuration settings for Oracle table names.
+    
+    This centralizes all hardcoded Oracle table names for easier management
+    and configuration across different environments.
+    """
+    
+    # Oracle table names
+    oracle_offer_table: str = os.getenv("ORACLE_OFFER_TABLE", "TCIC.TCIC_RC_OFER_MST")  # Offer/Item master table (상품/조직 정보)
+    oracle_program_table: str = os.getenv("ORACLE_PROGRAM_TABLE", "TCAM_CMPGN_PGM_INFO")  # Program information table (프로그램 분류 정보)
+    
+    def get_offer_table_query(self, where_clause: str = "") -> str:
+        """Get SQL query for offer table with optional WHERE clause.
+        
+        Args:
+            where_clause: Optional WHERE clause (e.g., "ITEM_DMN='R'")
+            
+        Returns:
+            str: Complete SQL query
+        """
+        base_query = f"SELECT * FROM {self.oracle_offer_table}"
+        if where_clause:
+            return f"{base_query} WHERE {where_clause}"
+        return base_query
+    
+    def get_program_table_query(self, where_clause: str = "") -> str:
+        """Get SQL query for program table with optional WHERE clause.
+        
+        Args:
+            where_clause: Optional WHERE clause
+            
+        Returns:
+            str: Complete SQL query
+        """
+        base_query = f"SELECT CMPGN_PGM_NUM pgm_id, CMPGN_PGM_NM pgm_nm, RMK clue_tag FROM {self.oracle_program_table}"
+        if where_clause:
+            return f"{base_query} WHERE {where_clause}"
+        return base_query
+
 @dataclass
 class ProcessingConfig:
     """Processing configuration settings that control the behavior of entity extraction and matching."""
