@@ -204,6 +204,67 @@ def load_program_from_database() -> pd.DataFrame:
         return pd.DataFrame(columns=['pgm_nm', 'clue_tag', 'pgm_id'])
 
 
+def load_item_from_database() -> pd.DataFrame:
+    """
+    데이터베이스에서 오퍼/상품 정보 로드
+    
+    Returns:
+        pd.DataFrame: 오퍼/상품 정보 (item_nm, item_id, item_desc, item_dmn 등)
+        
+    Raises:
+        Exception: DB 로드 실패 시
+    """
+    try:
+        logger.info("=== 데이터베이스에서 오퍼/상품 정보 로드 시작 ===")
+        
+        # Import DATABASE_CONFIG
+        from config.settings import DATABASE_CONFIG
+        
+        with database_connection() as conn:
+            # 오퍼/상품 정보 쿼리 (ITEM_DMN != 'R' 조건으로 조직 데이터 제외)
+            sql = DATABASE_CONFIG.get_offer_table_query("ITEM_DMN != 'R'")
+            logger.info(f"실행할 SQL: {sql}")
+            
+            item_pdf = pd.read_sql(sql, conn)
+            logger.info(f"DB에서 로드된 오퍼/상품 데이터 크기: {item_pdf.shape}")
+            logger.info(f"DB 오퍼/상품 데이터 컬럼들: {list(item_pdf.columns)}")
+            
+            # 컬럼명 소문자 변환
+            original_columns = list(item_pdf.columns)
+            item_pdf = item_pdf.rename(columns={c: c.lower() for c in item_pdf.columns})
+            logger.info(f"오퍼/상품 컬럼명 변환: {dict(zip(original_columns, item_pdf.columns))}")
+            
+            # LOB 데이터가 있는 경우를 대비해 데이터 강제 로드
+            if not item_pdf.empty:
+                try:
+                    # DataFrame의 모든 데이터를 메모리로 강제 로드
+                    _ = item_pdf.values  # 모든 데이터 접근하여 LOB 로드 유도
+                    
+                    # 오퍼/상품 데이터 샘플 확인
+                    if 'item_nm' in item_pdf.columns:
+                        sample_items = item_pdf['item_nm'].dropna().head(3).tolist()
+                        logger.info(f"오퍼/상품명 샘플: {sample_items}")
+                    
+                    if 'item_dmn' in item_pdf.columns:
+                        unique_domains = item_pdf['item_dmn'].unique().tolist()
+                        logger.info(f"오퍼/상품 도메인 종류: {unique_domains}")
+                        
+                    logger.info(f"데이터베이스에서 오퍼/상품 정보 로드 완료: {len(item_pdf)}개")
+                except Exception as load_error:
+                    logger.error(f"오퍼/상품 데이터 강제 로드 중 오류: {load_error}")
+                    raise
+            else:
+                logger.warning("로드된 오퍼/상품 데이터가 비어있습니다!")
+            
+            return item_pdf
+        
+    except Exception as e:
+        logger.error(f"오퍼/상품 정보 데이터베이스 로드 실패: {e}")
+        logger.error(f"오류 상세: {traceback.format_exc()}")
+        # 빈 데이터로 fallback
+        return pd.DataFrame(columns=['item_nm', 'item_id', 'item_desc', 'item_dmn'])
+
+
 def load_org_from_database() -> pd.DataFrame:
     """
     데이터베이스에서 조직 정보 로드 (ITEM_DMN='R')

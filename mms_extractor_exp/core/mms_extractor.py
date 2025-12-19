@@ -669,11 +669,12 @@ class MMSExtractor(MMSExtractorDataMixin):
         """
         try:
             from services.item_data_loader import ItemDataLoader
+            from utils.db_utils import load_item_from_database
             
             # ItemDataLoader 인스턴스 생성
             loader = ItemDataLoader(
                 data_source=self.offer_info_data_src,
-                db_loader=self._load_offer_info_from_db if self.offer_info_data_src == 'db' else None
+                db_loader=load_item_from_database if self.offer_info_data_src == 'db' else None
             )
             
             # 전체 파이프라인 실행

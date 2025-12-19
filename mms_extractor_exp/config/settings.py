@@ -471,8 +471,9 @@ class DatabaseConfig:
     """
     
     # Oracle table names
-    oracle_offer_table: str = os.getenv("ORACLE_OFFER_TABLE", "TCIC.TCIC_RC_OFER_MST")  # Offer/Item master table (상품/조직 정보)
-    oracle_program_table: str = os.getenv("ORACLE_PROGRAM_TABLE", "TCAM_CMPGN_PGM_INFO")  # Program information table (프로그램 분류 정보)
+    oracle_offer_mst_table: str = os.getenv("ORACLE_OFFER_TABLE", "TCIC.TCIC_RC_OFER_MST")  # Offer/Item master table (상품/조직 정보)
+    oracle_offer_rel_table: str = os.getenv("ORACLE_OFFER_REL_TABLE", "TCIC.TCIC_RC_OFER_REL")  # Offer/Item relationship table (상품/조직 정보)
+    oracle_program_table: str = os.getenv("ORACLE_PROGRAM_TABLE", "TCAM.TCAM_CMPGN_PGM_INFO")  # Program information table (프로그램 분류 정보)
     
     def get_offer_table_query(self, where_clause: str = "") -> str:
         """Get SQL query for offer table with optional WHERE clause.
@@ -483,7 +484,7 @@ class DatabaseConfig:
         Returns:
             str: Complete SQL query
         """
-        base_query = f"SELECT * FROM {self.oracle_offer_table}"
+        base_query = f"SELECT * FROM {self.oracle_offer_mst_table}"
         if where_clause:
             return f"{base_query} WHERE {where_clause}"
         return base_query
