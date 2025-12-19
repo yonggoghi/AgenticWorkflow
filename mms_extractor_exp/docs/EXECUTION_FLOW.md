@@ -105,22 +105,22 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   9. [`add_domain_name_column()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/item_data_loader.py#L486) - 도메인명 컬럼 추가
   10. [`filter_test_items()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/item_data_loader.py#L511) - TEST 항목 필터링
 
-##### 2.1.6.2 [`_load_stopwords()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L698)
+##### 2.1.6.2 [`_load_stopwords()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L700)
 - **입력**: 없음
 - **출력**: 없음 (`self.stop_item_names` 설정)
 - **주요 작업**: 정지어 목록 로드
 
-##### 2.1.6.3 [`_register_items_in_kiwi()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L707)
+##### 2.1.6.3 [`_register_items_in_kiwi()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L714)
 - **입력**: 없음
 - **출력**: 없음
 - **주요 작업**: Kiwi에 상품명들을 고유명사로 등록
 
-##### 2.1.6.4 [`_load_program_data()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L746)
+##### 2.1.6.4 [`_load_program_data()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L753)
 - **입력**: 없음
 - **출력**: 없음 (`self.pgm_pdf`, `self.clue_embeddings` 설정)
 - **주요 작업**: 프로그램 분류 정보 로드 및 임베딩 생성
 
-##### 2.1.6.5 [`_load_organization_data()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L786)
+##### 2.1.6.5 [`_load_organization_data()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L796)
 - **입력**: 없음
 - **출력**: 없음 (`self.org_pdf` 설정)
 - **주요 작업**: 조직/매장 정보 로드
