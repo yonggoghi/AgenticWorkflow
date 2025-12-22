@@ -1,0 +1,2113 @@
+{
+  "paragraphs": [
+    {
+      "text": "%pyspark\n\nimport pyspark.sql.functions as SF\nfrom pyspark.ml.functions import vector_to_array\nfrom pyspark.sql.window import Window\nfrom pyspark.sql.types import *",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 09:57:11.320",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": []
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764650590181_2011778621",
+      "id": "paragraph_1764650590181_2011778621",
+      "dateCreated": "2025-12-02 04:43:10.181",
+      "dateStarted": "2025-12-20 09:57:11.399",
+      "dateFinished": "2025-12-20 09:58:03.515",
+      "status": "FINISHED"
+    },
+    {
+      "text": "import com.microsoft.azure.synapse.ml.causal\nimport com.skt.mno.dt.utils.commfunc._\nimport ml.dmlc.xgboost4j.scala.spark.{XGBoostClassificationModel, XGBoostClassifier, XGBoostRegressor}\nimport org.apache.spark.ml.classification._\nimport org.apache.spark.ml.feature._\nimport org.apache.spark.ml.linalg.Vectors\nimport org.apache.spark.ml.{Pipeline, PipelineModel, linalg}\nimport org.apache.spark.mllib.evaluation.MulticlassMetrics\nimport org.apache.spark.sql.expressions.Window\nimport org.apache.spark.sql.functions.explode\nimport org.apache.spark.sql.types.{DateType, StringType, TimestampType}\nimport org.apache.spark.sql.{DataFrame, SparkSession, functions \u003d\u003e F}\nimport org.apache.spark.storage.StorageLevel\nimport org.joda.time.{LocalDate, Years}\nimport org.riversun.ml.spark.FeatureImportance.Order\nimport org.riversun.ml.spark.{FeatureImportance, Importance}\n\nimport java.sql.Date\nimport java.text.DecimalFormat\nimport java.time.format.DateTimeFormatter\nimport java.time.{ZoneId, ZonedDateTime}\nimport com.microsoft.azure.synapse.{ml \u003d\u003e sml}\n\nimport collection.JavaConverters._\nimport scala.collection.JavaConverters._\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:47:17.225",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "import com.microsoft.azure.synapse.ml.causal\nimport com.skt.mno.dt.utils.commfunc._\nimport ml.dmlc.xgboost4j.scala.spark.{XGBoostClassificationModel, XGBoostClassifier, XGBoostRegressor}\nimport org.apache.spark.ml.classification._\nimport org.apache.spark.ml.feature._\nimport org.apache.spark.ml.linalg.Vectors\nimport org.apache.spark.ml.{Pipeline, PipelineModel, linalg}\nimport org.apache.spark.mllib.evaluation.MulticlassMetrics\nimport org.apache.spark.sql.expressions.Window\nimport org.apache.spark.sql.functions.explode\nimport org.apache.spark.sql.types.{DateType, StringType, TimestampType}\nimport org.apache.spark.sql.{DataFrame, SparkSession, functions\u003d\u003eF}\nimport org.apache.spark.storage.StorageLevel\nimport org.joda.time.{LocalDate, Years}\nimport org.riversun.ml.spark.FeatureImportance.Or...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764658338256_686533166",
+      "id": "paragraph_1764658338256_686533166",
+      "dateCreated": "2025-12-02 06:52:18.256",
+      "dateStarted": "2025-12-21 12:47:17.306",
+      "dateFinished": "2025-12-21 12:48:59.987",
+      "status": "FINISHED"
+    },
+    {
+      "text": "import java.time.YearMonth\r\nimport java.time.format.DateTimeFormatter\r\nimport java.time.LocalDate\r\nimport scala.collection.mutable.ListBuffer\r\nimport java.time.temporal.ChronoUnit\r\n\r\ndef getPreviousMonths(startMonthStr: String, periodM: Int): Array[String] \u003d {\r\n  val formatter \u003d DateTimeFormatter.ofPattern(\"yyyyMM\")\r\n\r\n  // 입력 월 파싱\r\n  val startMonth \u003d YearMonth.parse(startMonthStr, formatter)\r\n\r\n  // 결과를 저장할 가변 리스트 (순서를 위해 ListBuffer 사용)\r\n  var resultMonths \u003d scala.collection.mutable.ListBuffer[String]()\r\n  var currentMonth \u003d startMonth\r\n\r\n  // M번 반복하여 월을 계산하고 리스트에 추가\r\n  for (i \u003c- 0 until periodM) {\r\n    // 현재 월을 리스트 맨 앞에 추가\r\n    resultMonths.prepend(currentMonth.format(formatter))\r\n    // 다음 반복을 위해 이전 달로 이동\r\n    currentMonth \u003d currentMonth.minusMonths(1)\r\n  }\r\n\r\n  // 리스트를 Array로 반환\r\n  resultMonths.toArray\r\n}\r\n\r\ndef getPreviousDays(startDayStr: String, periodD: Int): Array[String] \u003d {\r\n  // yyyyMMdd 형식의 포맷터 설정\r\n  val formatter \u003d DateTimeFormatter.ofPattern(\"yyyyMMdd\")\r\n  \r\n  // 1. 입력된 날짜 문자열 파싱\r\n  val startDay \u003d LocalDate.parse(startDayStr, formatter)\r\n  \r\n  // 2. 결과를 저장할 가변 리스트 (순서를 위해 ListBuffer 사용)\r\n  val resultDays \u003d ListBuffer[String]()\r\n  var currentDay \u003d startDay\r\n  \r\n  // 3. periodD번 반복하여 날짜를 계산하고 리스트에 추가\r\n  for (i \u003c- 0 until periodD) {\r\n    // 현재 날짜를 리스트 맨 앞에 추가 (최신 날짜가 뒤로 가게 하려면 append 사용)\r\n    resultDays.prepend(currentDay.format(formatter))\r\n    \r\n    // 다음 반복을 위해 이전 날짜(1일 전)로 이동\r\n    currentDay \u003d currentDay.minusDays(1)\r\n  }\r\n  \r\n  // 4. 리스트를 Array로 반환\r\n  resultDays.toArray\r\n}\r\n\r\ndef getDaysBetween(startDayStr: String, endDayStr: String): Array[String] \u003d {\r\n  val formatter \u003d DateTimeFormatter.ofPattern(\"yyyyMMdd\")\r\n  \r\n  val start \u003d LocalDate.parse(startDayStr, formatter)\r\n  val end \u003d LocalDate.parse(endDayStr, formatter)\r\n  \r\n  // 두 날짜 사이의 일수 차이 계산\r\n  val numOfDays \u003d ChronoUnit.DAYS.between(start, end).toInt\r\n  \r\n  val resultDays \u003d ListBuffer[String]()\r\n  \r\n  // 에러 수정: Scala의 for 루프는 \u0027i \u003c- 시작 to 끝\u0027 형식을 사용합니다.\r\n  for (i \u003c- 0 to numOfDays) {\r\n    resultDays.append(start.plusDays(i).format(formatter))\r\n  }\r\n  \r\n  resultDays.toArray\r\n}",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:49:05.754",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "import java.time.YearMonth\nimport java.time.format.DateTimeFormatter\nimport java.time.LocalDate\nimport scala.collection.mutable.ListBuffer\nimport java.time.temporal.ChronoUnit\n\u001b[1m\u001b[34mgetPreviousMonths\u001b[0m: \u001b[1m\u001b[32m(startMonthStr: String, periodM: Int)Array[String]\u001b[0m\n\u001b[1m\u001b[34mgetPreviousDays\u001b[0m: \u001b[1m\u001b[32m(startDayStr: String, periodD: Int)Array[String]\u001b[0m\n\u001b[1m\u001b[34mgetDaysBetween\u001b[0m: \u001b[1m\u001b[32m(startDayStr: String, endDayStr: String)Array[String]\u001b[0m\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764742922351_426209997",
+      "id": "paragraph_1764742922351_426209997",
+      "dateCreated": "2025-12-03 06:22:02.351",
+      "dateStarted": "2025-12-21 12:49:05.848",
+      "dateFinished": "2025-12-21 12:49:06.457",
+      "status": "FINISHED"
+    },
+    {
+      "title": "Response Data Loading - Hive",
+      "text": "\nval df \u003d spark.sql(\"\"\"\nwith ract as\n(\nselect A.cmpgn_num\n    ,A.cmpgn_obj_num\n    ,B.svc_mgmt_num\n    ,A.extrt_seq\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270802\u0027 THEN 1 ELSE 0 END AS send_yn\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270810\u0027 THEN 1 ELSE 0 END AS click_yn\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270811\u0027 THEN 1 ELSE 0 END AS read_yn\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270802\u0027 THEN A.cont_dt ELSE null END AS send_dt\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270810\u0027 THEN A.cont_dt ELSE null END AS click_dt\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270811\u0027 THEN A.cont_dt ELSE null END AS read_dt\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270802\u0027 THEN A.cont_tm ELSE null END AS send_tm\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270810\u0027 THEN A.cont_tm ELSE null END AS click_tm\n    ,CASE WHEN A.ract_typ_cd \u003d \u00270811\u0027 THEN A.cont_tm ELSE null END AS read_tm\n    ,CASE WHEN A.cont_chnl_cd \u003d \u0027C18001\u0027 THEN \u0027MMS\u0027\n            WHEN A.cont_chnl_cd \u003d \u0027C28001\u0027 THEN \u0027RCS\u0027 END AS chnl_typ\n    ,CASE WHEN C.cmpgn_purp_typ_cd IN (\u0027S01\u0027, \u0027S06\u0027) THEN \u0027Sales\u0027\n                WHEN C.cmpgn_purp_typ_cd \u003d \u0027C01\u0027 THEN \u0027Care\u0027\n                WHEN C.cmpgn_purp_typ_cd \u003d \u0027B01\u0027 THEN \u0027Bmarketing\u0027 END AS cmpgn_typ\n    ,CASE WHEN D.cmpgn_num IS NOT NULL THEN \u0027url_Y\u0027 ELSE \u0027url_N\u0027 END AS url_yn\nfrom tos.od_tcam_cmpgn_obj_cont as A\nLEFT JOIN (SELECT DISTINCT cmpgn_num, cmpgn_obj_num, svc_mgmt_num FROM tos.od_tcam_cmpgn_obj) AS B\nON A.cmpgn_obj_num \u003d B.cmpgn_obj_num AND A.cmpgn_num \u003d B.cmpgn_num\nLEFT JOIN tos.od_tcam_cmpgn_brief AS C\nON A.cmpgn_num \u003d C.cmpgn_num\nLEFT JOIN (SELECT DISTINCT cmpgn_num FROM tos.od_tcam_cmpgn_obj WHERE ract_typ_cd \u003d \u00270810\u0027) AS D\nON A.cmpgn_num \u003d D.cmpgn_num\nwhere A.ract_typ_cd in (\u00270802\u0027,\u00270810\u0027, \u00270811\u0027)\nAND A.cont_chnl_cd in (\u0027C18001\u0027,\u0027C28001\u0027)\nAND B.svc_mgmt_num !\u003d \u00270\u0027\n)\n\n,ract2 as(\n\nselect cmpgn_num\n    ,svc_mgmt_num\n    ,extrt_seq\n    ,chnl_typ\n    ,cmpgn_typ\n    ,url_yn\n    ,send_yn\n    ,read_yn\n    ,click_yn\n    ,send_dt\n    ,read_dt\n    ,click_dt\n    ,CASE WHEN LENGTH(send_dt) \u003d 8 AND LENGTH(send_tm) \u003d 6 THEN TO_TIMESTAMP(send_dt || send_tm, \u0027yyyyMMddHHmmss\u0027) ELSE NULL END AS send_time\n    ,CASE WHEN LENGTH(read_dt) \u003d 8 AND LENGTH(read_tm) \u003d 6 THEN TO_TIMESTAMP(read_dt || read_tm, \u0027yyyyMMddHHmmss\u0027) ELSE NULL END AS read_time\n    ,CASE WHEN LENGTH(click_dt) \u003d 8 AND LENGTH(click_tm) \u003d 6 THEN TO_TIMESTAMP(click_dt || click_tm, \u0027yyyyMMddHHmmss\u0027) ELSE NULL END AS click_time\nfrom ract\nwhere (send_dt IS NULL OR LENGTH(send_dt) \u003d 8)\nand (send_tm IS NULL OR LENGTH(send_tm) \u003d 6)\nand (read_dt IS NULL OR LENGTH(read_dt) \u003d 8)\nand (read_tm IS NULL OR LENGTH(read_tm) \u003d 6)\nand (click_dt IS NULL OR LENGTH(click_dt) \u003d 8)\nand (click_tm IS NULL OR LENGTH(click_tm) \u003d 6)\n)\n\n,ract3 as(\nselect cmpgn_num\n    , svc_mgmt_num\n    , extrt_seq\n    , chnl_typ\n    , cmpgn_typ\n    , url_yn\n    , sum(send_yn) as send_yn\n    , sum(read_yn) as read_yn\n    , sum(click_yn) as click_yn\n    , min(send_dt) as send_dt\n    , min(send_time) as send_time\n    , min(read_dt) as read_dt\n    , min(read_time) as read_time\n    , min(click_dt) as click_dt\n    , min(click_time) as click_time\nfrom ract2\ngroup by cmpgn_num, svc_mgmt_num, extrt_seq, chnl_typ, cmpgn_typ, url_yn\n),\n\ntmp AS\n(\nselect *\nfrom ract3\nwhere (send_yn \u003d 1 OR (send_yn \u003d 2 AND chnl_typ \u003d \u0027MMS\u0027))\nand (read_yn IS NULL OR read_yn \u003c\u003d 1)\n)\n\n\nSELECT *\n    ,dayofweek(to_date(send_dt, \u0027yyyyMMdd\u0027)) as send_daynum\n    ,dayofweek(to_date(click_dt, \u0027yyyyMMdd\u0027)) as click_daynum\n    ,hour(send_time) as send_hournum\n    ,hour(click_time) as click_hournum\n    ,CAST(datediff(click_time, send_time) AS INTEGER) AS day_gap\n    ,CAST((unix_timestamp(click_time) - unix_timestamp(send_time))/3600 AS INTEGER) AS hour_gap\n    ,CAST((unix_timestamp(click_time) - unix_timestamp(send_time))/60 AS INTEGER) AS minute_gap\n    ,CAST(unix_timestamp(click_time) - unix_timestamp(send_time) AS INTEGER) AS second_gap\n    ,substring(send_dt,1,6) as send_ym\nFROM tmp\n\n\"\"\").cache()\n\ndf.createOrReplaceTempView(\"df_view\")",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 09:58:05.330",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "editorHide": true,
+        "title": true,
+        "results": {},
+        "enabled": false
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764638859660_1599316492",
+      "id": "paragraph_1764638859660_1599316492",
+      "dateCreated": "2025-12-02 01:27:39.660",
+      "dateStarted": "2025-12-02 06:53:23.243",
+      "dateFinished": "2025-12-02 06:53:29.570",
+      "status": "FINISHED"
+    },
+    {
+      "title": "Response Data Saving",
+      "text": "\ndf.write.mode(\"overwrite\").partitionBy(\"send_ym\").parquet(\"aos/sto/response\")",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 09:58:05.462",
+      "progress": 100,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "editorHide": true,
+        "title": true,
+        "results": {},
+        "enabled": false
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764656596503_575732907",
+      "id": "paragraph_1764656596503_575732907",
+      "dateCreated": "2025-12-02 06:23:16.503",
+      "dateStarted": "2025-12-02 06:53:32.443",
+      "dateFinished": "2025-12-02 07:09:49.222",
+      "status": "FINISHED"
+    },
+    {
+      "title": "Response Data Loading - HDFS",
+      "text": "\nval resDF \u003d spark.read.parquet(\"aos/sto/response\").cache()\nresDF.createOrReplaceTempView(\"res_df\")",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:49:11.776",
+      "progress": 100,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mresDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: string ... 22 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d0"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d1"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764659911196_1763551717",
+      "id": "paragraph_1764659911196_1763551717",
+      "dateCreated": "2025-12-02 07:18:31.196",
+      "dateStarted": "2025-12-21 12:49:11.868",
+      "dateFinished": "2025-12-21 12:49:21.544",
+      "status": "FINISHED"
+    },
+    {
+      "text": "\nz.show(resDF.filter(\"click_hournum is not null\"))\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 09:58:11.068",
+      "progress": 75,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "cmpgn_num": "string",
+                      "svc_mgmt_num": "string",
+                      "extrt_seq": "string",
+                      "chnl_typ": "string",
+                      "cmpgn_typ": "string",
+                      "url_yn": "string",
+                      "send_yn": "string",
+                      "read_yn": "string",
+                      "click_yn": "string",
+                      "send_dt": "string",
+                      "send_time": "string",
+                      "read_dt": "string",
+                      "read_time": "string",
+                      "click_dt": "string",
+                      "click_time": "string",
+                      "send_daynum": "string",
+                      "click_daynum": "string",
+                      "send_hournum": "string",
+                      "click_hournum": "string",
+                      "day_gap": "string",
+                      "hour_gap": "string",
+                      "minute_gap": "string",
+                      "second_gap": "string",
+                      "send_ym": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                },
+                "multiBarChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "stacked": true
+                }
+              },
+              "commonSetting": {},
+              "keys": [
+                {
+                  "name": "send_hournum",
+                  "index": 17.0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [
+                {
+                  "name": "hour_gap",
+                  "index": 20.0,
+                  "aggr": "sum"
+                }
+              ],
+              "values": [
+                {
+                  "name": "svc_mgmt_num",
+                  "index": 1.0,
+                  "aggr": "count"
+                }
+              ]
+            },
+            "helium": {}
+          }
+        },
+        "enabled": false
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764638864655_898851625",
+      "id": "paragraph_1764638864655_898851625",
+      "dateCreated": "2025-12-02 01:27:44.655",
+      "dateStarted": "2025-12-04 08:29:46.920",
+      "dateFinished": "2025-12-04 08:30:13.914",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val sendMonth \u003d \"202512\"\r\nval featureMonth \u003d \"202511\"\r\nval period \u003d 3\r\nval sendYmList \u003d getPreviousMonths(sendMonth, period+2)\r\nval featureYmList \u003d getPreviousMonths(featureMonth, period+2)\r\n\r\nval featureDTList \u003d getDaysBetween(featureYmList(0)+\"01\", sendMonth+\"01\")",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:49:23.529",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34msendMonth\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 202512\n\u001b[1m\u001b[34mfeatureMonth\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 202511\n\u001b[1m\u001b[34mperiod\u001b[0m: \u001b[1m\u001b[32mInt\u001b[0m \u003d 3\n\u001b[1m\u001b[34msendYmList\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(202508, 202509, 202510, 202511, 202512)\n\u001b[1m\u001b[34mfeatureYmList\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(202507, 202508, 202509, 202510, 202511)\n\u001b[1m\u001b[34mfeatureDTList\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(20250701, 20250702, 20250703, 20250704, 20250705, 20250706, 20250707, 20250708, 20250709, 20250710, 20250711, 20250712, 20250713, 20250714, 20250715, 20250716, 20250717, 20250718, 20250719, 20250720, 20250721, 20250722, 20250723, 20250724, 20250725, 20250726, 20250727, 20250728, 20250729, 20250730, 20250731, 20250801, 20250802, 20250803, 20250804, 20250805, 20250806, 20250807, ...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764742953919_436300403",
+      "id": "paragraph_1764742953919_436300403",
+      "dateCreated": "2025-12-03 06:22:33.919",
+      "dateStarted": "2025-12-21 12:49:23.618",
+      "dateFinished": "2025-12-21 12:49:23.886",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val upperHourGap \u003d 1\nval startHour \u003d 10\nval endHour \u003d 17\n\nval resDFFiltered \u003d resDF\n    // .filter(\"svc_mgmt_num like \u0027%0\u0027\")\n    .filter(s\"\"\"send_ym in (${sendYmList.mkString(\",\")})\"\"\")\n    .filter(s\"hour_gap is null or (hour_gap between 0 and 5)\")\n    .filter(s\"send_hournum between $startHour and $endHour\")\n    // .filter(\"cmpgn_typ\u003d\u003d\u0027Sales\u0027\")\n    .selectExpr(\"cmpgn_num\",\"svc_mgmt_num\",\"chnl_typ\",\"cmpgn_typ\",\"send_ym\",\"send_dt\",\"send_time\",\"send_daynum\",\"send_hournum\",\"click_dt\",\"click_time\",\"click_daynum\",\"click_hournum\",\"case when hour_gap is null then 0 else 1 end click_yn\",\"hour_gap\")\n    .withColumn(\"res_utility\", F.expr(s\"case when hour_gap is null then 0.0 else 1.0 / (1 + hour_gap) end\"))\n    .dropDuplicates()\n    .cache()",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:49:29.550",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "multiBarChart",
+              "height": 300.0,
+              "optionOpen": true,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "svc_mgmt_num": "string",
+                      "send_cnt": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                },
+                "multiBarChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default",
+                  "stacked": false
+                }
+              },
+              "commonSetting": {},
+              "keys": [
+                {
+                  "name": "send_cnt",
+                  "index": 1.0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [],
+              "values": [
+                {
+                  "name": "svc_mgmt_num",
+                  "index": 0.0,
+                  "aggr": "count"
+                }
+              ]
+            },
+            "helium": {}
+          }
+        },
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mupperHourGap\u001b[0m: \u001b[1m\u001b[32mInt\u001b[0m \u003d 1\n\u001b[1m\u001b[34mstartHour\u001b[0m: \u001b[1m\u001b[32mInt\u001b[0m \u003d 10\n\u001b[1m\u001b[34mendHour\u001b[0m: \u001b[1m\u001b[32mInt\u001b[0m \u003d 17\n\u001b[1m\u001b[34mresDFFiltered\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: string ... 14 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764641394585_598529380",
+      "id": "paragraph_1764641394585_598529380",
+      "dateCreated": "2025-12-02 02:09:54.585",
+      "dateStarted": "2025-12-21 12:49:29.642",
+      "dateFinished": "2025-12-21 12:49:30.370",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val allFeaturesMMKT \u003d spark.sql(\"describe wind_tmt.mmkt_svc_bas_f\").select(\"col_name\").collect().map(_.getString(0))\r\nval sigFeaturesMMKT \u003d spark.read.option(\"header\", \"true\").csv(\"feature_importance/table\u003dmmkt_bas/creation_dt\u003d20230407\").filter(\"rank\u003c\u003d100\").select(\"col\").collect().map(_ (0).toString()).map(_.trim)\r\nval colListForMMKT \u003d (Array(\"svc_mgmt_num\", \"strd_ym feature_ym\", \"mst_work_dt\", \"cust_birth_dt\", \"prcpln_last_chg_dt\", \"fee_prod_id\", \"eqp_mdl_cd\", \"eqp_acqr_dt\", \"equip_chg_cnt\", \"svc_scrb_dt\", \"chg_dt\", \"cust_age_cd\", \"sex_cd\", \"equip_chg_day\", \"last_equip_chg_dt\", \"prev_equip_chg_dt\", \"rten_pen_amt\", \"agrmt_brch_amt\", \"eqp_mfact_cd\"\r\n  , \"allot_mth_cnt\", \"mbr_use_cnt\", \"mbr_use_amt\", \"tyr_mbr_use_cnt\", \"tyr_mbr_use_amt\", \"mth_cnsl_cnt\", \"dsat_cnsl_cnt\", \"simpl_ref_cnsl_cnt\", \"arpu\", \"bf_m1_arpu\", \"voc_arpu\", \"bf_m3_avg_arpu\"\r\n  , \"tfmly_nh39_scrb_yn\", \"prcpln_chg_cnt\", \"email_inv_yn\", \"copn_use_psbl_cnt\", \"data_gift_send_yn\", \"data_gift_recv_yn\", \"equip_chg_mth_cnt\", \"dom_tot_pckt_cnt\", \"scrb_sale_chnl_cl_cd\", \"op_sale_chnl_cl_cd\", \"agrmt_dc_end_dt\"\r\n  , \"svc_cd\", \"svc_st_cd\", \"pps_yn\", \"svc_use_typ_cd\", \"indv_corp_cl_cd\", \"frgnr_yn\", \"nm_cust_num\", \"wlf_dc_cd\"\r\n)\r\n  ++ sigFeaturesMMKT).filter(c \u003d\u003e allFeaturesMMKT.contains(c.trim.split(\" \")(0).trim)).distinct\r\n\r\nval mmktDFTemp \u003d spark.sql(s\"\"\"select ${colListForMMKT.mkString(\",\")}, strd_ym from wind_tmt.mmkt_svc_bas_f a where strd_ym in (${featureYmList.mkString(\",\")})\"\"\")\r\n\r\nval mmktDF \u003d {\r\n  mmktDFTemp\r\n    .join(spark.sql(\"select prod_id fee_prod_id, prod_nm fee_prod_nm from wind.td_zprd_prod\"), Seq(\"fee_prod_id\"), \"left\")\r\n    .filter(\"cust_birth_dt not like \u00279999%\u0027\")\r\n    // .cache()\r\n}\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:49:35.586",
+      "progress": 100,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mallFeaturesMMKT\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(svc_mgmt_num, cntrct_mgmt_num, mst_work_dt, main_oper_dt, svc_scrb_term_yn, scrb_req_rsn_cd, acnt_num, eqp_mdl_cd, eqp_ser_num, tmth_scrb_term_cl_cd, tday_scrb_term_yn, grtm_cl_cd, svc_subsc_ym, svc_scrb_dt, svc_cd, svc_st_chg_cd, svc_chg_rsn_cd, svc_st_dtl_cd, svc_st_cd, svc_cnt, svc_use_typ_cd, svc_term_ym, svc_term_dt, idnt_num_cd, fee_prod_id, fst_scrb_org_id, term_rsn_cd, term_org_id, pps_yn, usim_mdl_cd, usim_ser_num, scrb_cl_cd, term_cl_cd, tfmly_nh39_scrb_yn, tfmly_nh39_scrb_dt, tfmly_nh39_term_dt, mng_nice_cb_scr, mng_nice_cb_grd, mng_ccrm_scr, mng_ccrm_grd, mng_ccbm_scr, mng_ccbm_grd, mng_recr_scr, mng_ccrm_as_grd, mng_ccrm_cb_grd, mng_ccbm_as_grd, mng_ccbm_ceo_cb_grd, google_dcb_cnt, google_dcb_amt, asgn_svc_num...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d2"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d3"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764739202982_181479704",
+      "id": "paragraph_1764739202982_181479704",
+      "dateCreated": "2025-12-03 05:20:02.982",
+      "dateStarted": "2025-12-21 12:49:35.676",
+      "dateFinished": "2025-12-21 12:49:44.273",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val predictionDTSta \u003d \"20251101\"\nval predictionDTEnd \u003d \"20251201\"\n\nspark.sparkContext.setCheckpointDir(\"hdfs://scluster/user/g1110566/checkpoint\")\n\n\nval resDFSelected \u003d resDFFiltered\n    .withColumn(\"feature_ym\", F.date_format(F.add_months(F.unix_timestamp($\"send_dt\", \"yyyyMMdd\").cast(TimestampType), -1), \"yyyyMM\").cast(StringType))\n    .selectExpr(\"cmpgn_num\", \"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_dt\", \"feature_ym\", \"send_daynum\", \"send_hournum send_hournum_cd\", \"click_yn\", \"res_utility\")\n    .dropDuplicates(\"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_hournum_cd\", \"click_yn\")\n    // .cache()\n\nval resDFSelectedTr \u003d resDFSelected.filter(s\"send_dt\u003c$predictionDTSta\")\n// .groupBy(\"svc_mgmt_num\",\"send_ym\",\"feature_ym\").agg(F.sum(\"click_yn\").alias(\"click_yn\"))\n// .withColumn(\"click_yn\", F.expr(\"case when click_yn\u003e0 then 1 else 0 end\"))\n// .cache()\n.checkpoint()\n\nvar resDFSelectedTs \u003d resDFSelected.filter(s\"send_dt\u003e\u003d$predictionDTSta and send_dt\u003c$predictionDTEnd\")\n    .selectExpr(\"cmpgn_num\", \"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_dt\", \"feature_ym\", \"send_hournum_cd\", \"click_yn\", \"res_utility\")\n    // .cache()\n.checkpoint()\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:49:47.290",
+      "progress": 10,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mpredictionDTSta\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 20251101\n\u001b[1m\u001b[34mpredictionDTEnd\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 20251201\n\u001b[1m\u001b[34mresDFSelected\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: string ... 9 more fields]\n\u001b[1m\u001b[34mresDFSelectedTr\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: string ... 9 more fields]\n\u001b[1m\u001b[34mresDFSelectedTs\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: string ... 8 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d4"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d5"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d6"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d7"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d8"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d9"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764739017819_1458690185",
+      "id": "paragraph_1764739017819_1458690185",
+      "dateCreated": "2025-12-03 05:16:57.819",
+      "dateStarted": "2025-12-21 12:49:47.372",
+      "dateFinished": "2025-12-21 12:52:46.138",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val samplingKeyCols \u003d Array(\"chnl_typ\",\"cmpgn_typ\",\"send_daynum\",\"send_hournum_cd\",\"click_yn\")\n// val samplingKeyCols \u003d Array(\"send_ym\", \"feature_ym\", \"click_yn\")\n\nval genSampleNumMulti \u003d 2.0\n\nval samplingRatioMapDF \u003d {\n  resDFSelectedTr\n    .sample(0.3)\n    .groupBy(samplingKeyCols.map(F.col(_)):_*).agg(F.count(\"*\").alias(\"cnt\"))\n    .withColumn(\"min_cnt\", F.min(\"cnt\").over(Window.partitionBy(samplingKeyCols.filter(_!\u003d\"click_yn\").map(F.col(_)):_*)))\n    .withColumn(\"ratio\", F.col(\"min_cnt\") / F.col(\"cnt\"))\n    .withColumn(\"sampling_col\", F.expr(s\"\"\"concat_ws(\u0027-\u0027, ${samplingKeyCols.mkString(\",\")})\"\"\"))\n    .selectExpr(\"sampling_col\", s\"least(1.0, ratio*${genSampleNumMulti}) ratio\")\n    .sort(\"sampling_col\")\n    // .cache()\n}\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:52:50.060",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34msamplingKeyCols\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(chnl_typ, cmpgn_typ, send_daynum, send_hournum_cd, click_yn)\n\u001b[1m\u001b[34mgenSampleNumMulti\u001b[0m: \u001b[1m\u001b[32mDouble\u001b[0m \u003d 2.0\n\u001b[1m\u001b[34msamplingRatioMapDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [sampling_col: string, ratio: double]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764738582669_1614068999",
+      "id": "paragraph_1764738582669_1614068999",
+      "dateCreated": "2025-12-03 05:09:42.669",
+      "dateStarted": "2025-12-21 12:52:50.150",
+      "dateFinished": "2025-12-21 12:52:50.506",
+      "status": "FINISHED"
+    },
+    {
+      "text": "var resDFSelectedTrBal \u003d resDFSelectedTr\n    .withColumn(\"sampling_col\", F.expr(s\"\"\"concat_ws(\u0027-\u0027, ${samplingKeyCols.mkString(\",\")})\"\"\"))\n    .join(F.broadcast(samplingRatioMapDF), \"sampling_col\")\n    .withColumn(\"rand\", F.rand())\n    .filter(\"rand\u003c\u003dratio\")\n    // .drop(\"sampling_col\",\"rand\",\"ratio\")\n    // .withColumn(\"feature_ym\", F.date_format(F.add_months(F.unix_timestamp($\"send_dt\", \"yyyyMMdd\").cast(TimestampType), -1), \"yyyyMM\").cast(StringType))\n    // .selectExpr(\"cmpgn_num\", \"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_dt\", \"feature_ym\", \"send_hournum\", \"click_yn\")\n    // .cache()\n    .checkpoint()\n\n// resDFSelectedTrBal.groupBy(\"click_yn\").count().sort(\"click_yn\").show()\n// resDFSelectedTs.groupBy(\"click_yn\").count().show()",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:52:56.088",
+      "progress": 99,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mresDFSelectedTrBal\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [sampling_col: string, cmpgn_num: string ... 12 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d10"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d11"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d13"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d14"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764756027560_85739584",
+      "id": "paragraph_1764756027560_85739584",
+      "dateCreated": "2025-12-03 10:00:27.560",
+      "dateStarted": "2025-12-21 12:52:56.172",
+      "dateFinished": "2025-12-21 12:53:06.438",
+      "status": "FINISHED"
+    },
+    {
+      "text": "import org.apache.spark.sql.functions._\r\n\r\nval smnSuffix \u003d z.input(\"suffix\", \"0\").toString\r\n\r\n\r\n(resDFSelectedTrBal.select(\"svc_mgmt_num\",\"feature_ym\").union(resDFSelectedTs.select(\"svc_mgmt_num\",\"feature_ym\")).distinct().filter(s\"svc_mgmt_num like \u0027%${smnSuffix}\u0027\")).createOrReplaceTempView(\"user_ym_df\")\r\n\r\nval hourCols \u003d (9 to 18).map(h \u003d\u003e f\"total_traffic_$h%02d\").toSeq\r\n\r\nval xdrDF \u003d hourCols.zipWithIndex.map { case (colName, idx) \u003d\u003e\r\n  spark.sql(\"select a.* from dprobe.mst_app_svc_app_monthly a join user_ym_df b on a.svc_mgmt_num\u003db.svc_mgmt_num and a.ym\u003db.feature_ym where a.svc_mgmt_num like \u0027%${smnSuffix}\u0027\").select(\r\n    col(\"svc_mgmt_num\"),\r\n    col(\"ym\"),\r\n    col(\"rep_app_title\"),\r\n    col(\"app_uid\"),\r\n    lit(f\"$idx%02d\").as(\"hour\").cast(\"int\"),\r\n    col(colName).as(\"traffic\")\r\n  )\r\n}.reduce(_ union _)\r\n.withColumn(\"rep_app_title\", F.expr(\"case when rep_app_title is null then app_uid else rep_app_title end\"))\r\n.groupBy(\"svc_mgmt_num\",\"ym\",\"rep_app_title\",\"hour\").agg(F.sum(\"traffic\").as(\"traffic\"))\r\n.filter(\"traffic\u003e1000 and hour\u003e\u003d9 and hour\u003c\u003d18\")\r\n.selectExpr(\"svc_mgmt_num\",\"ym feature_ym\",\"rep_app_title app_nm\", \"hour send_hournum_cd\")\r\n.groupBy(\"svc_mgmt_num\",\"feature_ym\", \"send_hournum_cd\").agg(F.collect_list(\"app_nm\").alias(\"app_usage_token\"))\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:54:45.073",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "svc_mgmt_num": "string",
+                      "app_uid": "string",
+                      "app_name": "string",
+                      "cat1": "string",
+                      "cat2": "string",
+                      "rep_app_title": "string",
+                      "t_cat1": "string",
+                      "t_cat2": "string",
+                      "total_traffic_00": "string",
+                      "total_traffic_01": "string",
+                      "total_traffic_02": "string",
+                      "total_traffic_03": "string",
+                      "total_traffic_04": "string",
+                      "total_traffic_05": "string",
+                      "total_traffic_06": "string",
+                      "total_traffic_07": "string",
+                      "total_traffic_08": "string",
+                      "total_traffic_09": "string",
+                      "total_traffic_10": "string",
+                      "total_traffic_11": "string",
+                      "total_traffic_12": "string",
+                      "total_traffic_13": "string",
+                      "total_traffic_14": "string",
+                      "total_traffic_15": "string",
+                      "total_traffic_16": "string",
+                      "total_traffic_17": "string",
+                      "total_traffic_18": "string",
+                      "total_traffic_19": "string",
+                      "total_traffic_20": "string",
+                      "total_traffic_21": "string",
+                      "total_traffic_22": "string",
+                      "total_traffic_23": "string",
+                      "upload_traffic": "string",
+                      "download_traffic": "string",
+                      "total_traffic": "string",
+                      "tethering_traffic": "string",
+                      "use_day_cnt": "string",
+                      "use_cnt": "string",
+                      "ym": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                }
+              },
+              "commonSetting": {}
+            }
+          }
+        },
+        "enabled": true
+      },
+      "settings": {
+        "params": {
+          "suffix": "000"
+        },
+        "forms": {
+          "suffix": {
+            "type": "TextBox",
+            "name": "suffix",
+            "displayName": "suffix",
+            "defaultValue": "0",
+            "hidden": false
+          }
+        }
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[33mwarning: \u001b[0mthere was one deprecation warning; for details, enable `:setting -deprecation\u0027 or `:replay -deprecation\u0027\nimport org.apache.spark.sql.functions._\n\u001b[1m\u001b[34msmnSuffix\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 000\n\u001b[1m\u001b[34mhourCols\u001b[0m: \u001b[1m\u001b[32mscala.collection.immutable.Seq[String]\u001b[0m \u003d Vector(total_traffic_09, total_traffic_10, total_traffic_11, total_traffic_12, total_traffic_13, total_traffic_14, total_traffic_15, total_traffic_16, total_traffic_17, total_traffic_18)\n\u001b[1m\u001b[34mxdrDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [svc_mgmt_num: string, feature_ym: string ... 2 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1766134700276_1258055755",
+      "id": "paragraph_1766134700276_1258055755",
+      "dateCreated": "2025-12-19 08:58:20.276",
+      "dateStarted": "2025-12-21 12:54:45.176",
+      "dateFinished": "2025-12-21 12:54:49.348",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark.sql\nSELECT \n    -- date_format(\n    --     from_utc_timestamp(\n    --         from_unixtime(summary_create_time),\n    --         \"Asia/Seoul\"\n    --     ),\n    --     \"yyyy-MM-dd HH:mm:ss\"\n    -- ) AS summary_create_time,\n    \n    distinct \n    date_format(\n        from_utc_timestamp(\n            from_unixtime(traffic_first_time),\n            \"Asia/Seoul\"\n        ),\n        \"yyyy-MM-dd HH:mm:ss\"\n    ) AS traffic_first_time,\n    \n    svc_mgmt_num,\n    app_id,\n    app_title_ko\nFROM dprobe_raw.xdr_app \nWHERE svc_mgmt_num \u003d \u0027s:e4e78b17ec7efcbc554478829a9272da96a34a40d73dbdf39a9bbad8dc9d83b7\u0027\n    AND dt \u003d \u002720251216\u0027 \n    AND hh \u003e\u003d 10 and hh \u003c\u003d 19 \n    and app_id \u003d \u0027H032\u0027\nORDER BY traffic_first_time\nLIMIT 100;",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 09:58:24.697",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "editorHide": true,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "traffic_first_time": "string",
+                      "svc_mgmt_num": "string",
+                      "app_id": "string",
+                      "app_title_ko": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                }
+              },
+              "commonSetting": {}
+            }
+          }
+        },
+        "enabled": false
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1766129750200_155262183",
+      "id": "paragraph_1766129750200_155262183",
+      "dateCreated": "2025-12-19 07:35:50.201",
+      "dateStarted": "2025-12-19 08:17:33.739",
+      "dateFinished": "2025-12-19 08:26:21.906",
+      "status": "FINISHED"
+    },
+    {
+      "text": "\nval trainDF \u003d resDFSelectedTrBal.filter(s\"svc_mgmt_num like \u0027%${smnSuffix}\u0027\").join(mmktDF,Seq(\"svc_mgmt_num\",\"feature_ym\")).join(xdrDF, Seq(\"svc_mgmt_num\",\"feature_ym\",\"send_hournum_cd\"))\nval testDF \u003d resDFSelectedTs.filter(s\"svc_mgmt_num like \u0027%${smnSuffix}\u0027\").join(mmktDF,Seq(\"svc_mgmt_num\",\"feature_ym\")).join(xdrDF, Seq(\"svc_mgmt_num\",\"feature_ym\",\"send_hournum_cd\"))",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:54:56.731",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {
+          "suffix": "3"
+        },
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mtrainDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [svc_mgmt_num: string, feature_ym: string ... 124 more fields]\n\u001b[1m\u001b[34mtestDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [svc_mgmt_num: string, feature_ym: string ... 120 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764755002817_1620624445",
+      "id": "paragraph_1764755002817_1620624445",
+      "dateCreated": "2025-12-03 09:43:22.818",
+      "dateStarted": "2025-12-21 12:54:56.823",
+      "dateFinished": "2025-12-21 12:54:57.069",
+      "status": "FINISHED"
+    },
+    {
+      "text": "trainDF.show()",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 12:56:47.362",
+      "progress": 18,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d18"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1766321104736_104232593",
+      "id": "paragraph_1766321104736_104232593",
+      "dateCreated": "2025-12-21 12:45:04.737",
+      "dateStarted": "2025-12-21 12:56:47.440",
+      "dateFinished": "2025-12-21 12:56:11.050",
+      "status": "RUNNING"
+    },
+    {
+      "text": "val noFeatureCols \u003d Array(\"click_yn\")\r\n\r\nval tokenCols \u003d trainDF.columns.filter(x \u003d\u003e x.endsWith(\"_token\")).distinct\r\nval continuousCols \u003d (trainDF.columns.filter(x \u003d\u003e numericColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false)).distinct.filter(x \u003d\u003e !tokenCols.contains(x) \u0026\u0026 !noFeatureCols.contains(x))).distinct\r\nval categoryCols \u003d (trainDF.columns.filter(x \u003d\u003e categoryColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false)).distinct.filter(x \u003d\u003e !tokenCols.contains(x) \u0026\u0026 !noFeatureCols.contains(x) \u0026\u0026 !continuousCols.contains(x))).distinct\r\nval vectorCols \u003d trainDF.columns.filter(x \u003d\u003e x.endsWith(\"_vec\"))\r\n\r\nval trainDFRev \u003d trainDF.select(\r\n        // (Array(\"cmpgn_num\", \"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_dt\", \"feature_ym\", \"click_yn\").map(F.col(_))\r\n        (Array(\"svc_mgmt_num\", \"send_ym\", \"feature_ym\", \"click_yn\", \"res_utility\").map(F.col(_))\r\n        ++ tokenCols.map(cl \u003d\u003e F.coalesce(F.col(cl), F.array(F.lit(\"#\"))).alias(cl))\r\n        ++ vectorCols.map(cl \u003d\u003e F.col(cl).alias(cl))\r\n        ++ categoryCols.map(cl \u003d\u003e F.when(F.col(cl) \u003d\u003d\u003d \"\", F.lit(\"UKV\")).otherwise(F.coalesce(F.col(cl).cast(\"string\"), F.lit(\"UKV\"))).alias(cl))\r\n        ++ continuousCols.map(cl \u003d\u003e F.coalesce(F.col(cl).cast(\"float\"), F.lit(Double.NaN)).alias(cl))\r\n        ).distinct\r\n        : _*)\r\n        .withColumn(\"suffix\", F.lit(smnSuffix))\r\n        //.cache()\r\n\r\nval testDFRev \u003d testDF.select(\r\n        (Array(\"cmpgn_num\", \"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_dt\", \"feature_ym\", \"click_yn\", \"res_utility\").map(F.col(_))\r\n        ++ tokenCols.map(cl \u003d\u003e F.coalesce(F.col(cl), F.array(F.lit(\"#\"))).alias(cl))\r\n        ++ vectorCols.map(cl \u003d\u003e F.col(cl).alias(cl))\r\n        ++ categoryCols.map(cl \u003d\u003e F.when(F.col(cl) \u003d\u003d\u003d \"\", F.lit(\"UKV\")).otherwise(F.coalesce(F.col(cl).cast(\"string\"), F.lit(\"UKV\"))).alias(cl))\r\n        ++ continuousCols.map(cl \u003d\u003e F.coalesce(F.col(cl).cast(\"float\"), F.lit(Double.NaN)).alias(cl))\r\n        ).distinct\r\n        : _*)\r\n        .withColumn(\"suffix\", F.lit(smnSuffix))\r\n        //.cache()",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 11:35:13.210",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {
+          "suffix": "3"
+        },
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mnoFeatureCols\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(click_yn)\n\u001b[1m\u001b[34mtokenCols\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(app_usage_token)\n\u001b[1m\u001b[34mcontinuousCols\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(equip_chg_cnt, rten_pen_amt, agrmt_brch_amt, allot_mth_cnt, mbr_use_cnt, mbr_use_amt, tyr_mbr_use_cnt, tyr_mbr_use_amt, mth_cnsl_cnt, dsat_cnsl_cnt, simpl_ref_cnsl_cnt, bf_m1_arpu, voc_arpu, bf_m3_avg_arpu, prcpln_chg_cnt, copn_use_psbl_cnt, equip_chg_mth_cnt, dom_tot_pckt_cnt, voc_base_arpu, pmth_pen_amt, m3_cnst_iocall_voice_line_cnt, tworld_visit_cnt, sale_amt, ym_age, use_mbl_phon_svc_cnt, bf_m4_arpu, ref_dat_rcv_pkt_cnt, allot_prn_amt, voice_arpu, bf_m5_arpu, voc_etc_arpu, fst_eqp_amt, bf_m3_avg_inv_amt, bf_m6_avg_inv_amt, data_call_arpu, sms_arpu, disp_phon_arpu, data_arp...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764832142136_413314670",
+      "id": "paragraph_1764832142136_413314670",
+      "dateCreated": "2025-12-04 07:09:02.136",
+      "dateStarted": "2025-12-21 09:52:02.577",
+      "dateFinished": "2025-12-21 09:52:03.020",
+      "status": "FINISHED"
+    },
+    {
+      "text": "trainDFRev.write.mode(\"overwrite\").option(\"partitionOverwriteMode\", \"dynamic\").partitionBy(\"send_ym\",\"send_hournum_cd\",\"suffix\").parquet(\"aos/sto/trainDFRev\")\ntestDFRev.write.mode(\"overwrite\").option(\"partitionOverwriteMode\", \"dynamic\").partitionBy(\"send_ym\",\"send_hournum_cd\",\"suffix\").parquet(\"aos/sto/testDFRev\")",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-21 09:52:08.481",
+      "progress": 99,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {
+          "suffix": "3"
+        },
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": []
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d21"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d22"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1766224516076_433149416",
+      "id": "paragraph_1766224516076_433149416",
+      "dateCreated": "2025-12-20 09:55:16.076",
+      "dateStarted": "2025-12-21 09:52:08.554",
+      "dateFinished": "2025-12-21 11:15:32.006",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val predDT \u003d \"20251201\"\nval predFeatureYM \u003d getPreviousMonths(predDT.take(6), 2)(0)\nval predSendYM \u003d predDT.take(6)\n\nval hourCols \u003d (9 to 18).map(h \u003d\u003e f\"total_traffic_$h%02d\").toSeq\n\n// unpivot\nval xdrDFPred \u003d hourCols.zipWithIndex.map { case (colName, idx) \u003d\u003e\n  spark.sql(s\"select * from dprobe.mst_app_svc_app_monthly where ym\u003d\u0027$predFeatureYM\u0027\").select(\n    col(\"svc_mgmt_num\"),\n    col(\"ym\"),\n    col(\"rep_app_title\"),\n    col(\"app_uid\"),\n    lit(f\"$idx%02d\").as(\"hour\").cast(\"int\"),\n    col(colName).as(\"traffic\")\n  )\n}.reduce(_ union _)\n.withColumn(\"rep_app_title\", F.expr(\"case when rep_app_title is null then app_uid else rep_app_title end\"))\n.groupBy(\"svc_mgmt_num\",\"ym\",\"rep_app_title\",\"hour\").agg(F.sum(\"traffic\").as(\"traffic\"))\n.filter(\"traffic\u003e500 and hour\u003e\u003d9 and hour\u003c\u003d18\")\n.selectExpr(\"svc_mgmt_num\",\"ym feature_ym\",\"rep_app_title app_nm\", \"hour send_hournum_cd\")\n.groupBy(\"svc_mgmt_num\",\"feature_ym\", \"send_hournum_cd\").agg(F.collect_list(\"app_nm\").alias(\"app_usage_token\"))\n\n\nval predDF \u003d mmktDF.filter(s\"strd_ym\u003d\u003d\u0027${predFeatureYM}\u0027\")\n            .withColumn(\"feature_ym\", F.col(\"strd_ym\"))\n            .withColumn(\"send_ym\", F.expr(predSendYM))\n            .withColumn(\"send_dt\", F.expr(predDT))\n            .withColumn(\"cmpgn_num\", F.expr(\"\u0027#\u0027\"))\n            .withColumn(\"cmpgn_typ\", F.expr(\"\u0027#\u0027\"))\n            .withColumn(\"chnl_typ\", F.expr(\"\u0027#\u0027\"))\n            .withColumn(\"click_yn\", F.expr(\"0\"))\n            .withColumn(\"res_utility\", F.expr(\"0.0\"))\n            .withColumn(\"send_hournum_cd\", F.explode(F.expr(s\"array(${(startHour to endHour).toArray.mkString(\",\")})\")))\n            .join(xdrDFPred, Seq(\"svc_mgmt_num\",\"feature_ym\",\"send_hournum_cd\"))\n\nval predDFRev \u003d predDF.select(\n        (Array(\"cmpgn_num\", \"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_dt\", \"feature_ym\", \"click_yn\", \"res_utility\").map(F.col(_))\n        ++ tokenCols.map(cl \u003d\u003e F.coalesce(F.col(cl), F.array(F.lit(\"#\"))).alias(cl))\n        ++ vectorCols.map(cl \u003d\u003e F.col(cl).alias(cl))\n        ++ categoryCols.map(cl \u003d\u003e F.when(F.col(cl) \u003d\u003d\u003d \"\", F.lit(\"UKV\")).otherwise(F.coalesce(F.col(cl).cast(\"string\"), F.lit(\"UKV\"))).alias(cl))\n        ++ continuousCols.map(cl \u003d\u003e F.coalesce(F.col(cl).cast(\"float\"), F.lit(Double.NaN)).alias(cl))\n        ).distinct\n        : _*)\n        //.cache()\n        ",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 08:58:39.193",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mpredDT\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 20251201\n\u001b[1m\u001b[34mpredFeatureYM\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 202511\n\u001b[1m\u001b[34mpredSendYM\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 202512\n\u001b[1m\u001b[34mhourCols\u001b[0m: \u001b[1m\u001b[32mscala.collection.immutable.Seq[String]\u001b[0m \u003d Vector(total_traffic_09, total_traffic_10, total_traffic_11, total_traffic_12, total_traffic_13, total_traffic_14, total_traffic_15, total_traffic_16, total_traffic_17, total_traffic_18)\n\u001b[1m\u001b[34mxdrDFPred\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [svc_mgmt_num: string, feature_ym: string ... 2 more fields]\n\u001b[1m\u001b[34mpredDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [svc_mgmt_num: string, feature_ym: string ... 120 more fields]\n\u001b[1m\u001b[34mpredDFRev\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: strin...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765765120629_645290475",
+      "id": "paragraph_1765765120629_645290475",
+      "dateCreated": "2025-12-15 02:18:40.629",
+      "dateStarted": "2025-12-20 08:58:39.290",
+      "dateFinished": "2025-12-20 08:58:41.122",
+      "status": "FINISHED"
+    },
+    {
+      "text": "\ndef makePipeline(\n        labelCol: String, \n        indexedLabelCol: String, \n        indexedFeatureCol: String, \n        scaledFeatureCol: String, \n        selectedFeatureCol: String,\n        tokenCols:Array[String], \n        vectorCols:Array[String], \n        continuousCols:Array[String], \n        categoryCols:Array[String],\n        doNotHashingCateCols: Array[String],\n        doNotHashingContCols: Array[String],\n        useSelector:Boolean \u003d false,\n        useScaling:Boolean \u003d false,\n        tokenColsEmbStr:String \u003d \"#\",\n        featureHasherNumFeature:Int \u003d 256,\n        params:Map[String, Any]\n    ) \u003d {\n        \n    val minDF \u003d params.get(\"minDF\").getOrElse(1).asInstanceOf[Int]\n    val minTF \u003d params.get(\"minTF\").getOrElse(5).asInstanceOf[Int]\n    val embSize \u003d params.get(\"embSize\").getOrElse(10).asInstanceOf[Int]\n    val vocabSize \u003d params.get(\"vocabSize\").getOrElse(30).asInstanceOf[Int]\n    val numParts \u003d params.get(\"numParts\").getOrElse(10).asInstanceOf[Int]\n\n    var featureListForAssembler \u003d continuousCols ++ vectorCols\n    \n    import org.apache.spark.ml.{Pipeline, PipelineStage}\n    val transformPipeline \u003d new Pipeline().setStages(Array[PipelineStage]())//\n    \n    if (labelCol!\u003d\"\"){\n        transformPipeline.setStages(Array(new StringIndexer().setInputCol(labelCol).setOutputCol(indexedLabelCol).setHandleInvalid(\"skip\")))\n    }\n    \n    val tokenColsEmb \u003d tokenCols.filter(x \u003d\u003e tokenColsEmbStr.split(\",\").map(x.contains(_)).reduceOption(_ || _).getOrElse(false))\n    val tokenColsCnt \u003d tokenCols.filter(!tokenColsEmb.contains(_))\n    \n    if (embSize \u003e 0 \u0026\u0026 tokenColsEmb.size \u003e 0) {\n      val embEncoder \u003d tokenColsEmb.map(c \u003d\u003e new Word2Vec().setNumPartitions(numParts).setSeed(46).setVectorSize(embSize).setMinCount(minTF).setInputCol(c).setOutputCol(c + \"_embvec\"))\n      transformPipeline.setStages(if(transformPipeline.getStages.isEmpty){embEncoder}else{transformPipeline.getStages++embEncoder})\n      featureListForAssembler ++\u003d tokenColsEmb.map(_ + \"_embvec\")\n    }\n    \n    if (tokenColsCnt.size \u003e 0) {\n      val cntVerctorizer \u003d tokenColsCnt.map(c \u003d\u003e new HashingTF().setInputCol(c).setOutputCol(c + \"_cntvec\").setNumFeatures(vocabSize))\n      transformPipeline.setStages(if(transformPipeline.getStages.isEmpty){cntVerctorizer\n      }else{transformPipeline.getStages++cntVerctorizer\n      })\n      featureListForAssembler ++\u003d tokenColsCnt.map(_ + \"_cntvec\")\n      \n    }\n    \n    if (featureHasherNumFeature \u003e 0 \u0026\u0026 categoryCols.size \u003e 0) {\n        \n      val featureHasher \u003d new FeatureHasher().setNumFeatures(featureHasherNumFeature)\n      .setInputCols((continuousCols++categoryCols)\n      .filter(c \u003d\u003e !doNotHashingContCols.contains(c))\n      .filter(c \u003d\u003e !doNotHashingCateCols.contains(c))\n      ).setOutputCol(\"feature_hashed\")\n      \n    \n      transformPipeline.setStages(if(transformPipeline.getStages.isEmpty){Array(featureHasher)}else{transformPipeline.getStages++Array(featureHasher)})\n      featureListForAssembler \u003d featureListForAssembler.filter(!continuousCols.contains(_))\n      featureListForAssembler ++\u003d Array(\"feature_hashed\")\n    \n      if (doNotHashingCateCols.size\u003e0) {\n          val catetoryIndexerList \u003d doNotHashingCateCols.map(c \u003d\u003e new StringIndexer().setInputCol(c).setOutputCol(c + \"_index\").setHandleInvalid(\"keep\"))\n          val encoder \u003d new OneHotEncoder().setInputCols(doNotHashingCateCols.map(c \u003d\u003e c + \"_index\")).setOutputCols(doNotHashingCateCols.map(c \u003d\u003e c + \"_enc\")).setHandleInvalid(\"keep\")\n          transformPipeline.setStages(if(transformPipeline.getStages.isEmpty){catetoryIndexerList ++ Array(encoder)}else{transformPipeline.getStages++catetoryIndexerList ++ Array(encoder)})\n          featureListForAssembler ++\u003d doNotHashingCateCols.map(_ + \"_enc\")\n      }\n      \n      if (doNotHashingContCols.size\u003e0){\n          featureListForAssembler ++\u003d doNotHashingContCols\n      }\n      \n    } else if (featureHasherNumFeature \u003c 1 \u0026\u0026 categoryCols.size \u003e 0) {\n      val catetoryIndexerList \u003d categoryCols.map(c \u003d\u003e new StringIndexer().setInputCol(c).setOutputCol(c + \"_index\").setHandleInvalid(\"keep\"))\n      val encoder \u003d new OneHotEncoder().setInputCols(categoryCols.map(c \u003d\u003e c + \"_index\")).setOutputCols(categoryCols.map(c \u003d\u003e c + \"_enc\")).setHandleInvalid(\"keep\")\n      transformPipeline.setStages(if(transformPipeline.getStages.isEmpty){catetoryIndexerList ++ Array(encoder)}else{transformPipeline.getStages++catetoryIndexerList ++ Array(encoder)})\n      featureListForAssembler ++\u003d categoryCols.map(_ + \"_enc\")\n    }\n    \n    val assembler \u003d new VectorAssembler().setInputCols(featureListForAssembler).setOutputCol(indexedFeatureCol).setHandleInvalid(\"keep\")\n    \n    transformPipeline.setStages(transformPipeline.getStages++Array(assembler))\n     \n    if(useSelector){\n        val selector \u003d new VarianceThresholdSelector().setVarianceThreshold(8.0).setFeaturesCol(indexedFeatureCol).setOutputCol(selectedFeatureCol)\n        transformPipeline.setStages(transformPipeline.getStages++Array(selector))\n    }\n    \n    if(useScaling){\n        val inputFeautreCol \u003d if(useSelector){selectedFeatureCol}else{indexedFeatureCol}\n        val scaler \u003d new MinMaxScaler().setInputCol(inputFeautreCol).setOutputCol(scaledFeatureCol)\n      transformPipeline.setStages(transformPipeline.getStages++Array(scaler))\n    }\n    \n    transformPipeline\n}\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 08:58:41.192",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mmakePipeline\u001b[0m: \u001b[1m\u001b[32m(labelCol: String, indexedLabelCol: String, indexedFeatureCol: String, scaledFeatureCol: String, selectedFeatureCol: String, tokenCols: Array[String], vectorCols: Array[String], continuousCols: Array[String], categoryCols: Array[String], doNotHashingCateCols: Array[String], doNotHashingContCols: Array[String], useSelector: Boolean, useScaling: Boolean, tokenColsEmbStr: String, featureHasherNumFeature: Int, params: Map[String,Any])org.apache.spark.ml.Pipeline\u001b[0m\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765330122144_909170709",
+      "id": "paragraph_1765330122144_909170709",
+      "dateCreated": "2025-12-10 01:28:42.144",
+      "dateStarted": "2025-12-20 08:58:41.256",
+      "dateFinished": "2025-12-20 08:58:42.110",
+      "status": "FINISHED"
+    },
+    {
+      "text": "\nval tokenColsEmbStr \u003d \"#\"\nval featureHasherNumFeature \u003d 128\n\nvar nodeNumber \u003d 10\nvar coreNumber \u003d 32\ntry {\n  nodeNumber \u003d spark.conf.get(\"spark.executor.instances\").toInt\n  coreNumber \u003d spark.conf.get(\"spark.executor.cores\").toInt\n} catch {\n  case ex: Exception \u003d\u003e {}\n}\n\nval params:Map[String, Any] \u003d Map(\"minDF\"-\u003e1,\"minTF\"-\u003e5,\"embSize\"-\u003e30,\"vocabSize\"-\u003e30, \"numParts\"-\u003enodeNumber)\n\nval labelCol \u003d \"click_yn\"\nval indexedLabelColCls \u003d \"indexedLabelCls\"\nval indexedLabelColReg \u003d \"res_utility\"\nval indexedFeatureCol \u003d \"indexedFeatures\"\nval scaledFeatureCol \u003d \"scaledFeatures\"\nval selectedFeatureCol \u003d \"selectedFeatures\"\n\n// val tokenCols \u003d tokenCols\n// val vectorCols \u003d vectorCols\n// val continuousCols \u003d continuousCols\n// val categoryCols \u003d categoryCols\n\nval doNotHashingCateCols \u003d Array[String](\"send_hournum_cd\")\nval doNotHashingContCols \u003d Array[String]()\n\nval transformPipeline \u003d makePipeline(\n    labelCol, \n    indexedLabelColCls, \n    indexedFeatureCol, \n    scaledFeatureCol,\n    selectedFeatureCol,\n    tokenCols, \n    vectorCols, \n    continuousCols, \n    categoryCols,\n    doNotHashingCateCols,\n    doNotHashingContCols,\n    params \u003d params,\n    // tokenColsEmbStr \u003d \"app_usage_token\"\n    useSelector \u003d false,\n    featureHasherNumFeature \u003d featureHasherNumFeature\n)\n\n// val transformer \u003d transformPipeline.fit(trainDFRev.sample(0.3))\nval transformer \u003d PipelineModel.load(\"aos/sto/transformPipelineXDR\")\n\n// val transformedTrainDF \u003d transformer.transform(trainDFRev)//.cache()\n// val transformedTestDF \u003d transformer.transform(testDFRev)//.cache()\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 08:58:42.156",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mtokenColsEmbStr\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d #\n\u001b[1m\u001b[34mfeatureHasherNumFeature\u001b[0m: \u001b[1m\u001b[32mInt\u001b[0m \u003d 128\n\u001b[1m\u001b[34mnodeNumber\u001b[0m: \u001b[1m\u001b[32mInt\u001b[0m \u003d 100\n\u001b[1m\u001b[34mcoreNumber\u001b[0m: \u001b[1m\u001b[32mInt\u001b[0m \u003d 4\n\u001b[1m\u001b[34mparams\u001b[0m: \u001b[1m\u001b[32mMap[String,Any]\u001b[0m \u003d Map(embSize -\u003e 30, numParts -\u003e 100, vocabSize -\u003e 30, minTF -\u003e 5, minDF -\u003e 1)\n\u001b[1m\u001b[34mlabelCol\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d click_yn\n\u001b[1m\u001b[34mindexedLabelColCls\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d indexedLabelCls\n\u001b[1m\u001b[34mindexedLabelColReg\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d res_utility\n\u001b[1m\u001b[34mindexedFeatureCol\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d indexedFeatures\n\u001b[1m\u001b[34mscaledFeatureCol\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d scaledFeatures\n\u001b[1m\u001b[34mselectedFeatureCol\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d selectedFeatures\n\u001b[1m\u001b[34mdoNotHashingCateCols\u001b[0m: \u001b[1m\u001b[32mArray[String]...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d4"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d5"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d6"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d7"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d8"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d9"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d10"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d11"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d12"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d13"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d14"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d15"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d16"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d17"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d18"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d19"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d20"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d21"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d22"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764833771372_1110341451",
+      "id": "paragraph_1764833771372_1110341451",
+      "dateCreated": "2025-12-04 07:36:11.373",
+      "dateStarted": "2025-12-20 08:58:42.239",
+      "dateFinished": "2025-12-20 08:59:19.187",
+      "status": "FINISHED"
+    },
+    {
+      "title": "Transformer Saving",
+      "text": "// transformer.write.overwrite().save(\"aos/sto/transformPipelineXDR\")\n\nsendYmList.filter(_\u003cpredictionDTSta.take(6)).foreach{sendYm \u003d\u003e\n    // val sendYm \u003d \"202510\"\n    println(sendYm)\n    val transformedTrainDF \u003d transformer.transform(trainDFRev.filter(s\"send_ym\u003d\u0027$sendYm\u0027\"))//.cache()\n    transformedTrainDF.write.mode(\"overwrite\").partitionBy(\"send_ym\",\"send_hournum_cd\").parquet(\"aos/sto/transformedTrainDFXDR\")\n}\n\n// sendYmList.filter(_\u003e\u003dpredictionDTSta.take(6)).foreach{sendYm \u003d\u003e\n//     println(sendYm)\n//     val transformedTestDF \u003d transformer.transform(testDFRev.filter(s\"send_ym\u003d\u0027$sendYm\u0027\"))//.cache()\n//     transformedTestDF.write.mode(\"overwrite\").partitionBy(\"send_ym\",\"send_hournum_cd\").parquet(\"aos/sto/transformedTestDFXDR\")\n// }",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-20 08:59:19.275",
+      "progress": 90,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "editorHide": false,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "ERROR",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "202508\norg.apache.spark.SparkException: Job aborted.\n  at org.apache.spark.sql.execution.datasources.FileFormatWriter$.write(FileFormatWriter.scala:231)\n  at org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand.run(InsertIntoHadoopFsRelationCommand.scala:188)\n  at org.apache.spark.sql.execution.command.DataWritingCommandExec.sideEffectResult$lzycompute(commands.scala:108)\n  at org.apache.spark.sql.execution.command.DataWritingCommandExec.sideEffectResult(commands.scala:106)\n  at org.apache.spark.sql.execution.command.DataWritingCommandExec.doExecute(commands.scala:131)\n  at org.apache.spark.sql.execution.SparkPlan.$anonfun$execute$1(SparkPlan.scala:180)\n  at org.apache.spark.sql.execution.SparkPlan.$anonfun$executeQuery$1(SparkPlan.scala:218)\n  at org.apache.spark.rdd.RDDOperationScope$.withScope(RDDOperationScope.scala:151)\n  at org.apache.spark.sql.execution.SparkPlan.executeQuery(SparkPlan.scala:215)\n  at org.apache.spark.sql.execution.SparkPlan.execute(SparkPlan.scala:176)\n  at org.apache.spark.sql.execution.QueryExecution.toRdd$lzycompute(QueryExecution.scala:132)\n  at org.apache.spark.sql.execution.QueryExecution.toRdd(QueryExecution.scala:131)\n  at org.apache.spark.sql.DataFrameWriter.$anonfun$runCommand$1(DataFrameWriter.scala:989)\n  at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId$5(SQLExecution.scala:103)\n  at org.apache.spark.sql.execution.SQLExecution$.withSQLConfPropagated(SQLExecution.scala:163)\n  at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withNewExecutionId$1(SQLExecution.scala:90)\n  at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:775)\n  at org.apache.spark.sql.execution.SQLExecution$.withNewExecutionId(SQLExecution.scala:64)\n  at org.apache.spark.sql.DataFrameWriter.runCommand(DataFrameWriter.scala:989)\n  at org.apache.spark.sql.DataFrameWriter.saveToV1Source(DataFrameWriter.scala:438)\n  at org.apache.spark.sql.DataFrameWriter.saveInternal(DataFrameWriter.scala:415)\n  at org.apache.spark.sql.DataFrameWriter.save(DataFrameWriter.scala:293)\n  at org.apache.spark.sql.DataFrameWriter.parquet(DataFrameWriter.scala:874)\n  at $anonfun$res2$2(\u003cconsole\u003e:79)\n  at $anonfun$res2$2$adapted(\u003cconsole\u003e:75)\n  at scala.collection.IndexedSeqOptimized.foreach(IndexedSeqOptimized.scala:36)\n  at scala.collection.IndexedSeqOptimized.foreach$(IndexedSeqOptimized.scala:33)\n  at scala.collection.mutable.ArrayOps$ofRef.foreach(ArrayOps.scala:198)\n  ... 56 elided\nCaused by: org.apache.spark.SparkException: Job 25 cancelled part of cancelled job group zeppelin|anonymous|2MC68ADVY|paragraph_1765520460775_2098641576\n  at org.apache.spark.scheduler.DAGScheduler.failJobAndIndependentStages(DAGScheduler.scala:2303)\n  at org.apache.spark.scheduler.DAGScheduler.handleJobCancellation(DAGScheduler.scala:2199)\n  at org.apache.spark.scheduler.DAGScheduler.$anonfun$handleJobGroupCancelled$4(DAGScheduler.scala:1093)\n  at scala.runtime.java8.JFunction1$mcVI$sp.apply(JFunction1$mcVI$sp.java:23)\n  at scala.collection.mutable.HashSet.foreach(HashSet.scala:79)\n  at org.apache.spark.scheduler.DAGScheduler.handleJobGroupCancelled(DAGScheduler.scala:1092)\n  at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.doOnReceive(DAGScheduler.scala:2452)\n  at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.onReceive(DAGScheduler.scala:2432)\n  at org.apache.spark.scheduler.DAGSchedulerEventProcessLoop.onReceive(DAGScheduler.scala:2421)\n  at org.apache.spark.util.EventLoop$$anon$1.run(EventLoop.scala:49)\n  at org.apache.spark.scheduler.DAGScheduler.runJob(DAGScheduler.scala:902)\n  at org.apache.spark.SparkContext.runJob(SparkContext.scala:2196)\n  at org.apache.spark.sql.execution.datasources.FileFormatWriter$.write(FileFormatWriter.scala:200)\n  ... 83 more\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30432/jobs/job?id\u003d25"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765520460775_2098641576",
+      "id": "paragraph_1765520460775_2098641576",
+      "dateCreated": "2025-12-12 06:21:00.775",
+      "dateStarted": "2025-12-20 08:59:19.360",
+      "dateFinished": "2025-12-20 09:47:21.574",
+      "status": "ABORT"
+    },
+    {
+      "title": "Transformer Loading",
+      "text": "val transformer \u003d PipelineModel.load(\"aos/sto/transformPipeline\")\r\nval transformedTrainDF \u003d spark.read.parquet(\"aos/sto/transformedTrainDF\").cache()\r\nval transformedTestDF \u003d spark.read.parquet(\"aos/sto/transformedTestDF\").cache()\r\n\r\nval transformedPredDF \u003d transformer.transform(predDFRev)//.cache()\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 04:53:05.643",
+      "progress": 100,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mtransformer\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.PipelineModel\u001b[0m \u003d pipeline_a0951b72df02\n\u001b[1m\u001b[34mtransformedTrainDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [svc_mgmt_num: string, feature_ym: string ... 103 more fields]\n\u001b[1m\u001b[34mtransformedTestDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: string ... 107 more fields]\n\u001b[1m\u001b[34mtransformedPredDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: string ... 107 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d4"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d5"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d6"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d7"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d8"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d9"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d10"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d11"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d12"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d13"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d14"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d15"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d16"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d17"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d18"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d19"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d20"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d21"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d22"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765521446308_1651058139",
+      "id": "paragraph_1765521446308_1651058139",
+      "dateCreated": "2025-12-12 06:37:26.308",
+      "dateStarted": "2025-12-17 04:41:05.881",
+      "dateFinished": "2025-12-17 04:42:04.723",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val labelIndexer: Option[StringIndexerModel] \u003d transformer.stages.collectFirst {\r\n  case sim: StringIndexerModel \u003d\u003e sim\r\n}\r\n\r\nlabelIndexer.get.labelsArray(0)",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 04:42:04.741",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mlabelIndexer\u001b[0m: \u001b[1m\u001b[32mOption[org.apache.spark.ml.feature.StringIndexerModel]\u001b[0m \u003d Some(StringIndexerModel: uid\u003dstrIdx_8330f538cf13, handleInvalid\u003dskip)\n\u001b[1m\u001b[34mres2\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(0, 1)\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765445117259_700668975",
+      "id": "paragraph_1765445117259_700668975",
+      "dateCreated": "2025-12-11 09:25:17.260",
+      "dateStarted": "2025-12-17 04:42:04.856",
+      "dateFinished": "2025-12-17 04:42:05.201",
+      "status": "FINISHED"
+    },
+    {
+      "text": "import org.apache.spark.ml.classification._\r\nimport org.apache.spark.ml.regression._\r\n\r\nimport org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator\r\nimport org.apache.spark.ml.feature.StringIndexerModel\r\n\r\nval labelIndexer: Option[StringIndexerModel] \u003d transformer.stages.collectFirst {\r\n  case sim: StringIndexerModel \u003d\u003e sim\r\n}\r\n\r\nval featureColName \u003d indexedFeatureCol//selectedFeatureCol\r\n\r\nval gbtc \u003d new GBTClassifier()\r\n  .setLabelCol(indexedLabelColCls)\r\n  .setFeaturesCol(featureColName)\r\n  .setMaxIter(100)\r\n//   .setMaxDepth(4)\r\n  .setFeatureSubsetStrategy(\"auto\")\r\n//   .setWeightCol(\"sample_weight\")\r\n    .setPredictionCol(\"pred_gbtc\")\r\n  .setProbabilityCol(\"prob_gbtc\")\r\n  .setRawPredictionCol(\"pred_raw_gbtc\")\r\n  \r\nval fmc \u003d new FMClassifier()\r\n    .setLabelCol(indexedLabelColCls)\r\n    .setFeaturesCol(featureColName)\r\n    .setStepSize(0.01)\r\n    .setPredictionCol(\"pred_fmc\")\r\n    .setProbabilityCol(\"prob_fmc\")\r\n    .setRawPredictionCol(\"pred_raw_fmc\")\r\n\r\nval xgbParamC \u003d Map(\r\n  \"eta\" -\u003e 0.01,\r\n  \"max_depth\" -\u003e 6,\r\n  \"objective\" -\u003e \"binary:logistic\",\r\n  \"num_round\" -\u003e 100,\r\n  \"num_workers\" -\u003e 10,\r\n//   \"num_early_stopping_rounds\" -\u003e 10,  // early stopping\r\n//   \"maximize_evaluation_metrics\" -\u003e true,  // loss 기준이면 false\r\n  \"eval_metric\" -\u003e \"error\",\r\n//   \"scale_pos_weight\" -\u003e 1.0\r\n)\r\n\r\nval xgbc \u003d {\r\n  new XGBoostClassifier(xgbParamC)\r\n    .setFeaturesCol(featureColName)\r\n    .setLabelCol(indexedLabelColCls)\r\n    .setMissing(0)\r\n    .setSeed(0)\r\n    // .setWeightCol(\"sample_weight\")\r\n    .setProbabilityCol(\"prob_xgbc\")\r\n    .setPredictionCol(\"pred_xgbc\")\r\n      .setRawPredictionCol(\"pred_raw_xgbc\")\r\n    // .setThresholds(Array(0.4, 0.6))\r\n    // .setEvalSets(Map(\"validation\" -\u003e valData))\r\n}\r\n\r\nval gbtr \u003d new GBTRegressor()\r\n  .setLabelCol(indexedLabelColReg)\r\n  .setFeaturesCol(featureColName)\r\n  .setMaxIter(100)\r\n//   .setMaxDepth(4)\r\n  .setFeatureSubsetStrategy(\"auto\")\r\n//   .setWeightCol(\"sample_weight\")\r\n    .setPredictionCol(\"pred_gbtr\")\r\n\r\nval fmr \u003d new FMRegressor()\r\n    .setLabelCol(indexedLabelColReg)\r\n    .setFeaturesCol(featureColName)\r\n    .setStepSize(0.01)\r\n    .setPredictionCol(\"pred_fmr\")\r\n\r\nval xgbParamR \u003d Map(\r\n  \"eta\" -\u003e 0.01,\r\n  \"max_depth\" -\u003e 6,\r\n  \"objective\" -\u003e \"reg:squarederror\",\r\n  \"num_round\" -\u003e 100,\r\n  \"num_workers\" -\u003e 10,\r\n//   \"num_early_stopping_rounds\" -\u003e 10,  // early stopping\r\n//   \"maximize_evaluation_metrics\" -\u003e true,  // loss 기준이면 false\r\n  \"eval_metric\" -\u003e \"rmse\",\r\n//   \"scale_pos_weight\" -\u003e 1.0\r\n)\r\n\r\nval xgbr \u003d {\r\n  new XGBoostRegressor(xgbParamR)\r\n    .setFeaturesCol(featureColName)\r\n    .setLabelCol(indexedLabelColReg)\r\n    .setMissing(0)\r\n    .setSeed(0)\r\n    // .setWeightCol(\"sample_weight\")\r\n    .setPredictionCol(\"pred_xgbr\")\r\n    // .setThresholds(Array(0.4, 0.6))\r\n    // .setEvalSets(Map(\"validation\" -\u003e valData))\r\n}\r\n\r\nval labelConverter \u003d new IndexToString()\r\n  .setInputCol(\"prediction_cls\")\r\n  .setOutputCol(\"predictedLabel\")\r\n  .setLabels(labelIndexer.get.labelsArray(0))\r\n\r\nval Array(trainData, valData) \u003d transformedTrainDF.randomSplit(Array(0.8, 0.2), seed \u003d 42)\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 04:42:05.256",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "import org.apache.spark.ml.classification._\nimport org.apache.spark.ml.regression._\nimport org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator\nimport org.apache.spark.ml.feature.StringIndexerModel\n\u001b[1m\u001b[34mlabelIndexer\u001b[0m: \u001b[1m\u001b[32mOption[org.apache.spark.ml.feature.StringIndexerModel]\u001b[0m \u003d Some(StringIndexerModel: uid\u003dstrIdx_8330f538cf13, handleInvalid\u003dskip)\n\u001b[1m\u001b[34mfeatureColName\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d indexedFeatures\n\u001b[1m\u001b[34mgbtc\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.classification.GBTClassifier\u001b[0m \u003d gbtc_9b89e9f75722\n\u001b[1m\u001b[34mfmc\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.classification.FMClassifier\u001b[0m \u003d fmc_5364b198506e\n\u001b[1m\u001b[34mxgbParamC\u001b[0m: \u001b[1m\u001b[32mscala.collection.immutable.Map[String,Any]\u001b[0m \u003d Map(num_workers -\u003e 10, max_depth -\u003e 6, objective -\u003e binary:logistic, eva...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764836200898_700489598",
+      "id": "paragraph_1764836200898_700489598",
+      "dateCreated": "2025-12-04 08:16:40.898",
+      "dateStarted": "2025-12-17 04:42:05.330",
+      "dateFinished": "2025-12-17 04:42:06.462",
+      "status": "FINISHED"
+    },
+    {
+      "text": "// \u003d\u003d\u003d\u003d\u003d Feature Interaction Constraints를 위한 설정 \u003d\u003d\u003d\u003d\u003d\r\n\r\n// 1. VectorAssembler에서 생성된 feature 순서를 파악\r\nval assemblerInputCols \u003d transformPipeline.getStages\r\n  .filter(_.isInstanceOf[VectorAssembler])\r\n  .head.asInstanceOf[VectorAssembler]\r\n  .getInputCols\r\n\r\nprintln(\"Feature columns in order:\")\r\nassemblerInputCols.zipWithIndex.foreach { case (col, idx) \u003d\u003e\r\n  println(s\"  Index $idx: $col\")\r\n}\r\n\r\n// 2. send_hournum_cd의 인덱스 찾기\r\n// send_hournum_cd는 카테고리 변수이므로 one-hot encoding 또는 encoding 후의 컬럼명 찾기\r\nval sendHournumFeatureIndices \u003d assemblerInputCols.zipWithIndex\r\n  .filter { case (colName, _) \u003d\u003e \r\n    colName.contains(\"send_hournum_cd\") || colName \u003d\u003d \"send_hournum_cd_enc\"\r\n  }\r\n  .map(_._2)\r\n\r\nprintln(s\"\\nsend_hournum_cd feature indices: ${sendHournumFeatureIndices.mkString(\", \")}\")\r\n\r\n// 3. Interaction Constraints 설정\r\n// [[group1], [group2], ...] 형태로 설정\r\n// send_hournum_cd를 첫 번째 그룹에 배치하여 우선순위 부여\r\nval sendHournumIndices \u003d if (sendHournumFeatureIndices.nonEmpty) {\r\n  sendHournumFeatureIndices.mkString(\",\")\r\n} else {\r\n  // encoding된 컬럼들을 포함하여 범위 지정\r\n  val startIdx \u003d assemblerInputCols.indexWhere(_.contains(\"send_hournum_cd\"))\r\n  val endIdx \u003d assemblerInputCols.lastIndexWhere(_.contains(\"send_hournum_cd\"))\r\n  (startIdx to endIdx).mkString(\",\")\r\n}\r\n\r\n// 모든 feature indices\r\nval allFeatureIndices \u003d (0 until assemblerInputCols.length).mkString(\",\")\r\n\r\n// 4. XGBoostRegressor에 Feature Interaction Constraints 적용\r\nval xgbParamR_withConstraints \u003d Map(\r\n  \"eta\" -\u003e 0.01,\r\n  \"max_depth\" -\u003e 6,\r\n  \"objective\" -\u003e \"reg:squarederror\",\r\n  \"num_round\" -\u003e 100,\r\n  \"num_workers\" -\u003e 10,\r\n  \"eval_metric\" -\u003e \"rmse\",\r\n  // Feature Interaction Constraints 추가\r\n  // 첫 번째 그룹: send_hournum_cd만 포함 (트리의 첫 분기에서 우선적으로 사용)\r\n  // 두 번째 그룹: 나머지 모든 features\r\n  \"interaction_constraints\" -\u003e s\"[[$sendHournumIndices],[$allFeatureIndices]]\"\r\n)\r\n\r\nval xgbParamR_withMonotone \u003d Map(\r\n  \"eta\" -\u003e 0.01,\r\n  \"max_depth\" -\u003e 6,\r\n  \"objective\" -\u003e \"reg:squarederror\",\r\n  \"num_round\" -\u003e 100,\r\n  \"num_workers\" -\u003e 10,\r\n  \"eval_metric\" -\u003e \"rmse\",\r\n  \"interaction_constraints\" -\u003e s\"[[$sendHournumIndices],[$allFeatureIndices]]\",\r\n  // Monotone constraints: send_hournum_cd에 대해 양/음의 단조성 부여 (0\u003d제약없음, 1\u003d증가, -1\u003d감소)\r\n  \"monotone_constraints\" -\u003e s\"(${assemblerInputCols.map(col \u003d\u003e if (col.contains(\"send_hournum_cd\")) \"1\" else \"0\" ).mkString(\",\")})\"\r\n)\r\n\r\nval xgbr_withConstraints \u003d new XGBoostRegressor(xgbParamR_withMonotone)\r\n  .setFeaturesCol(featureColName)\r\n  .setLabelCol(indexedLabelColReg)\r\n  .setMissing(0)\r\n  .setSeed(0)\r\n  .setPredictionCol(\"pred_xgbr\")\r\n\r\nprintln(\"\\n✅ XGBoostRegressor with Feature Interaction Constraints created!\")\r\nprintln(s\"Interaction Constraints: [[$sendHournumIndices],[$allFeatureIndices]]\")\r\n\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 07:29:38.487",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Feature columns in order:\n  Index 0: feature_hashed\n  Index 1: send_hournum_cd_enc\n\nsend_hournum_cd feature indices: 1\n\n✅ XGBoostRegressor with Feature Interaction Constraints created!\nInteraction Constraints: [[1],[0,1]]\n\u001b[1m\u001b[34massemblerInputCols\u001b[0m: \u001b[1m\u001b[32mArray[String]\u001b[0m \u003d Array(feature_hashed, send_hournum_cd_enc)\n\u001b[1m\u001b[34msendHournumFeatureIndices\u001b[0m: \u001b[1m\u001b[32mArray[Int]\u001b[0m \u003d Array(1)\n\u001b[1m\u001b[34msendHournumIndices\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 1\n\u001b[1m\u001b[34mallFeatureIndices\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d 0,1\n\u001b[1m\u001b[34mxgbParamR_withConstraints\u001b[0m: \u001b[1m\u001b[32mscala.collection.immutable.Map[String,Any]\u001b[0m \u003d Map(num_workers -\u003e 10, max_depth -\u003e 6, interaction_constraints -\u003e [[1],[0,1]], objective -\u003e reg:squarederror, eval_metric -\u003e rmse, num_round -\u003e 100, eta -\u003e 0.01)\n\u001b[1m\u001b[34mxgbParamR_withMonotone\u001b[0m: \u001b[1m\u001b[32mscala.collection.immutable.Map[String,Any]\u001b[0m \u003d Map(num_workers -\u003e 10, max_depth -\u003e 6, interaction_constraints -\u003e [[1],[0,1]], monotone_constraints -\u003e (0,1), objective -\u003e reg:squarederror, eval_m...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765939568349_1781513249",
+      "id": "paragraph_1765939568349_1781513249",
+      "dateCreated": "2025-12-17 02:46:08.349",
+      "dateStarted": "2025-12-17 07:29:38.572",
+      "dateFinished": "2025-12-17 07:29:38.823",
+      "status": "FINISHED"
+    },
+    {
+      "text": "\r\nimport org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}\r\nimport org.apache.spark.ml.evaluation.BinaryClassificationEvaluator\r\n\r\nval modelforCV \u003d xgbc\r\n\r\n// val paramGridXGB \u003d new ParamGridBuilder()\r\n//         .addGrid(xgbc.maxDepth, Array(6))\r\n//         .addGrid(xgbc.numRound, Array(100))\r\n//         .addGrid(xgbc.eta, Array(0.1))\r\n//         // .addGrid(xgbc.scalePosWeight, Array(3.0))\r\n//         .build()\r\n\r\n// val paramGridGBT \u003d new ParamGridBuilder()\r\n//         .addGrid(gbtc.maxDepth, Array(5))\r\n//         .addGrid(gbtc.maxIter, Array(100))\r\n//         .addGrid(gbtc.stepSize, Array(0.1))\r\n//         .build()\r\n\r\n// val paramGrid \u003d if(modelforCV.uid.startsWith(\"xgb\")){\r\n//     paramGridXGB\r\n// }else{\r\n//     paramGridGBT\r\n// }\r\n\r\n// val pipelineMLCls \u003d new CrossValidator()\r\n//   .setEstimator(new Pipeline().setStages(Array(modelforCV)))\r\n//   .setEvaluator(new BinaryClassificationEvaluator().setLabelCol(modelforCV.getLabelCol).setRawPredictionCol(modelforCV.getPredictionCol))\r\n//   .setEstimatorParamMaps(paramGrid)\r\n//   .setNumFolds(3)  // Use 3+ in practice\r\n//   .setParallelism(6)  // Evaluate up to 2 parameter settings in parallel\r\n  \r\nval pipelineMLCls \u003d new Pipeline().setStages(Array(modelforCV))\r\n\r\nval pipelineModelCls \u003d pipelineMLCls.fit(transformedTrainDF\r\n    // .withColumn(\"sample_weight\", F.expr(\"case when click_yn\u003d\u003d0.0 then 1.0 else 1.0 end\"))\r\n    .stat.sampleBy(\r\n            F.col(\"click_yn\"),\r\n            Map(\r\n                0.0 -\u003e 0.6,\r\n                1.0 -\u003e 1.0,\r\n            ),\r\n            42L\r\n        )\r\n)\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 04:42:07.262",
+      "progress": 1,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}\nimport org.apache.spark.ml.evaluation.BinaryClassificationEvaluator\n\u001b[1m\u001b[34mmodelforCV\u001b[0m: \u001b[1m\u001b[32mml.dmlc.xgboost4j.scala.spark.XGBoostClassifier\u001b[0m \u003d xgbc_978c781d6dd1\n\u001b[1m\u001b[34mpipelineMLCls\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.Pipeline\u001b[0m \u003d pipeline_ac1d39bc70d2\n\u001b[1m\u001b[34mpipelineModelCls\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.PipelineModel\u001b[0m \u003d pipeline_ac1d39bc70d2\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d23"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d24"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765789893517_1550413688",
+      "id": "paragraph_1765789893517_1550413688",
+      "dateCreated": "2025-12-15 09:11:33.517",
+      "dateStarted": "2025-12-17 04:42:07.356",
+      "dateFinished": "2025-12-17 04:46:39.895",
+      "status": "FINISHED"
+    },
+    {
+      "text": "import org.apache.spark.ml.evaluation.RegressionEvaluator\r\n\r\nval modelRegforCV \u003d xgbr_withConstraints\r\n\r\n// val paramGridXGB \u003d new ParamGridBuilder()\r\n//         .addGrid(xgbc.maxDepth, Array(6))\r\n//         .addGrid(xgbc.numRound, Array(100))\r\n//         .addGrid(xgbc.eta, Array(0.1))\r\n//         // .addGrid(xgbc.scalePosWeight, Array(3.0))\r\n//         .build()\r\n\r\n// val paramGridGBT \u003d new ParamGridBuilder()\r\n//         .addGrid(gbtc.maxDepth, Array(5))\r\n//         .addGrid(gbtc.maxIter, Array(100))\r\n//         .addGrid(gbtc.stepSize, Array(0.1))\r\n//         .build()\r\n\r\n// val paramGrid \u003d if(modelRegforCV.uid.startsWith(\"xgb\")){\r\n//     paramGridXGB\r\n// }else{\r\n//     paramGridGBT\r\n// }\r\n\r\n// val pipelineMLReg \u003d new CrossValidator()\r\n//   .setEstimator(new Pipeline().setStages(Array(modelRegforCV)))\r\n//   .setEvaluator(new RegressionEvaluator().setLabelCol(modelRegforCV.getLabelCol).setPredictionCol(modelRegforCV.getPredictionCol))\r\n//   .setEstimatorParamMaps(paramGrid)\r\n//   .setNumFolds(3)  // Use 3+ in practice\r\n//   .setParallelism(6)  // Evaluate up to 2 parameter settings in parallel\r\n  \r\nval pipelineMLReg \u003d new Pipeline().setStages(Array(modelRegforCV))\r\n\r\nval pipelineModelReg \u003d pipelineMLReg.fit(\r\n    transformedTrainDF\r\n    .filter(\"click_yn\u003e0\")\r\n// .withColumn(\"sample_weight\", F.expr(\"case when click_yn\u003d\u003d0.0 then 1.0 else 1.0 end\"))\r\n)",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 07:29:47.526",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "import org.apache.spark.ml.evaluation.RegressionEvaluator\n\u001b[1m\u001b[34mmodelRegforCV\u001b[0m: \u001b[1m\u001b[32mml.dmlc.xgboost4j.scala.spark.XGBoostRegressor\u001b[0m \u003d xgbr_29c1e80e2ea8\n\u001b[1m\u001b[34mpipelineMLReg\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.Pipeline\u001b[0m \u003d pipeline_4d17edb5a91d\n\u001b[1m\u001b[34mpipelineModelReg\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.ml.PipelineModel\u001b[0m \u003d pipeline_4d17edb5a91d\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d34"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d35"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765764610094_1504595267",
+      "id": "paragraph_1765764610094_1504595267",
+      "dateCreated": "2025-12-15 02:10:10.095",
+      "dateStarted": "2025-12-17 07:29:47.878",
+      "dateFinished": "2025-12-17 07:34:01.623",
+      "status": "FINISHED"
+    },
+    {
+      "text": "\n// Make predictions.\nvar predictionsDev \u003d pipelineModelCls\n.transform(transformedTestDF\n.dropDuplicates(\"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_hournum_cd\", \"click_yn\")\n)//.cache()\n\npredictionsDev \u003d pipelineModelReg.transform(predictionsDev).cache()",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 04:49:31.941",
+      "progress": 100,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mpredictionsDev\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [cmpgn_num: string, svc_mgmt_num: string ... 111 more fields]\npredictionsDev: org.apache.spark.sql.DataFrame \u003d [cmpgn_num: string, svc_mgmt_num: string ... 111 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d27"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765345345715_612147457",
+      "id": "paragraph_1765345345715_612147457",
+      "dateCreated": "2025-12-10 05:42:25.715",
+      "dateStarted": "2025-12-17 04:49:32.004",
+      "dateFinished": "2025-12-17 04:50:32.893",
+      "status": "FINISHED"
+    },
+    {
+      "text": "import org.apache.spark.mllib.evaluation.MulticlassMetrics\r\nimport org.apache.spark.sql.functions._\r\nimport org.apache.spark.sql.DataFrame\r\nimport org.apache.spark.ml.tuning.CrossValidatorModel\r\n\r\nimport org.apache.spark.ml.linalg.Vector\r\n\r\nspark.udf.register(\"vector_to_array\", (v: Vector) \u003d\u003e v.toArray)\r\n\r\nval topK \u003d 50000\r\n\r\n// val stages \u003d pipelineModelCls.bestModel.asInstanceOf[PipelineModel].stages\r\nval stages \u003d pipelineModelCls.stages\r\n\r\nstages.foreach{stage \u003d\u003e \r\n    \r\n    val modelName \u003d stage.uid.split(\"_\")(0)\r\n    \r\n    predictionsDev\r\n    .filter(\"cmpgn_typ\u003d\u003d\u0027Sales\u0027\")\r\n    .groupBy(\"svc_mgmt_num\", \"send_ym\", s\"prob_$modelName\").agg(F.sum(indexedLabelColCls).alias(indexedLabelColCls))\r\n\r\n    // 1. prediction DataFrame에서 (prediction, indexedLabel) RDD[(Double, Double)] 생성\r\n    val predictionAndLabels \u003d labelConverter.transform(\r\n    predictionsDev\r\n    .filter(\"cmpgn_typ\u003d\u003d\u0027Sales\u0027\")\r\n    .groupBy(\"svc_mgmt_num\", \"send_ym\", s\"prob_$modelName\").agg(F.sum(indexedLabelColCls).alias(indexedLabelColCls))\r\n    .withColumn(indexedLabelColCls, F.expr(s\"case when $indexedLabelColCls\u003e0 then cast(1.0 AS DOUBLE) else cast(0.0 AS DOUBLE) end\"))\r\n    .withColumn(\"prob\", F.expr(s\"vector_to_array(prob_$modelName)[1]\"))\r\n    .groupBy(\"svc_mgmt_num\", \"send_ym\", indexedLabelColCls).agg(F.avg(\"prob\").alias(\"prob\"))\r\n    .withColumn(\"rank\", F.rank().over(Window.orderBy(F.desc(\"prob\"))))\r\n    .withColumn(\"prediction_cls\", F.expr(\"case when prob\u003e\u003d0.5 then cast(1.0 AS DOUBLE) else cast(0.0 AS DOUBLE) end\"))\r\n    // .withColumn(\"prediction_cls\", F.expr(s\"case when rank\u003c\u003d${topK} then cast(1.0 AS DOUBLE) else cast(0.0 AS DOUBLE) end\"))\r\n    // .filter(f\"rank\u003c\u003d${topK}\")\r\n    )\r\n    .selectExpr(\"prediction_cls\", s\"cast($indexedLabelColCls as double)\")\r\n                                         .rdd\r\n                                         .map(row \u003d\u003e (row.getDouble(0), row.getDouble(1)))\r\n    \r\n    // 2. MulticlassMetrics 인스턴스 생성\r\n    val metrics \u003d new MulticlassMetrics(predictionAndLabels)\r\n    \r\n    // 3. 레이블별 지표 추출\r\n    val labels \u003d metrics.labels // 사용된 모든 고유 레이블 목록\r\n    \r\n    println(s\"######### $modelName 예측 결과 #########\")\r\n    \r\n    println(\"--- 레이블별 성능 지표 ---\")\r\n    labels.foreach { label \u003d\u003e\r\n      val precision \u003d metrics.precision(label) // 특정 레이블의 Precision\r\n      val recall \u003d metrics.recall(label)     // 특정 레이블의 Recall\r\n      val f1 \u003d metrics.fMeasure(label)       // 특정 레이블의 F1-Score\r\n    \r\n      println(f\"Label $label (클래스): Precision \u003d $precision%.4f, Recall \u003d $recall%.4f, F1 \u003d $f1%.4f\")\r\n    }\r\n    \r\n    // 4. (선택사항) 전체 가중 평균 지표 확인\r\n    println(s\"\\nWeighted Precision (전체 평균): ${metrics.weightedPrecision}\")\r\n    println(s\"Weighted Recall (전체 평균): ${metrics.weightedRecall}\")\r\n    println(s\"Accuracy (전체 정확도): ${metrics.accuracy}\")\r\n    \r\n    // 5. (선택사항) 혼동 행렬 출력\r\n    println(\"\\n--- Confusion Matrix (혼동 행렬) ---\")\r\n    println(metrics.confusionMatrix)\r\n}",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 04:50:32.962",
+      "progress": 39,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "######### xgbc 예측 결과 #########\n--- 레이블별 성능 지표 ---\nLabel 0.0 (클래스): Precision \u003d 0.9874, Recall \u003d 0.9947, F1 \u003d 0.9910\nLabel 1.0 (클래스): Precision \u003d 0.0163, Recall \u003d 0.0069, F1 \u003d 0.0097\n\nWeighted Precision (전체 평균): 0.9751853736979355\nWeighted Recall (전체 평균): 0.9822207991660549\nAccuracy (전체 정확도): 0.9822207991660548\n\n--- Confusion Matrix (혼동 행렬) ---\n6873972.0  36865.0  \n87572.0    612.0    \nimport org.apache.spark.mllib.evaluation.MulticlassMetrics\nimport org.apache.spark.sql.functions._\nimport org.apache.spark.sql.DataFrame\nimport org.apache.spark.ml.tuning.CrossValidatorModel\nimport org.apache.spark.ml.linalg.Vector\n\u001b[1m\u001b[34mtopK\u001b[0m: \u001b[1m\u001b[32mInt\u001b[0m \u003d 50000\n\u001b[1m\u001b[34mstages\u001b[0m: \u001b[1m\u001b[32mArray[org.apache.spark.ml.Transformer]\u001b[0m \u003d Array(xgbc_978c781d6dd1)\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d28"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d29"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d30"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764838154931_1623772564",
+      "id": "paragraph_1764838154931_1623772564",
+      "dateCreated": "2025-12-04 08:49:14.931",
+      "dateStarted": "2025-12-17 04:50:33.039",
+      "dateFinished": "2025-12-17 04:52:13.381",
+      "status": "FINISHED"
+    },
+    {
+      "text": "import org.apache.spark.ml.evaluation.RegressionEvaluator\r\n\r\n// val stages \u003d pipelineModelReg.bestModel.asInstanceOf[PipelineModel].stages\r\nval stages \u003d pipelineModelReg.stages\r\n\r\nstages.foreach{stage \u003d\u003e \r\n\r\n    val modelName \u003d stage.uid.split(\"_\")(0)\r\n\r\n    val evaluator \u003d new RegressionEvaluator()\r\n      .setLabelCol(indexedLabelColReg)\r\n      .setPredictionCol(s\"pred_${modelName}\")\r\n      .setMetricName(\"rmse\")\r\n    val rmse \u003d evaluator.evaluate(predictionsDev)\r\n    println(s\"######### $modelName 예측 결과 #########\")\r\n    println(f\"Root Mean Squared Error (RMSE) : $rmse%.4f\")\r\n}",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-17 04:52:13.433",
+      "progress": 32,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "######### xgbr 예측 결과 #########\nRoot Mean Squared Error (RMSE) : 0.8166\nimport org.apache.spark.ml.evaluation.RegressionEvaluator\n\u001b[1m\u001b[34mstages\u001b[0m: \u001b[1m\u001b[32mArray[org.apache.spark.ml.Transformer]\u001b[0m \u003d Array(xgbr_29c1e80e2ea8)\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d31"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765786040626_1985577608",
+      "id": "paragraph_1765786040626_1985577608",
+      "dateCreated": "2025-12-15 08:07:20.626",
+      "dateStarted": "2025-12-17 04:52:13.522",
+      "dateFinished": "2025-12-17 04:52:16.695",
+      "status": "FINISHED"
+    },
+    {
+      "text": "val predictionsSVCCls \u003d pipelineModelCls.transform(transformedPredDF.filter(\"svc_mgmt_num like \u0027%000\u0027\").dropDuplicates(\"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_hournum_cd\", \"click_yn\"))\nval predictionsSVCFinal \u003d pipelineModelReg.transform(predictionsSVCCls)\n\nimport org.apache.spark.ml.linalg.Vector\n\nspark.udf.register(\"vector_to_array\", (v: Vector) \u003d\u003e v.toArray)\n\nvar predictedPropensityScoreDF \u003d predictionsSVCFinal\n.withColumn(\"prob_click\", F.expr(s\"\"\"aggregate(array(${pipelineModelCls.stages.map(m \u003d\u003e s\"vector_to_array(prob_${m.uid.split(\"_\")(0)})[1]\").mkString(\",\")}), 0D, (acc, x) -\u003e acc + x)\"\"\"))\n.withColumn(\"res_utility\", F.expr(s\"\"\"aggregate(array(${pipelineModelReg.stages.map(m \u003d\u003e s\"pred_${m.uid.split(\"_\")(0)}\").mkString(\",\")}), 0D, (acc, x) -\u003e acc + x)\"\"\"))\n.withColumn(\"propensity_score\", F.expr(\"prob_click*res_utility\"))\n\npredictedPropensityScoreDF.selectExpr(\"svc_mgmt_num\",\"send_hournum_cd send_hour\",\"ROUND(prob_click, 4) prob_click\",\"ROUND(res_utility, 4) res_utility\",\"ROUND(propensity_score, 4) propensity_score\")\n// .write.mode(\"overwrite\").partitionBy(\"send_hour\").parquet(\"aos/sto/propensityScoreDF\")\n.sort(\"svc_mgmt_num\",\"send_hour\").show()\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-18 23:44:38.075",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "ERROR",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u003cconsole\u003e:23: \u001b[31merror: \u001b[0mnot found: value pipelineModelCls\n       val predictionsSVCCls \u003d pipelineModelCls.transform(transformedPredDF.filter(\"svc_mgmt_num like \u0027%000\u0027\").dropDuplicates(\"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_hournum_cd\", \"click_yn\"))\n                               ^\n\u003cconsole\u003e:23: \u001b[31merror: \u001b[0mnot found: value transformedPredDF\n       val predictionsSVCCls \u003d pipelineModelCls.transform(transformedPredDF.filter(\"svc_mgmt_num like \u0027%000\u0027\").dropDuplicates(\"svc_mgmt_num\", \"chnl_typ\", \"cmpgn_typ\", \"send_ym\", \"send_hournum_cd\", \"click_yn\"))\n                                                          ^\n\u003cconsole\u003e:24: \u001b[31merror: \u001b[0mnot found: value pipelineModelReg\n       val predictionsSVCFinal \u003d pipelineModelReg.transform(predictionsSVCCls)\n                                 ^\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765768974381_910321724",
+      "id": "paragraph_1765768974381_910321724",
+      "dateCreated": "2025-12-15 03:22:54.381",
+      "dateStarted": "2025-12-18 23:44:38.185",
+      "dateFinished": "2025-12-18 23:44:38.503",
+      "status": "ERROR"
+    },
+    {
+      "text": "// val pdf \u003d spark.read.parquet(\"aos/sto/propensityScoreDF\")\n// .select(\"svc_mgmt_num\",\"send_hour\",\"propensity_score\").cache()\n\npdf.sort(\"svc_mgmt_num\",\"send_hour\")\n.show()",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-19 02:10:51.589",
+      "progress": 98,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+--------------------+---------+----------------+\n|        svc_mgmt_num|send_hour|propensity_score|\n+--------------------+---------+----------------+\n|s:0002206534ab438...|       10|          0.5091|\n|s:0002206534ab438...|       11|          0.5091|\n|s:0002206534ab438...|       12|          0.5091|\n|s:0002206534ab438...|       13|          0.5091|\n|s:0002206534ab438...|       14|          0.5091|\n|s:0002206534ab438...|       15|          0.5091|\n|s:0002206534ab438...|       16|          0.5091|\n|s:0002206534ab438...|       17|          0.5091|\n|s:0003473b9eb01d6...|       10|          0.0738|\n|s:0003473b9eb01d6...|       11|          0.0738|\n|s:0003473b9eb01d6...|       12|          0.0738|\n|s:0003473b9eb01d6...|       13|          0.0738|\n|s:0003473b9eb01d6...|       14|          0.0738|\n|s:0003473b9eb01d6...|       15|          0.0738|\n|s:0003473b9eb01d6...|       16|          0.0738|\n|s:0003473b9eb01d6...|       17|          0.0769|\n|s:00035d6150da200...|       10|          0.2683|\n|s:00035d6150da200...|       11|          0.2715|\n|s:00035d6150da200...|       12|          0.2715|\n|s:00035d6150da200...|       13|          0.2715|\n+--------------------+---------+----------------+\nonly showing top 20 rows\n\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d4"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765935603309_1543411151",
+      "id": "paragraph_1765935603309_1543411151",
+      "dateCreated": "2025-12-17 01:40:03.310",
+      "dateStarted": "2025-12-19 02:10:51.660",
+      "dateFinished": "2025-12-19 02:10:57.502",
+      "status": "FINISHED"
+    },
+    {
+      "text": "\n\n// spark.sql(s\"\"\"select a.svc_mgmt_num, a.type, a.item, date_format(from_unixtime(a.unix_time), \u0027yyyyMMdd\u0027) dt, date_format(from_unixtime(a.unix_time), \u0027yyyyMMddHHmmss\u0027) dtm from recgpt.recgpt_log_sequence a join (select distinct item from recgpt.recgpt_vocab_filtered_weekly) c on a.item\u003dc.item where a.type \u003d\u003d \u0027xdr\u0027 and dt\u003d\u003d\u002720251101\u0027 limit 10\n// \"\"\").show()\n\nspark.sql(\"select * from dprobe.app_raw_hourly where svc_mgmt_num like \u0027s:00035d6150da200%\u0027 and dt\u003d\u002720251216\u0027 limit 10\").show()\n\n// spark.sql(\"select svc_mgmt_num, hh, collect_list(app_id) as app_list from dprobe.app_raw_hourly where hh \u003e\u003d 9 and hh \u003c\u003d 18 and dt like \u002720251216\u0027 group by svc_mgmt_num, hh limit 10\").show()",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-19 05:15:34.173",
+      "progress": 99,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+--------------------+--------------------+----------+------+---+-----+------+------------+------------+--------------+----------------+-------------+------+--------------------+---------+---------+------------------+--------------------+-----------------+------------+-------------+-----------+--------------------+--------+---+---+\n|                imsi|        svc_mgmt_num|    pay_cd|gender|age|model|app_id|app_protocol|app_group_cd|upload_traffic|download_traffic|total_traffic|enb_id|             cell_id|tethering|     type|upload_traffic_all|download_traffic_all|total_traffic_all|app_title_ko|         cat1|       cat2|             appname|      dt| hh| nw|\n+--------------------+--------------------+----------+------+---+-----+------+------------+------------+--------------+----------------+-------------+------+--------------------+---------+---------+------------------+--------------------+-----------------+------------+-------------+-----------+--------------------+--------+---+---+\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  EADE|           6|         Web|        1709.0|          8435.0|      10144.0|  null|df15ea67eda0e3341...|        0|     http|            2483.0|              9389.0|          11872.0| 구글 트래픽|  Information|     Portal|Google_web_Apis_H...|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  H020|           6|         Web|        8560.0|         28728.0|      37288.0|  null|df15ea67eda0e3341...|        0|     http|           13522.0|             34224.0|          47746.0| 구글 트래픽|  Information|     Portal|Google_web_Apis_H...|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  IWBM|           6|       Email|         374.0|          1106.0|       1480.0|  null|df15ea67eda0e3341...|        0|transport|            3556.0|              5578.0|           9134.0|G메일(Gmail)|Communication|      Email| Gmail_POP_IMAP_IPv6|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  01BB|          17|            |      114132.0|        276494.0|     390626.0|  null|df15ea67eda0e3341...|        0|transport|          130996.0|            302720.0|         433716.0|        null|         null|       null|                null|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  EC2F|          17|      Portal|        8544.0|         10146.0|      18690.0|  null|df15ea67eda0e3341...|        0|transport|            9350.0|             10952.0|          20302.0| 구글 트래픽|  Information|     Portal|Google_QUIC_UDP_IPv6|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  H005|           6|         Web|       16704.0|         45490.0|      62194.0|  null|df15ea67eda0e3341...|        0|transport|           24922.0|             53548.0|          78470.0|Apple 트래픽|      Utility|Utility_etc|Apple_web_HTTPS_IPv6|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  EAC6|           6|         SNS|        1870.0|          7395.0|       9265.0|  null|df15ea67eda0e3341...|        0|transport|            2828.0|              8497.0|          11325.0|Apple 트래픽|      Utility|Utility_etc|    Apple_push_HTTPS|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  EAC7|           6|         Web|       50919.0|        227481.0|     278400.0|  null|df15ea67eda0e3341...|        0|transport|           74537.0|            256213.0|         330750.0|Apple 트래픽|      Utility|Utility_etc|     Apple_web_HTTPS|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  EAC5|          17|  Multimedia|        8243.0|         52017.0|      60260.0|  null|df15ea67eda0e3341...|        0|transport|            9545.0|             55539.0|          65084.0|        null|         null|       null|                null|20251216| 04| 5g|\n|ad9616460aef9b0c5...|s:00035d6150da200...|NA00008565|     1|042| A6T3|  H003|          58|  Multimedia|         288.0|             0.0|        288.0|  null|df15ea67eda0e3341...|        0|transport|             450.0|                 0.0|            450.0|        null|         null|       null|                null|20251216| 04| 5g|\n+--------------------+--------------------+----------+------+---+-----+------+------------+------------+--------------+----------------+-------------+------+--------------------+---------+---------+------------------+--------------------+-----------------+------------+-------------+-----------+--------------------+--------+---+---+\n\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d23"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d24"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d25"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d26"
+            },
+            {
+              "jobUrl": "http://ats-01-16:30431/jobs/job?id\u003d27"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765957746739_510416935",
+      "id": "paragraph_1765957746739_510416935",
+      "dateCreated": "2025-12-17 07:49:06.739",
+      "dateStarted": "2025-12-19 05:15:34.253",
+      "dateFinished": "2025-12-19 05:16:54.760",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%md\r\n\r\n--- 2.0 레이블별 성능 지표 ---\r\nLabel 0.0 (클래스): Precision \u003d 0.9878, Recall \u003d 0.9182, F1 \u003d 0.9517\r\nLabel 1.0 (클래스): Precision \u003d 0.0330, Recall \u003d 0.1972, F1 \u003d 0.0565\r\n\r\n--- 3.0 레이블별 성능 지표 ---\r\nLabel 0.0 (클래스): Precision \u003d 0.9866, Recall \u003d 0.9837, F1 \u003d 0.9852\r\nLabel 1.0 (클래스): Precision \u003d 0.0474, Recall \u003d 0.0574, F1 \u003d 0.0519\r\n\r\n--- 4.0 레이블별 성능 지표 ---\r\nLabel 0.0 (클래스): Precision \u003d 0.9863, Recall \u003d 0.9942, F1 \u003d 0.9902\r\nLabel 1.0 (클래스): Precision \u003d 0.0552, Recall \u003d 0.0241, F1 \u003d 0.0336\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-11 13:41:35.180",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9.0,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\u003cp\u003e\u0026mdash; 2.0 레이블별 성능 지표 \u0026mdash;\u003cbr /\u003e\nLabel 0.0 (클래스): Precision \u003d 0.9878, Recall \u003d 0.9182, F1 \u003d 0.9517\u003cbr /\u003e\nLabel 1.0 (클래스): Precision \u003d 0.0330, Recall \u003d 0.1972, F1 \u003d 0.0565\u003c/p\u003e\n\u003cp\u003e\u0026mdash; 3.0 레이블별 성능 지표 \u0026mdash;\u003cbr /\u003e\nLabel 0.0 (클래스): Precision \u003d 0.9866, Recall \u003d 0.9837, F1 \u003d 0.9852\u003cbr /\u003e\nLabel 1.0 (클래스): Precision \u003d 0.0474, Recall \u003d 0.0574, F1 \u003d 0.0519\u003c/p\u003e\n\u003cp\u003e\u0026mdash; 4.0 레이블별 성능 지표 \u0026mdash;\u003cbr /\u003e\nLabel 0.0 (클래스): Precision \u003d 0.9863, Recall \u003d 0.9942, F1 \u003d 0.9902\u003cbr /\u003e\nLabel 1.0 (클래스): Precision \u003d 0.0552, Recall \u003d 0.0241, F1 \u003d 0.0336\u003c/p\u003e\n\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1764902404285_1154494058",
+      "id": "paragraph_1764902404285_1154494058",
+      "dateCreated": "2025-12-05 02:40:04.285",
+      "dateStarted": "2025-12-11 13:41:35.315",
+      "dateFinished": "2025-12-11 13:41:35.324",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%md\n",
+      "user": "anonymous",
+      "dateUpdated": "2025-12-11 13:41:35.415",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "\u003cdiv class\u003d\"markdown-body\"\u003e\n\n\u003c/div\u003e"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1765254401639_1757217419",
+      "id": "paragraph_1765254401639_1757217419",
+      "dateCreated": "2025-12-09 04:26:41.639",
+      "dateStarted": "2025-12-11 13:41:35.488",
+      "dateFinished": "2025-12-11 13:41:35.491",
+      "status": "FINISHED"
+    }
+  ],
+  "name": "predict_ost",
+  "id": "2MC68ADVY",
+  "defaultInterpreterGroup": "spark",
+  "version": "0.10.1",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false
+  },
+  "info": {
+    "isRunning": false
+  }
+}
