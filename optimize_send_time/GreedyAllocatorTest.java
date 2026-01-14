@@ -95,9 +95,11 @@ public class GreedyAllocatorTest {
             System.out.println("\n[5] Showing sample results...");
             result.show(20, false);
             
-            // 6. 저장 (옵션)
-            System.out.println("\n[6] Result available for saving:");
-            System.out.println("  result.write().mode(\"overwrite\").parquet(\"output/greedy_result_java\");");
+            // 6. 결과 저장
+            System.out.println("\n[6] Saving results...");
+            String outputPath = "aos/sto/allocation_result";
+            result.write().mode("overwrite").parquet(outputPath);
+            System.out.println(String.format("✓ Results saved to: %s", outputPath));
             
             // 7. 완료
             System.out.println("\n" + repeat("=", 80));

@@ -23,6 +23,11 @@ import static org.apache.spark.sql.functions.*;
  * - 용량 제약 준수
  * - 배치 처리로 2500만명 규모 지원
  * 
+ * 호환성:
+ * - Apache Spark 2.3.x+
+ * - Apache Spark 3.x
+ * - Java 8+
+ * 
  * 사용법:
  *   GreedyAllocator allocator = new GreedyAllocator();
  *   Dataset<Row> result = allocator.allocateLargeScale(df, hours, capacity, batchSize);
@@ -319,7 +324,8 @@ public class GreedyAllocator implements Serializable {
                 .agg(max("propensity_score").alias("max_score"))
                 .withColumn("row_id", row_number().over(windowSpec))
                 .withColumn("batch_id", 
-                        col("row_id").minus(lit(1)).divide(lit(batchSize)).cast("int"))
+                        // Spark 2.3.x 호환: expr() 사용
+                        expr("cast((row_id - 1) / " + batchSize + " as int)"))
                 .select("svc_mgmt_num", "batch_id", "max_score")
                 .cache();
         
