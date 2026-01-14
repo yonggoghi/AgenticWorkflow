@@ -729,8 +729,8 @@ public class GreedyAllocator implements Serializable {
         System.out.println();
         System.out.println("Performance Tips:");
         System.out.println("  - Batch size: 500K-2M users per batch");
-        System.out.println("  - Memory: Use --driver-memory 16g or higher");
-        System.out.println("  - For 25M users: ~5-10 minutes, quality loss 1-3%");
+        System.out.println("  - Memory: Use --driver-memory 100g for 25M users");
+        System.out.println("  - For 25M users: ~1 hour, quality loss 1-3%");
         System.out.println();
         System.out.println(repeat("=", 80));
     }
