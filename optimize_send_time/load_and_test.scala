@@ -28,7 +28,7 @@ Running Quick Test
 """)
 
 // 3. 샘플 데이터 확인
-val sampleDataPath = "data/sample/propensityScoreDF"
+val sampleDataPath = "aos/sto/propensityScoreDF"
 val dataExists = try {
   spark.read.parquet(sampleDataPath).limit(1).count()
   true
@@ -62,7 +62,7 @@ Then run this script again.
 
   // 설정
   val userCnt = df.select("svc_mgmt_num").distinct().count()
-  val capacityPerHour = (totalRecords*0.11).toInt
+  val capacityPerHour = (totalRecords*0.2).toInt
 
   println(s"Capacity per hour: ${numFormatter.format(capacityPerHour)}")
 
@@ -81,23 +81,24 @@ Then run this script again.
   )
 
   // SA 알고리즘 파라미터
-  val maxIterations = 2000000
+  val maxIterations = 1000000
   val initialTemp = 1000.0  // 적응형 온도 미사용 시에만 적용
   val coolingRate = 0.9995
   val batchSize = safeBatchSize
   
   // 개선 기능 설정
   val useAdaptiveTemp = true      // 적응형 온도 스케일 (점수의 10%)
-  val reheatingEnabled = true     // 재가열 메커니즘
-  val reheatingThreshold = 1000   // 1000회 개선 없으면 재가열
+  val reheatingEnabled = true     // 재가열 메커니즘 (개선됨: 최대 10회, 낮은 온도에서만)
+  val reheatingThreshold = 5000   // 5000회 개선 없으면 재가열 (더 보수적)
 
   println("\n" + "=" * 80)
-  println("Starting Simulated Annealing Optimization (Enhanced)")
+  println("Starting Simulated Annealing Optimization (Enhanced v2)")
   println("=" * 80)
   println(s"Max iterations: ${numFormatter.format(maxIterations)}")
   println(s"Cooling rate: $coolingRate")
   println(s"Adaptive temperature: ${if (useAdaptiveTemp) "Enabled (auto-scaling)" else s"Disabled (fixed: $initialTemp)"}")
-  println(s"Reheating: ${if (reheatingEnabled) s"Enabled (threshold: $reheatingThreshold)" else "Disabled"}")
+  println(s"Reheating: ${if (reheatingEnabled) s"Enabled (max 10 times, threshold: $reheatingThreshold)" else "Disabled"}")
+  println(s"Smart neighbor strategy: Enabled (70% score-based, 30% random)")
   println("=" * 80 + "\n")
 
   // 실행 시간 측정

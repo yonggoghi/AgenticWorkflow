@@ -214,11 +214,6 @@ df.write.mode("overwrite").partitionBy("send_ym").parquet("aos/sto/response")
 val resDF = spark.read.parquet("aos/sto/response").cache()
 resDF.createOrReplaceTempView("res_df")
 
-// ===== paragraph_1764638864655_898851625 =====
-
-z.show(resDF.filter("click_hournum is not null"))
-
-
 // ===== paragraph_1764742953919_436300403 =====
 val sendMonth = "202512"
 val featureMonth = "202511"
@@ -326,8 +321,8 @@ var resDFSelectedTrBal = resDFSelectedTr
 // ===== paragraph_1766134700276_1258055755 =====
 import org.apache.spark.sql.functions._
 
-val smnSuffix = z.input("suffix", "0").toString
-
+// Default suffix value (previously from Zeppelin input widget)
+val smnSuffix = "0"
 
 (resDFSelectedTrBal.select("svc_mgmt_num","feature_ym").union(resDFSelectedTs.select("svc_mgmt_num","feature_ym")).distinct().filter(s"svc_mgmt_num like '%${smnSuffix}'")).createOrReplaceTempView("user_ym_df")
 
@@ -348,37 +343,6 @@ val xdrDF = hourCols.zipWithIndex.map { case (colName, idx) =>
 .filter("traffic>1000 and hour>=9 and hour<=18")
 .selectExpr("svc_mgmt_num","ym feature_ym","rep_app_title app_nm", "hour send_hournum_cd")
 .groupBy("svc_mgmt_num","feature_ym", "send_hournum_cd").agg(F.collect_list("app_nm").alias("app_usage_token"))
-
-
-// ===== paragraph_1766129750200_155262183 =====
-SELECT 
-    -- date_format(
-    --     from_utc_timestamp(
-    --         from_unixtime(summary_create_time),
-    --         "Asia/Seoul"
-    --     ),
-    --     "yyyy-MM-dd HH:mm:ss"
-    -- ) AS summary_create_time,
-    
-    distinct 
-    date_format(
-        from_utc_timestamp(
-            from_unixtime(traffic_first_time),
-            "Asia/Seoul"
-        ),
-        "yyyy-MM-dd HH:mm:ss"
-    ) AS traffic_first_time,
-    
-    svc_mgmt_num,
-    app_id,
-    app_title_ko
-FROM dprobe_raw.xdr_app 
-WHERE svc_mgmt_num = 's:e4e78b17ec7efcbc554478829a9272da96a34a40d73dbdf39a9bbad8dc9d83b7'
-    AND dt = '20251216' 
-    AND hh >= 10 and hh <= 19 
-    and app_id = 'H032'
-ORDER BY traffic_first_time
-LIMIT 100;
 
 // ===== paragraph_1764755002817_1620624445 =====
 

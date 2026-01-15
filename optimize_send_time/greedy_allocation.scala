@@ -396,8 +396,8 @@ Primary Usage (2500만명 대규모 처리):
 
 Performance Tips:
   - Batch size: 500K-2M users per batch
-  - Memory: Use --driver-memory 16g or higher
-  - For 25M users: ~5-10 minutes, quality loss 1-3%
+  - Memory: Use --driver-memory 100g for 25M users
+  - For 25M users: ~1 hour, quality loss 1-3%
 
 ================================================================================
 """)

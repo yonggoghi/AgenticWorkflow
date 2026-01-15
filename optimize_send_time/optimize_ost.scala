@@ -8,6 +8,18 @@ import java.text.DecimalFormat
 import org.apache.spark.sql.expressions.Window
 import scala.util.Random
 
+// jMetal imports
+import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder
+import org.uma.jmetal.operator.impl.crossover.IntegerSBXCrossover
+import org.uma.jmetal.operator.impl.mutation.IntegerPolynomialMutation
+import org.uma.jmetal.operator.impl.selection.BinaryTournamentSelection
+import org.uma.jmetal.problem.Problem
+import org.uma.jmetal.problem.IntegerProblem
+import org.uma.jmetal.solution.IntegerSolution
+import org.uma.jmetal.util.comparator.RankingAndCrowdingDistanceComparator
+import java.util.{List => JavaList, ArrayList => JavaArrayList}
+import scala.collection.JavaConverters._
+
 // ============================================================================
 // Data Structures (must be outside object for Spark encoders)
 // ============================================================================
@@ -952,7 +964,7 @@ object OptimizeSendTime {
   }
 
   /**
-   * 3. Simulated Annealing 메인 루프 (재가열 포함)
+   * 3. Simulated Annealing 메인 루프 (개선된 재가열)
    */
   def runSimulatedAnnealing(
     initialSolution: Solution,
@@ -976,12 +988,14 @@ object OptimizeSendTime {
     var improvements = 0
     var iterationsWithoutImprovement = 0
     var reheatingCount = 0
+    var consecutiveNoProgress = 0
     
     val reportInterval = maxIterations / 10
+    val maxReheatingCount = 10  // 최대 재가열 횟수 제한
     
     for (iteration <- 1 to maxIterations) {
-      // 이웃 해 생성
-      val neighborSolution = generateNeighbor(
+      // 이웃 해 생성 (점수 기반 전략 사용)
+      val neighborSolution = generateSmartNeighbor(
         currentSolution,
         userData,
         capacityPerHour,
@@ -1002,6 +1016,7 @@ object OptimizeSendTime {
             bestSolution = neighbor
             improvements += 1
             iterationsWithoutImprovement = 0
+            consecutiveNoProgress = 0
           } else {
             iterationsWithoutImprovement += 1
           }
@@ -1013,11 +1028,23 @@ object OptimizeSendTime {
         iterationsWithoutImprovement += 1
       }
       
-      // 재가열 메커니즘
-      if (reheatingEnabled && iterationsWithoutImprovement > reheatingThreshold) {
-        temperature = initialTemp * 0.3
+      // 개선된 재가열 메커니즘
+      if (reheatingEnabled && 
+          iterationsWithoutImprovement > reheatingThreshold && 
+          reheatingCount < maxReheatingCount &&
+          temperature < initialTemp * 0.05) {  // 온도가 충분히 식었을 때만
+        
+        temperature = initialTemp * 0.2  // 더 낮은 온도로 재가열
         iterationsWithoutImprovement = 0
         reheatingCount += 1
+        consecutiveNoProgress += 1
+        
+        // 3번 연속 재가열해도 개선 없으면 중단
+        if (consecutiveNoProgress >= 3) {
+          println(f"\n  Early stopping: No improvement after $reheatingCount reheating cycles")
+          // 재가열 비활성화하고 계속 진행 (조기 종료는 하지 않음)
+          temperature *= coolingRate
+        }
       } else {
         // 온도 감소
         temperature *= coolingRate
@@ -1064,6 +1091,143 @@ object OptimizeSendTime {
       case 1 => swapTwoUsers(current, userData, random)
       case 2 => reassignMultipleUsers(current, userData, capacityPerHour, random, 3)
       case _ => reassignSingleUser(current, userData, capacityPerHour, random)
+    }
+  }
+
+  /**
+   * 4-1. 스마트 이웃 해 생성 (점수 기반 전략)
+   */
+  def generateSmartNeighbor(
+    current: Solution,
+    userData: Map[String, Map[Int, Double]],
+    capacityPerHour: Map[Int, Int],
+    hours: Array[Int],
+    random: Random
+  ): Option[Solution] = {
+    
+    // 70% 확률로 점수 기반 전략, 30% 확률로 랜덤 전략
+    val useSmartStrategy = random.nextDouble() < 0.7
+    
+    if (useSmartStrategy) {
+      val strategy = random.nextInt(2)
+      strategy match {
+        case 0 => smartReassignUser(current, userData, capacityPerHour, random)
+        case 1 => smartSwapUsers(current, userData, capacityPerHour, random)
+        case _ => smartReassignUser(current, userData, capacityPerHour, random)
+      }
+    } else {
+      // 기존 랜덤 전략
+      generateNeighbor(current, userData, capacityPerHour, hours, random)
+    }
+  }
+
+  /**
+   * 스마트 전략 1: 점수가 낮은 사용자를 더 나은 시간대로 재할당
+   */
+  def smartReassignUser(
+    current: Solution,
+    userData: Map[String, Map[Int, Double]],
+    capacityPerHour: Map[Int, Int],
+    random: Random
+  ): Option[Solution] = {
+    
+    if (current.assignments.isEmpty) return None
+    
+    // 현재 점수가 낮은 사용자 찾기 (하위 20%)
+    val userScores = current.assignments.map { case (user, hour) =>
+      (user, hour, userData(user)(hour))
+    }.toArray.sortBy(_._3)
+    
+    val lowScoreUsers = userScores.take(Math.max(1, userScores.length / 5))
+    
+    if (lowScoreUsers.isEmpty) return None
+    
+    // 랜덤하게 하나 선택
+    val (user, currentHour, currentScore) = lowScoreUsers(random.nextInt(lowScoreUsers.length))
+    
+    // 더 나은 시간대 찾기
+    val betterHours = userData(user).filter { case (hour, score) =>
+      hour != currentHour &&
+      score > currentScore &&  // 점수가 더 좋고
+      current.hourUsage.getOrElse(hour, 0) < capacityPerHour.getOrElse(hour, 0)  // 용량 여유
+    }
+    
+    if (betterHours.isEmpty) return None
+    
+    // 가장 좋은 시간대 선택 (70% 확률) 또는 랜덤 (30%)
+    val newHour = if (random.nextDouble() < 0.7) {
+      betterHours.maxBy(_._2)._1
+    } else {
+      val hoursArray = betterHours.keys.toArray
+      hoursArray(random.nextInt(hoursArray.length))
+    }
+    
+    val newScore = userData(user)(newHour)
+    
+    // 새로운 해 생성
+    val newAssignments = current.assignments + (user -> newHour)
+    val newHourUsage = current.hourUsage +
+      (currentHour -> (current.hourUsage(currentHour) - 1)) +
+      (newHour -> (current.hourUsage.getOrElse(newHour, 0) + 1))
+    val newTotalScore = current.score - currentScore + newScore
+    
+    Some(Solution(newAssignments, newTotalScore, newHourUsage))
+  }
+
+  /**
+   * 스마트 전략 2: 서로에게 이득인 교환 찾기
+   */
+  def smartSwapUsers(
+    current: Solution,
+    userData: Map[String, Map[Int, Double]],
+    capacityPerHour: Map[Int, Int],
+    random: Random
+  ): Option[Solution] = {
+    
+    if (current.assignments.size < 2) return None
+    
+    // 현재 점수가 낮은 사용자들 중에서 선택 (하위 30%)
+    val userScores = current.assignments.map { case (user, hour) =>
+      (user, hour, userData(user)(hour))
+    }.toArray.sortBy(_._3)
+    
+    val candidates = userScores.take(Math.max(2, userScores.length / 3))
+    
+    if (candidates.length < 2) return None
+    
+    // 무작위로 2명 선택
+    val idx1 = random.nextInt(candidates.length)
+    var idx2 = random.nextInt(candidates.length)
+    while (idx2 == idx1 && candidates.length > 1) {
+      idx2 = random.nextInt(candidates.length)
+    }
+    
+    val (user1, hour1, score1) = candidates(idx1)
+    val (user2, hour2, score2) = candidates(idx2)
+    
+    if (hour1 == hour2) return None
+    
+    // 서로의 시간대를 가질 수 있는지 확인
+    if (!userData(user1).contains(hour2) || !userData(user2).contains(hour1)) {
+      return None
+    }
+    
+    val newScore1 = userData(user1)(hour2)
+    val newScore2 = userData(user2)(hour1)
+    
+    val oldScore = score1 + score2
+    val newScore = newScore1 + newScore2
+    
+    // 교환이 이득인 경우에만 (또는 약간의 손해 허용)
+    if (newScore >= oldScore * 0.95) {  // 5% 이내 손해 허용
+      val newAssignments = current.assignments +
+        (user1 -> hour2) +
+        (user2 -> hour1)
+      val newTotalScore = current.score - oldScore + newScore
+      
+      Some(Solution(newAssignments, newTotalScore, current.hourUsage))
+    } else {
+      None
     }
   }
 
@@ -1374,6 +1538,430 @@ object OptimizeSendTime {
   }
 
   // ============================================================================
+  // jMetal Multi-Objective Optimization
+  // ============================================================================
+
+  /**
+   * jMetal Problem 정의: 시간대 할당 문제를 다목적 최적화로 모델링
+   * 
+   * 목적 1: 총 propensity score 최대화
+   * 목적 2: 시간대별 균등 분배 (부하 분산, 표준편차 최소화)
+   * 
+   * 제약: 
+   * - 시간대별 용량 제한
+   * - 각 사용자는 사용 가능한 시간대 중에서만 선택
+   */
+  class SendTimeAllocationProblem(
+    users: Array[String],
+    userData: Map[String, Map[Int, Double]],
+    capacityPerHour: Map[Int, Int],
+    hours: Array[Int]
+  ) extends IntegerProblem {
+    
+    private val numUsers = users.length
+    private val hourToIndex = hours.zipWithIndex.toMap
+    private val indexToHour = hours
+    
+    // 각 사용자가 선택 가능한 시간대 인덱스 범위
+    private val userHourRanges: Array[(Int, Int)] = users.map { user =>
+      val availableHours = userData(user).keys.toArray.sorted
+      if (availableHours.isEmpty) {
+        (0, 0)  // 불가능한 경우
+      } else {
+        (hourToIndex(availableHours.head), hourToIndex(availableHours.last))
+      }
+    }
+    
+    // ============================================================================
+    // jMetal 5.10 Problem API
+    // ============================================================================
+    override def getNumberOfVariables(): Int = numUsers
+    override def getNumberOfObjectives(): Int = 2
+    // NOTE: constraints are handled as penalties in objectives (so: 0 constraints)
+    override def getNumberOfConstraints(): Int = 0
+    override def getName(): String = "SendTimeAllocationProblem"
+    
+    override def createSolution(): IntegerSolution = {
+      // jMetal 5.6: DefaultIntegerSolution(IntegerProblem)
+      val solution = new org.uma.jmetal.solution.impl.DefaultIntegerSolution(this)
+      
+      // 초기 해: 각 사용자를 최고 점수 시간대에 할당 (용량 고려)
+      val hourCapacity = mutable.Map(capacityPerHour.toSeq: _*)
+      
+      for (i <- 0 until numUsers) {
+        val user = users(i)
+        val choices = userData(user).toSeq.sortBy(-_._2)
+        
+        var assigned = false
+        var selectedHourIdx = 0
+        
+        for ((hour, score) <- choices if !assigned) {
+          if (hourCapacity.getOrElse(hour, 0) > 0) {
+            selectedHourIdx = hourToIndex(hour)
+            hourCapacity(hour) = hourCapacity(hour) - 1
+            assigned = true
+          }
+        }
+        
+        // 용량이 없으면 일단 최고 점수 시간대로 (제약 위반)
+        if (!assigned && choices.nonEmpty) {
+          selectedHourIdx = hourToIndex(choices.head._1)
+        }
+        
+        solution.setVariableValue(i, Integer.valueOf(selectedHourIdx))
+      }
+      
+      solution
+    }
+    
+    override def evaluate(solution: IntegerSolution): Unit = {
+      val assignments = (0 until numUsers).map { i =>
+        val hourIdx = solution.getVariableValue(i).intValue()
+        val hour = indexToHour(hourIdx)
+        (users(i), hour)
+      }
+      
+      // 목적 1: 총 propensity score (최대화 -> 음수로 변환)
+      var totalScore = 0.0
+      val hourUsage = mutable.Map[Int, Int]().withDefaultValue(0)
+      var validAssignments = 0
+      var invalidAssignments = 0
+      
+      assignments.foreach { case (user, hour) =>
+        if (userData(user).contains(hour)) {
+          totalScore += userData(user)(hour)
+          hourUsage(hour) += 1
+          validAssignments += 1
+        } else {
+          invalidAssignments += 1
+        }
+      }
+      
+      // Penalty 1: invalid assignment (user-hour not available)
+      val invalidPenalty = invalidAssignments.toDouble * 1000.0
+      
+      // Penalty 2: capacity violation (over-capacity count)
+      val overCap = hours.map { hour =>
+        Math.max(0, hourUsage.getOrElse(hour, 0) - capacityPerHour.getOrElse(hour, 0))
+      }.sum
+      val capPenalty = overCap.toDouble * 100.0
+
+      // Objective 0: minimize (-score + penalties)
+      solution.setObjective(0, -totalScore + invalidPenalty + capPenalty)
+      
+      // 목적 2: 시간대별 분포의 표준편차 (최소화)
+      val avgUsage = validAssignments.toDouble / hours.length
+      val variance = hours.map { hour =>
+        val usage = hourUsage.getOrElse(hour, 0)
+        Math.pow(usage - avgUsage, 2)
+      }.sum / hours.length
+      val stdDev = Math.sqrt(variance)
+      
+      // Objective 1: minimize stdDev (+ small penalties to prefer feasible solutions)
+      solution.setObjective(1, stdDev + (invalidAssignments.toDouble * 10.0) + (overCap.toDouble * 1.0))
+    }
+
+    // ============================================================================
+    // IntegerProblem bounds (jMetal 5.6)
+    // ============================================================================
+    override def getLowerBound(index: Int): Integer = Integer.valueOf(0)
+    override def getUpperBound(index: Int): Integer = Integer.valueOf(hours.length - 1)
+  }
+
+  /**
+   * jMetal NSGA-II 알고리즘을 사용한 다목적 최적화
+   */
+  def allocateUsersWithJMetalNSGAII(
+    df: DataFrame,
+    capacityPerHour: Map[Int, Int],
+    populationSize: Int = 100,
+    maxEvaluations: Int = 25000,
+    crossoverProbability: Double = 0.9,
+    mutationProbability: Double = 0.1
+  ): DataFrame = {
+    
+    import df.sparkSession.implicits._
+    
+    println("=" * 80)
+    println("jMetal NSGA-II Multi-Objective Optimization")
+    println("=" * 80)
+    
+    val userData = collectUserData(df)
+    val users = userData.keys.toArray.sorted
+    val hours = df.select("send_hour").distinct().collect().map(_.getInt(0)).sorted
+    
+    println(s"\n[INPUT INFO]")
+    println(s"Users: ${numFormatter.format(users.length)}")
+    println(s"Hours: ${hours.length}")
+    
+    println(s"\n[CAPACITY PER HOUR]")
+    capacityPerHour.toSeq.sortBy(_._1).foreach { case (hour, cap) =>
+      println(s"  Hour $hour: ${numFormatter.format(cap)}")
+    }
+    
+    val totalCapacity = capacityPerHour.values.sum
+    println(f"\n  Total capacity: ${numFormatter.format(totalCapacity)}")
+    println(f"  Users to assign: ${numFormatter.format(users.length)}")
+    println(f"  Capacity ratio: ${totalCapacity.toDouble / users.length}%.2fx")
+    
+    println(s"\n[NSGA-II PARAMETERS]")
+    println(s"  Population size: $populationSize")
+    println(s"  Max evaluations: ${numFormatter.format(maxEvaluations)}")
+    println(f"  Crossover probability: $crossoverProbability%.2f")
+    println(f"  Mutation probability: $mutationProbability%.2f")
+    
+    // Problem 정의
+    val problem = new SendTimeAllocationProblem(users, userData, capacityPerHour, hours)
+    
+    // Operators
+    val crossover = new IntegerSBXCrossover(crossoverProbability, 20.0)
+    val mutation = new IntegerPolynomialMutation(
+      problem,
+      mutationProbability / users.length
+    )
+    val selection = new BinaryTournamentSelection[IntegerSolution](
+      new RankingAndCrowdingDistanceComparator[IntegerSolution]()
+    )
+    
+    // NSGA-II 알고리즘
+    val algorithm = new NSGAIIBuilder[IntegerSolution](
+      problem, 
+      crossover, 
+      mutation
+    )
+      .setSelectionOperator(selection)
+      .setPopulationSize(populationSize)
+      .setMaxEvaluations(maxEvaluations)
+      .build()
+    
+    println("\nRunning NSGA-II...")
+    val startTime = System.currentTimeMillis()
+    algorithm.run()
+    val runTime = (System.currentTimeMillis() - startTime) / 1000.0
+    
+    // jMetal 5.x: getResult(), jMetal 6.x: result()
+    val paretoFront: JavaList[IntegerSolution] = {
+      val cls = algorithm.getClass
+      val m =
+        try cls.getMethod("result")
+        catch { case _: NoSuchMethodException => cls.getMethod("getResult") }
+      m.invoke(algorithm).asInstanceOf[JavaList[IntegerSolution]]
+    }
+    println(f"\nOptimization completed in $runTime%.2f seconds")
+    println(s"Pareto front size: ${paretoFront.size()}")
+    
+    // Pareto front에서 최선의 해 선택 (총 점수 기준)
+    val bestSolution = paretoFront.asScala.minBy((sol: IntegerSolution) => sol.getObjective(0))(Ordering.Double)
+    
+    val bestScore = -bestSolution.getObjective(0)  // 원래 값으로 복원(패널티 포함일 수 있음)
+    val bestStdDev = bestSolution.getObjective(1)
+    
+    println(f"\nBest solution (highest total score):")
+    println(f"  Total score: $bestScore%,.2f")
+    println(f"  Load balance (std dev): $bestStdDev%.2f")
+    
+    // 제약 위반 확인
+    // Constraints are modeled as penalties (numberOfConstraints = 0)
+    
+    // 해를 AllocationResult로 변환
+    val results = (0 until users.length).map { i =>
+      val user = users(i)
+      val hourIdx = bestSolution.getVariableValue(i).intValue()
+      val hour = hours(hourIdx)
+      val score = userData(user).getOrElse(hour, 0.0)
+      AllocationResult(user, hour, score)
+    }.toArray
+    
+    validateAndPrintResults(results, users, hours, capacityPerHour)
+    
+    results.toSeq.toDF()
+  }
+
+  /**
+   * jMetal MOEA/D 알고리즘을 사용한 다목적 최적화
+   */
+  def allocateUsersWithJMetalMOEAD(
+    df: DataFrame,
+    capacityPerHour: Map[Int, Int],
+    populationSize: Int = 100,
+    maxEvaluations: Int = 25000,
+    neighborhoodSize: Int = 20
+  ): DataFrame = {
+    
+    import df.sparkSession.implicits._
+    
+    // NOTE:
+    // jMetal 6.1의 MOEADBuilder는 기본적으로 DoubleSolution 기반 Problem을 기대합니다.
+    // 현재 구현은 IntegerSolution 기반이므로 spark-shell에서 타입 에러가 발생합니다.
+    // 우선 컴파일/실행 안정성을 위해 NSGA-II로 graceful fallback 합니다.
+    println("=" * 80)
+    println("jMetal MOEA/D requested (fallback to NSGA-II)")
+    println("=" * 80)
+    println("⚠ jMetal 6.1 MOEA/D is DoubleSolution-oriented; current IntegerSolution encoding falls back to NSGA-II.")
+    println(s"  (populationSize=$populationSize, maxEvaluations=$maxEvaluations, neighborhoodSize=$neighborhoodSize ignored)")
+
+    allocateUsersWithJMetalNSGAII(
+      df = df,
+      capacityPerHour = capacityPerHour,
+      populationSize = populationSize,
+      maxEvaluations = maxEvaluations
+    )
+  }
+
+  /**
+   * Hybrid: jMetal + Greedy 조합
+   */
+  def allocateUsersHybridJMetal(
+    df: DataFrame,
+    capacityPerHour: Map[Int, Int],
+    algorithm: String = "NSGAII",  // "NSGAII" or "MOEAD"
+    populationSize: Int = 100,
+    maxEvaluations: Int = 25000
+  ): DataFrame = {
+    
+    import df.sparkSession.implicits._
+    
+    try {
+      val jmetalResult = algorithm.toUpperCase match {
+        case "NSGAII" => 
+          allocateUsersWithJMetalNSGAII(df, capacityPerHour, populationSize, maxEvaluations)
+        case "MOEAD" => 
+          allocateUsersWithJMetalMOEAD(df, capacityPerHour, populationSize, maxEvaluations)
+        case _ => 
+          println(s"Unknown algorithm: $algorithm, using NSGA-II")
+          allocateUsersWithJMetalNSGAII(df, capacityPerHour, populationSize, maxEvaluations)
+      }
+      
+      val assignedUsers = jmetalResult.select("svc_mgmt_num").collect().map(_.getString(0)).toSet
+      val allUsers = df.select("svc_mgmt_num").distinct().collect().map(_.getString(0)).toSet
+      val unassignedUsers = allUsers -- assignedUsers
+      
+      if (unassignedUsers.isEmpty) {
+        println("✓ All users assigned by jMetal optimizer")
+        return jmetalResult
+      }
+      
+      println(s"\n${numFormatter.format(unassignedUsers.size)} users unassigned, running Greedy for remainder...")
+      
+      val usedCapacity = jmetalResult.groupBy("assigned_hour").count().collect()
+        .map(r => r.getInt(0) -> r.getLong(1).toInt).toMap
+      
+      val remainingCapacity = capacityPerHour.map { case (hour, cap) =>
+        hour -> Math.max(0, cap - usedCapacity.getOrElse(hour, 0))
+      }
+      
+      val unassignedDf = df.filter($"svc_mgmt_num".isin(unassignedUsers.toSeq: _*))
+      val hours = df.select("send_hour").distinct().collect().map(_.getInt(0)).sorted
+      val greedyResult = allocateGreedySimple(unassignedDf, hours, remainingCapacity)
+      
+      if (greedyResult.count() == 0) {
+        return jmetalResult
+      }
+      
+      jmetalResult.union(greedyResult)
+      
+    } catch {
+      case e: Exception =>
+        println(s"\njMetal optimizer failed: ${e.getMessage}")
+        println("Running full Greedy allocation...")
+        val hours = df.select("send_hour").distinct().collect().map(_.getInt(0)).sorted
+        allocateGreedySimple(df, hours, capacityPerHour)
+    }
+  }
+
+  /**
+   * 대규모 배치 처리 (jMetal 기반)
+   */
+  def allocateLargeScaleJMetal(
+    df: DataFrame,
+    capacityPerHour: Map[Int, Int],
+    batchSize: Int = 50000,  // jMetal은 메모리 사용량이 크므로 작은 배치 크기
+    algorithm: String = "NSGAII",
+    populationSize: Int = 100,
+    maxEvaluations: Int = 25000
+  ): DataFrame = {
+    
+    import df.sparkSession.implicits._
+    
+    println("=" * 80)
+    println(s"Batch Allocation for Large Scale Data (jMetal $algorithm Mode)")
+    println("=" * 80)
+    
+    val userPriority = df.groupBy("svc_mgmt_num")
+      .agg(max("propensity_score").as("max_prob"))
+    
+    val totalUsers = userPriority.count()
+    val numBatches = Math.ceil(totalUsers.toDouble / batchSize).toInt
+    
+    println(s"\n[BATCH SETUP]")
+    println(s"Total users: ${numFormatter.format(totalUsers)}")
+    println(s"Batch size: ${numFormatter.format(batchSize)}")
+    println(s"Number of batches: $numBatches")
+    
+    val allUsers = userPriority
+      .withColumn("row_id", row_number().over(Window.orderBy(desc("max_prob"))))
+      .withColumn("batch_id", (($"row_id" - 1) / batchSize).cast("int"))
+      .select("svc_mgmt_num", "batch_id")
+      .cache()
+    
+    var remainingCapacity = capacityPerHour.toMap
+    val allResults = mutable.ArrayBuffer[DataFrame]()
+    var totalAssignedSoFar = 0L
+    
+    for (batchId <- 0 until numBatches) {
+      println(s"\n${"=" * 80}")
+      println(s"Processing Batch ${batchId + 1}/$numBatches")
+      println(s"${"=" * 80}")
+      
+      val batchUsers = allUsers.filter($"batch_id" === batchId)
+      val availableHours = remainingCapacity.filter(_._2 > 0).keys.toSeq
+      
+      if (availableHours.isEmpty) {
+        println("⚠ No capacity left in any hour.")
+      } else {
+        val batchDf = df.join(batchUsers, Seq("svc_mgmt_num"))
+          .filter($"send_hour".isin(availableHours: _*))
+        
+        val batchResult = allocateUsersHybridJMetal(
+          batchDf,
+          remainingCapacity,
+          algorithm,
+          populationSize,
+          maxEvaluations
+        )
+        
+        val assignedCount = batchResult.count()
+        
+        if (assignedCount > 0) {
+          totalAssignedSoFar += assignedCount
+          
+          val allocatedPerHour = batchResult.groupBy("assigned_hour").count().collect()
+            .map(row => row.getInt(0) -> row.getLong(1).toInt).toMap
+          
+          remainingCapacity = remainingCapacity.map { case (hour, cap) =>
+            hour -> Math.max(0, cap - allocatedPerHour.getOrElse(hour, 0))
+          }
+          
+          allResults += batchResult
+        }
+      }
+      
+      val progress = totalAssignedSoFar.toDouble / totalUsers * 100
+      println(f"\n[PROGRESS] Assigned: ${numFormatter.format(totalAssignedSoFar)} / ${numFormatter.format(totalUsers)} users ($progress%.1f%%)")
+    }
+    
+    allUsers.unpersist()
+    
+    if (allResults.isEmpty) {
+      df.sparkSession.emptyDataFrame
+    } else {
+      val finalResult = allResults.reduce(_.union(_))
+      printFinalStatistics(finalResult, totalUsers)
+      finalResult
+    }
+  }
+
+  // ============================================================================
   // Usage Examples (for Interactive Spark Shell)
   // ============================================================================
   
@@ -1397,7 +1985,7 @@ object OptimizeSendTime {
     import spark.implicits._
 
     // 데이터 로드
-    val dfAll = spark.read.parquet("data/sample/propensityScoreDF").cache()
+    val dfAll = spark.read.parquet("aos/sto/propensityScoreDF").cache()
     val df = dfAll.filter("svc_mgmt_num like '%00'")
 
     println(s"Total records: ${df.count()}")
@@ -1459,13 +2047,12 @@ object OptimizeSendTime {
     spark.stop()
   }
   */
-}
-
-// ============================================================================
-// 초기화 메시지 (파일 로드 시 자동 표시)
-// ============================================================================
-
-println("""
+  
+  // ============================================================================
+  // 초기화 메시지
+  // ============================================================================
+  
+  println("""
 ================================================================================
 Optimize Send Time - User Allocation Optimizer
 ================================================================================
@@ -1476,23 +2063,28 @@ To use the optimizer functions:
   import OptimizeSendTime._
 
 Available algorithms:
-  1. allocateGreedySimple              - Fastest, simple greedy allocation
-  2. allocateUsersWithHourlyCapacity   - OR-Tools optimization (accurate)
-  3. allocateUsersWithSimulatedAnnealing - SA optimization (balanced)
-  4. allocateUsersHybrid               - Hybrid (OR-Tools + Greedy)
-  5. allocateLargeScaleHybrid          - Large scale batch processing
-  6. allocateUsersHybridSA             - Hybrid (SA + Greedy)
-  7. allocateLargeScaleSA              - Large scale SA batch processing
+  1. allocateGreedySimple                   - Fastest, simple greedy allocation
+  2. allocateUsersWithHourlyCapacity        - OR-Tools optimization (accurate)
+  3. allocateUsersWithSimulatedAnnealing    - SA optimization (balanced)
+  4. allocateUsersHybrid                    - Hybrid (OR-Tools + Greedy)
+  5. allocateLargeScaleHybrid               - Large scale batch processing (OR-Tools)
+  6. allocateUsersHybridSA                  - Hybrid (SA + Greedy)
+  7. allocateLargeScaleSA                   - Large scale SA batch processing
+  8. allocateUsersWithJMetalNSGAII          - jMetal NSGA-II multi-objective
+  9. allocateUsersWithJMetalMOEAD           - jMetal MOEA/D multi-objective
+  10. allocateUsersHybridJMetal             - Hybrid (jMetal + Greedy)
+  11. allocateLargeScaleJMetal              - Large scale jMetal batch processing
 
 Quick start example:
   import OptimizeSendTime._
-  val dfAll = spark.read.parquet("data/sample/propensityScoreDF").cache()
+  val dfAll = spark.read.parquet("aos/sto/propensityScoreDF").cache()
   val df = dfAll.limit(1000)
   val capacity = Map(9->100, 10->100, 11->100, 12->100, 13->100,
                       14->100, 15->100, 16->100, 17->100, 18->100)
   val result = allocateGreedySimple(df, Array(9,10,11,12,13,14,15,16,17,18), capacity)
   result.groupBy("assigned_hour").count().show()
 
-For more examples, see: QUICK_START.md
+For more examples, see: QUICK_START.md and JMETAL_SETUP.md
 ================================================================================
 """)
+}
