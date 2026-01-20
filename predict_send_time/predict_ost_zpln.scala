@@ -974,7 +974,7 @@ val gbtc = new GBTClassifier("gbtc_click")
   .setMaxDepth(6)   // 4 → 6 (더 깊은 트리)
   .setStepSize(0.1) // learning rate 추가
   .setSubsamplingRate(0.8)  // 80% 샘플링으로 과적합 방지
-  .setFeatureSubsetStrategy("sqrt")  // auto → sqrt (Random Forest 스타일)
+  .setFeatureSubsetStrategy("auto")  // auto → sqrt (Random Forest 스타일)
   .setMinInstancesPerNode(10)  // 리프 노드 최소 샘플 수
   .setMinInfoGain(0.001)  // 분할 최소 정보 이득
 //   .setWeightCol("sample_weight")
@@ -1372,9 +1372,16 @@ stagesClick.foreach { stage =>
 // ===== Paragraph 28.5: Precision@K per Hour & MAP Evaluation (실제 서비스 시나리오) =====
 
 {
-    println("\n========================================")
+    println("\n" + "=" * 80)
     println("실제 서비스 평가: Precision@K per Hour & MAP")
-    println("========================================\n")
+    println("-" * 80)
+    println(s"Model: GBT Classifier")
+    println(s"  - maxIter: ${gbtc.getMaxIter}")
+    println(s"  - maxDepth: ${gbtc.getMaxDepth}")
+    println(s"  - stepSize: ${gbtc.getStepSize}")
+    println(s"  - subsamplingRate: ${gbtc.getSubsamplingRate}")
+    println(s"  - featureSubsetStrategy: ${gbtc.getFeatureSubsetStrategy}")
+    println("=" * 80 + "\n")
     
     // ========================================
     // Part 1: Precision@K per Hour (시간대별 평가)
@@ -1548,7 +1555,7 @@ stagesClick.foreach { stage =>
         val hourData = hourlyUserPredictions
             .filter(s"hour = $hour")
             .orderBy(F.desc("click_prob"))  // 확률 순 정렬
-            .withColumn("rank", F.row_number().over(Window.orderBy(F.desc("click_prob"))))
+            .withColumn("rank", F.row_number().over(Window.orderBy(F.desc("click_prob"))).cast("long"))
             .cache()
         
         val totalClicked = hourData.filter("actual_click > 0").count()
@@ -1559,7 +1566,15 @@ stagesClick.foreach { stage =>
                 .filter("actual_click > 0")
                 .select("rank")
                 .collect()
-                .map(_.getLong(0).toDouble)
+                .map { row =>
+                    // 타입 안전하게 처리
+                    val rank = row.get(0) match {
+                        case i: Int => i.toLong
+                        case l: Long => l
+                        case _ => row.getLong(0)
+                    }
+                    rank.toDouble
+                }
             
             // AP 계산: sum(precision@rank) / total_relevant
             val ap = clickedRanks.zipWithIndex.map { case (rank, idx) =>
