@@ -61,6 +61,9 @@ import java.time.format.DateTimeFormatter
 import java.time.LocalDate
 import scala.collection.mutable.ListBuffer
 import java.time.temporal.ChronoUnit
+import org.apache.spark.ml.linalg.Vector
+
+spark.udf.register("vector_to_array", (v: Vector) => v.toArray)
 
 def getPreviousMonths(startMonthStr: String, periodM: Int): Array[String] = {
   val formatter = DateTimeFormatter.ofPattern("yyyyMM")
@@ -898,21 +901,14 @@ println("Saving transformers...")
 transformerClick.write.overwrite().save("aos/sto/transformPipelineXDRClick10")
 transformerGap.write.overwrite().save("aos/sto/transformPipelineXDRGap10")
 
-// 1단계: 캐시 해제 및 checkpoint (메모리 효율화)
-println("Preparing data for save...")
-transformedTrainDF.unpersist()
-transformedTestDF.unpersist()
-val trainToSave = transformedTrainDF.cache()//.checkpoint()
-val testToSave = transformedTestDF.cache()//.checkpoint()
-
 // 2단계: Train/Test 데이터를 Suffix별 배치 저장 (메모리 과부하 방지)
 // suffixGroupSizeTrans: 한 번에 처리할 suffix 개수 (예: 4 = [0,1,2,3], [4,5,6,7], ...)
 val suffixGroupSizeTrans = 2  // 조정 가능: 1(개별), 2, 4, 8, 16(전체)
 
 // Train과 Test 데이터셋 정의
 val datasetsToSave = Seq(
-  ("training", trainToSave, "aos/sto/transformedTrainDFXDR10", 20),
-  ("test", testToSave, "aos/sto/transformedTestDFXDF10", 20)
+  ("training", transformedTrainDF, "aos/sto/transformedTrainDFXDR10", 20),
+  ("test", transformedTestDF, "aos/sto/transformedTestDFXDF10", 20)
 )
 
 // 각 데이터셋에 대해 suffix 그룹별로 저장
@@ -971,12 +967,12 @@ val gbtc = new GBTClassifier("gbtc_click")
   .setLabelCol(indexedLabelColClick)
   .setFeaturesCol(indexedFeatureColClick)
   .setMaxIter(100)  // 50 → 100 (더 많은 트리)
-  .setMaxDepth(6)   // 4 → 6 (더 깊은 트리)
-  .setStepSize(0.1) // learning rate 추가
-  .setSubsamplingRate(0.8)  // 80% 샘플링으로 과적합 방지
+  .setMaxDepth(4)   // 4 → 6 (더 깊은 트리)
+//   .setStepSize(0.1) // learning rate 추가
+//   .setSubsamplingRate(0.8)  // 80% 샘플링으로 과적합 방지
   .setFeatureSubsetStrategy("auto")  // auto → sqrt (Random Forest 스타일)
-  .setMinInstancesPerNode(10)  // 리프 노드 최소 샘플 수
-  .setMinInfoGain(0.001)  // 분할 최소 정보 이득
+//   .setMinInstancesPerNode(10)  // 리프 노드 최소 샘플 수
+//   .setMinInfoGain(0.001)  // 분할 최소 정보 이득
 //   .setWeightCol("sample_weight")
   .setPredictionCol("pred_gbtc_click")
   .setProbabilityCol("prob_gbtc_click")
@@ -1139,12 +1135,13 @@ println("\n✅ XGBoostRegressor with Feature Interaction Constraints created!")
 println(s"Interaction Constraints: [[$sendHournumIndices],[$allFeatureIndices]]")
 
 
-// ===== Paragraph 24: Click Prediction Model Training (XGBoost Classifier) (ID: paragraph_1765789893517_1550413688) =====
+// ===== Paragraph 24: Click Prediction Model Training (ID: paragraph_1765789893517_1550413688) =====
 
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 
-val modelClickforCV = xgbc
+// 학습에 사용할 모델 선택 (gbtc, xgbc, fmc, lgbmc 중 선택)
+val modelClickforCV = gbtc  // 또는 xgbc, fmc, lgbmc
 
 val pipelineMLClick = new Pipeline().setStages(Array(modelClickforCV))
 
@@ -1155,12 +1152,14 @@ val pipelineMLClick = new Pipeline().setStages(Array(modelClickforCV))
 // - 3:1 = 권장 (F1 최적, 실험 결과: Precision 4.2%, Recall 8%, F1 0.055) ✓
 // - 전체 데이터 = Recall 최대 (비용 비효율)
 
+val negSampleRatioClick = 0.3
+
 val trainSampleClick = transformedTrainDF
     .filter("cmpgn_typ=='Sales'")
     .stat.sampleBy(
         F.col(indexedLabelColClick),
         Map(
-            0.0 -> 0.27,  // 3:1 비율 (Negative를 27% 샘플링) ✓
+            0.0 -> negSampleRatioClick,  // 3:1 비율 (Negative를 27% 샘플링) ✓
             1.0 -> 1.0,   // Positive 전체 사용
         ),
         42L
@@ -1179,11 +1178,13 @@ trainSampleClick.unpersist()  // 학습 완료 후 메모리 해제
 println("Click model training completed")
 
 
-// ===== Paragraph 25: Click-to-Action Gap Model Training (XGBoost Classifier) (ID: paragraph_1767010803374_275395458) =====
+// ===== Paragraph 25: Click-to-Action Gap Model Training (ID: paragraph_1767010803374_275395458) =====
 
 val modelGapforCV = xgbg
 
 val pipelineMLGap = new Pipeline().setStages(Array(modelGapforCV))
+
+val posSampleRatioGap = 0.45
 
 // Gap 모델 학습 데이터 샘플링 최적화
 val trainSampleGap = transformedTrainDF
@@ -1192,7 +1193,7 @@ val trainSampleGap = transformedTrainDF
         F.col("hour_gap"),
         Map(
             0.0 -> 1.0,
-            1.0 -> 0.45,
+            1.0 -> posSampleRatioGap,
         ),
         42L
     )
@@ -1208,7 +1209,7 @@ trainSampleGap.unpersist()  // 학습 완료 후 메모리 해제
 println("Gap model training completed")
 
 
-// ===== Paragraph 26: Response Utility Regression Model Training (XGBoost Regressor) (ID: paragraph_1765764610094_1504595267) =====
+// ===== Paragraph 26: Response Utility Regression Model Training (ID: paragraph_1765764610094_1504595267) =====
 
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 
@@ -1255,132 +1256,38 @@ val predictionsGapDev = pipelineModelGap.transform(testDataForPred)
 println("Gap predictions cached")
 
 
-// ===== Paragraph 28: Click Model Performance Evaluation (Precision, Recall, F1) (ID: paragraph_1764838154931_1623772564) =====
-
-import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.ml.tuning.CrossValidatorModel
-import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, MulticlassClassificationEvaluator}
-
-import org.apache.spark.ml.linalg.Vector
-
-spark.udf.register("vector_to_array", (v: Vector) => v.toArray)
-
-val topK = 50000
-val thresholdProb = 0.95  // 0.5 → 0.95 (더 확실한 경우만 Positive)
+// ===== Paragraph 28: Click Model Performance Evaluation (Precision@K per Hour & MAP) (ID: paragraph_1764838154931_1623772564) =====
 
 val stagesClick = pipelineModelClick.stages
 
-println("Evaluating Click models...")
-
 stagesClick.foreach { stage => 
-    
-    val modelName = stage.uid
-    
-    println(s"Evaluating model: $modelName")
-    
-    // 집계 및 평가용 데이터 준비 - 파티션 최적화
-    val aggregatedPredictions = predictionsClickDev
-        .withColumn("prob", F.expr(s"vector_to_array(prob_$modelName)[1]"))
-        .repartition(200, F.col("svc_mgmt_num"))  // GroupBy 전 파티셔닝
-        .groupBy("svc_mgmt_num", "send_ym","send_hournum_cd")
-        .agg(F.sum(indexedLabelColClick).alias(indexedLabelColClick), F.max("prob").alias("prob"))
-        .withColumn(indexedLabelColClick, F.expr(s"case when $indexedLabelColClick>0 then cast(1.0 AS DOUBLE) else cast(0.0 AS DOUBLE) end"))
-        .withColumn("prediction_click", F.expr(s"case when prob>=$thresholdProb then cast(1.0 AS DOUBLE) else cast(0.0 AS DOUBLE) end"))
-        .sample(false, 0.3, 42)  // ← 30% 샘플링 추가 (속도 3배↑)
-        .repartition(100)  // 샘플링 후 파티션 재조정
-        .persist(StorageLevel.MEMORY_AND_DISK_SER)
-    
-    // ========================================
-    // 완전 분산 평가 (Driver 수집 없음, 매우 빠름!)
-    // ========================================
-    
-    println(s"######### $modelName 예측 결과 #########")
-    
-    // 0. Top-K 방식 추가 (확률 상위 K개만 Positive)
-    val totalCount = aggregatedPredictions.count()
-    val expectedPositiveCount = (totalCount * 0.01).toLong  // 전체의 1%만 Positive로
-    
-    val topKPredictions = aggregatedPredictions
-        .withColumn("rank", F.row_number().over(Window.orderBy(F.desc("prob"))))
-        .withColumn("prediction_click_topk", 
-            F.when(F.col("rank") <= expectedPositiveCount, 1.0).otherwise(0.0))
-    
-    // 1. DataFrame 연산으로 Confusion Matrix 계산 (완전 분산)
-    // Threshold 방식
-    val confusionDF = aggregatedPredictions
-        .groupBy(indexedLabelColClick, "prediction_click")
-        .count()
-        .cache()
-    
-    // Top-K 방식
-    val confusionDF_topk = topKPredictions
-        .groupBy(indexedLabelColClick, "prediction_click_topk")
-        .count()
-        .cache()
-    
-    // 2. TP, FP, TN, FN 계산 (분산 연산)
-    val tp = confusionDF.filter(s"$indexedLabelColClick = 1.0 AND prediction_click = 1.0").select("count").first().getLong(0).toDouble
-    val fp = confusionDF.filter(s"$indexedLabelColClick = 0.0 AND prediction_click = 1.0").select("count").first().getLong(0).toDouble
-    val tn = confusionDF.filter(s"$indexedLabelColClick = 0.0 AND prediction_click = 0.0").select("count").first().getLong(0).toDouble
-    val fn = confusionDF.filter(s"$indexedLabelColClick = 1.0 AND prediction_click = 0.0").select("count").first().getLong(0).toDouble
-    
-    // 3. 지표 계산 (Driver에서 간단한 계산만)
-    val precision_1 = if (tp + fp > 0) tp / (tp + fp) else 0.0
-    val recall_1 = if (tp + fn > 0) tp / (tp + fn) else 0.0
-    val f1_1 = if (precision_1 + recall_1 > 0) 2 * (precision_1 * recall_1) / (precision_1 + recall_1) else 0.0
-    
-    val precision_0 = if (tn + fn > 0) tn / (tn + fn) else 0.0
-    val recall_0 = if (tn + fp > 0) tn / (tn + fp) else 0.0
-    val f1_0 = if (precision_0 + recall_0 > 0) 2 * (precision_0 * recall_0) / (precision_0 + recall_0) else 0.0
-    
-    val accuracy = (tp + tn) / (tp + tn + fp + fn)
-    val total = tp + tn + fp + fn
-    
-    val weightedPrecision = (precision_1 * (tp + fn) + precision_0 * (tn + fp)) / total
-    val weightedRecall = (recall_1 * (tp + fn) + recall_0 * (tn + fp)) / total
-    
-    // 4. BinaryClassificationEvaluator로 AUC 계산 (분산)
-    val binaryEvaluator = new BinaryClassificationEvaluator()
-        .setLabelCol(indexedLabelColClick)
-        .setRawPredictionCol("prob")
-        .setMetricName("areaUnderROC")
-    val auc = binaryEvaluator.evaluate(aggregatedPredictions)
-    
-    // 5. 결과 출력
-    println("--- 레이블별 성능 지표 ---")
-    println(f"Label 0.0 (클래스): Precision = $precision_0%.4f, Recall = $recall_0%.4f, F1 = $f1_0%.4f")
-    println(f"Label 1.0 (클래스): Precision = $precision_1%.4f, Recall = $recall_1%.4f, F1 = $f1_1%.4f")
-    
-    println(f"\nWeighted Precision (전체 평균): $weightedPrecision%.4f")
-    println(f"Weighted Recall (전체 평균): $weightedRecall%.4f")
-    println(f"Accuracy (전체 정확도): $accuracy%.4f")
-    println(f"AUC (Area Under ROC): $auc%.4f")
-    
-    println("\n--- Confusion Matrix (혼동 행렬) ---")
-    println(f"              Predicted 0    Predicted 1")
-    println(f"Actual 0:     ${tn}%.0f         ${fp}%.0f")
-    println(f"Actual 1:     ${fn}%.0f         ${tp}%.0f")
-    
-    confusionDF.unpersist()
-    
-    aggregatedPredictions.unpersist()  // 메모리 해제
-}
 
-
-// ===== Paragraph 28.5: Precision@K per Hour & MAP Evaluation (실제 서비스 시나리오) =====
-
-{
+    val evalModelName = stage.uid  // 학습에 사용된 모델의 UID 자동 추출
+    val evalModelShortName = evalModelName.replace("_click", "").toUpperCase
+        
     println("\n" + "=" * 80)
-    println("실제 서비스 평가: Precision@K per Hour & MAP")
+    println(s"실제 서비스 평가: Precision@K per Hour & MAP")
     println("-" * 80)
-    println(s"Model: GBT Classifier")
-    println(s"  - maxIter: ${gbtc.getMaxIter}")
-    println(s"  - maxDepth: ${gbtc.getMaxDepth}")
-    println(s"  - stepSize: ${gbtc.getStepSize}")
-    println(s"  - subsamplingRate: ${gbtc.getSubsamplingRate}")
-    println(s"  - featureSubsetStrategy: ${gbtc.getFeatureSubsetStrategy}")
+    println(s"평가 모델: $evalModelShortName (UID: $evalModelName)")
+    
+    // 모델별 하이퍼파라미터 출력
+    evalModelName match {
+        case "gbtc_click" =>
+            println(s"  - maxIter: ${gbtc.getMaxIter}")
+            println(s"  - maxDepth: ${gbtc.getMaxDepth}")
+            println(s"  - featureSubsetStrategy: ${gbtc.getFeatureSubsetStrategy}")
+        case "xgbc_click" =>
+            println(s"  - numRound: ${xgbc.getNumRound}")
+            println(s"  - maxDepth: ${xgbc.getMaxDepth}")
+            println(s"  - objective: ${xgbc.getObjective}")
+        case "fmc_click" =>
+            println(s"  - stepSize: ${fmc.getStepSize}")
+        case "lgbmc_click" =>
+            println(s"  - numIterations: ${lgbmc.getNumIterations}")
+            println(s"  - learningRate: ${lgbmc.getLearningRate}")
+        case _ =>
+            println(s"  - Model: $evalModelName")
+    }
     println("=" * 80 + "\n")
     
     // ========================================
@@ -1399,7 +1306,7 @@ stagesClick.foreach { stage =>
             F.col("send_ym"),
             F.col("send_hournum_cd").cast("int").alias("hour"),
             F.col(indexedLabelColClick).alias("actual_click"),
-            F.expr("vector_to_array(prob_gbtc_click)[1]").alias("click_prob")
+            F.expr(s"vector_to_array(prob_$evalModelName)[1]").alias("click_prob")
         )
         .groupBy("svc_mgmt_num", "send_ym", "hour")
         .agg(
@@ -1770,105 +1677,168 @@ stagesClick.foreach { stage =>
     println("  → 해당 시간대의 Precision@1000 확인 (예상 클릭률)")
     println("  → MAP으로 전체 모델 품질 추적")
     
+    // ========================================
+    // 로그 저장용 데이터 사전 수집 (unpersist 전에 모든 계산 완료)
+    // ========================================
+    println("\n로그 저장을 위한 데이터 수집 중...")
+    
+    // Precision@K와 Recall@K를 한 번에 계산하여 로컬로 수집
+    val precisionRecallResults = hours.map { hour =>
+        val hourData = hourlyUserPredictions.filter(s"hour = $hour")
+        val totalClicked = hourData.filter("actual_click > 0").count().toDouble
+        
+        val metricsPerK = kValues.map { k =>
+            val topK = hourData.orderBy(F.desc("click_prob")).limit(k)
+            val totalK = topK.count().toDouble
+            val clickedK = topK.filter("actual_click > 0").count().toDouble
+            
+            val precision = if (totalK > 0) clickedK / totalK else 0.0
+            val recall = if (totalClicked > 0) clickedK / totalClicked else 0.0
+            
+            (precision, recall)
+        }
+        
+        (hour, metricsPerK)
+    }
+    
+    // MAP 및 User Metrics를 로컬 변수로 저장
+    val mapValue = map
+    val validAPsLength = validAPs.length
+    val userMAPValue = userMAP
+    val totalUsersMAPValue = totalUsersMAP
+    
+    println("데이터 수집 완료. 메모리 해제 중...")
+    
+    // 이제 안전하게 unpersist
     hourlyUserPredictions.unpersist()
     userAPData.unpersist()
     userMetrics.unpersist()
-}
-
-
-// ===== Paragraph 28.6: GBT Threshold Optimization Analysis (Legacy) =====
-
-{
-    println("\n========================================")
-    println("GBT Click Model - Threshold 최적화 분석 (참고용)")
-    println("========================================\n")
     
-    // GBT 모델만 필터링
-    val gbtPredictions = predictionsClickDev
-        .filter("click_yn>=0")
-        .select(indexedLabelColClick, "prob_gbtc_click")
-        .withColumnRenamed("prob_gbtc_click", "prob")
-        .sample(false, 0.3, 42)
-        .repartition(200)
-        .cache()
+    println("메모리 해제 완료. 로그 저장 시작...")
     
-    println(s"샘플 데이터: ${gbtPredictions.count()} 건")
+    // ========================================
+    // 평가 결과 로그 저장 (수집된 로컬 데이터 사용)
+    // ========================================
+    import java.io.{File, PrintWriter}
+    import java.time.LocalDateTime
+    import java.time.format.DateTimeFormatter
     
-    // 다양한 Threshold에 대한 성능 분석
-    val thresholds = Array(0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95)
+    val logDir = new File("/data/myfiles/aos_ost/predict")
+    if (!logDir.exists()) logDir.mkdirs()
     
-    println("\n=== Threshold별 성능 비교 ===")
-    println("Threshold | Precision | Recall | F1-Score | FP Count | Pred Pos")
-    println("-" * 75)
+    val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+    val logFile = new File(logDir, s"click_model_eval_${evalModelName}_${timestamp}.log")
+    val writer = new PrintWriter(logFile)
     
-    thresholds.foreach { threshold =>
-        val predictions = gbtPredictions
-            .withColumn("prediction", 
-                F.when(F.col("prob") >= threshold, 1.0).otherwise(0.0))
+    try {
+        writer.println("=" * 80)
+        writer.println(s"Click Model Evaluation Log - $timestamp")
+        writer.println("=" * 80)
+        writer.println()
         
-        val confusionDF = predictions
-            .groupBy(indexedLabelColClick, "prediction")
-            .count()
-            .collect()
-            .map(row => ((row.getDouble(0), row.getDouble(1)), row.getLong(2).toDouble))
-            .toMap
+        // 모델 정보
+        writer.println("[Model Information]")
+        writer.println(s"Model: $evalModelShortName (UID: $evalModelName)")
+        evalModelName match {
+            case "gbtc_click" =>
+                writer.println(s"  - maxIter: ${gbtc.getMaxIter}")
+                writer.println(s"  - maxDepth: ${gbtc.getMaxDepth}")
+                writer.println(s"  - featureSubsetStrategy: ${gbtc.getFeatureSubsetStrategy}")
+            case "xgbc_click" =>
+                writer.println(s"  - numRound: ${xgbc.getNumRound}")
+                writer.println(s"  - maxDepth: ${xgbc.getMaxDepth}")
+                writer.println(s"  - objective: ${xgbc.getObjective}")
+            case "fmc_click" =>
+                writer.println(s"  - stepSize: ${fmc.getStepSize}")
+            case "lgbmc_click" =>
+                writer.println(s"  - numIterations: ${lgbmc.getNumIterations}")
+                writer.println(s"  - learningRate: ${lgbmc.getLearningRate}")
+            case _ =>
+                writer.println(s"  - Model: $evalModelName")
+        }
+        writer.println()
         
-        val tp = confusionDF.getOrElse((1.0, 1.0), 0.0)
-        val fp = confusionDF.getOrElse((0.0, 1.0), 0.0)
-        val tn = confusionDF.getOrElse((0.0, 0.0), 0.0)
-        val fn = confusionDF.getOrElse((1.0, 0.0), 0.0)
+        // 학습 데이터 정보
+        writer.println("[Training Data Information]")
+        writer.println(s"Negative Sample Ratio: $negSampleRatioClick")
+        writer.println(s"Positive Sample Ratio: 1.0 (전체 사용)")
+        writer.println(s"Sample Strategy: stat.sampleBy")
+        writer.println(s"Estimated neg:pos ratio: ${(negSampleRatioClick * 100).toInt}:100")
+        writer.println()
         
-        val precision = if (tp + fp > 0) tp / (tp + fp) else 0.0
-        val recall = if (tp + fn > 0) tp / (tp + fn) else 0.0
-        val f1 = if (precision + recall > 0) 2 * (precision * recall) / (precision + recall) else 0.0
-        val predPos = tp + fp
+        // Precision@K 결과 저장 (수집된 데이터 사용)
+        writer.println("[Precision@K per Hour]")
+        writer.println(f"${"Hour"}%5s | ${"K=100"}%7s | ${"K=500"}%7s | ${"K=1000"}%8s | ${"K=2000"}%8s | ${"K=5000"}%8s | ${"K=10000"}%9s")
+        writer.println("-" * 75)
         
-        println(f"$threshold%.2f      | ${precision * 100}%.2f%%    | ${recall * 100}%.2f%%  | $f1%.4f   | ${fp}%.0f   | ${predPos}%.0f")
+        precisionRecallResults.foreach { case (hour, metricsPerK) =>
+            val precisions = metricsPerK.map(_._1)
+            writer.println(f"$hour%5d | ${precisions(0)*100}%6.2f%% | ${precisions(1)*100}%6.2f%% | ${precisions(2)*100}%7.2f%% | ${precisions(3)*100}%7.2f%% | ${precisions(4)*100}%7.2f%% | ${precisions(5)*100}%8.2f%%")
+        }
+        
+        // 평균 Precision@K
+        writer.println("-" * 75)
+        val avgPrecisions = kValues.indices.map { idx =>
+            precisionRecallResults.map(_._2(idx)._1).sum / precisionRecallResults.length
+        }
+        writer.print(f"${"Avg"}%5s")
+        avgPrecisions.foreach { avg =>
+            writer.print(f" | ${avg*100}%6.2f%%")
+        }
+        writer.println()
+        writer.println()
+        
+        // Recall@K 결과 저장 (수집된 데이터 사용)
+        writer.println("[Recall@K per Hour]")
+        writer.println(f"${"Hour"}%5s | ${"K=100"}%7s | ${"K=500"}%7s | ${"K=1000"}%8s | ${"K=2000"}%8s | ${"K=5000"}%8s | ${"K=10000"}%9s")
+        writer.println("-" * 75)
+        
+        precisionRecallResults.foreach { case (hour, metricsPerK) =>
+            val recalls = metricsPerK.map(_._2)
+            writer.println(f"$hour%5d | ${recalls(0)*100}%6.2f%% | ${recalls(1)*100}%6.2f%% | ${recalls(2)*100}%7.2f%% | ${recalls(3)*100}%7.2f%% | ${recalls(4)*100}%7.2f%% | ${recalls(5)*100}%8.2f%%")
+        }
+        
+        // 평균 Recall@K
+        writer.println("-" * 75)
+        val avgRecalls = kValues.indices.map { idx =>
+            precisionRecallResults.map(_._2(idx)._2).sum / precisionRecallResults.length
+        }
+        writer.print(f"${"Avg"}%5s")
+        avgRecalls.foreach { avg =>
+            writer.print(f" | ${avg*100}%6.2f%%")
+        }
+        writer.println()
+        writer.println()
+        
+        // MAP 결과 저장 (수집된 데이터 사용)
+        writer.println("[MAP - Mean Average Precision]")
+        writer.println(f"MAP (시간대별): $mapValue%.4f")
+        writer.println(f"Evaluated Hours: $validAPsLength/10")
+        writer.println(f"User-based MAP: $userMAPValue%.4f")
+        writer.println(f"Evaluated Users: $totalUsersMAPValue")
+        writer.println()
+        
+        // 해석 가이드
+        writer.println("[Interpretation Guide]")
+        writer.println("- Precision@K: 상위 K명 발송 시 클릭률")
+        writer.println("- Recall@K: 전체 클릭자 중 상위 K명에 포함된 비율")
+        writer.println("- MAP > 0.3: 양호, > 0.5: 우수, > 0.7: 매우 우수")
+        writer.println()
+        
+        writer.println("=" * 80)
+        writer.println("Log saved successfully!")
+        
+        println(s"\n✅ Click Model 평가 결과 로그 저장: ${logFile.getAbsolutePath}")
+        
+    } finally {
+        writer.close()
     }
-    
-    // 확률 분포 분석
-    println("\n=== 확률 분포 (Positive 클래스) ===")
-    val posProbs = gbtPredictions
-        .filter(s"$indexedLabelColClick = 1.0")
-        .stat.approxQuantile("prob", Array(0.0, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 1.0), 0.01)
-    
-    println(s"Min:    ${posProbs(0)}")
-    println(s"25%:    ${posProbs(1)}")
-    println(s"Median: ${posProbs(2)}")
-    println(s"75%:    ${posProbs(3)}")
-    println(s"90%:    ${posProbs(4)}")
-    println(s"95%:    ${posProbs(5)}")
-    println(s"99%:    ${posProbs(6)}")
-    println(s"Max:    ${posProbs(7)}")
-    
-    println("\n=== 확률 분포 (Negative 클래스) ===")
-    val negProbs = gbtPredictions
-        .filter(s"$indexedLabelColClick = 0.0")
-        .stat.approxQuantile("prob", Array(0.0, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 1.0), 0.01)
-    
-    println(s"Min:    ${negProbs(0)}")
-    println(s"25%:    ${negProbs(1)}")
-    println(s"Median: ${negProbs(2)}")
-    println(s"75%:    ${negProbs(3)}")
-    println(s"90%:    ${negProbs(4)}")
-    println(s"95%:    ${negProbs(5)}")
-    println(s"99%:    ${negProbs(6)}")
-    println(s"Max:    ${negProbs(7)}")
-    
-    gbtPredictions.unpersist()
-    
-    println("\n💡 권장사항:")
-    println("- Precision 우선: Threshold 0.7-0.9 사용")
-    println("- Recall 우선: Threshold 0.3-0.5 사용")
-    println("- 균형: F1-Score가 최대인 Threshold 선택")
 }
 
 
 // ===== Paragraph 29: Gap Model Performance Evaluation (Precision, Recall, F1) (ID: paragraph_1767010293011_1290077245) =====
 
 val stagesGap = pipelineModelGap.stages
-
-println("Evaluating Gap models...")
 
 stagesGap.foreach { stage => 
     
@@ -1944,9 +1914,114 @@ stagesGap.foreach { stage =>
     println(f"Actual 0:     ${tn}%.0f         ${fp}%.0f")
     println(f"Actual 1:     ${fn}%.0f         ${tp}%.0f")
     
-    confusionDF.unpersist()
+    // ========================================
+    // 로그 저장용 데이터 사전 수집 (unpersist 전에 모든 값을 로컬로)
+    // ========================================
     
-    aggregatedPredictionsGap.unpersist()  // 메모리 해제
+    // 성능 지표들을 로컬 변수로 저장
+    val precision_0_local = precision_0
+    val recall_0_local = recall_0
+    val f1_0_local = f1_0
+    val precision_1_local = precision_1
+    val recall_1_local = recall_1
+    val f1_1_local = f1_1
+    val weightedPrecision_local = weightedPrecision
+    val weightedRecall_local = weightedRecall
+    val accuracy_local = accuracy
+    val auc_local = auc
+    val tp_local = tp
+    val fp_local = fp
+    val tn_local = tn
+    val fn_local = fn
+    val total_local = total
+    
+    // 메모리 해제
+    confusionDF.unpersist()
+    aggregatedPredictionsGap.unpersist()
+    
+    // ========================================
+    // Gap Model 평가 결과 로그 저장 (수집된 로컬 데이터 사용)
+    // ========================================
+    import java.io.{File, PrintWriter}
+    import java.time.LocalDateTime
+    import java.time.format.DateTimeFormatter
+    
+    val logDir = new File("/data/myfiles/aos_ost/predict")
+    if (!logDir.exists()) logDir.mkdirs()
+    
+    val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+    val logFile = new File(logDir, s"gap_model_eval_${modelName}_${timestamp}.log")
+    val writer = new PrintWriter(logFile)
+    
+    try {
+        writer.println("=" * 80)
+        writer.println(s"Gap Model Evaluation Log - $timestamp")
+        writer.println("=" * 80)
+        writer.println()
+        
+        // 모델 정보
+        writer.println("[Model Information]")
+        writer.println(s"Model: ${modelName.replace("_gap", "").toUpperCase} (UID: $modelName)")
+        modelName match {
+            case "gbtc_gap" =>
+                writer.println(s"  - maxIter: ${gbtg.getMaxIter}")
+                writer.println(s"  - maxDepth: ${gbtg.getMaxDepth}")
+                writer.println(s"  - featureSubsetStrategy: ${gbtg.getFeatureSubsetStrategy}")
+            case "xgbc_gap" =>
+                writer.println(s"  - numRound: ${xgbg.getNumRound}")
+                writer.println(s"  - maxDepth: ${xgbg.getMaxDepth}")
+                writer.println(s"  - objective: ${xgbg.getObjective}")
+            case _ =>
+                writer.println(s"  - Model: $modelName")
+        }
+        writer.println()
+        
+        // 학습 데이터 정보
+        writer.println("[Training Data Information]")
+        writer.println(s"Data Filter: click_yn > 0 (클릭 발생 케이스만)")
+        writer.println(s"Positive Sample Ratio (hour_gap > 0): $posSampleRatioGap")
+        writer.println(s"Negative Sample Ratio (hour_gap = 0): 1.0")
+        writer.println(s"Sample Strategy: stat.sampleBy")
+        writer.println()
+        
+        // 성능 지표 (로컬 변수 사용)
+        writer.println("[Performance Metrics]")
+        writer.println(f"Precision (Label 0): $precision_0_local%.4f")
+        writer.println(f"Recall (Label 0): $recall_0_local%.4f")
+        writer.println(f"F1-Score (Label 0): $f1_0_local%.4f")
+        writer.println()
+        writer.println(f"Precision (Label 1): $precision_1_local%.4f")
+        writer.println(f"Recall (Label 1): $recall_1_local%.4f")
+        writer.println(f"F1-Score (Label 1): $f1_1_local%.4f")
+        writer.println()
+        writer.println(f"Weighted Precision: $weightedPrecision_local%.4f")
+        writer.println(f"Weighted Recall: $weightedRecall_local%.4f")
+        writer.println(f"Accuracy: $accuracy_local%.4f")
+        writer.println(f"AUC: $auc_local%.4f")
+        writer.println()
+        
+        // Confusion Matrix (로컬 변수 사용)
+        writer.println("[Confusion Matrix]")
+        writer.println(f"              Predicted 0    Predicted 1")
+        writer.println(f"Actual 0:     ${tn_local}%.0f         ${fp_local}%.0f")
+        writer.println(f"Actual 1:     ${fn_local}%.0f         ${tp_local}%.0f")
+        writer.println()
+        
+        // 해석
+        writer.println("[Interpretation]")
+        writer.println("- Label 0: 즉시 클릭 (hour_gap = 0)")
+        writer.println("- Label 1: 지연 클릭 (hour_gap > 0)")
+        writer.println(s"- 총 평가 샘플: ${total_local.toLong}")
+        writer.println()
+        
+        writer.println("=" * 80)
+        writer.println("Log saved successfully!")
+        
+        println(s"\n✅ Gap Model 평가 결과 로그 저장: ${logFile.getAbsolutePath}")
+        
+    } finally {
+        writer.close()
+    }
 }
 
 
@@ -1987,10 +2062,6 @@ predictionsRegDev.unpersist()  // 메모리 해제
 
 
 // ===== Paragraph 31: Propensity Score Calculation and Persistence (Batch by Suffix) (ID: paragraph_1765768974381_910321724) =====
-
-import org.apache.spark.ml.linalg.Vector
-
-spark.udf.register("vector_to_array", (v: Vector) => v.toArray)
 
 // 메모리 절약을 위해 이전 캐시 정리
 try {
