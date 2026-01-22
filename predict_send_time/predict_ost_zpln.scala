@@ -51,6 +51,11 @@ spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
 spark.conf.set("spark.sql.shuffle.partitions", "400")
 spark.conf.set("spark.sql.files.maxPartitionBytes", "128MB")
 
+// 메모리 최적화 설정 (OOM 방지)
+spark.conf.set("spark.executor.memoryOverhead", "4g")  // Executor 메모리 오버헤드
+spark.conf.set("spark.memory.fraction", "0.8")  // 실행 및 저장 메모리 비율
+spark.conf.set("spark.memory.storageFraction", "0.3")  // 저장 메모리 비율
+
 spark.sparkContext.setCheckpointDir("hdfs://scluster/user/g1110566/checkpoint")
 
 
@@ -104,39 +109,209 @@ def getDaysBetween(startDayStr: String, endDayStr: String): Array[String] = {
   resultDays.toArray
 }
 
+// ===== Paragraph 3: Date Range and Period Configuration (ID: paragraph_1764742953919_436300403) =====
+// =============================================================================
+// 시간 조건 변수 통합 관리 (Time Condition Variables Configuration)
+// =============================================================================
+// 이 섹션은 5개 작업 흐름의 시간 조건을 중앙에서 관리합니다.
+// 각 작업 흐름별로 필요한 시간 변수를 명확하게 구분하여 유연하고 안정적인 실행을 보장합니다.
+// =============================================================================
 
-// ===== Paragraph 3: Response Data Loading from HDFS (ID: paragraph_1764659911196_1763551717) =====
+// -----------------------------------------------------------------------------
+// 작업 흐름 1-2: Campaign 반응 데이터 로딩 및 Train/Test Raw 생성 (Paragraph 3-14)
+// -----------------------------------------------------------------------------
+// 반응 데이터는 학습/테스트 데이터의 기반이 되므로 동일한 시간 조건을 사용합니다.
+// 
+// 학습 및 테스트 데이터 생성을 위한 시간 조건을 정의합니다.
+val sendMonth = "202512"                  // 학습/테스트 데이터 기준 발송 월
+val featureMonth = "202511"               // 피처 추출 기준 월 (발송 월 이전)
+val period = 6                            // 학습 데이터 기간 (개월 수)
+val sendYmList = getPreviousMonths(sendMonth, period+2)
+val featureYmList = getPreviousMonths(featureMonth, period+2)
+
+// 피처 추출을 위한 날짜 범위
+val featureDTList = getDaysBetween(featureYmList(0)+"01", sendMonth+"01")
+
+// Train/Test 분할 기준 날짜
+val predictionDTSta = "20251101"          // 테스트 데이터 시작 날짜
+val predictionDTEnd = "20251201"          // 테스트 데이터 종료 날짜
+
+// 반응 데이터 필터링 조건
+val responseHourGapMax = 5                // 최대 클릭 시간차 (시간 단위)
+
+// 시간대 설정 (반응 데이터 필터링 및 분석에 공통 사용)
+val upperHourGap = 1                      // 상위 시간차 임계값
+val startHour = 9                         // 분석 대상 시작 시간
+val endHour = 18                          // 분석 대상 종료 시간
+val hourRange = (startHour to endHour).toList
+
+// -----------------------------------------------------------------------------
+// 작업 흐름 3: Transformed Data 생성 및 저장 (Paragraph 15-20)
+// -----------------------------------------------------------------------------
+// Raw 데이터를 로딩하여 transformation pipeline을 적용하는 단계의 시간 조건입니다.
+// 주의: 이 단계는 작업 흐름 2에서 생성된 데이터를 사용하므로,
+//       저장 경로의 버전/suffix와 일치해야 합니다.
+val transformRawDataVersion = "10"        // 로딩할 raw training data 버전 (trainDFRev10)
+val transformTestDataPath = "testDFRev"   // 로딩할 raw test data 경로
+val transformSampleRate = 0.3             // Pipeline fitting 시 샘플링 비율 (메모리 절약)
+val transformSuffixGroupSize = 2          // Suffix별 배치 저장 시 그룹 크기 (1,2,4,8,16)
+
+// Transformed data 저장 경로 버전 관리
+val transformedTrainSaveVersion = "10"    // Transformed training data 저장 버전
+val transformedTestSaveVersion = "10"     // Transformed test data 저장 버전
+
+// -----------------------------------------------------------------------------
+// 작업 흐름 4: Transformed Data를 통한 학습 및 테스트 (Paragraph 21-30)
+// -----------------------------------------------------------------------------
+// Transformed data를 로딩하여 모델 학습 및 평가를 수행하는 단계의 시간 조건입니다.
+// 주의: 이 단계는 작업 흐름 3에서 생성된 데이터를 사용하므로,
+//       로딩 경로가 작업 흐름 3의 저장 경로와 일치해야 합니다.
+val modelTrainDataVersion = "10"          // 로딩할 transformed training data 버전
+val modelTestDataVersion = "10"           // 로딩할 transformed test data 버전
+val modelTransformerVersion = ""          // 로딩할 transformer 버전 (빈 문자열이면 버전 없음)
+
+// 모델 학습 설정
+val modelMaxIter = 50                     // 모델 학습 최대 반복 횟수
+val modelCrossValidationFolds = 3         // Cross-validation fold 수
+
+// -----------------------------------------------------------------------------
+// 작업 흐름 5: 실제 서비스용 데이터 생성 및 예측 (Paragraph 16 + 31-32)
+// -----------------------------------------------------------------------------
+// 실제 서비스에 사용할 예측 데이터를 생성하고 propensity score를 계산하는 단계입니다.
+val predDT = "20251201"                   // 예측 기준 날짜 (발송 예정일)
+val predFeatureYM = getPreviousMonths(predDT.take(6), 2)(0)  // 피처 추출 기준 월
+val predSendYM = predDT.take(6)           // 예측 발송 월
+
+// 예측 데이터 처리 설정
+val predSuffix = "%"                      // 처리할 suffix 패턴 (% = 전체)
+val predSuffixGroupSize = 4               // Propensity score 계산 시 suffix 배치 크기
+val predRepartitionSize = 50              // 예측 데이터 repartition 크기
+
+// 예측 결과 저장 경로
+val predOutputPath = "aos/sto/propensityScoreDF"  // Propensity score 저장 경로
+val predCompression = "snappy"            // 압축 방식
+
+// -----------------------------------------------------------------------------
+// 공통 설정 검증 (Configuration Validation)
+// -----------------------------------------------------------------------------
+// 시간 조건 변수 간의 일관성을 검증합니다.
+println("=" * 80)
+println("Time Condition Variables Configuration Summary")
+println("=" * 80)
+println(s"[작업 흐름 1-2] Response Data Loading & Train/Test Raw Data Generation")
+println(s"  - Send Month: $sendMonth")
+println(s"  - Feature Month: $featureMonth")
+println(s"  - Period: $period months")
+println(s"  - Send YM List: ${sendYmList.mkString(", ")}")
+println(s"  - Feature YM List: ${featureYmList.mkString(", ")}")
+println(s"  - Train/Test Split: < $predictionDTSta (train) / >= $predictionDTSta (test)")
+println(s"  - Response Hour Gap Max: $responseHourGapMax hours")
+println(s"  - Hour Range: $startHour ~ $endHour")
+println()
+println(s"[작업 흐름 3] Transformed Data Generation")
+println(s"  - Raw Train Data Version: $transformRawDataVersion")
+println(s"  - Raw Test Data Path: $transformTestDataPath")
+println(s"  - Transformed Train Version: $transformedTrainSaveVersion")
+println(s"  - Transformed Test Version: $transformedTestSaveVersion")
+println(s"  - Suffix Group Size: $transformSuffixGroupSize")
+println(s"  - Pipeline Sample Rate: $transformSampleRate")
+println()
+println(s"[작업 흐름 4] Model Training and Evaluation")
+println(s"  - Train Data Version: $modelTrainDataVersion")
+println(s"  - Test Data Version: $modelTestDataVersion")
+println(s"  - Transformer Version: ${if (modelTransformerVersion.isEmpty) "default" else modelTransformerVersion}")
+println(s"  - Max Iterations: $modelMaxIter")
+println(s"  - CV Folds: $modelCrossValidationFolds")
+println()
+println(s"[작업 흐름 5] Production Prediction")
+println(s"  - Prediction Date: $predDT")
+println(s"  - Feature Month: $predFeatureYM")
+println(s"  - Send Month: $predSendYM")
+println(s"  - Suffix Pattern: $predSuffix")
+println(s"  - Suffix Group Size: $predSuffixGroupSize")
+println(s"  - Repartition Size: $predRepartitionSize")
+println(s"  - Output Path: $predOutputPath")
+println(s"  - Compression: $predCompression")
+println()
+
+// 검증: 작업 흐름 3과 4의 버전 일치 확인
+if (transformedTrainSaveVersion != modelTrainDataVersion || transformedTestSaveVersion != modelTestDataVersion) {
+  println("⚠️  WARNING: Version mismatch detected!")
+  println(s"   Transformed data versions (save): Train=$transformedTrainSaveVersion, Test=$transformedTestSaveVersion")
+  println(s"   Model training versions (load): Train=$modelTrainDataVersion, Test=$modelTestDataVersion")
+  println("   Please ensure the versions are consistent across workflows 3 and 4.")
+  println()
+}
+
+// 검증: Raw data 버전 일치 확인
+if (transformRawDataVersion != transformedTrainSaveVersion) {
+  println("⚠️  WARNING: Raw data version and transformed data version mismatch!")
+  println(s"   Raw data version (load in P15): $transformRawDataVersion")
+  println(s"   Transformed data version (save in P20): $transformedTrainSaveVersion")
+  println("   Consider using the same version number for consistency.")
+  println()
+}
+
+println("=" * 80)
+
+// ===== Paragraph 4: Response Data Loading from HDFS (ID: paragraph_1764659911196_1763551717) =====
+// =============================================================================
+// [작업 흐름 1-2] Campaign 반응 데이터 로딩
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - sendMonth: 반응 데이터 로딩 기준 월
+// - period: 로딩할 기간 (개월 수)
+// - sendYmList: 실제 로딩할 월 리스트
+// 
+// 주의: 이 데이터는 Paragraph 5에서 필터링되어 Train/Test 데이터 생성에 사용됩니다.
+// =============================================================================
+
+println("=" * 80)
+println("[작업 흐름 1-2] Response Data Loading from HDFS")
+println("=" * 80)
+println(s"Loading response data...")
+println(s"  - Base month: $sendMonth")
+println(s"  - Period: $period months")
+println(s"  - Target months: ${sendYmList.mkString(", ")}")
+println("=" * 80)
 
 // 대용량 데이터는 MEMORY_AND_DISK_SER 사용하여 메모리 절약
 val resDF = spark.read.parquet("aos/sto/response")
   .persist(StorageLevel.MEMORY_AND_DISK_SER)
 resDF.createOrReplaceTempView("res_df")
 
+val totalRecords = resDF.count()
+println(s"Response data loaded: $totalRecords records")
+println("=" * 80)
+
 resDF.printSchema()
 
 
-// ===== Paragraph 4: Date Range and Period Configuration (ID: paragraph_1764742953919_436300403) =====
-
-val sendMonth = "202512"
-val featureMonth = "202511"
-val period = 6
-val sendYmList = getPreviousMonths(sendMonth, period+2)
-val featureYmList = getPreviousMonths(featureMonth, period+2)
-
-val featureDTList = getDaysBetween(featureYmList(0)+"01", sendMonth+"01")
-
-val upperHourGap = 1
-val startHour = 9
-val endHour = 18
-
-val hourRange = (startHour to endHour).toList
-
 
 // ===== Paragraph 5: Response Data Filtering and Feature Engineering (ID: paragraph_1764641394585_598529380) =====
+// =============================================================================
+// [작업 흐름 1-2] Response Data 필터링 및 피처 엔지니어링
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - sendYmList: 필터링할 월 리스트
+// - responseHourGapMax: 최대 클릭 시간차
+// - startHour, endHour: 발송 시간대 범위
+// 
+// 이 필터링된 데이터는 Train/Test raw 데이터 생성의 기반이 됩니다.
+// =============================================================================
+
+println("=" * 80)
+println("[작업 흐름 1-2] Response Data Filtering and Feature Engineering")
+println("=" * 80)
+println(s"Applying filters:")
+println(s"  - Send months: ${sendYmList.mkString(", ")}")
+println(s"  - Hour gap: 0 ~ $responseHourGapMax")
+println(s"  - Send hour: $startHour ~ $endHour")
+println("=" * 80)
 
 val resDFFiltered = resDF
     .filter(s"""send_ym in (${sendYmList.mkString("'","','","'")})""")
-    .filter(s"hour_gap is null or (hour_gap between 0 and 5)")
+    .filter(s"hour_gap is null or (hour_gap between 0 and $responseHourGapMax)")
     .filter(s"send_hournum between $startHour and $endHour")
     .selectExpr("cmpgn_num","svc_mgmt_num","chnl_typ","cmpgn_typ","send_ym","send_dt","send_time","send_daynum","send_hournum","click_dt","click_time","click_daynum","click_hournum","case when hour_gap is null then 0 else 1 end click_yn","hour_gap")
     .withColumn("res_utility", F.expr(s"case when hour_gap is null then 0.0 else 1.0 / (1 + hour_gap) end"))
@@ -145,6 +320,10 @@ val resDFFiltered = resDF
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Filtered response data cached (will materialize on next action)")
+
+val filteredRecords = resDFFiltered.count()
+println(s"Filtered response data: $filteredRecords records")
+println("=" * 80)
 
 resDF.printSchema()
 
@@ -177,9 +356,24 @@ println("MMKT user data cached (will materialize on next action)")
 
 
 // ===== Paragraph 7: Train/Test Split and Feature Month Mapping (ID: paragraph_1764739017819_1458690185) =====
+// =============================================================================
+// [작업 흐름 2] Train/Test Split 및 Feature Month Mapping
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - predictionDTSta: 테스트 데이터 시작 날짜
+// - predictionDTEnd: 테스트 데이터 종료 날짜
+// 
+// Train: send_dt < predictionDTSta
+// Test:  send_dt >= predictionDTSta and send_dt < predictionDTEnd
+// =============================================================================
 
-val predictionDTSta = "20251101"
-val predictionDTEnd = "20251201"
+println("=" * 80)
+println("[작업 흐름 2] Train/Test Split and Feature Month Mapping")
+println("=" * 80)
+println(s"Split configuration:")
+println(s"  - Training: send_dt < $predictionDTSta")
+println(s"  - Testing:  send_dt >= $predictionDTSta and send_dt < $predictionDTEnd")
+println("=" * 80)
 
 // 중복 제거 전 파티셔닝으로 shuffle 최적화
 val resDFSelected = resDFFiltered
@@ -466,31 +660,70 @@ val testDFRev = testDF.select(
 
 
 // ===== Paragraph 14: Raw Feature Data Persistence (Parquet Format) (ID: paragraph_1766224516076_433149416) =====
+// =============================================================================
+// [작업 흐름 2] Train/Test Raw 데이터 저장
+// =============================================================================
+// 이 단계에서 생성된 데이터는 Paragraph 15에서 로딩됩니다.
+// 저장 경로와 버전은 transformRawDataVersion과 일치해야 합니다.
+// 
+// ⚠️  중요: 저장 경로는 Paragraph 15의 로딩 경로와 일치해야 합니다.
+// =============================================================================
+
+println("=" * 80)
+println("[작업 흐름 2] Saving Train/Test Raw Feature Data")
+println("=" * 80)
 
 // 저장 전 파티션 수 조정하여 small files 문제 방지
 // partitionBy()가 컬럼 기준 분배를 처리하므로 repartition(n)만 사용
+val trainSavePath = s"aos/sto/trainDFRev${genSampleNumMulti.toInt}"
+val testSavePath = s"aos/sto/testDFRev"
+
+println(s"Saving training data to: $trainSavePath")
 trainDFRev
 .repartition(50)  // 각 파티션 디렉토리당 파일 수 조정
 .write
 .mode("overwrite")
 .partitionBy("send_ym", "send_hournum_cd", "suffix")
 .option("compression", "snappy")  // 압축 사용
-.parquet(s"aos/sto/trainDFRev${genSampleNumMulti.toInt}")
+.parquet(trainSavePath)
 
+println(s"Training data saved successfully")
+
+println(s"Saving test data to: $testSavePath")
 testDFRev
 .repartition(100)  // 각 파티션 디렉토리당 파일 수 조정
 .write
 .mode("overwrite")
 .partitionBy("send_ym", "send_hournum_cd", "suffix")
 .option("compression", "snappy")
-.parquet(s"aos/sto/testDFRev")
+.parquet(testSavePath)
 
-println("Training and test datasets saved successfully")
+println(s"Test data saved successfully")
+
+println("=" * 80)
+println("Raw feature data persistence completed")
+println(s"  - Training: $trainSavePath")
+println(s"  - Test: $testSavePath")
+println(s"  - Period: ${sendYmList.mkString(", ")}")
+println(s"  - Train/Test Split: < $predictionDTSta (train) / >= $predictionDTSta (test)")
+println("=" * 80)
 
 
 // ===== Paragraph 15: Raw Feature Data Loading and Cache Management (ID: paragraph_1766392634024_1088239830) =====
+// =============================================================================
+// [작업 흐름 3] Transformed Data 생성을 위한 Raw Data 로딩
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - transformRawDataVersion: 로딩할 raw training data 버전
+// - transformTestDataPath: 로딩할 raw test data 경로
+// 
+// ⚠️  중요: 이 경로들은 Paragraph 14에서 저장한 경로와 일치해야 합니다.
+// =============================================================================
 
 // 이전 단계에서 사용한 캐시 정리 (메모리 확보)
+println("=" * 80)
+println("[작업 흐름 3] Raw Feature Data Loading for Transformation")
+println("=" * 80)
 println("Cleaning up intermediate cached data...")
 try {
   resDFSelectedTrBal.unpersist()
@@ -506,38 +739,72 @@ try {
 
 spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "10g")
 
-val trainDFRev = spark.read.parquet("aos/sto/trainDFRev10")
+// Paragraph 4의 시간 조건 변수를 사용하여 데이터 로딩
+val trainDataPath = s"aos/sto/trainDFRev${transformRawDataVersion}"
+val testDataPath = s"aos/sto/${transformTestDataPath}"
+
+println(s"Loading training data from: $trainDataPath")
+val trainDFRev = spark.read.parquet(trainDataPath)
     .withColumn("hour_gap", F.expr("case when res_utility>=1.0 then 1 else 0 end"))
     // .drop("click_cnt").join(clickCountDF, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "left").na.fill(Map("click_cnt"->0.0))
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Training data loaded and cached")
+println(s"Training data loaded and cached: ${trainDFRev.count()} records")
 
-val testDFRev = spark.read.parquet("aos/sto/testDFRev")
+println(s"Loading test data from: $testDataPath")
+val testDFRev = spark.read.parquet(testDataPath)
     .withColumn("hour_gap", F.expr("case when res_utility>=1.0 then 1 else 0 end"))
     // .drop("click_cnt").join(clickCountDF, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "left").na.fill(Map("click_cnt"->0.0))
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Test data loaded and cached")
+println(s"Test data loaded and cached: ${testDFRev.count()} records")
 
+// 피처 컬럼 분석
+println("Analyzing feature columns...")
 val noFeatureCols = Array("click_yn","hour_gap","chnl_typ","cmpgn_typ")
 val tokenCols = trainDFRev.columns.filter(x => x.endsWith("_token")).distinct
 val continuousCols = (trainDFRev.columns.filter(x => numericColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false)).distinct.filter(x => !tokenCols.contains(x) && !noFeatureCols.contains(x))).distinct
 val categoryCols = (trainDFRev.columns.filter(x => categoryColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false)).distinct.filter(x => !tokenCols.contains(x) && !noFeatureCols.contains(x) && !continuousCols.contains(x))).distinct
 val vectorCols = trainDFRev.columns.filter(x => x.endsWith("_vec"))
 
+println(s"Feature column summary:")
+println(s"  - Token columns: ${tokenCols.length}")
+println(s"  - Continuous columns: ${continuousCols.length}")
+println(s"  - Category columns: ${categoryCols.length}")
+println(s"  - Vector columns: ${vectorCols.length}")
+println("=" * 80)
+
 
 // ===== Paragraph 16: Prediction Dataset Preparation for Production (ID: paragraph_1765765120629_645290475) =====
+// =============================================================================
+// [작업 흐름 5] 실제 서비스용 데이터 생성 및 예측
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - predDT: 예측 기준 날짜 (발송 예정일)
+// - predFeatureYM: 피처 추출 기준 월
+// - predSendYM: 예측 발송 월
+// - predSuffix: 처리할 suffix 패턴
+// 
+// 이 단계에서는 실제 예측에 사용할 데이터를 준비합니다.
+// =============================================================================
 
-val predDT = "20251201"
-val predFeatureYM = getPreviousMonths(predDT.take(6), 2)(0)
-val predSendYM = predDT.take(6)
+println("=" * 80)
+println("[작업 흐름 5] Prediction Dataset Preparation for Production")
+println("=" * 80)
+println(s"Prediction configuration:")
+println(s"  - Prediction Date: $predDT")
+println(s"  - Feature Month: $predFeatureYM")
+println(s"  - Send Month: $predSendYM")
+println(s"  - Suffix Pattern: $predSuffix")
+println(s"  - Hour Range: ${startHour} ~ ${endHour}")
+println("=" * 80)
 
-val prdSuffix = "%"
-val prdSuffixCond = prdSuffix.map(c => s"svc_mgmt_num like '%${c}'").mkString(" or ")
+// Suffix 조건 생성
+val prdSuffixCond = predSuffix.map(c => s"svc_mgmt_num like '%${c}'").mkString(" or ")
 val pivotColumns = hourRange.toList.map(h => f"$h, total_traffic_$h%02d").mkString(", ")
 
 // Prediction용 앱 사용 데이터 로딩 최적화
+println(s"Loading prediction XDR data for feature_ym=$predFeatureYM...")
 val xdrDFPred = spark.sql(s"""
     SELECT
         svc_mgmt_num,
@@ -567,7 +834,7 @@ val xdrDFPred = spark.sql(s"""
 )
 .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Prediction XDR hourly data cached with traffic features")
+println(s"Prediction XDR hourly data cached with traffic features: ${xdrDFPred.count()} records")
 
 // Prediction용 시간대 집계 피처 생성
 val xdrPredAggregatedFeatures = xdrDFPred
@@ -896,30 +1163,53 @@ println("Test data transformed (cached)")
 
 
 // ===== Paragraph 20: Transformer and Transformed Data Saving (Batch by Suffix) (ID: paragraph_1765520460775_2098641576) =====
+// =============================================================================
+// [작업 흐름 3] Transformed Data 저장
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - transformedTrainSaveVersion: Transformed training data 저장 버전
+// - transformedTestSaveVersion: Transformed test data 저장 버전
+// - transformSuffixGroupSize: Suffix별 배치 저장 시 그룹 크기
+// 
+// ⚠️  중요: 이 저장 경로와 버전은 Paragraph 21에서 로딩할 때 일치해야 합니다.
+// =============================================================================
 
-println("Saving transformers...")
-transformerClick.write.overwrite().save("aos/sto/transformPipelineXDRClick10")
-transformerGap.write.overwrite().save("aos/sto/transformPipelineXDRGap10")
+println("=" * 80)
+println("[작업 흐름 3] Saving Transformers and Transformed Data")
+println("=" * 80)
+
+// 1단계: Transformer 저장
+val transformerClickPath = s"aos/sto/transformPipelineXDRClick${transformedTrainSaveVersion}"
+val transformerGapPath = s"aos/sto/transformPipelineXDRGap${transformedTrainSaveVersion}"
+
+println(s"Saving Click transformer to: $transformerClickPath")
+transformerClick.write.overwrite().save(transformerClickPath)
+
+println(s"Saving Gap transformer to: $transformerGapPath")
+transformerGap.write.overwrite().save(transformerGapPath)
+
+println("Transformers saved successfully")
 
 // 2단계: Train/Test 데이터를 Suffix별 배치 저장 (메모리 과부하 방지)
 // suffixGroupSizeTrans: 한 번에 처리할 suffix 개수 (예: 4 = [0,1,2,3], [4,5,6,7], ...)
-val suffixGroupSizeTrans = 2  // 조정 가능: 1(개별), 2, 4, 8, 16(전체)
+println(s"Using suffix group size: $transformSuffixGroupSize")
 
 // Train과 Test 데이터셋 정의
 val datasetsToSave = Seq(
-  ("training", transformedTrainDF, "aos/sto/transformedTrainDFXDR10", 20),
-  ("test", transformedTestDF, "aos/sto/transformedTestDFXDF10", 20)
+  ("training", transformedTrainDF, s"aos/sto/transformedTrainDFXDR${transformedTrainSaveVersion}", 20),
+  ("test", transformedTestDF, s"aos/sto/transformedTestDFXDF${transformedTestSaveVersion}", 20)
 )
 
 // 각 데이터셋에 대해 suffix 그룹별로 저장
 datasetsToSave.foreach { case (datasetName, dataFrame, outputPath, basePartitions) =>
-  println(s"Saving transformed $datasetName data by suffix (group size: $suffixGroupSizeTrans)...")
+  println(s"Saving transformed $datasetName data by suffix (group size: $transformSuffixGroupSize)...")
+  println(s"  Output path: $outputPath")
   
-  (0 to 15).map(_.toHexString).grouped(suffixGroupSizeTrans).zipWithIndex.foreach { case (suffixGroup, groupIdx) =>
-    println(s"  [Group ${groupIdx + 1}/${16 / suffixGroupSizeTrans}] Processing $datasetName suffixes: ${suffixGroup.mkString(", ")}")
+  (0 to 15).map(_.toHexString).grouped(transformSuffixGroupSize).zipWithIndex.foreach { case (suffixGroup, groupIdx) =>
+    println(s"  [Group ${groupIdx + 1}/${16 / transformSuffixGroupSize}] Processing $datasetName suffixes: ${suffixGroup.mkString(", ")}")
     dataFrame
       .filter(suffixGroup.map(s => s"suffix = '$s'").mkString(" OR "))
-      .repartition(basePartitions * suffixGroupSizeTrans)  // 그룹 크기에 비례한 파티션 수
+      .repartition(basePartitions * transformSuffixGroupSize)  // 그룹 크기에 비례한 파티션 수
       .write
       .mode("overwrite")  // Dynamic partition overwrite
       .option("compression", "snappy")
@@ -930,27 +1220,66 @@ datasetsToSave.foreach { case (datasetName, dataFrame, outputPath, basePartition
   println(s"  Completed saving $datasetName data")
 }
 
+println("=" * 80)
 println("All transformers and transformed data saved successfully")
+println(s"  - Click Transformer: $transformerClickPath")
+println(s"  - Gap Transformer: $transformerGapPath")
+println(s"  - Training Data: aos/sto/transformedTrainDFXDR${transformedTrainSaveVersion}")
+println(s"  - Test Data: aos/sto/transformedTestDFXDF${transformedTestSaveVersion}")
+println("=" * 80)
 
 // ===== Paragraph 21: Pipeline Transformers and Transformed Data Loading (ID: paragraph_1765521446308_1651058139) =====
+// =============================================================================
+// [작업 흐름 4] Transformed Data를 통한 학습 및 테스트
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - modelTrainDataVersion: 로딩할 transformed training data 버전
+// - modelTestDataVersion: 로딩할 transformed test data 버전
+// - modelTransformerVersion: 로딩할 transformer 버전
+// 
+// ⚠️  중요: 이 로딩 경로는 Paragraph 20에서 저장한 경로와 일치해야 합니다.
+// =============================================================================
 
-println("Loading Click transformer...")
-val transformerClick = PipelineModel.load("aos/sto/transformPipelineXDRClick")
+println("=" * 80)
+println("[작업 흐름 4] Loading Transformers and Transformed Data for Training")
+println("=" * 80)
 
-println("Loading Gap transformer...")
-val transformerGap = PipelineModel.load("aos/sto/transformPipelineXDRGap")
+// Transformer 로딩 경로 설정
+val transformerClickLoadPath = s"aos/sto/transformPipelineXDRClick${modelTransformerVersion}"
+val transformerGapLoadPath = s"aos/sto/transformPipelineXDRGap${modelTransformerVersion}"
 
-println("Loading transformed training data...")
-val transformedTrainDF = spark.read.parquet("aos/sto/transformedTrainDFXDR10")
+println(s"Loading Click transformer from: $transformerClickLoadPath")
+val transformerClick = PipelineModel.load(transformerClickLoadPath)
+println("Click transformer loaded successfully")
+
+println(s"Loading Gap transformer from: $transformerGapLoadPath")
+val transformerGap = PipelineModel.load(transformerGapLoadPath)
+println("Gap transformer loaded successfully")
+
+// Transformed data 로딩 경로 설정
+val transformedTrainLoadPath = s"aos/sto/transformedTrainDFXDR${modelTrainDataVersion}"
+val transformedTestLoadPath = s"aos/sto/transformedTestDFXDF${modelTestDataVersion}"
+
+println(s"Loading transformed training data from: $transformedTrainLoadPath")
+val transformedTrainDF = spark.read.parquet(transformedTrainLoadPath)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Transformed training data loaded and cached")
+val trainRecordCount = transformedTrainDF.count()
+println(s"Transformed training data loaded and cached: $trainRecordCount records")
 
-println("Loading transformed test data...")
-val transformedTestDF = spark.read.parquet("aos/sto/transformedTestDFXDF10")
+println(s"Loading transformed test data from: $transformedTestLoadPath")
+val transformedTestDF = spark.read.parquet(transformedTestLoadPath)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Transformed test data loaded and cached")
+val testRecordCount = transformedTestDF.count()
+println(s"Transformed test data loaded and cached: $testRecordCount records")
+
+println("=" * 80)
+println("Data loading summary:")
+println(s"  - Training records: $trainRecordCount")
+println(s"  - Test records: $testRecordCount")
+println(s"  - Train/Test ratio: ${trainRecordCount.toDouble / testRecordCount}")
+println("=" * 80)
 
 // val transformedPredDF = transformer.transform(predDFRev)//.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
@@ -1167,7 +1496,7 @@ val trainSampleClick = transformedTrainDF
     // sample_weight는 XGBoost에서만 사용되므로 그대로 유지
     .withColumn("sample_weight", F.expr(s"case when $indexedLabelColClick>0.0 then 10.0 else 1.0 end"))
     .repartition(100)  // 학습을 위한 적절한 파티션 수
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Click model training samples prepared and cached")
 
@@ -1198,7 +1527,7 @@ val trainSampleGap = transformedTrainDF
         42L
     )
     .repartition(100)
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Gap model training samples prepared and cached")
 
@@ -1299,8 +1628,14 @@ stagesClick.foreach { stage =>
     println("=" * 80)
     
     // 시간대별 사용자 확률 생성
+    // suffix 기반 샘플링 (shuffle 없이 빠르게 처리)
+    val suffixRange = (0 to 8).map(_.toHexString)  // 0~9: 약 62.5% 샘플링, 0~f: 100%
+    
     val hourlyUserPredictions = predictionsClickDev
         .filter("click_yn >= 0")
+        .withColumn("suffix", F.substring(F.col("svc_mgmt_num"), -1, 1))  // 마지막 자리 추출
+        .where(s"""suffix in ('${suffixRange.mkString("', '")}')""")  // suffix 필터링 (shuffle 없음!)
+        .repartition(400)  // 파티션 증가로 메모리 분산
         .select(
             F.col("svc_mgmt_num"),
             F.col("send_ym"),
@@ -1313,7 +1648,8 @@ stagesClick.foreach { stage =>
             F.max("click_prob").alias("click_prob"),
             F.max("actual_click").alias("actual_click")
         )
-        .cache()
+        .repartition(200)  // 집계 후 파티션 조정
+        .persist(StorageLevel.MEMORY_AND_DISK_SER)  // cache → persist로 변경
     
     // K 값들
     val kValues = Array(100, 500, 1000, 2000, 5000, 10000)
@@ -2074,18 +2410,36 @@ try {
   case e: Exception => println(s"Cache cleanup warning: ${e.getMessage}")
 }
 
+// =============================================================================
+// [작업 흐름 5] Propensity Score 계산 및 저장
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - predSuffixGroupSize: Propensity score 계산 시 suffix 배치 크기
+// - predRepartitionSize: 예측 데이터 repartition 크기
+// - predOutputPath: Propensity score 저장 경로
+// - predCompression: 압축 방식
+// 
 // Propensity Score 계산 - suffix별로 배치 처리하되 메모리 효율적으로
-// suffixGroupSize: 한 번에 처리할 suffix 개수 (예: 4 = [0,1,2,3], [4,5,6,7], ...)
-val suffixGroupSizePred = 4  // 조정 가능: 1(개별), 2, 4, 8, 16(전체)
+// =============================================================================
 
-println(s"Processing propensity scores by suffix (group size: $suffixGroupSizePred)...")
-(0 to 15).map(_.toHexString).grouped(suffixGroupSizePred).zipWithIndex.foreach { case (suffixGroup, groupIdx) =>
+println("=" * 80)
+println("[작업 흐름 5] Propensity Score Calculation and Saving")
+println("=" * 80)
+println(s"Processing configuration:")
+println(s"  - Suffix group size: $predSuffixGroupSize")
+println(s"  - Repartition size base: $predRepartitionSize")
+println(s"  - Output path: $predOutputPath")
+println(s"  - Compression: $predCompression")
+println("=" * 80)
 
-    println(s"[Group ${groupIdx + 1}/${16 / suffixGroupSizePred}] Processing suffixes: ${suffixGroup.mkString(", ")}")
+println(s"Processing propensity scores by suffix (group size: $predSuffixGroupSize)...")
+(0 to 15).map(_.toHexString).grouped(predSuffixGroupSize).zipWithIndex.foreach { case (suffixGroup, groupIdx) =>
+
+    println(s"[Group ${groupIdx + 1}/${16 / predSuffixGroupSize}] Processing suffixes: ${suffixGroup.mkString(", ")}")
 
     val predDFForSuffixGroup = predDFRev
         .filter(suffixGroup.map(s => s"svc_mgmt_num like '%${s}'").mkString(" OR "))
-        .repartition(50 * suffixGroupSizePred)  // 그룹 크기에 비례한 파티션 수
+        .repartition(predRepartitionSize * predSuffixGroupSize)  // 그룹 크기에 비례한 파티션 수
         .persist(StorageLevel.MEMORY_AND_DISK_SER)
     
     // count() 대신 take(1)로 존재 여부만 확인 (훨씬 빠름)
@@ -2113,19 +2467,19 @@ println(s"Processing propensity scores by suffix (group size: $suffixGroupSizePr
             .withColumn("prob_gap", F.expr(s"""aggregate(array(${pipelineModelGap.stages.map(m => s"vector_to_array(prob_${m.uid})[1]").mkString(",")}), 0D, (acc, x) -> acc + x)"""))
             .withColumn("propensity_score", F.expr("prob_click*prob_gap"))
         
-        println(s"  Saving propensity scores...")
+        println(s"  Saving propensity scores to: $predOutputPath")
         predictedPropensityScoreDF
             .selectExpr("svc_mgmt_num", "send_ym","send_hournum_cd send_hour"
                 ,"ROUND(prob_click, 4) prob_click" 
                 ,"ROUND(prob_gap, 4) prob_gap"
                 ,"ROUND(propensity_score, 4) propensity_score")
             .withColumn("suffix", F.expr("right(svc_mgmt_num, 1)"))
-            .repartition(10 * suffixGroupSizePred)  // 그룹 크기에 비례
+            .repartition(10 * predSuffixGroupSize)  // 그룹 크기에 비례
             .write
             .mode("overwrite")  // Dynamic partition overwrite
-            .option("compression", "snappy")
+            .option("compression", predCompression)
             .partitionBy("send_ym", "send_hour", "suffix")
-            .parquet("aos/sto/propensityScoreDF")
+            .parquet(predOutputPath)
         
         // 메모리 해제
         predDFForSuffixGroup.unpersist()
@@ -2137,13 +2491,33 @@ println(s"Processing propensity scores by suffix (group size: $suffixGroupSizePr
     }
 }
 
+println("=" * 80)
+println("Propensity score calculation completed")
+println(s"Results saved to: $predOutputPath")
+println("=" * 80)
+
 
 // ===== Paragraph 32: Propensity Score Data Loading and Verification (ID: paragraph_1767943423474_1143363402) =====
+// =============================================================================
+// [작업 흐름 5] Propensity Score 데이터 로딩 및 검증
+// =============================================================================
+// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
+// - predOutputPath: Propensity score 저장 경로
+// 
+// ⚠️  중요: 이 로딩 경로는 Paragraph 31에서 저장한 경로와 일치해야 합니다.
+// =============================================================================
 
-val dfPropensity = spark.read.parquet("aos/sto/propensityScoreDF")
+println("=" * 80)
+println("[작업 흐름 5] Propensity Score Data Loading and Verification")
+println("=" * 80)
+println(s"Loading propensity score data from: $predOutputPath")
+
+val dfPropensity = spark.read.parquet(predOutputPath)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Propensity score data loaded and cached")
+val propensityRecordCount = dfPropensity.count()
+println(s"Propensity score data loaded and cached: $propensityRecordCount records")
+println("=" * 80)
 
 // 기본 통계 확인 (summary에 이미 count 포함)
 dfPropensity
