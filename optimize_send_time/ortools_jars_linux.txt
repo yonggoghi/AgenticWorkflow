@@ -1,0 +1,7 @@
+# Linux Server OR-Tools JAR paths (for reference)
+# Copy this to Red Hat server and adjust paths
+
+ORTOOLS_JARS_LINUX="/home/skinet/myfiles/data_bus/ortools-linux-x86-64-9.8.3296.jar,/home/skinet/myfiles/data_bus/ortools-java-9.8.3296.jar,/home/skinet/myfiles/data_bus/jna-5.13.0.jar,/home/skinet/myfiles/data_bus/jna-platform-5.13.0.jar"
+
+# Usage on Linux:
+spark-shell --jars $ORTOOLS_JARS_LINUX -i optimize_ost.scala

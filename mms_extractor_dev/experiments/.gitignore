@@ -1,0 +1,4 @@
+# experiments 디렉토리의 모든 파일을 Git에서 제외 (README 제외)
+*
+!.gitignore
+!README.md

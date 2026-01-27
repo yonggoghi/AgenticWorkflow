@@ -34,8 +34,8 @@ object PredictOst40TrainEvalAndSaveModels {
 
   case class DiagConfig(sampleFrac: Double, topK: Int, thresholds: List[Double])
   case class CalibrationConfig(
-    trainPosRate: Option[Double] = None,
-    truePosRate: Option[Double] = None,
+    trainPosRate: Option[Double] = None,  // Training data positive rate (used for both weight correction and prior correction)
+    truePosRate: Option[Double] = None,   // True population positive rate
     useWeightCorrection: Boolean = false
   )
   case class RunConfig(
@@ -44,7 +44,8 @@ object PredictOst40TrainEvalAndSaveModels {
     useSampleBy: Boolean,
     diag: DiagConfig,
     calib: CalibrationConfig = CalibrationConfig(),
-    modelType: ModelType = ModelType.XGBoost
+    modelType: ModelType = ModelType.XGBoost,
+    enableTrainingDiagnostics: Boolean = false
   )
 
   // Allow overriding config inside spark-shell without restarting.
@@ -65,7 +66,8 @@ object PredictOst40TrainEvalAndSaveModels {
     trainPosRate: Option[Double] = None,
     truePosRate: Option[Double] = None,
     useWeightCorrection: Boolean = false,
-    modelType: String = "xgboost"
+    modelType: String = "xgboost",
+    enableTrainingDiagnostics: Boolean = false
   ): Unit = {
     val thresholds = diagThresholdsCsv.split(",").toList.map(_.trim).filter(_.nonEmpty).map(_.toDouble)
     setConfig(
@@ -75,7 +77,8 @@ object PredictOst40TrainEvalAndSaveModels {
         useSampleBy = useSampleBy,
         diag = DiagConfig(diagSampleFrac, diagTopK, thresholds),
         calib = CalibrationConfig(trainPosRate = trainPosRate, truePosRate = truePosRate, useWeightCorrection = useWeightCorrection),
-        modelType = ModelType.fromString(modelType)
+        modelType = ModelType.fromString(modelType),
+        enableTrainingDiagnostics = enableTrainingDiagnostics
       )
     )
   }
@@ -149,6 +152,7 @@ object PredictOst40TrainEvalAndSaveModels {
     val truePosRate = sys.env.get("TRUE_POS_RATE").map(_.toDouble).filter(p => p > 0.0 && p < 1.0)
     val useWeightCorrection = sys.env.getOrElse("USE_WEIGHT_CORRECTION", "false").toBoolean
     val modelTypeStr = sys.env.getOrElse("MODEL_TYPE", "xgboost")
+    val enableTrainingDiagnostics = sys.env.getOrElse("ENABLE_TRAINING_DIAGNOSTICS", "false").toBoolean
 
     RunConfig(
       logPath = logPath,
@@ -156,7 +160,8 @@ object PredictOst40TrainEvalAndSaveModels {
       useSampleBy = useSampleBy,
       diag = DiagConfig(diagSampleFrac, diagTopK, diagThresholds),
       calib = CalibrationConfig(trainPosRate = trainPosRate, truePosRate = truePosRate, useWeightCorrection = useWeightCorrection),
-      modelType = ModelType.fromString(modelTypeStr)
+      modelType = ModelType.fromString(modelTypeStr),
+      enableTrainingDiagnostics = enableTrainingDiagnostics
     )
   }
 
@@ -243,15 +248,22 @@ object PredictOst40TrainEvalAndSaveModels {
 
     logger.line("[DATA] Filtering data: cmpgn_typ=='Sales'")
     val clickTrainBase = train.filter("cmpgn_typ=='Sales'")
-    logger.section(s"TRAIN: click model dataset distribution (Sales) - Model: ${cfg.modelType}")
-    logCounts(logger, clickTrainBase, "indexedLabelClick", "clickTrainBase (Sales, indexedLabelClick)")
+    
+    if (cfg.enableTrainingDiagnostics) {
+      logger.section(s"TRAIN: click model dataset distribution (Sales) - Model: ${cfg.modelType}")
+      logCounts(logger, clickTrainBase, "indexedLabelClick", "clickTrainBase (Sales, indexedLabelClick)")
+    } else {
+      logger.line("[CONFIG] Training diagnostics disabled (ENABLE_TRAINING_DIAGNOSTICS=false)")
+    }
 
     val clickTrainFinal =
       if (cfg.useSampleBy) {
         logger.line("[FLOW] Applying down-sampling (sampleBy)")
         val sampled = clickTrainBase.stat.sampleBy(col("indexedLabelClick"), Map(0.0 -> 0.5, 1.0 -> 1.0), 42L)
         logger.line("[DATA] Down-sampling completed")
-        logCounts(logger, sampled, "indexedLabelClick", "clickTrainSampled (Sales, indexedLabelClick)")
+        if (cfg.enableTrainingDiagnostics) {
+          logCounts(logger, sampled, "indexedLabelClick", "clickTrainSampled (Sales, indexedLabelClick)")
+        }
         sampled
       } else {
         logger.line("[CONFIG] USE_SAMPLE_BY=false (no additional down-sampling)")
@@ -264,6 +276,7 @@ object PredictOst40TrainEvalAndSaveModels {
     //
     // Enable via env:
     //   USE_WEIGHT_CORRECTION=true  TRUE_POS_RATE=0.0075
+    //   TRAIN_POS_RATE=0.333333  (optional: if known, skips driver computation)
     val useWeightCorrection = cfg.calib.useWeightCorrection
     val piTrueOpt = cfg.calib.truePosRate
 
@@ -271,8 +284,19 @@ object PredictOst40TrainEvalAndSaveModels {
       if (useWeightCorrection && piTrueOpt.nonEmpty) {
         logger.line("[FLOW] Applying weight correction")
         val piTrue = piTrueOpt.get
-        logger.line("[DATA] Computing train positive rate...")
-        val piTrain = clickTrainFinal.agg(avg(col("indexedLabelClick").cast("double")).as("pi_train")).collect()(0).getAs[Double]("pi_train")
+        
+        // Use provided trainPosRate if available, otherwise compute it
+        val piTrain = cfg.calib.trainPosRate match {
+          case Some(rate) =>
+            logger.line(f"[CONFIG] Using provided TRAIN_POS_RATE=$rate%.6f (skipping driver computation)")
+            rate
+          case None =>
+            logger.line("[DATA] Computing train positive rate (driver action)...")
+            val computed = clickTrainFinal.agg(avg(col("indexedLabelClick").cast("double")).as("pi_train")).collect()(0).getAs[Double]("pi_train")
+            logger.line(f"[DATA] Computed train positive rate: $computed%.6f")
+            computed
+        }
+        
         // weight for negatives so that effective neg/pos matches true neg/pos
         // kNeg = ((1-piTrue)/piTrue) / ((1-piTrain)/piTrain)
         val kNeg = ((1.0 - piTrue) / piTrue) / ((1.0 - piTrain) / piTrain)
@@ -350,7 +374,8 @@ object PredictOst40TrainEvalAndSaveModels {
     }
 
     def logProbSummary(dfWithProb: DataFrame, name: String): Unit = {
-      val qs = dfWithProb.stat.approxQuantile("_prob1", Array(0.0, 0.01, 0.05, 0.1, 0.5, 0.9, 0.99, 1.0), 0.01)
+      // 0.01 → 0.05: 정확도 완화로 안정성 향상 (노드 부하 감소)
+      val qs = dfWithProb.stat.approxQuantile("_prob1", Array(0.0, 0.01, 0.05, 0.1, 0.5, 0.9, 0.99, 1.0), 0.05)
       logger.line(s"[STAT] $name prob quantiles: p00=${qs(0)} p01=${qs(1)} p05=${qs(2)} p10=${qs(3)} p50=${qs(4)} p90=${qs(5)} p99=${qs(6)} p100=${qs(7)}")
     }
 
@@ -559,6 +584,10 @@ object PredictOst40TrainEvalAndSaveModels {
       logger.section("RUN: train (click-only)")
       logger.line(s"[FLOW] runTrain: START")
       logger.line(s"[CONFIG] modelType=${cfg.modelType} cacheTransformed=${cfg.cacheTransformed} useSampleBy=${cfg.useSampleBy}")
+      logger.line(s"[CONFIG] enableTrainingDiagnostics=${cfg.enableTrainingDiagnostics}")
+      logger.line(s"[CONFIG] useWeightCorrection=${cfg.calib.useWeightCorrection}")
+      cfg.calib.trainPosRate.foreach(rate => logger.line(f"[CONFIG] trainPosRate=$rate%.6f (provided, will skip driver computation)"))
+      cfg.calib.truePosRate.foreach(rate => logger.line(f"[CONFIG] truePosRate=$rate%.6f"))
       logger.line(s"[CONFIG] transformedTrainPath=$transformedTrainPath")
       logger.line(s"[CONFIG] modelClickPath=$modelClickPath")
 
@@ -596,6 +625,8 @@ object PredictOst40TrainEvalAndSaveModels {
       logger.section("RUN: eval (click-only)")
       logger.line(s"[FLOW] runEval: START")
       logger.line(s"[CONFIG] cacheTransformed=${cfg.cacheTransformed}")
+      cfg.calib.trainPosRate.foreach(rate => logger.line(f"[CONFIG] trainPosRate=$rate%.6f (for prior correction)"))
+      cfg.calib.truePosRate.foreach(rate => logger.line(f"[CONFIG] truePosRate=$rate%.6f (for prior correction)"))
       logger.line(s"[CONFIG] transformedTestPath=$transformedTestPath")
       logger.line(s"[CONFIG] modelClickPath=$modelClickPath")
 
@@ -631,6 +662,10 @@ object PredictOst40TrainEvalAndSaveModels {
       logger.section("RUN: train + eval (click-only)")
       logger.line(s"[FLOW] runAll: START")
       logger.line(s"[CONFIG] modelType=${cfg.modelType} cacheTransformed=${cfg.cacheTransformed} useSampleBy=${cfg.useSampleBy}")
+      logger.line(s"[CONFIG] enableTrainingDiagnostics=${cfg.enableTrainingDiagnostics}")
+      logger.line(s"[CONFIG] useWeightCorrection=${cfg.calib.useWeightCorrection}")
+      cfg.calib.trainPosRate.foreach(rate => logger.line(f"[CONFIG] trainPosRate=$rate%.6f (provided, will skip driver computation)"))
+      cfg.calib.truePosRate.foreach(rate => logger.line(f"[CONFIG] truePosRate=$rate%.6f"))
       logger.line(s"[CONFIG] LOG_PATH=${cfg.logPath}")
 
       logger.line(s"[MODEL] Loading transformer from: $transformerClickPath")

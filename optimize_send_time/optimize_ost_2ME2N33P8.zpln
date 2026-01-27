@@ -1,0 +1,291 @@
+﻿{
+  "paragraphs": [
+    {
+      "title": "Helper Func.",
+      "text": "%spark-local\r\n\r\ncase class AllocationResult(\r\n  svc_mgmt_num: String,\r\n  assigned_hour: Int,\r\n  score: Double\r\n)\r\n\r\nval numFormatter = new DecimalFormat(\"#,###\")\r\n\r\n/**\r\n * DataFrame에서 사용자 데이터 수집\r\n */\r\ndef collectUserData(df: DataFrame): Map[String, Map[Int, Double]] = {\r\n  df.collect()\r\n    .groupBy(_.getAs[String](\"svc_mgmt_num\"))\r\n    .map { case (userId, rows) =>\r\n      userId -> rows.map { row =>\r\n        row.getAs[Int](\"send_hour\") -> row.getAs[Double](\"propensity_score\")\r\n      }.toMap\r\n    }\r\n    .toMap\r\n}\r\n\r\n/**\r\n * 의사결정 변수 생성\r\n */\r\ndef createVariables(\r\n  solver: MPSolver,\r\n  users: Array[String],\r\n  hours: Array[Int],\r\n  userData: Map[String, Map[Int, Double]]\r\n): mutable.Map[(String, Int), MPVariable] = {\r\n  \r\n  val variables = mutable.Map[(String, Int), MPVariable]()\r\n  \r\n  for {\r\n    user <- users\r\n    hour <- hours\r\n    if userData(user).contains(hour)\r\n  } {\r\n    val varName = s\"x_${user}_$hour\"\r\n    variables((user, hour)) = solver.makeBoolVar(varName)\r\n  }\r\n  \r\n  variables\r\n}\r\n\r\n/**\r\n * 목적 함수 설정\r\n */\r\ndef setObjective(\r\n  solver: MPSolver,\r\n  variables: mutable.Map[(String, Int), MPVariable],\r\n  userData: Map[String, Map[Int, Double]]\r\n): Unit = {\r\n  \r\n  val objective: MPObjective = solver.objective()\r\n  \r\n  for (((user, hour), variable) <- variables) {\r\n    val score = userData(user)(hour)\r\n    objective.setCoefficient(variable, score)\r\n  }\r\n  \r\n  objective.setMaximization()\r\n}\r\n\r\n/**\r\n * 제약 조건 추가\r\n */\r\ndef addConstraints(\r\n  solver: MPSolver,\r\n  variables: mutable.Map[(String, Int), MPVariable],\r\n  users: Array[String],\r\n  hours: Array[Int],\r\n  capacityPerHour: Int\r\n): Unit = {\r\n  \r\n  // Constraint 1: 각 사용자는 정확히 1개 시간대에 할당\r\n  for (user <- users) {\r\n    val constraint: MPConstraint = solver.makeConstraint(\r\n      1.0, 1.0, s\"user_$user\"\r\n    )\r\n    \r\n    for (hour <- hours if variables.contains((user, hour))) {\r\n      constraint.setCoefficient(variables((user, hour)), 1.0)\r\n    }\r\n  }\r\n  \r\n  // Constraint 2: 시간대별 용량 제약\r\n  for (hour <- hours) {\r\n    val constraint: MPConstraint = solver.makeConstraint(\r\n      0.0, capacityPerHour.toDouble, s\"hour_$hour\"\r\n    )\r\n    \r\n    for (user <- users if variables.contains((user, hour))) {\r\n      constraint.setCoefficient(variables((user, hour)), 1.0)\r\n    }\r\n  }\r\n}\r\n\r\n/**\r\n * 솔루션 추출\r\n */\r\ndef extractSolution(\r\n  variables: mutable.Map[(String, Int), MPVariable],\r\n  userData: Map[String, Map[Int, Double]],\r\n  users: Array[String],\r\n  hours: Array[Int]\r\n): Array[AllocationResult] = {\r\n  \r\n  val results = mutable.ArrayBuffer[AllocationResult]()\r\n  \r\n  for (user <- users) {\r\n    for (hour <- hours if variables.contains((user, hour))) {\r\n      val variable = variables((user, hour))\r\n      if (variable.solutionValue() > 0.5) {\r\n        val score = userData(user)(hour)\r\n        results += AllocationResult(user, hour, score)\r\n      }\r\n    }\r\n  }\r\n  \r\n  results.toArray\r\n}\r\n\r\n/**\r\n * 통계 출력\r\n */\r\ndef printStatistics(\r\n  results: Array[AllocationResult],\r\n  hours: Array[Int],\r\n  capacityPerHour: Int\r\n): Unit = {\r\n  \r\n  println(\"\\n\" + \"=\" * 80)\r\n  println(\"Allocation Statistics\")\r\n  println(\"=\" * 80)\r\n  \r\n  val totalAssigned = results.length\r\n  val totalScore = results.map(_.score).sum\r\n  val avgScore = totalScore / totalAssigned\r\n  \r\n  println(s\"Total assigned: ${numFormatter.format(totalAssigned)} users\")\r\n  println(f\"Total score: $totalScore%,.2f\")\r\n  println(f\"Average score: $avgScore%.4f\")\r\n  \r\n  println(\"\\nHour-wise allocation:\")\r\n  println(\"-\" * 60)\r\n  println(f\"${\"Hour\"}%-8s ${\"Count\"}%12s ${\"Total Score\"}%15s ${\"Avg Score\"}%12s\")\r\n  println(\"-\" * 60)\r\n  \r\n  val hourStats = results.groupBy(_.assigned_hour)\r\n  \r\n  for (hour <- hours) {\r\n    val hourResults = hourStats.getOrElse(hour, Array.empty)\r\n    val count = hourResults.length\r\n    val hourTotalScore = hourResults.map(_.score).sum\r\n    val hourAvgScore = if (count > 0) hourTotalScore / count else 0.0\r\n    val utilization = count.toDouble / capacityPerHour * 100\r\n    \r\n    println(f\"$hour%-8d ${numFormatter.format(count)}%12s $hourTotalScore%,15.2f $hourAvgScore%12.4f ($utilization%5.1f%%)\")\r\n  }\r\n  println(\"-\" * 60)\r\n}\r\n\r\nprintln(\"✓ Helper functions defined\")",
+      "user": "anonymous",
+      "dateUpdated": "2026-01-13T08:18:59+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "editorHide": true,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "✓ Helper functions defined\ndefined class AllocationResult\n\u001b[1m\u001b[34mnumFormatter\u001b[0m: \u001b[1m\u001b[32mjava.text.DecimalFormat\u001b[0m = java.text.DecimalFormat@674dc\n\u001b[1m\u001b[34mcollectUserData\u001b[0m: \u001b[1m\u001b[32m(df: org.apache.spark.sql.DataFrame)Map[String,Map[Int,Double]]\u001b[0m\n\u001b[1m\u001b[34mcreateVariables\u001b[0m: \u001b[1m\u001b[32m(solver: com.google.ortools.linearsolver.MPSolver, users: Array[String], hours: Array[Int], userData: Map[String,Map[Int,Double]])scala.collection.mutable.Map[(String, Int),com.google.ortools.linearsolver.MPVariable]\u001b[0m\n\u001b[1m\u001b[34msetObjective\u001b[0m: \u001b[1m\u001b[32m(solver: com.google.ortools.linearsolver.MPSolver, variables: scala.collection.mutable.Map[(String, Int),com.google.ortools.linearsolver.MPVariable], userData: Map[String,Map[Int,Double]])Unit\u001b[0m\n\u001b[1m\u001b[34maddConstraints\u001b[0m: \u001b[1m\u001b[32m(solver: com.google.ortools.line...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1768292339917_902047696",
+      "id": "paragraph_1768175027528_175907068",
+      "dateCreated": "2026-01-13T08:18:59+0000",
+      "status": "READY",
+      "$$hashKey": "object:1202"
+    },
+    {
+      "text": "%spark-local\n/**\n * 안정적인 배치 처리 함수 - 시간대별 차등 용량 지원\n * \n * @param df 입력 DataFrame\n * @param capacityPerHour 시간대별 용량 맵 (예: Map(10 -> 500000, 11 -> 300000, ...))\n * @param batchSize 배치 크기\n * @param timeLimit 시간 제한\n */\ndef allocateLargeScaleRobust(\n  df: DataFrame,\n  capacityPerHour: Map[Int, Int],  // 변경: Int -> Map[Int, Int]\n  batchSize: Int = 500000,\n  timeLimit: Int = 300\n): DataFrame = {\n  \n  import spark.implicits._\n  \n  println(\"=\" * 80)\n  println(\"Batch Allocation for Large Scale Data\")\n  println(\"=\" * 80)\n  \n  // 전체 사용자 수 확인\n  val totalUsers = df.select(\"svc_mgmt_num\").distinct().count()\n  val numBatches = Math.ceil(totalUsers.toDouble / batchSize).toInt\n  \n  println(s\"Total users: ${numFormatter.format(totalUsers)}\")\n  println(s\"Batch size: ${numFormatter.format(batchSize)}\")\n  println(s\"Number of batches: $numBatches\")\n  \n  // 시간대별 용량 출력\n  println(\"\\nCapacity per hour:\")\n  capacityPerHour.toSeq.sortBy(_._1).foreach { case (hour, cap) =>\n    println(s\"  Hour $hour: ${numFormatter.format(cap)}\")\n  }\n  val totalCapacity = capacityPerHour.values.sum\n  println(s\"Total capacity: ${numFormatter.format(totalCapacity)}\")\n  \n  // 사용자를 배치로 분할 (균등 분배)\n  val allUsers = df.select(\"svc_mgmt_num\")\n    .distinct()\n    .withColumn(\"row_id\", row_number().over(Window.orderBy(\"svc_mgmt_num\")))\n    .withColumn(\"batch_id\", (($\"row_id\" - 1) / batchSize).cast(\"int\"))\n    .select(\"svc_mgmt_num\", \"batch_id\")\n    .cache()\n  \n  println(s\"Users cached for batching\")\n  \n  // 배치별 사용자 수 확인\n  val batchCounts = allUsers.groupBy(\"batch_id\").count().collect()\n    .map(r => r.getInt(0) -> r.getLong(1))\n    .sortBy(_._1)\n  \n  println(\"\\nBatch distribution:\")\n  batchCounts.foreach { case (bid, cnt) =>\n    println(s\"  Batch $bid: ${numFormatter.format(cnt)} users\")\n  }\n  \n  // 시간대 목록\n  val hours = df.select(\"send_hour\").distinct()\n    .collect()\n    .map(_.getInt(0))\n    .sorted\n  \n  // 남은 용량 추적 (초기값: capacityPerHour)\n  var remainingCapacity = capacityPerHour.toMap\n  val allResults = mutable.ArrayBuffer[DataFrame]()\n  var totalAssignedSoFar = 0L\n  \n  // 각 배치별로 최적화\n  for (batchId <- 0 until numBatches) {\n    \n    println(s\"\\n${\"=\" * 80}\")\n    println(s\"Processing Batch ${batchId + 1}/$numBatches\")\n    println(s\"${\"=\" * 80}\")\n    \n    // 배치 데이터 추출\n    val batchUsers = allUsers.filter($\"batch_id\" === batchId)\n    val batchDf = df.join(batchUsers, Seq(\"svc_mgmt_num\"))\n    \n    val batchUserCount = batchDf.select(\"svc_mgmt_num\").distinct().count()\n    val minCapacity = remainingCapacity.values.min\n    val maxCapacity = remainingCapacity.values.max\n    val avgCapacity = remainingCapacity.values.sum.toDouble / remainingCapacity.size\n    \n    println(s\"Batch users: ${numFormatter.format(batchUserCount)}\")\n    println(s\"Remaining capacity - Min: ${numFormatter.format(minCapacity)}, \" +\n            s\"Max: ${numFormatter.format(maxCapacity)}, \" +\n            s\"Avg: ${numFormatter.format(avgCapacity.toInt)}\")\n    \n    // 용량 체크\n    if (minCapacity <= 0) {\n      println(\"⚠ At least one hour has no remaining capacity.\")\n      \n      // 용량이 남은 시간대 확인\n      val availableHours = remainingCapacity.filter(_._2 > 0).keys.toSet\n      \n      if (availableHours.isEmpty) {\n        println(\"✗ No capacity remaining in any hour. Stopping.\")\n        \n        // 나머지 사용자는 할당 불가\n        val unassignedCount = totalUsers - totalAssignedSoFar\n        println(s\"Unassigned users: ${numFormatter.format(unassignedCount)}\")\n        \n        allUsers.unpersist()\n        \n        if (allResults.isEmpty) {\n          println(\"\\n⚠ No users were assigned!\")\n          return spark.emptyDataFrame\n        }\n        \n        val finalResult = allResults.reduce((a, b) => a.union(b))\n        printFinalStatistics(finalResult, totalUsers)\n        return finalResult\n        \n      } else {\n        println(s\"Available hours: ${availableHours.toSeq.sorted.mkString(\", \")}\")\n        \n        // 나머지 사용자를 용량 있는 시간대로만 할당\n        val remainingBatchIds = (batchId until numBatches)\n        val remainingUsers = allUsers.filter($\"batch_id\".isin(remainingBatchIds: _*))\n        val remainingDf = df\n          .join(remainingUsers, Seq(\"svc_mgmt_num\"))\n          .filter($\"send_hour\".isin(availableHours.toSeq: _*))  // 용량 있는 시간대만\n        \n        val remainingCount = remainingDf.select(\"svc_mgmt_num\").distinct().count()\n        \n        println(s\"Attempting Greedy allocation for ${numFormatter.format(remainingCount)} remaining users...\")\n        \n        val greedyResult = allocateGreedySimple(remainingDf, hours, remainingCapacity)\n        val greedyAssigned = greedyResult.count()\n        \n        if (greedyAssigned > 0) {\n          println(s\"Greedy assigned: ${numFormatter.format(greedyAssigned)}\")\n          allResults += greedyResult\n          totalAssignedSoFar += greedyAssigned\n        }\n        \n        // 종료\n        allUsers.unpersist()\n        \n        if (allResults.isEmpty) {\n          println(\"\\n⚠ No users were assigned!\")\n          return spark.emptyDataFrame\n        }\n        \n        val finalResult = allResults.reduce((a, b) => a.union(b))\n        printFinalStatistics(finalResult, totalUsers)\n        return finalResult\n      }\n    }\n    \n    // 최적화 실행\n    println(s\"\\nOptimizing...\")\n    val startTime = System.currentTimeMillis()\n    \n    val batchResult = try {\n      // 시간대별 용량 전달\n      allocateUsersWithHourlyCapacity(batchDf, remainingCapacity, timeLimit)\n    } catch {\n      case e: Exception =>\n        println(s\"✗ Optimization failed: ${e.getMessage}\")\n        println(\"Trying Greedy fallback...\")\n        allocateGreedySimple(batchDf, hours, remainingCapacity)\n    }\n    \n    val solveTime = (System.currentTimeMillis() - startTime) / 1000.0\n    println(f\"Batch completed in $solveTime%.2f seconds\")\n    \n    // 결과 검증 및 용량 업데이트\n    val assignedCount = batchResult.count()\n    \n    if (assignedCount == 0) {\n      println(\"⚠ Warning: No users assigned in this batch!\")\n    } else {\n      println(s\"Assigned: ${numFormatter.format(assignedCount)}\")\n      totalAssignedSoFar += assignedCount\n      \n      // 용량 차감\n      val allocatedPerHour = batchResult\n        .groupBy(\"assignedHour\")\n        .count()\n        .collect()\n        .map(row => row.getInt(0) -> row.getLong(1).toInt)\n        .toMap\n      \n      println(\"\\nCapacity update:\")\n      hours.foreach { hour =>\n        val allocated = allocatedPerHour.getOrElse(hour, 0)\n        val before = remainingCapacity.getOrElse(hour, 0)\n        val after = Math.max(0, before - allocated)\n        \n        if (allocated > 0) {\n          println(f\"  Hour $hour: ${numFormatter.format(before)} - ${numFormatter.format(allocated)} = ${numFormatter.format(after)}\")\n        }\n        \n        remainingCapacity = remainingCapacity.updated(hour, after)\n      }\n      \n      val batchScore = batchResult.agg(sum(\"score\")).first().getDouble(0)\n      println(f\"\\nBatch score: $batchScore%,.2f\")\n      \n      allResults += batchResult\n    }\n    \n    // 진행률\n    val progress = totalAssignedSoFar.toDouble / totalUsers * 100\n    val coverageVsCapacity = totalAssignedSoFar.toDouble / totalCapacity * 100\n    println(f\"\\nProgress: ${numFormatter.format(totalAssignedSoFar)} / ${numFormatter.format(totalUsers)} users ($progress%.1f%%)\")\n    println(f\"Capacity usage: ${numFormatter.format(totalAssignedSoFar)} / ${numFormatter.format(totalCapacity)} ($coverageVsCapacity%.1f%%)\")\n  }\n  \n  allUsers.unpersist()\n  \n  // 최종 결과\n  if (allResults.isEmpty) {\n    println(\"\\n⚠ No results generated!\")\n    return spark.emptyDataFrame\n  }\n  \n  val finalResult = allResults.reduce((a, b) => a.union(b))\n  printFinalStatistics(finalResult, totalUsers)\n  \n  finalResult\n}\n\n/**\n * 시간대별 차등 용량을 적용한 최적화\n */\ndef allocateUsersWithHourlyCapacity(\n  df: DataFrame,\n  capacityPerHour: Map[Int, Int],\n  timeLimit: Int = 300\n): DataFrame = {\n  \n  import spark.implicits._\n  \n  println(\"Robust Allocation with hourly capacity\")\n  \n  Loader.loadNativeLibraries()\n  \n  val userData = collectUserData(df)\n  val users = userData.keys.toArray.sorted\n  val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\n  \n  println(s\"Users: ${users.length}, Hours: ${hours.length}\")\n  \n  val solver = MPSolver.createSolver(\"SCIP\")\n  solver.setTimeLimit(timeLimit * 1000L)\n  \n  val variables = createVariables(solver, users, hours, userData)\n  setObjective(solver, variables, userData)\n  \n  // 제약 조건 1: 각 사용자는 정확히 1개 시간대\n  for (user <- users) {\n    val constraint = solver.makeConstraint(1.0, 1.0, s\"user_$user\")\n    for (hour <- hours if variables.contains((user, hour))) {\n      constraint.setCoefficient(variables((user, hour)), 1.0)\n    }\n  }\n  \n  // 제약 조건 2: 시간대별 차등 용량\n  for (hour <- hours) {\n    val hourCapacity = capacityPerHour.getOrElse(hour, 0)\n    val constraint = solver.makeConstraint(0.0, hourCapacity.toDouble, s\"hour_$hour\")\n    \n    for (user <- users if variables.contains((user, hour))) {\n      constraint.setCoefficient(variables((user, hour)), 1.0)\n    }\n  }\n  \n  println(s\"Variables: ${variables.size}, Constraints: ${solver.numConstraints()}\")\n  \n  println(\"Solving...\")\n  val status = solver.solve()\n  \n  status match {\n    case MPSolver.ResultStatus.OPTIMAL =>\n      println(\"✓ OPTIMAL solution found\")\n      \n    case MPSolver.ResultStatus.FEASIBLE =>\n      println(\"⚠ FEASIBLE solution found (not proven optimal)\")\n      \n    case _ =>\n      throw new RuntimeException(s\"Solver failed with status: $status\")\n  }\n  \n  val objValue = solver.objective().value()\n  println(f\"Objective value: $objValue%,.2f\")\n  \n  // 결과 추출\n  val results = extractSolution(variables, userData, users, hours)\n  \n  val assignedCount = results.length\n  println(s\"Assigned: ${numFormatter.format(assignedCount)}\")\n  \n  results.toSeq.toDF()\n}\n\n/**\n * 간단한 Greedy 할당 (용량 맵 사용)\n */\ndef allocateGreedySimple(\n  df: DataFrame,\n  hours: Array[Int],\n  initialCapacity: Map[Int, Int]\n): DataFrame = {\n  \n  import spark.implicits._\n  \n  println(\"Running Greedy allocation...\")\n  \n  val userData = collectUserData(df)\n  val users = userData.keys.toArray\n  \n  // 사용자를 최고 점수 순으로 정렬\n  val userBestScores = users.map { user =>\n    val bestScore = userData(user).values.max\n    (user, bestScore)\n  }.sortBy(-_._2)\n  \n  val hourCapacity = mutable.Map(initialCapacity.toSeq: _*)\n  val assignments = mutable.ArrayBuffer[AllocationResult]()\n  \n  for ((user, _) <- userBestScores) {\n    val choices = userData(user).toSeq.sortBy(-_._2)\n    \n    var assigned = false\n    for ((hour, score) <- choices if !assigned) {\n      if (hourCapacity.getOrElse(hour, 0) > 0) {\n        assignments += AllocationResult(user, hour, score)\n        hourCapacity(hour) = hourCapacity(hour) - 1\n        assigned = true\n      }\n    }\n  }\n  \n  println(s\"Greedy assigned: ${assignments.size} / ${users.length}\")\n  \n  if (assignments.isEmpty) {\n    spark.emptyDataFrame\n  } else {\n    assignments.toSeq.toDF()\n  }\n}\n\n/**\n * 최종 통계 출력\n */\ndef printFinalStatistics(result: DataFrame, totalUsers: Long): Unit = {\n  println(s\"\\n${\"=\" * 80}\")\n  println(\"Final Allocation Statistics\")\n  println(s\"${\"=\" * 80}\")\n  \n  val totalAssigned = result.count()\n  val coverage = totalAssigned.toDouble / totalUsers * 100\n  \n  println(s\"Total assigned: ${numFormatter.format(totalAssigned)} / ${numFormatter.format(totalUsers)} ($coverage%.2f%%)\")\n  \n  if (totalAssigned > 0) {\n    val totalScore = result.agg(sum(\"score\")).first().getDouble(0)\n    val avgScore = totalScore / totalAssigned\n    \n    println(f\"Total score: $totalScore%,.2f\")\n    println(f\"Average score: $avgScore%.4f\")\n    \n    println(\"\\nHour-wise allocation:\")\n    result.groupBy(\"assignedHour\")\n      .agg(\n        count(\"*\").as(\"count\"),\n        sum(\"score\").as(\"total_score\"),\n        avg(\"score\").as(\"avg_score\")\n      )\n      .orderBy(\"assignedHour\")\n      .show(false)\n  }\n  \n  println(\"=\" * 80)\n}\n\n\nprintln(\"✓ Batch allocation function with hourly capacity defined\")",
+      "user": "anonymous",
+      "dateUpdated": "2026-01-13T08:20:11+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "editorHide": true,
+        "title": true,
+        "results": {},
+        "enabled": false
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1768292339917_1313659582",
+      "id": "paragraph_1768265878344_1251151459",
+      "dateCreated": "2026-01-13T08:18:59+0000",
+      "status": "READY",
+      "$$hashKey": "object:1206",
+      "title": "Opt 1"
+    },
+    {
+      "text": "%spark-local\n/**\n * 시간대별 차등 용량을 적용한 최적화\n */\ndef allocateUsersWithHourlyCapacity(\n  df: DataFrame,\n  capacityPerHour: Map[Int, Int],\n  timeLimit: Int = 300,\n  batchSize: Int = 500000  // 추가\n): DataFrame = {\n  \n  import spark.implicits._\n  \n  println(\"Robust Allocation with hourly capacity\")\n  \n  Loader.loadNativeLibraries()\n  \n  val userData = collectUserData(df)\n  val users = userData.keys.toArray.sorted\n  val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\n  \n  println(s\"Users: ${users.length}, Hours: ${hours.length}\")\n  \n  // batchSize 초과 시 경고\n  if (users.length > batchSize) {\n    println(s\"⚠ Warning: User count (${users.length}) exceeds batchSize ($batchSize)\")\n    println(s\"Consider splitting into smaller batches\")\n  }\n  \n  val solver = MPSolver.createSolver(\"SCIP\")\n  solver.setTimeLimit(timeLimit * 1000L)\n  \n  val variables = createVariables(solver, users, hours, userData)\n  setObjective(solver, variables, userData)\n  \n  // 제약 조건 설정\n  for (user <- users) {\n    val constraint = solver.makeConstraint(1.0, 1.0, s\"user_$user\")\n    for (hour <- hours if variables.contains((user, hour))) {\n      constraint.setCoefficient(variables((user, hour)), 1.0)\n    }\n  }\n  \n  for (hour <- hours) {\n    val hourCapacity = capacityPerHour.getOrElse(hour, 0)\n    val constraint = solver.makeConstraint(0.0, hourCapacity.toDouble, s\"hour_$hour\")\n    \n    for (user <- users if variables.contains((user, hour))) {\n      constraint.setCoefficient(variables((user, hour)), 1.0)\n    }\n  }\n  \n  println(s\"Variables: ${variables.size}, Constraints: ${solver.numConstraints()}\")\n  println(\"Solving...\")\n  \n  val startTime = System.currentTimeMillis()\n  val status = solver.solve()\n  val solveTime = (System.currentTimeMillis() - startTime) / 1000.0\n  \n  status match {\n    case MPSolver.ResultStatus.OPTIMAL =>\n      println(s\"✓ OPTIMAL solution found in ${solveTime}s\")\n      val objValue = solver.objective().value()\n      println(f\"Objective value: $objValue%,.2f\")\n      \n      val results = extractSolution(variables, userData, users, hours)\n      println(s\"Assigned: ${numFormatter.format(results.length)}\")\n      return results.toSeq.toDF()\n      \n    case MPSolver.ResultStatus.FEASIBLE =>\n      println(s\"⚠ FEASIBLE solution found in ${solveTime}s (timeout reached)\")\n      val objValue = solver.objective().value()\n      println(f\"Objective value: $objValue%,.2f\")\n      \n      // Timeout이지만 부분 솔루션 사용\n      val results = extractSolution(variables, userData, users, hours)\n      val assignedCount = results.length\n      \n      if (assignedCount > users.length * 0.5) {  // 50% 이상 할당되었으면 사용\n        println(s\"Using partial solution: ${numFormatter.format(assignedCount)} assigned\")\n        return results.toSeq.toDF()\n      } else {\n        println(s\"Partial solution too small (${assignedCount}/${users.length}), falling back to Greedy\")\n        throw new RuntimeException(\"Insufficient partial solution\")\n      }\n      \n    case _ =>\n      println(s\"✗ Solver failed with status: $status (${solveTime}s)\")\n      throw new RuntimeException(s\"Solver failed: $status\")\n  }\n}\n\n/**\n * Hybrid 할당: OR-Tools + Greedy 조합\n */\ndef allocateUsersHybrid(\n  df: DataFrame,\n  capacityPerHour: Map[Int, Int],\n  timeLimit: Int = 300,\n  batchSize: Int = 500000  // 추가\n): DataFrame = {\n  \n  import spark.implicits._\n  \n  try {\n    val optimizerResult = allocateUsersWithHourlyCapacity(\n      df, \n      capacityPerHour, \n      timeLimit,\n      batchSize  // 전달\n    )\n    \n    // OR-Tools 결과 확인\n    val assignedUsers = optimizerResult.select(\"svc_mgmt_num\")\n      .collect()\n      .map(_.getString(0))\n      .toSet\n    \n    val allUsers = df.select(\"svc_mgmt_num\")\n      .distinct()\n      .collect()\n      .map(_.getString(0))\n      .toSet\n    \n    val unassignedUsers = allUsers -- assignedUsers\n    \n    if (unassignedUsers.isEmpty) {\n      println(\"✓ All users assigned by optimizer\")\n      return optimizerResult\n    }\n    \n    println(s\"${numFormatter.format(unassignedUsers.size)} users unassigned, running Greedy for remainder...\")\n    \n    // 남은 용량 계산\n    val usedCapacity = optimizerResult.groupBy(\"assigned_hour\")\n      .count()\n      .collect()\n      .map(r => r.getInt(0) -> r.getLong(1).toInt)\n      .toMap\n    \n    val remainingCapacity = capacityPerHour.map { case (hour, cap) =>\n      hour -> Math.max(0, cap - usedCapacity.getOrElse(hour, 0))\n    }\n    \n    println(\"Remaining capacity after optimizer:\")\n    remainingCapacity.toSeq.sortBy(_._1).foreach { case (hour, cap) =>\n      println(s\"  Hour $hour: ${numFormatter.format(cap)}\")\n    }\n    \n    // 미할당 사용자만 Greedy로 처리\n    val unassignedDf = df.filter($\"svc_mgmt_num\".isin(unassignedUsers.toSeq: _*))\n    val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\n    val greedyResult = allocateGreedySimple(unassignedDf, hours, remainingCapacity)\n    \n    if (greedyResult.isEmpty) {\n      println(\"Greedy assigned 0 users (no capacity left)\")\n      return optimizerResult\n    }\n    \n    val greedyCount = greedyResult.count()\n    println(s\"Greedy assigned: ${numFormatter.format(greedyCount)}\")\n    \n    // 결합\n    val combined = optimizerResult.union(greedyResult)\n    val totalAssigned = combined.count()\n    println(s\"Total assigned: ${numFormatter.format(totalAssigned)} / ${numFormatter.format(allUsers.size)}\")\n    \n    combined\n    \n  } catch {\n    case e: Exception =>\n      println(s\"Optimizer failed: ${e.getMessage}, running full Greedy\")\n      val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\n      allocateGreedySimple(df, hours, capacityPerHour)\n  }\n}\n\n/**\n * 안정적인 배치 처리 함수 - Hybrid 방식 적용\n */\ndef allocateLargeScaleHybrid(\n  df: DataFrame,\n  capacityPerHour: Map[Int, Int],\n  batchSize: Int = 500000,\n  timeLimit: Int = 300\n): DataFrame = {\n  \n  import spark.implicits._\n  \n  println(\"=\" * 80)\n  println(\"Batch Allocation for Large Scale Data (Hybrid Mode)\")\n  println(\"=\" * 80)\n  \n  // 전체 사용자 수 확인\n  val totalUsers = df.select(\"svc_mgmt_num\").distinct().count()\n  val numBatches = Math.ceil(totalUsers.toDouble / batchSize).toInt\n  \n  println(s\"Total users: ${numFormatter.format(totalUsers)}\")\n  println(s\"Batch size: ${numFormatter.format(batchSize)}\")\n  println(s\"Number of batches: $numBatches\")\n  \n  // 시간대별 용량 출력\n  println(\"\\nCapacity per hour:\")\n  capacityPerHour.toSeq.sortBy(_._1).foreach { case (hour, cap) =>\n    println(s\"  Hour $hour: ${numFormatter.format(cap)}\")\n  }\n  val totalCapacity = capacityPerHour.values.sum\n  println(s\"Total capacity: ${numFormatter.format(totalCapacity)}\")\n  \n  // 사용자를 배치로 분할\n  val allUsers = df.select(\"svc_mgmt_num\")\n    .distinct()\n    .withColumn(\"row_id\", row_number().over(Window.orderBy(\"svc_mgmt_num\")))\n    .withColumn(\"batch_id\", (($\"row_id\" - 1) / batchSize).cast(\"int\"))\n    .select(\"svc_mgmt_num\", \"batch_id\")\n    .cache()\n  \n  println(s\"Users cached for batching\")\n  \n  // 배치별 사용자 수 확인\n  val batchCounts = allUsers.groupBy(\"batch_id\").count().collect()\n    .map(r => r.getInt(0) -> r.getLong(1))\n    .sortBy(_._1)\n  \n  println(\"\\nBatch distribution:\")\n  batchCounts.foreach { case (bid, cnt) =>\n    println(s\"  Batch $bid: ${numFormatter.format(cnt)} users\")\n  }\n  \n  // 남은 용량 추적\n  var remainingCapacity = capacityPerHour.toMap\n  val allResults = mutable.ArrayBuffer[DataFrame]()\n  var totalAssignedSoFar = 0L\n  \n  // 각 배치별로 최적화\n  for (batchId <- 0 until numBatches) {\n    \n    println(s\"\\n${\"=\" * 80}\")\n    println(s\"Processing Batch ${batchId + 1}/$numBatches\")\n    println(s\"${\"=\" * 80}\")\n    \n    // 배치 데이터 추출\n    val batchUsers = allUsers.filter($\"batch_id\" === batchId)\n    val batchDf = df.join(batchUsers, Seq(\"svc_mgmt_num\"))\n    \n    val batchUserCount = batchDf.select(\"svc_mgmt_num\").distinct().count()\n    val minCapacity = remainingCapacity.values.min\n    val maxCapacity = remainingCapacity.values.max\n    val avgCapacity = remainingCapacity.values.sum.toDouble / remainingCapacity.size\n    \n    println(s\"Batch users: ${numFormatter.format(batchUserCount)}\")\n    println(s\"Remaining capacity - Min: ${numFormatter.format(minCapacity)}, \" +\n            s\"Max: ${numFormatter.format(maxCapacity)}, \" +\n            s\"Avg: ${numFormatter.format(avgCapacity.toInt)}\")\n    \n    // 용량 체크\n    if (minCapacity <= 0) {\n      println(\"⚠ At least one hour has no remaining capacity.\")\n      \n      val availableHours = remainingCapacity.filter(_._2 > 0).keys.toSet\n      \n      if (availableHours.isEmpty) {\n        println(\"✗ No capacity remaining. Stopping.\")\n        allUsers.unpersist()\n        \n        if (allResults.isEmpty) {\n          println(\"\\n⚠ No users were assigned!\")\n          return spark.emptyDataFrame\n        }\n        \n        val finalResult = allResults.reduce((a, b) => a.union(b))\n        printFinalStatistics(finalResult, totalUsers)\n        return finalResult\n      }\n      \n      println(s\"Available hours: ${availableHours.toSeq.sorted.mkString(\", \")}\")\n      \n      // 나머지 배치 처리\n      val remainingBatchIds = (batchId until numBatches)\n      val remainingUsers = allUsers.filter($\"batch_id\".isin(remainingBatchIds: _*))\n      val remainingDf = df\n        .join(remainingUsers, Seq(\"svc_mgmt_num\"))\n        .filter($\"send_hour\".isin(availableHours.toSeq: _*))\n      \n      val remainingCount = remainingDf.select(\"svc_mgmt_num\").distinct().count()\n      println(s\"Processing ${numFormatter.format(remainingCount)} remaining users with available hours...\")\n      \n      val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\n      val greedyResult = allocateGreedySimple(remainingDf, hours, remainingCapacity)\n      \n      if (greedyResult.count() > 0) {\n        allResults += greedyResult\n      }\n      \n      allUsers.unpersist()\n      \n      if (allResults.isEmpty) {\n        println(\"\\n⚠ No users were assigned!\")\n        return spark.emptyDataFrame\n      }\n      \n      val finalResult = allResults.reduce((a, b) => a.union(b))\n      printFinalStatistics(finalResult, totalUsers)\n      return finalResult\n    }\n    \n    // Hybrid 최적화 실행\n    println(s\"\\nRunning Hybrid optimization (OR-Tools + Greedy)...\")\n    val startTime = System.currentTimeMillis()\n    \n    val batchResult = allocateUsersHybrid(\n      batchDf, \n      remainingCapacity, \n      timeLimit,\n      batchSize  // 전달\n    )\n    \n    val solveTime = (System.currentTimeMillis() - startTime) / 1000.0\n    println(f\"Batch completed in $solveTime%.2f seconds\")\n    \n    // 결과 검증 및 용량 업데이트\n    val assignedCount = batchResult.count()\n    \n    if (assignedCount == 0) {\n      println(\"⚠ Warning: No users assigned in this batch!\")\n    } else {\n      println(s\"Assigned: ${numFormatter.format(assignedCount)}\")\n      totalAssignedSoFar += assignedCount\n      \n      // 용량 차감\n      val allocatedPerHour = batchResult\n        .groupBy(\"assigned_hour\")\n        .count()\n        .collect()\n        .map(row => row.getInt(0) -> row.getLong(1).toInt)\n        .toMap\n      \n      println(\"\\nCapacity update:\")\n      val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\n      hours.foreach { hour =>\n        val allocated = allocatedPerHour.getOrElse(hour, 0)\n        val before = remainingCapacity.getOrElse(hour, 0)\n        val after = Math.max(0, before - allocated)\n        \n        if (allocated > 0) {\n          println(f\"  Hour $hour: ${numFormatter.format(before)} - ${numFormatter.format(allocated)} = ${numFormatter.format(after)}\")\n        }\n        \n        remainingCapacity = remainingCapacity.updated(hour, after)\n      }\n      \n      val batchScore = batchResult.agg(sum(\"score\")).first().getDouble(0)\n      println(f\"\\nBatch score: $batchScore%,.2f\")\n      \n      allResults += batchResult\n    }\n    \n    // 진행률\n    val progress = totalAssignedSoFar.toDouble / totalUsers * 100\n    val coverageVsCapacity = totalAssignedSoFar.toDouble / totalCapacity * 100\n    println(f\"\\nProgress: ${numFormatter.format(totalAssignedSoFar)} / ${numFormatter.format(totalUsers)} users ($progress%.1f%%)\")\n    println(f\"Capacity usage: ${numFormatter.format(totalAssignedSoFar)} / ${numFormatter.format(totalCapacity)} ($coverageVsCapacity%.1f%%)\")\n  }\n  \n  allUsers.unpersist()\n  \n  // 최종 결과\n  if (allResults.isEmpty) {\n    println(\"\\n⚠ No results generated!\")\n    return spark.emptyDataFrame\n  }\n  \n  val finalResult = allResults.reduce((a, b) => a.union(b))\n  printFinalStatistics(finalResult, totalUsers)\n  \n  finalResult\n}\n\nprintln(\"✓ Hybrid batch allocation functions defined\")",
+      "user": "anonymous",
+      "dateUpdated": "2026-01-13T08:20:18+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "editorHide": true,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "✓ Hybrid batch allocation functions defined\n\u001b[1m\u001b[34mallocateUsersWithHourlyCapacity\u001b[0m: \u001b[1m\u001b[32m(df: org.apache.spark.sql.DataFrame, capacityPerHour: Map[Int,Int], timeLimit: Int, batchSize: Int)org.apache.spark.sql.DataFrame\u001b[0m\n\u001b[1m\u001b[34mallocateUsersHybrid\u001b[0m: \u001b[1m\u001b[32m(df: org.apache.spark.sql.DataFrame, capacityPerHour: Map[Int,Int], timeLimit: Int, batchSize: Int)org.apache.spark.sql.DataFrame\u001b[0m\n\u001b[1m\u001b[34mallocateLargeScaleHybrid\u001b[0m: \u001b[1m\u001b[32m(df: org.apache.spark.sql.DataFrame, capacityPerHour: Map[Int,Int], batchSize: Int, timeLimit: Int)org.apache.spark.sql.DataFrame\u001b[0m\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1768292339917_556116078",
+      "id": "paragraph_1768272222124_125534447",
+      "dateCreated": "2026-01-13T08:18:59+0000",
+      "status": "READY",
+      "$$hashKey": "object:1207",
+      "title": "Opt 2"
+    },
+    {
+      "text": "%spark-local\r\n\r\n/**\r\n * 1. 시간대별 차등 용량을 적용한 최적화\r\n */\r\ndef allocateUsersWithHourlyCapacity(\r\n  df: DataFrame,\r\n  capacityPerHour: Map[Int, Int],\r\n  timeLimit: Int = 300,\r\n  batchSize: Int = 500000\r\n): DataFrame = {\r\n  \r\n  import spark.implicits._\r\n  \r\n  println(\"Robust Allocation with hourly capacity\")\r\n  \r\n  Loader.loadNativeLibraries()\r\n  \r\n  val userData = collectUserData(df)\r\n  val users = userData.keys.toArray.sorted\r\n  val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\r\n  \r\n  println(s\"Users: ${users.length}, Hours: ${hours.length}\")\r\n  \r\n  if (users.length > batchSize) {\r\n    println(s\"⚠ Warning: User count (${users.length}) exceeds batchSize ($batchSize)\")\r\n  }\r\n  \r\n  val solver = MPSolver.createSolver(\"SCIP\")\r\n  solver.setTimeLimit(timeLimit * 1000L)\r\n  \r\n  val variables = createVariables(solver, users, hours, userData)\r\n  setObjective(solver, variables, userData)\r\n  \r\n  // 제약 조건: 사용자당 1회 할당\r\n  for (user <- users) {\r\n    val constraint = solver.makeConstraint(1.0, 1.0, s\"user_$user\")\r\n    for (hour <- hours if variables.contains((user, hour))) {\r\n      constraint.setCoefficient(variables((user, hour)), 1.0)\r\n    }\r\n  }\r\n  \r\n  // 제약 조건: 시간대별 용량\r\n  println(\"\\n설정된 시간대별 제약:\")\r\n  for (hour <- hours) {\r\n    val hourCapacity = capacityPerHour.getOrElse(hour, 0)\r\n    val constraint = solver.makeConstraint(0.0, hourCapacity.toDouble, s\"hour_$hour\")\r\n    \r\n    var varCount = 0\r\n    for (user <- users if variables.contains((user, hour))) {\r\n      constraint.setCoefficient(variables((user, hour)), 1.0)\r\n      varCount += 1\r\n    }\r\n    \r\n    println(f\"  Hour $hour: capacity = ${numFormatter.format(hourCapacity)}, variables = $varCount\")\r\n  }\r\n  \r\n  println(s\"Variables: ${variables.size}, Constraints: ${solver.numConstraints()}\")\r\n  println(\"Solving...\")\r\n  \r\n  val startTime = System.currentTimeMillis()\r\n  val status = solver.solve()\r\n  val solveTime = (System.currentTimeMillis() - startTime) / 1000.0\r\n  \r\n  status match {\r\n    case MPSolver.ResultStatus.OPTIMAL | MPSolver.ResultStatus.FEASIBLE =>\r\n      if (status == MPSolver.ResultStatus.OPTIMAL) println(s\"✓ OPTIMAL solution found in ${solveTime}s\")\r\n      else println(s\"⚠ FEASIBLE solution found in ${solveTime}s\")\r\n      \r\n      // [수정 포인트] extractSolution 결과의 컬럼명을 입력 스키마와 강제 일치시킴\r\n      val results = extractSolution(variables, userData, users, hours)\r\n      results.toSeq.toDF()\r\n        // .withColumnRenamed(\"userId\", \"svc_mgmt_num\")\r\n        // .withColumnRenamed(\"assignedHour\", \"send_hour\")\r\n        // .withColumnRenamed(\"score\", \"propensity_score\")\r\n        \r\n    case _ =>\r\n      println(s\"✗ Solver failed with status: $status (${solveTime}s)\")\r\n      throw new RuntimeException(s\"Solver failed: $status\")\r\n  }\r\n}\r\n\r\n/**\r\n * 2. Hybrid 할당: OR-Tools + Greedy 조합\r\n */\r\ndef allocateUsersHybrid(\r\n  df: DataFrame,\r\n  capacityPerHour: Map[Int, Int],\r\n  timeLimit: Int = 300,\r\n  batchSize: Int = 500000\r\n): DataFrame = {\r\n  \r\n  import spark.implicits._\r\n  \r\n  try {\r\n    val optimizerResult = allocateUsersWithHourlyCapacity(df, capacityPerHour, timeLimit, batchSize)\r\n    \r\n    // [수정 포인트] svc_mgmt_num 컬럼을 사용하여 미할당 사용자 확인\r\n    val assignedUsers = optimizerResult.select(\"svc_mgmt_num\").collect().map(_.getString(0)).toSet\r\n    val allUsers = df.select(\"svc_mgmt_num\").distinct().collect().map(_.getString(0)).toSet\r\n    val unassignedUsers = allUsers -- assignedUsers\r\n    \r\n    if (unassignedUsers.isEmpty) {\r\n      println(\"✓ All users assigned by optimizer\")\r\n      return optimizerResult\r\n    }\r\n    \r\n    println(s\"${numFormatter.format(unassignedUsers.size)} users unassigned, running Greedy for remainder...\")\r\n    \r\n    // 남은 용량 계산 (send_hour 기준)\r\n    val usedCapacity = optimizerResult.groupBy(\"assigned_hour\").count().collect()\r\n      .map(r => r.getInt(0) -> r.getLong(1).toInt).toMap\r\n    \r\n    val remainingCapacity = capacityPerHour.map { case (hour, cap) =>\r\n      hour -> Math.max(0, cap - usedCapacity.getOrElse(hour, 0))\r\n    }\r\n    \r\n    val unassignedDf = df.filter($\"svc_mgmt_num\".isin(unassignedUsers.toSeq: _*))\r\n    val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\r\n    val greedyResult = allocateGreedySimple(unassignedDf, hours, remainingCapacity)\r\n    \r\n    val combined = optimizerResult.union(greedyResult)\r\n    combined\r\n    \r\n  } catch {\r\n    case e: Exception =>\r\n      println(s\"Optimizer failed: ${e.getMessage}, running full Greedy\")\r\n      val hours = df.select(\"send_hour\").distinct().collect().map(_.getInt(0)).sorted\r\n      allocateGreedySimple(df, hours, capacityPerHour)\r\n  }\r\n}\r\n\r\n/**\r\n * 3. 안정적인 배치 처리 함수 - Hybrid 방식 적용\r\n */\r\ndef allocateLargeScaleHybrid(\r\n  df: DataFrame,\r\n  capacityPerHour: Map[Int, Int],\r\n  batchSize: Int = 500000,\r\n  timeLimit: Int = 300\r\n): DataFrame = {\r\n  \r\n  import spark.implicits._\r\n  \r\n  println(\"=\" * 80)\r\n  println(\"Batch Allocation for Large Scale Data (Hybrid Mode)\")\r\n  println(\"=\" * 80)\r\n  \r\n  // [수정 포인트] 전역 최적화를 위해 점수가 높은 사용자부터 우선순위 부여\r\n  val userPriority = df.groupBy(\"svc_mgmt_num\")\r\n    .agg(max(\"propensity_score\").as(\"max_prob\"))\r\n\r\n  val totalUsers = userPriority.count()\r\n  val numBatches = Math.ceil(totalUsers.toDouble / batchSize).toInt\r\n  \r\n  // 가치 기반 배치 분할 (desc(\"max_prob\"))\r\n  val allUsers = userPriority\r\n    .withColumn(\"row_id\", row_number().over(Window.orderBy(desc(\"max_prob\"))))\r\n    .withColumn(\"batch_id\", (($\"row_id\" - 1) / batchSize).cast(\"int\"))\r\n    .select(\"svc_mgmt_num\", \"batch_id\")\r\n    .cache()\r\n  \r\n  println(s\"Total users: ${numFormatter.format(totalUsers)}, Batches: $numBatches\")\r\n  \r\n  var remainingCapacity = capacityPerHour.toMap\r\n  val allResults = mutable.ArrayBuffer[DataFrame]()\r\n  var totalAssignedSoFar = 0L\r\n  \r\n  for (batchId <- 0 until numBatches) {\r\n    println(s\"\\n${\"=\" * 80}\\nProcessing Batch ${batchId + 1}/$numBatches\\n${\"=\" * 80}\")\r\n    \r\n    val batchUsers = allUsers.filter($\"batch_id\" === batchId)\r\n    // 용량이 남아있는 시간대의 데이터만 필터링하여 최적화 속도 향상\r\n    val availableHours = remainingCapacity.filter(_._2 > 0).keys.toSeq\r\n    \r\n    if (availableHours.isEmpty) {\r\n      println(\"⚠ No capacity left in any hour.\")\r\n    } else {\r\n      val batchDf = df.join(batchUsers, Seq(\"svc_mgmt_num\"))\r\n        .filter($\"send_hour\".isin(availableHours: _*))\r\n      \r\n      val batchResult = allocateUsersHybrid(batchDf, remainingCapacity, timeLimit, batchSize)\r\n      val assignedCount = batchResult.count()\r\n      \r\n      if (assignedCount > 0) {\r\n        totalAssignedSoFar += assignedCount\r\n        \r\n        // 용량 차감 업데이트 (send_hour 기준)\r\n        val allocatedPerHour = batchResult.groupBy(\"assigned_hour\").count().collect()\r\n          .map(row => row.getInt(0) -> row.getLong(1).toInt).toMap\r\n        \r\n        remainingCapacity = remainingCapacity.map { case (hour, cap) =>\r\n          hour -> Math.max(0, cap - allocatedPerHour.getOrElse(hour, 0))\r\n        }\r\n        \r\n        allResults += batchResult\r\n        println(s\"Batch assigned: ${numFormatter.format(assignedCount)}\")\r\n      }\r\n    }\r\n  }\r\n  \r\n  allUsers.unpersist()\r\n  \r\n  if (allResults.isEmpty) return spark.emptyDataFrame\r\n  val finalResult = allResults.reduce(_.union(_))\r\n  printFinalStatistics(finalResult, totalUsers)\r\n  finalResult\r\n}\r\n/**\r\n * 간단한 Greedy 할당 (용량 맵 사용)\r\n */\r\ndef allocateGreedySimple(\r\n  df: DataFrame,\r\n  hours: Array[Int],\r\n  initialCapacity: Map[Int, Int]\r\n): DataFrame = {\r\n  \r\n  import spark.implicits._\r\n  \r\n  println(\"Running Greedy allocation...\")\r\n  \r\n  val userData = collectUserData(df)\r\n  val users = userData.keys.toArray\r\n  \r\n  // 사용자를 최고 점수 순으로 정렬\r\n  val userBestScores = users.map { user =>\r\n    val bestScore = userData(user).values.max\r\n    (user, bestScore)\r\n  }.sortBy(-_._2)\r\n  \r\n  val hourCapacity = mutable.Map(initialCapacity.toSeq: _*)\r\n  val assignments = mutable.ArrayBuffer[AllocationResult]()\r\n  \r\n  for ((user, _) <- userBestScores) {\r\n    val choices = userData(user).toSeq.sortBy(-_._2)\r\n    \r\n    var assigned = false\r\n    for ((hour, score) <- choices if !assigned) {\r\n      if (hourCapacity.getOrElse(hour, 0) > 0) {\r\n        assignments += AllocationResult(user, hour, score)\r\n        hourCapacity(hour) = hourCapacity(hour) - 1\r\n        assigned = true\r\n      }\r\n    }\r\n  }\r\n  \r\n  println(s\"Greedy assigned: ${assignments.size} / ${users.length}\")\r\n  \r\n  if (assignments.isEmpty) {\r\n    spark.emptyDataFrame\r\n  } else {\r\n    assignments.toSeq.toDF()\r\n  }\r\n}\r\n\r\n/**\r\n * 최종 통계 출력\r\n */\r\ndef printFinalStatistics(result: DataFrame, totalUsers: Long): Unit = {\r\n  println(s\"\\n${\"=\" * 80}\")\r\n  println(\"Final Allocation Statistics\")\r\n  println(s\"${\"=\" * 80}\")\r\n  \r\n  val totalAssigned = result.count()\r\n  val coverage = totalAssigned.toDouble / totalUsers * 100\r\n  \r\n  println(s\"Total assigned: ${numFormatter.format(totalAssigned)} / ${numFormatter.format(totalUsers)} ($coverage%.2f%%)\")\r\n  \r\n  if (totalAssigned > 0) {\r\n    val totalScore = result.agg(sum(\"score\")).first().getDouble(0)\r\n    val avgScore = totalScore / totalAssigned\r\n    \r\n    println(f\"Total score: $totalScore%,.2f\")\r\n    println(f\"Average score: $avgScore%.4f\")\r\n    \r\n    println(\"\\nHour-wise allocation:\")\r\n    result.groupBy(\"assigned_hour\")\r\n      .agg(\r\n        count(\"*\").as(\"count\"),\r\n        sum(\"score\").as(\"total_score\"),\r\n        avg(\"score\").as(\"avg_score\")\r\n      )\r\n      .orderBy(\"assigned_hour\")\r\n      .show(false)\r\n  }\r\n  \r\n  println(\"=\" * 80)\r\n}\r\n",
+      "user": "anonymous",
+      "dateUpdated": "2026-01-13T08:20:35+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "editorHide": true,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mallocateUsersWithHourlyCapacity\u001b[0m: \u001b[1m\u001b[32m(df: org.apache.spark.sql.DataFrame, capacityPerHour: Map[Int,Int], timeLimit: Int, batchSize: Int)org.apache.spark.sql.DataFrame\u001b[0m\n\u001b[1m\u001b[34mallocateUsersHybrid\u001b[0m: \u001b[1m\u001b[32m(df: org.apache.spark.sql.DataFrame, capacityPerHour: Map[Int,Int], timeLimit: Int, batchSize: Int)org.apache.spark.sql.DataFrame\u001b[0m\n\u001b[1m\u001b[34mallocateLargeScaleHybrid\u001b[0m: \u001b[1m\u001b[32m(df: org.apache.spark.sql.DataFrame, capacityPerHour: Map[Int,Int], batchSize: Int, timeLimit: Int)org.apache.spark.sql.DataFrame\u001b[0m\n\u001b[1m\u001b[34mallocateGreedySimple\u001b[0m: \u001b[1m\u001b[32m(df: org.apache.spark.sql.DataFrame, hours: Array[Int], initialCapacity: Map[Int,Int])org.apache.spark.sql.DataFrame\u001b[0m\n\u001b[1m\u001b[34mprintFinalStatistics\u001b[0m: \u001b[1m\u001b[32m(result: org.apache.spark.sql.DataFrame,...\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1768292339917_1476340329",
+      "id": "paragraph_1768278809465_681148908",
+      "dateCreated": "2026-01-13T08:18:59+0000",
+      "status": "READY",
+      "$$hashKey": "object:1208",
+      "title": "Opt 3"
+    },
+    {
+      "text": "%spark-local\n\nval dfAll = spark.read.parquet(\"aos/sto/propensityScoreDF\")\n// .filter(\"suffix=0\")\n.cache()\n// dfAll.sort(\"svc_mgmt_num\",\"send_hour\").show()",
+      "user": "anonymous",
+      "dateUpdated": "2026-01-13T08:20:44+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mdfAll\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.Dataset[org.apache.spark.sql.Row]\u001b[0m = [svc_mgmt_num: string, prob_click: double ... 5 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1768292339917_1575157965",
+      "id": "paragraph_1768267623870_408515033",
+      "dateCreated": "2026-01-13T08:18:59+0000",
+      "status": "READY",
+      "$$hashKey": "object:1209",
+      "title": "Load Data"
+    },
+    {
+      "text": "%spark-local\n\nval df = dfAll.filter(\"svc_mgmt_num like '%00'\")\nval userCnt = df.select(\"svc_mgmt_num\").distinct.count()\n\nprintln(s\"Total records: ${df.count()}\")\n\nval runtime = Runtime.getRuntime\nval maxMemoryGB = runtime.maxMemory() / (1024.0 * 1024 * 1024)\nprintln(f\"Available memory: $maxMemoryGB%.2f GB\")\n\nval safeBatchSize = (maxMemoryGB * 1000000 / 10 * 0.05).toInt\nprintln(s\"Safe batch size: ${numFormatter.format(safeBatchSize)}\")\n\n\n// 설정\nval capacityPerHour = 90000//((userCnt*0.5).toInt)\n\nval capacityPerHourMap = Map(\n  9 -> capacityPerHour,\n  10 -> capacityPerHour,\n  11 -> capacityPerHour,\n  12 -> capacityPerHour,\n  13 -> capacityPerHour,\n  14 -> capacityPerHour,\n  15 -> capacityPerHour,\n  16 -> capacityPerHour,\n  17 -> capacityPerHour,\n  18 -> capacityPerHour,\n)\n\nval batchSize = safeBatchSize\nval timeLimit = 1800\n\n// 최적화 실행\n\nval result = allocateLargeScaleHybrid(df=df, capacityPerHour=capacityPerHourMap, batchSize=batchSize, timeLimit=timeLimit)\n// allocateLargeScaleRobust(df=df, capacityPerHour=capacityPerHour, batchSize=batchSize, timeLimit=timeLimit)\n\n// 결과 확인\n// result.show(20)\n// result.groupBy(\"assigned_hour\").agg(\n//   count(\"*\").as(\"count\"),\n//   sum(\"score\").as(\"total_score\"),\n//   avg(\"score\").as(\"avg_score\")\n// ).orderBy(\"assigned_hour\").show()",
+      "user": "anonymous",
+      "dateUpdated": "2026-01-13T08:20:54+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1768292339917_1437323265",
+      "id": "paragraph_1768200224042_1098529284",
+      "dateCreated": "2026-01-13T08:18:59+0000",
+      "status": "READY",
+      "$$hashKey": "object:1210",
+      "title": "Test"
+    },
+    {
+      "text": "%spark-local\n",
+      "user": "anonymous",
+      "dateUpdated": "2026-01-13T08:18:59+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": []
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1768292339917_212597098",
+      "id": "paragraph_1768287717428_140681656",
+      "dateCreated": "2026-01-13T08:18:59+0000",
+      "status": "READY",
+      "$$hashKey": "object:1211"
+    }
+  ],
+  "name": "optimize_ost",
+  "id": "2ME2N33P8",
+  "defaultInterpreterGroup": "spark",
+  "version": "0.10.1",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false,
+    "looknfeel": "default",
+    "personalizedMode": "false"
+  },
+  "info": {},
+  "path": "/optimize_ost"
+}

@@ -129,8 +129,9 @@ println("Helper functions registered")
 // -----------------------------------------------------------------------------
 // 기본 시간 범위 설정
 // -----------------------------------------------------------------------------
-val sendMonth = "202512"                  // 기준 발송 월
-val period = 3                            // 데이터 수집 기간 (개월)
+// Zeppelin 파라미터로 받기 (기본값: 202512)
+val sendMonth = z.input("sendMonth", "202512").toString
+val period = 1                            // 데이터 수집 기간 (개월)
 
 // sendMonth 기준으로 이전 period+2개월의 발송 월 리스트 생성
 val sendYmList = getPreviousMonths(sendMonth, period)
@@ -162,19 +163,9 @@ val hourRange = (startHour to endHour).toList
 val rawDataVersion = "1"                  // Raw data 버전
 val rawDataSavePath = s"aos/sto/rawDF${rawDataVersion}"
 
-// -----------------------------------------------------------------------------
-// 컬럼 분류 (Feature engineering용)
-// -----------------------------------------------------------------------------
-// Continuous columns (수치형)
-val numericColNameList = Array(
-  "_cnt", "_amt", "_avg", "_sum", "_rate", "_ratio", "_score",
-  "_day", "_mth", "_age", "arpu", "traffic", "_mb"
-)
-
-// Category columns (범주형)
-val categoryColNameList = Array(
-  "_cd", "_yn", "_typ", "_cl", "_id", "_nm", "daynum", "hournum"
-)
+// 시간대별 저장 배치 설정
+val hourGroupSize = 5                     // 한 번에 처리할 시간대 개수
+val hourSlide = 5                         // Slide 크기 (groupSize와 같으면 overlap 없음)
 
 // -----------------------------------------------------------------------------
 // 설정 요약 출력
@@ -197,8 +188,11 @@ println(s"Save Configuration:")
 println(s"  - Raw Data Version: $rawDataVersion")
 println(s"  - Save Path: $rawDataSavePath")
 println(s"  - Partition By: send_ym, send_hournum_cd, suffix")
+println(s"  - Hour Group Size: $hourGroupSize")
+println(s"  - Hour Slide: $hourSlide")
 println()
 println("NOTE: Feature months are automatically calculated as (send_month - 1)")
+println("NOTE: Hour groups are processed using sliding window approach")
 println("NOTE: Train/Test split will be performed during transformed data generation")
 println("=" * 80)
 
@@ -634,7 +628,7 @@ println(s"  - Vector columns: ${vectorCols.length}")
 
 // 데이터 타입 변환
 val rawDFRev = rawDF.select(
-    (Array("cmpgn_num", "svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility")
+    (Array("cmpgn_num", "svc_mgmt_num", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility")
         .map(F.col(_))
     ++ tokenCols.map(cl => F.coalesce(F.col(cl), F.array(F.lit("#"))).alias(cl))
     ++ vectorCols.map(cl => F.col(cl).alias(cl))
@@ -662,10 +656,16 @@ mmktDFFiltered.unpersist()
 
 // ===== Paragraph 12: Raw Data Persistence =====
 // =============================================================================
-// 통합 Raw Data 저장 (Suffix별)
+// 통합 Raw Data 저장 (Suffix별, Hour Group별)
 // =============================================================================
 // Suffix별로 raw data를 저장합니다.
-// 동적 파티션 덮어쓰기로 각 suffix가 독립적으로 저장됩니다.
+// 시간대를 sliding window 방식으로 group화하여 메모리 효율적으로 처리합니다.
+// 
+// [설정 파라미터]
+// - hourGroupSize: 한 번에 처리할 시간대 개수
+// - hourSlide: Slide 크기
+//   * hourSlide = hourGroupSize: Overlap 없음 (예: [9,10,11], [12,13,14], ...)
+//   * hourSlide < hourGroupSize: Overlap 있음 (예: [9,10,11], [11,12,13], ...)
 // =============================================================================
 
 println("=" * 80)
@@ -673,17 +673,43 @@ println(s"Saving Raw Data for suffix: $smnSuffix")
 println("=" * 80)
 println(s"Save path: $rawDataSavePath")
 println(s"Partition by: send_ym, send_hournum_cd, suffix")
+println(s"Hour range: ${hourRange.mkString(", ")}")
+println(s"Hour group size: $hourGroupSize, Slide: $hourSlide")
 println("=" * 80)
 
-// 저장 전 파티션 수 조정 (small files 방지)
-rawDFRev
-  .repartition(50)  // 각 파티션 디렉토리당 파일 수 조정
-  .write
-  .mode("overwrite")  // 동적 파티션 덮어쓰기
-  .partitionBy("send_ym", "send_hournum_cd", "suffix")
-  .option("compression", "snappy")
-  .parquet(rawDataSavePath)
+// Sliding window로 시간대 그룹 생성
+val hourGroups = hourRange.sliding(hourGroupSize, hourSlide).toList
 
+println(s"Total hour groups: ${hourGroups.length}")
+hourGroups.zipWithIndex.foreach { case (hourGroup, groupIdx) =>
+  println(s"  Group ${groupIdx + 1}/${hourGroups.length}: Hours ${hourGroup.mkString(", ")}")
+}
+println("=" * 80)
+
+// Hour group별로 loop를 돌면서 저장
+hourGroups.zipWithIndex.foreach { case (hourGroup, groupIdx) =>
+  println(s"Processing group ${groupIdx + 1}/${hourGroups.length}: Hours ${hourGroup.mkString(", ")}")
+  
+  val rawDFRevHourGroup = rawDFRev
+    .filter(F.col("send_hournum_cd").isin(hourGroup: _*))
+  
+  // 데이터가 있는지 확인 (take(1)로 빠르게 체크)
+  if (rawDFRevHourGroup.take(1).nonEmpty) {
+    rawDFRevHourGroup
+      .repartition(10 * hourGroup.size)  // 그룹 크기에 비례한 파티션 수
+      .write
+      .mode("overwrite")  // 동적 파티션 덮어쓰기
+      .partitionBy("send_ym", "send_hournum_cd", "suffix")
+      .option("compression", "snappy")
+      .parquet(rawDataSavePath)
+    
+    println(s"  Group ${groupIdx + 1} saved successfully")
+  } else {
+    println(s"  Group ${groupIdx + 1} - no data, skipped")
+  }
+}
+
+println("=" * 80)
 println(s"Raw data saved successfully for suffix: $smnSuffix")
 println("=" * 80)
 
@@ -706,7 +732,15 @@ println("=" * 80)
 // 다음 단계:
 // 1. 모든 suffix (0-f) 처리 완료 후 rawDF{version} 데이터 확인
 // 2. Transformed data 생성 시 train/test split 및 undersampling 수행
-// 3. 확인 방법:
-//    spark.read.parquet("aos/sto/rawDF1").groupBy("suffix").count().show()
+// 
+// 확인 방법:
+//   // Suffix별 레코드 수
+//   spark.read.parquet("aos/sto/rawDF1").groupBy("suffix").count().show()
+//   
+//   // 시간대별 레코드 수
+//   spark.read.parquet("aos/sto/rawDF1").groupBy("send_hournum_cd").count().orderBy("send_hournum_cd").show()
+//   
+//   // Suffix + 시간대별 레코드 수
+//   spark.read.parquet("aos/sto/rawDF1").groupBy("suffix", "send_hournum_cd").count().orderBy("suffix", "send_hournum_cd").show()
 // 
 // =============================================================================

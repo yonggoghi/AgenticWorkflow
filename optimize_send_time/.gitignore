@@ -1,0 +1,32 @@
+# JAR 파일들 (라이브러리)
+lib/*.jar
+
+# Scala/SBT 빌드 파일
+target/
+project/target/
+.metals/
+.bloop/
+.bsp/
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 로그 파일
+*.log
+
+# 데이터 디렉토리 (큰 파일)
+data/sample/
+aos/
+
+# 백업 파일
+*.bak
+*.bak2
+*.backup
+
+# OS 파일
+.DS_Store
+Thumbs.db

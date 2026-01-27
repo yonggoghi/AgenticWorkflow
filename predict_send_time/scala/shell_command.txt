@@ -1,0 +1,23 @@
+:load scala/00_config.scala
+:load scala/40_train_eval_and_save_models.scala
+
+PredictOst40TrainEvalAndSaveModels.setConfig(
+  logPath = "/data/myfiles/aos_ost/predict/logs/train.log",
+  useWeightCorrection = true,
+  trainPosRate = Some(0.333333),  // 통합된 하나의 설정
+  truePosRate = Some(0.0075),
+  modelType = "xgboost",
+  enableTrainingDiagnostics = false  // 진단 작업 활성화
+)
+PredictOst40TrainEvalAndSaveModels.runTrain()
+
+
+PredictOst40TrainEvalAndSaveModels.setConfig(
+  logPath = "/data/myfiles/aos_ost/predict/logs/eval.log",
+  trainPosRate = Some(0.3333),
+  truePosRate = Some(0.013),
+  diagSampleFrac = 0.001,        // ✅ 샘플링 비율 대폭 축소 (2% → 0.1%)
+  diagTopK = 10000               // ✅ TopK 축소 (50000 → 10000)
+)
+PredictOst40TrainEvalAndSaveModels.runEval()
+

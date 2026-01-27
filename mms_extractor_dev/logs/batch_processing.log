@@ -1,0 +1,1543 @@
+2025-12-18 14:06:46,635 - __main__ - INFO - 로그 레벨 설정: INFO
+2025-12-18 14:06:46,635 - __main__ - INFO - ==================================================
+2025-12-18 14:06:46,635 - __main__ - INFO - 🚀 Starting Batch MMS Processing
+2025-12-18 14:06:46,635 - __main__ - INFO - ==================================================
+2025-12-18 14:06:46,635 - __main__ - INFO - 배치 크기: 3
+2025-12-18 14:06:46,635 - __main__ - INFO - 출력 파일: ./results/batch_results.csv
+2025-12-18 14:06:46,635 - __main__ - INFO - 병렬 처리: ON
+2025-12-18 14:06:46,635 - __main__ - INFO - 최대 워커 수: 14
+2025-12-18 14:06:46,636 - __main__ - INFO - 추출기 설정: {'offer_info_data_src': 'local', 'product_info_extraction_mode': 'llm', 'entity_extraction_mode': 'llm', 'llm_model': 'ax', 'entity_llm_model': 'ax', 'extract_entity_dag': False, 'entity_extraction_context_mode': 'dag'}
+2025-12-18 14:06:46,636 - __main__ - INFO - 📄 MongoDB 저장 모드 활성화됨
+2025-12-18 14:06:46,636 - __main__ - INFO - ==================================================
+2025-12-18 14:06:46,636 - __main__ - INFO - Loading MMS data from: ./data/mms_data_251023.csv
+2025-12-18 14:06:46,647 - __main__ - INFO - Renamed 'mms_phrs' column to 'msg'
+2025-12-18 14:06:46,649 - __main__ - INFO - Loaded 830 messages
+2025-12-18 14:06:46,649 - __main__ - INFO - Initializing MMS Extractor...
+2025-12-18 14:06:46,650 - core.mms_extractor - INFO - 🚀 MMSExtractor 초기화 시작
+2025-12-18 14:06:46,650 - core.mms_extractor - INFO - ⚙️ 기본 설정 적용 중...
+2025-12-18 14:06:46,650 - core.mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-12-18 14:06:46,650 - core.mms_extractor - INFO - 🔑 환경변수 로드 중...
+2025-12-18 14:06:46,651 - core.mms_extractor - INFO - 💻 디바이스 설정 중...
+2025-12-18 14:06:46,693 - core.mms_extractor - INFO - Using device: mps
+2025-12-18 14:06:46,694 - utils.common_utils - INFO - _initialize_device 실행완료: 0.04초
+2025-12-18 14:06:46,694 - core.mms_extractor - INFO - 🤖 LLM 모델 초기화 중...
+2025-12-18 14:06:46,694 - core.mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-12-18 14:06:46,694 - utils.common_utils - INFO - _initialize_llm 실행완료: 0.00초
+2025-12-18 14:06:46,694 - core.mms_extractor - INFO - 🧠 임베딩 모델 로드 중...
+2025-12-18 14:06:46,694 - utils.nlp_utils - INFO - Loading model from ./models/ko-sbert-nli...
+2025-12-18 14:06:46,694 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-12-18 14:06:46,695 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-12-18 14:06:47,331 - utils.nlp_utils - INFO - Model loaded on mps
+2025-12-18 14:06:47,331 - utils.common_utils - INFO - _initialize_embedding_model 실행완료: 0.64초
+2025-12-18 14:06:47,331 - core.mms_extractor - INFO - 📝 NLP 도구 (Kiwi) 초기화 중...
+2025-12-18 14:06:48,114 - core.mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-12-18 14:06:48,114 - utils.common_utils - INFO - _initialize_kiwi 실행완료: 0.78초
+2025-12-18 14:06:48,114 - core.mms_extractor - INFO - 📁 데이터 로드 중...
+2025-12-18 14:06:48,114 - core.mms_extractor - INFO - ============================================================
+2025-12-18 14:06:48,114 - core.mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-12-18 14:06:48,114 - core.mms_extractor - INFO - ============================================================
+2025-12-18 14:06:48,114 - core.mms_extractor - INFO - 데이터 소스 모드: local
+2025-12-18 14:06:48,114 - core.mms_extractor - INFO - 1️⃣ 상품 정보 로드 및 준비 중...
+2025-12-18 14:06:48,114 - services.item_data_loader - INFO - ==================================================
+2025-12-18 14:06:48,114 - services.item_data_loader - INFO - 🚀 상품 데이터 준비 파이프라인 시작
+2025-12-18 14:06:48,114 - services.item_data_loader - INFO - ==================================================
+2025-12-18 14:06:48,114 - services.item_data_loader - INFO - 📊 상품 정보 로드 시작 (소스: local)
+2025-12-18 14:06:48,114 - services.item_data_loader - INFO - 로컬 CSV 파일에서 상품 데이터 로드: ./data/offer_master_data.csv
+2025-12-18 14:06:48,195 - services.item_data_loader - INFO - CSV 파일 로드 성공 (encoding: utf-8)
+2025-12-18 14:06:48,196 - services.item_data_loader - INFO - 원시 데이터 로드 완료: (18070, 9)
+2025-12-18 14:06:48,196 - services.item_data_loader - INFO - 🔧 컬럼 정규화 중...
+2025-12-18 14:06:48,276 - services.item_data_loader - INFO - 컬럼명 소문자 변환 완료
+2025-12-18 14:06:48,281 - services.item_data_loader - INFO - 도메인 필터링: 18070 -> 12305
+2025-12-18 14:06:48,281 - services.item_data_loader - INFO - 🔗 별칭 규칙 로드 중...
+2025-12-18 14:06:48,291 - services.item_data_loader - INFO - 4️⃣ build 타입 별칭 확장
+2025-12-18 14:06:48,291 - services.item_data_loader - INFO - 🔨 Build 타입 별칭 확장 중...
+2025-12-18 14:06:48,446 - services.item_data_loader - INFO - ↔️ 양방향 별칭 추가 중...
+2025-12-18 14:06:48,448 - services.item_data_loader - INFO - 🔄 별칭 규칙 연쇄 적용 중...
+2025-12-18 14:06:48,448 - services.item_data_loader - INFO - 별칭 규칙 수: 429개
+2025-12-18 14:06:58,059 - services.item_data_loader - INFO - 별칭 explode: 131593 -> 42462
+2025-12-18 14:06:58,060 - services.item_data_loader - INFO - 👤 사용자 정의 엔티티 추가: 3개
+2025-12-18 14:06:58,082 - services.item_data_loader - INFO - 🏷️ 도메인명 컬럼 추가 중...
+2025-12-18 14:06:58,092 - services.item_data_loader - INFO - 🧹 TEST 항목 필터링 중...
+2025-12-18 14:06:58,120 - services.item_data_loader - INFO - TEST 필터링: 42465 -> 42314
+2025-12-18 14:06:58,121 - services.item_data_loader - INFO - ==================================================
+2025-12-18 14:06:58,121 - services.item_data_loader - INFO - ✅ 상품 정보 준비 완료
+2025-12-18 14:06:58,121 - services.item_data_loader - INFO - 최종 데이터 크기: (42314, 14)
+2025-12-18 14:06:58,121 - services.item_data_loader - INFO - 최종 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-12-18 14:06:58,121 - services.item_data_loader - INFO - ✅ 모든 중요 컬럼 존재
+2025-12-18 14:06:58,122 - services.item_data_loader - INFO - 상품명 샘플: ['우주패스 Netflix 인증', '우주패스 Netflix 인증', '우주패스 Netflix 인증']
+2025-12-18 14:06:58,123 - services.item_data_loader - INFO - 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증']
+2025-12-18 14:06:58,123 - services.item_data_loader - INFO - ==================================================
+2025-12-18 14:06:58,127 - core.mms_extractor - INFO - ✅ ItemDataLoader를 통한 상품 정보 준비 완료: (42314, 14)
+2025-12-18 14:06:58,127 - core.mms_extractor - INFO - 상품 정보 최종 데이터 크기: (42314, 14)
+2025-12-18 14:06:58,127 - core.mms_extractor - INFO - 상품 정보 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-12-18 14:06:58,127 - core.mms_extractor - INFO - 2️⃣ 정지어 로드 중...
+2025-12-18 14:06:58,129 - core.mms_extractor - INFO - 정지어 로드 완료: 204개
+2025-12-18 14:06:58,130 - core.mms_extractor - INFO - 로드된 정지어 수: 204개
+2025-12-18 14:06:58,130 - core.mms_extractor - INFO - 3️⃣ Kiwi에 상품명 등록 중...
+2025-12-18 14:06:58,130 - core.mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-12-18 14:06:58,132 - core.mms_extractor - INFO - 등록할 고유 별칭 수: 34387개
+2025-12-18 14:06:58,135 - core.mms_extractor - INFO - 유효한 별칭 수: 34386개
+2025-12-18 14:06:58,135 - core.mms_extractor - INFO - 등록할 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증', '우주pass Netflix 인증', '우주패스 넷플릭스 인증']
+2025-12-18 14:06:58,199 - core.mms_extractor - INFO - Kiwi에 상품명 등록 완료: 34386개 성공, 0개 실패
+2025-12-18 14:06:58,199 - core.mms_extractor - INFO - 4️⃣ 프로그램 분류 정보 로드 중...
+2025-12-18 14:06:58,199 - core.mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-12-18 14:06:58,213 - core.mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-12-18 14:06:58,213 - core.mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-12-18 14:06:58,615 - core.mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-12-18 14:06:58,615 - core.mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-12-18 14:06:58,616 - core.mms_extractor - INFO - 5️⃣ 조직 정보 로드 중...
+2025-12-18 14:06:58,616 - core.mms_extractor - INFO - === 조직 정보 로드 시작 (모드: local) ===
+2025-12-18 14:06:58,616 - core.mms_extractor - INFO - 로컬 CSV 파일에서 조직 정보 로드 중...
+2025-12-18 14:06:58,616 - core.mms_extractor - INFO - CSV 파일 경로: ./data/offer_master_data.csv
+2025-12-18 14:06:58,714 - core.mms_extractor - INFO - 로컬 CSV에서 로드된 원본 조직 데이터 크기: (18070, 9)
+2025-12-18 14:06:58,714 - core.mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['ITEM_ID', 'ITEM_NM', 'ITEM_DMN', 'ITEM_DESC', 'ITEM_CTG', 'ITEM_ALS', 'ITEM_EMB_VEC', 'OFER_CD', 'OPER_DT_HMS']
+2025-12-18 14:06:58,716 - core.mms_extractor - INFO - 로컬 모드: ITEM_DMN='R' 필터링 후 데이터 크기: (5765, 9)
+2025-12-18 14:06:58,717 - core.mms_extractor - INFO - 조직 데이터 샘플 (3개 행): [{'item_id': 'D15198_0020', 'item_nm': '가로수대리점 하늘도시점', 'item_dmn': 'R', 'item_desc': '인천 중구 하늘중앙로195번길 11,&&1층 105호(중산동)&&003202309011', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541517', 'oper_dt_hms': 20250909151123}, {'item_id': 'D13622_0398', 'item_nm': 'MD대리점 주엽직영점', 'item_dmn': 'R', 'item_desc': '경기 고양시 일산서구 중앙로 1426,&&(주엽동) 1층111호&&003109152662', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541945', 'oper_dt_hms': 20250909151123}, {'item_id': 'D15320_0001', 'item_nm': '강서대리점(온라인매장)', 'item_dmn': 'R', 'item_desc': '서울 양천구 남부순환로 354,&&1층 (신월동)&&007078567800', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430542104', 'oper_dt_hms': 20250909151123}]
+2025-12-18 14:06:58,717 - core.mms_extractor - INFO - === 조직 정보 로드 최종 완료: 5765개 조직 ===
+2025-12-18 14:06:58,717 - core.mms_extractor - INFO - 최종 조직 데이터 스키마: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-12-18 14:06:58,717 - core.mms_extractor - INFO - 모든 중요 조직 컬럼이 정상적으로 로드되었습니다.
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (5765, 9)
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - ============================================================
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - ============================================================
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - ✅ 상품 데이터: (42314, 14)
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - ✅ 조직 데이터: (5765, 9)
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - ✅ 정지어: 204개
+2025-12-18 14:06:58,718 - core.mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-12-18 14:06:58,720 - core.mms_extractor - INFO - 고유 상품명 수: 8218개
+2025-12-18 14:06:58,723 - core.mms_extractor - INFO - 고유 별칭 수: 34386개
+2025-12-18 14:06:58,725 - core.mms_extractor - INFO - 고유 상품ID 수: 12244개
+2025-12-18 14:06:58,725 - utils.common_utils - INFO - _load_data 실행완료: 10.61초
+2025-12-18 14:06:58,725 - core.mms_extractor - INFO - 🏭 LLM Factory 초기화 중...
+2025-12-18 14:06:58,725 - core.mms_extractor - INFO - ✅ LLM Factory 초기화 완료
+2025-12-18 14:06:58,725 - core.mms_extractor - INFO - 🛠️ 서비스 초기화 중...
+2025-12-18 14:06:58,725 - core.mms_extractor - INFO - ✅ 서비스 초기화 완료
+2025-12-18 14:06:58,725 - core.mms_extractor - INFO - ⚙️ Workflow 엔진 초기화 중...
+2025-12-18 14:06:58,725 - core.mms_extractor - INFO - ✅ Workflow 엔진 초기화 완료 (8개 단계)
+2025-12-18 14:06:58,725 - core.mms_extractor - INFO - ✅ MMSExtractor 초기화 완료
+2025-12-18 14:06:58,725 - __main__ - INFO - MMS Extractor initialized successfully (DAG 추출: OFF)
+2025-12-18 14:06:58,736 - __main__ - WARNING - No msg_id column found in results file
+2025-12-18 14:06:58,738 - __main__ - INFO - Total messages: 830
+2025-12-18 14:06:58,738 - __main__ - INFO - Previously processed: 0
+2025-12-18 14:06:58,738 - __main__ - INFO - Unprocessed messages: 830
+2025-12-18 14:06:58,739 - __main__ - INFO - Sampled 3 messages for processing
+2025-12-18 14:06:58,739 - __main__ - INFO - 🚀 병렬 처리 모드로 3개 메시지 처리 시작 (워커: 14개)
+2025-12-18 14:06:58,739 - core.mms_extractor - INFO - 배치 처리 시작: 3개 메시지, 14개 워커
+2025-12-18 14:06:58,739 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] 9월 T day 혜택 안내__2025년 9월 24일(수)_던킨 40% 할...
+2025-12-18 14:06:58,739 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:06:58,739 - core.workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-18 14:06:58,740 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:06:58,740 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] 9월 0 day 혜택 안내__<9월 20일(토) 혜택>_만 13~34세 ...
+2025-12-18 14:06:58,740 - core.workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-18 14:06:58,740 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] 콘텐츠 이용료 결제 시크릿 청구 할인 이벤트 안내__고객님, 안녕하세요....
+2025-12-18 14:06:58,740 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:06:58,740 - core.mms_workflow_steps - INFO - 메시지 내용: (광고)[SKT] 9월 T day 혜택 안내__2025년 9월 24일(수)_던킨 40% 할인/적립_- 정가 기준 주문 금액 15,000원 한도(최대 6,000원 할인 또는 6,000P 적립)__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=33468&a=&u=https://bit.ly/467rn3q__■ 문의: SKT 고객센터(15...
+2025-12-18 14:06:58,741 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:06:58,741 - core.workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-18 14:06:58,741 - core.mms_workflow_steps - INFO - 메시지 길이: 221 문자
+2025-12-18 14:06:58,741 - core.workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-18 14:06:58,741 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:06:58,741 - core.mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-18 14:06:58,741 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:06:58,741 - core.workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-18 14:06:58,741 - core.mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-18 14:06:58,741 - core.workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-18 14:06:58,741 - core.mms_workflow_steps - INFO - 메시지 내용: (광고)[SKT] 9월 0 day 혜택 안내__<9월 20일(토) 혜택>_만 13~34세 고객님이라면_SKT 0 day_[빛의 벙커 입장권 30% 할인/빛의 시어터 입장권 40% 할인]_본인 및 동반 1인까지 할인 가능_(선착순 1만 명)__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=33479&a=&u=https://bit.ly...
+2025-12-18 14:06:58,741 - core.mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-18 14:06:58,741 - core.mms_workflow_steps - INFO - 메시지 내용: (광고)[SKT] 콘텐츠 이용료 결제 시크릿 청구 할인 이벤트 안내__고객님, 안녕하세요._쉿! 이 문자를 받으신 고객님께 콘텐츠 이용료 결제 할인 혜택을 드립니다._지불 방법을 휴대폰으로 설정하고 콘텐츠를 구매하면, 10% 청구 할인받으실 수 있습니다.__■ 콘텐츠 이용료 결제 시크릿 청구 할인 이벤트_- 기간: 2025년 7월 31일(목)~8월 31일(...
+2025-12-18 14:06:58,741 - core.mms_workflow_steps - INFO - 메시지 길이: 248 문자
+2025-12-18 14:06:58,741 - core.mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 메시지 길이: 754 문자
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - LLM 모델: ax
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-18 14:06:58,742 - core.workflow_core - INFO - ✅ InputValidationStep 완료 (0.00초)
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - LLM 모델: ax
+2025-12-18 14:06:58,742 - core.workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - LLM 모델: ax
+2025-12-18 14:06:58,742 - core.mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-18 14:06:58,743 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-18 14:06:58,743 - core.mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-18 14:06:58,743 - core.mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-18 14:06:58,743 - services.entity_recognizer - INFO - Message length: 221 chars
+2025-12-18 14:06:58,743 - core.mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-18 14:06:58,743 - core.workflow_core - INFO - ✅ InputValidationStep 완료 (0.00초)
+2025-12-18 14:06:58,746 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-18 14:06:58,746 - core.workflow_core - INFO - ✅ InputValidationStep 완료 (0.00초)
+2025-12-18 14:06:58,746 - core.workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-18 14:06:59,505 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): []
+2025-12-18 14:06:59,505 - core.workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-18 14:06:59,505 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-18 14:06:59,505 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-18 14:06:59,505 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-18 14:06:59,505 - services.entity_recognizer - INFO - Message length: 248 chars
+2025-12-18 14:06:59,510 - services.entity_recognizer - INFO - Message length: 754 chars
+2025-12-18 14:06:59,512 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-18 14:06:59,514 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-18 14:06:59,517 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): []
+2025-12-18 14:06:59,535 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): ['청구']
+2025-12-18 14:06:59,535 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-18 14:06:59,536 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-18 14:07:09,438 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-18 14:07:09,604 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-18 14:07:09,748 - utils.common_utils - INFO - extract_entities_with_kiwi 실행완료: 11.01초
+2025-12-18 14:07:09,748 - core.mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: []
+2025-12-18 14:07:09,748 - core.mms_workflow_steps - INFO - 추출된 후보 엔티티: []
+2025-12-18 14:07:09,748 - core.mms_workflow_steps - INFO - 매칭된 상품 정보: (0, 0)
+2025-12-18 14:07:09,749 - core.workflow_core - INFO - ✅ EntityExtractionStep 완료 (11.01초)
+2025-12-18 14:07:09,749 - core.workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-18 14:07:10,020 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-18 14:07:10,065 - utils.common_utils - INFO - extract_entities_with_kiwi 실행완료: 10.56초
+2025-12-18 14:07:10,065 - core.mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: []
+2025-12-18 14:07:10,066 - core.mms_workflow_steps - INFO - 추출된 후보 엔티티: ['빛의 벙커_빛의 벙커', '빛의 시어터_빛의 시어터', '고피자_0 Day', 'CU_0 Day', '갓잇_0 day', '던킨_0 day', '씽씽_0 day', '컬리_0 day', '쿤달_0 day', '빛의 시어터_0 day']
+2025-12-18 14:07:10,066 - core.mms_workflow_steps - INFO - 매칭된 상품 정보: (10, 2)
+2025-12-18 14:07:10,066 - core.workflow_core - INFO - ✅ EntityExtractionStep 완료 (10.56초)
+2025-12-18 14:07:10,067 - core.workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-18 14:07:10,181 - core.mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-18 14:07:10,182 - core.mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-18 14:07:10,182 - core.workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.43초)
+2025-12-18 14:07:10,182 - core.workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.12초)
+2025-12-18 14:07:10,183 - core.workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-18 14:07:10,183 - core.workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 379 문자
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 379 문자
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - WARNING - 후보 아이템이 없습니다!
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - INFO - 후보 아이템 리스트 크기: 10개
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - WARNING - 이는 다음 중 하나의 문제일 수 있습니다:
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - INFO - 후보 아이템 리스트: ['빛의 벙커_빛의 벙커', '빛의 시어터_빛의 시어터', '고피자_0 Day', 'CU_0 Day', '갓잇_0 day', '던킨_0 day', '씽씽_0 day', '컬리_0 day', '쿤달_0 day', '빛의 시어터_0 day']
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - WARNING - 1. 상품 데이터 로딩 실패
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - INFO - extra_item_pdf 크기: (10, 2)
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - WARNING - 2. 엔티티 추출 실패
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-12-18 14:07:10,183 - core.mms_workflow_steps - WARNING - 3. 유사도 매칭 임계값 문제
+2025-12-18 14:07:10,184 - core.mms_workflow_steps - INFO - extra_item_pdf 샘플: [{'item_nm': 'CU_0 Day', 'item_id': ['P302_9301']}, {'item_nm': '갓잇_0 day', 'item_id': ['V923_9301']}]
+2025-12-18 14:07:10,184 - core.workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-18 14:07:10,184 - core.mms_workflow_steps - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-12-18 14:07:10,184 - core.workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-18 14:07:10,184 - core.workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-18 14:07:10,184 - core.mms_workflow_steps - INFO - 구성된 프롬프트 길이: 6824 문자
+2025-12-18 14:07:10,184 - core.workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-18 14:07:10,184 - core.mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: False
+2025-12-18 14:07:10,185 - core.mms_workflow_steps - INFO - 구성된 프롬프트 길이: 7324 문자
+2025-12-18 14:07:10,185 - utils.prompt_utils - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-18 14:07:10,185 - core.mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: True
+2025-12-18 14:07:10,185 - utils.prompt_utils - INFO - 📝 프롬프트 길이: 6,824 문자
+2025-12-18 14:07:10,185 - utils.prompt_utils - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-18 14:07:10,188 - utils.prompt_utils - INFO - 📝 프롬프트 길이: 7,324 문자
+2025-12-18 14:07:10,258 - utils.common_utils - INFO - extract_entities_with_kiwi 실행완료: 10.75초
+2025-12-18 14:07:10,258 - core.mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: ['청구']
+2025-12-18 14:07:10,259 - core.mms_workflow_steps - INFO - 추출된 후보 엔티티: ['청구', 'SK(주)', '이벤트안내', '휴대폰결제 이용동의', '휴대폰결제 이용차단', '휴대폰 보호 서비스', 'T 서비스', '배달의민족 쿠폰팩', '휴대폰결제 특이차단', '휴대폰 안심결제', '휴대폰 인증보호']
+2025-12-18 14:07:10,259 - core.mms_workflow_steps - INFO - 매칭된 상품 정보: (11, 2)
+2025-12-18 14:07:10,259 - core.workflow_core - INFO - ✅ EntityExtractionStep 완료 (10.75초)
+2025-12-18 14:07:10,259 - core.workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-18 14:07:10,336 - core.mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-18 14:07:10,336 - core.workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.08초)
+2025-12-18 14:07:10,336 - core.workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-18 14:07:10,336 - core.mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 372 문자
+2025-12-18 14:07:10,336 - core.mms_workflow_steps - INFO - 후보 아이템 리스트 크기: 11개
+2025-12-18 14:07:10,336 - core.mms_workflow_steps - INFO - 후보 아이템 리스트: ['청구', 'SK(주)', '이벤트안내', '휴대폰결제 이용동의', '휴대폰결제 이용차단', '휴대폰 보호 서비스', 'T 서비스', '배달의민족 쿠폰팩', '휴대폰결제 특이차단', '휴대폰 안심결제', '휴대폰 인증보호']
+2025-12-18 14:07:10,336 - core.mms_workflow_steps - INFO - extra_item_pdf 크기: (11, 2)
+2025-12-18 14:07:10,337 - core.mms_workflow_steps - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-12-18 14:07:10,337 - core.mms_workflow_steps - INFO - extra_item_pdf 샘플: [{'item_nm': 'SK(주)', 'item_id': ['X000000044']}, {'item_nm': 'T 서비스', 'item_id': ['NA00003911']}]
+2025-12-18 14:07:10,337 - core.mms_workflow_steps - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-12-18 14:07:10,337 - core.workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-18 14:07:10,337 - core.workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-18 14:07:10,337 - core.mms_workflow_steps - INFO - 구성된 프롬프트 길이: 7816 문자
+2025-12-18 14:07:10,337 - core.mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: True
+2025-12-18 14:07:10,337 - utils.prompt_utils - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-18 14:07:10,337 - utils.prompt_utils - INFO - 📝 프롬프트 길이: 7,816 문자
+2025-12-18 14:07:16,169 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:16,192 - core.mms_workflow_steps - INFO - LLM 응답 길이: 727 문자
+2025-12-18 14:07:16,193 - core.mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "9월 T day 던킨 40% 할인/적립 혜택 안내",
+    "purpose": [
+        "혜택 안내",
+        "웹/앱 접속 유도"
+    ],
+    "sales_script": "던킨 40% 할인/적립 혜택! 지금 바로 자세히 보기 안내할까요?",
+    "product": [
+        {
+            "name": "던킨",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "https://bit.ly/467rn3q",
+            "action": "추가 정보"
+        },
+        {
+            "type": "전화번호",
+            "value": "SKT 고객센터(1558, 무료)",
+     ...
+2025-12-18 14:07:16,193 - core.workflow_core - INFO - ✅ LLMExtractionStep 완료 (6.01초)
+2025-12-18 14:07:16,193 - core.workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-18 14:07:16,193 - core.mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-18 14:07:16,193 - core.mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-18 14:07:16,193 - core.mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': '9월 T day 던킨 40% 할인/적립 혜택 안내', 'purpose': ['혜택 안내', '웹/앱 접속 유도'], 'sales_script': '던킨 40% 할인/적립 혜택! 지금 바로 자세히 보기 안내할까요?', 'product': [{'name': '던킨', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'https://bit.ly/467rn3q', 'action': '추가 정보'}, {'type': '전화번호', 'value': 'SKT 고객센터(1558, 무료)', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_T멤버십', '사용법/혜택/이벤트안내_SKT']}
+2025-12-18 14:07:16,193 - core.workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-18 14:07:16,193 - core.workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-18 14:07:16,193 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:16,193 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_extraction_result 시작
+2025-12-18 14:07:16,194 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:16,194 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-18 14:07:16,194 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-18 14:07:16,194 - services.result_builder - INFO -    - 원본 product 내용: [{'name': '던킨', 'action': '구매'}]
+2025-12-18 14:07:16,194 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 1개
+2025-12-18 14:07:16,194 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': '던킨', 'action': '구매'}]
+2025-12-18 14:07:16,194 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['던킨']
+2025-12-18 14:07:16,194 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: []
+2025-12-18 14:07:16,194 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-18 14:07:16,194 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-18 14:07:16,194 - services.result_builder - INFO -    - 사용할 LLM 모델: ax
+2025-12-18 14:07:16,194 - services.result_builder - INFO -    - llm_factory 타입: <class 'utils.llm_factory.LLMFactory'>
+2025-12-18 14:07:16,195 - utils.llm_factory - INFO - ✅ LLM 모델 생성 완료: ax (skt/ax4)
+2025-12-18 14:07:16,195 - utils.llm_factory - INFO - ✅ 총 1개 LLM 모델 생성 완료
+2025-12-18 14:07:16,195 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:07:16,195 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:07:16,195 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-18 14:07:16,195 - services.entity_recognizer - INFO - Context mode: dag
+2025-12-18 14:07:16,209 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:16,210 - core.mms_workflow_steps - INFO - LLM 응답 길이: 722 문자
+2025-12-18 14:07:16,210 - core.mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "SKT 콘텐츠 이용료 결제 시 10% 청구 할인 이벤트",
+    "purpose": [
+        "이벤트 응모 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "SKT 콘텐츠 이용료 결제 시 10% 할인! URL로 참여 안내할까요?",
+    "product": [
+        {
+            "name": "콘텐츠 이용료",
+            "action": "결제"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "https://t-mms.kr/ave/#74",
+            "action": "참여"
+        },
+        {
+            "type": "전화번호",
+            "value": "1558",
+         ...
+2025-12-18 14:07:16,210 - core.workflow_core - INFO - ✅ LLMExtractionStep 완료 (5.87초)
+2025-12-18 14:07:16,210 - core.workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-18 14:07:16,210 - core.mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-18 14:07:16,210 - core.mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-18 14:07:16,210 - core.mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': 'SKT 콘텐츠 이용료 결제 시 10% 청구 할인 이벤트', 'purpose': ['이벤트 응모 유도', '혜택 안내'], 'sales_script': 'SKT 콘텐츠 이용료 결제 시 10% 할인! URL로 참여 안내할까요?', 'product': [{'name': '콘텐츠 이용료', 'action': '결제'}], 'channel': [{'type': 'URL', 'value': 'https://t-mms.kr/ave/#74', 'action': '참여'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_SKT', '상품및부가서비스가입유도_SKT']}
+2025-12-18 14:07:16,210 - core.workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-18 14:07:16,210 - core.workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-18 14:07:16,210 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:16,210 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_extraction_result 시작
+2025-12-18 14:07:16,210 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:16,210 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-18 14:07:16,210 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-18 14:07:16,210 - services.result_builder - INFO -    - 원본 product 내용: [{'name': '콘텐츠 이용료', 'action': '결제'}]
+2025-12-18 14:07:16,210 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 1개
+2025-12-18 14:07:16,210 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': '콘텐츠 이용료', 'action': '결제'}]
+2025-12-18 14:07:16,210 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['콘텐츠 이용료']
+2025-12-18 14:07:16,211 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: ['청구']
+2025-12-18 14:07:16,211 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-18 14:07:16,211 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-18 14:07:16,211 - services.result_builder - INFO -    - 사용할 LLM 모델: ax
+2025-12-18 14:07:16,211 - services.result_builder - INFO -    - llm_factory 타입: <class 'utils.llm_factory.LLMFactory'>
+2025-12-18 14:07:16,211 - utils.llm_factory - INFO - ✅ LLM 모델 생성 완료: ax (skt/ax4)
+2025-12-18 14:07:16,211 - utils.llm_factory - INFO - ✅ 총 1개 LLM 모델 생성 완료
+2025-12-18 14:07:16,211 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:07:16,211 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:07:16,211 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-18 14:07:16,211 - services.entity_recognizer - INFO - Context mode: dag
+2025-12-18 14:07:16,998 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:17,002 - core.mms_workflow_steps - INFO - LLM 응답 길이: 821 문자
+2025-12-18 14:07:17,002 - core.mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "SKT 0 day, 빛의 벙커/시어터 입장권 할인 안내",
+    "purpose": [
+        "혜택 안내",
+        "웹/앱 접속 유도"
+    ],
+    "sales_script": "SKT 0 day로 빛의 벙커/시어터 입장권 할인! 지금 안내할까요?",
+    "product": [
+        {
+            "name": "빛의 벙커 입장권",
+            "action": "구매"
+        },
+        {
+            "name": "빛의 시어터 입장권",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "https://bit.ly/4lFJeTO",
+            "action": "추가 정보"
+   ...
+2025-12-18 14:07:17,003 - core.workflow_core - INFO - ✅ LLMExtractionStep 완료 (6.82초)
+2025-12-18 14:07:17,003 - core.workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-18 14:07:17,004 - core.mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-18 14:07:17,004 - core.mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-18 14:07:17,005 - core.mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': 'SKT 0 day, 빛의 벙커/시어터 입장권 할인 안내', 'purpose': ['혜택 안내', '웹/앱 접속 유도'], 'sales_script': 'SKT 0 day로 빛의 벙커/시어터 입장권 할인! 지금 안내할까요?', 'product': [{'name': '빛의 벙커 입장권', 'action': '구매'}, {'name': '빛의 시어터 입장권', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'https://bit.ly/4lFJeTO', 'action': '추가 정보'}, {'type': '전화번호', 'value': 'SKT 고객센터(1558, 무료)', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_T멤버십', '사용법/혜택/이벤트안내_SKT']}
+2025-12-18 14:07:17,005 - core.workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-18 14:07:17,005 - core.workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-18 14:07:17,005 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:17,006 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_extraction_result 시작
+2025-12-18 14:07:17,006 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:17,006 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-18 14:07:17,007 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-18 14:07:17,007 - services.result_builder - INFO -    - 원본 product 내용: [{'name': '빛의 벙커 입장권', 'action': '구매'}, {'name': '빛의 시어터 입장권', 'action': '구매'}]
+2025-12-18 14:07:17,008 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 2개
+2025-12-18 14:07:17,008 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': '빛의 벙커 입장권', 'action': '구매'}, {'name': '빛의 시어터 입장권', 'action': '구매'}]
+2025-12-18 14:07:17,008 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['빛의 벙커 입장권', '빛의 시어터 입장권']
+2025-12-18 14:07:17,008 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: []
+2025-12-18 14:07:17,008 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-18 14:07:17,008 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-18 14:07:17,008 - services.result_builder - INFO -    - 사용할 LLM 모델: ax
+2025-12-18 14:07:17,009 - services.result_builder - INFO -    - llm_factory 타입: <class 'utils.llm_factory.LLMFactory'>
+2025-12-18 14:07:17,009 - utils.llm_factory - INFO - ✅ LLM 모델 생성 완료: ax (skt/ax4)
+2025-12-18 14:07:17,010 - utils.llm_factory - INFO - ✅ 총 1개 LLM 모델 생성 완료
+2025-12-18 14:07:17,010 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:07:17,010 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:07:17,010 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-18 14:07:17,010 - services.entity_recognizer - INFO - Context mode: dag
+2025-12-18 14:07:18,023 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:18,026 - services.entity_recognizer - INFO - [skt/ax4] Extracted 3 entities: ['콘텐츠 이용료 결제 시크릿 청구 할인 이벤트', '콘텐츠', '10% 청구 할인']
+2025-12-18 14:07:18,026 - services.entity_recognizer - INFO - [skt/ax4] Extracted DAG text (104 chars)
+2025-12-18 14:07:18,958 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:18,961 - services.entity_recognizer - INFO - [skt/ax4] Extracted 3 entities: ['T Day', '던킨', 'T world']
+2025-12-18 14:07:18,961 - services.entity_recognizer - INFO - [skt/ax4] Extracted DAG text (209 chars)
+2025-12-18 14:07:19,059 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:19,060 - services.entity_recognizer - INFO - [skt/ax4] Extracted 3 entities: ['0 day', '빛의 벙커 입장권', '빛의 시어터 입장권']
+2025-12-18 14:07:19,062 - services.entity_recognizer - INFO - [skt/ax4] Extracted DAG text (129 chars)
+2025-12-18 14:07:19,764 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:19,767 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['청구', '콘텐츠']
+2025-12-18 14:07:19,771 - utils.common_utils - INFO - extract_entities_with_llm 실행완료: 3.56초
+2025-12-18 14:07:19,771 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: (1, 5)
+2025-12-18 14:07:19,771 - services.result_builder - INFO -    📊 similarities_fuzzy 샘플 (처음 3개):
+2025-12-18 14:07:19,772 - services.result_builder - INFO - [{'item_name_in_msg': '청구', 'item_nm_alias': '청구', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '가상 상품'}]
+2025-12-18 14:07:19,772 - services.result_builder - INFO - 🔍 [STEP 4] alias_pdf_raw와 merge 시작
+2025-12-18 14:07:19,772 - services.result_builder - INFO -    - alias_pdf_raw 크기: (188, 6)
+2025-12-18 14:07:19,774 - services.result_builder - INFO -    ✅ merged_df 크기: (1, 7)
+2025-12-18 14:07:19,774 - services.result_builder - INFO -    📊 merged_df 샘플 (처음 3개):
+2025-12-18 14:07:19,775 - services.result_builder - INFO - [{'item_name_in_msg': '청구', 'item_nm_alias': '청구', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '가상 상품', 'alias_1': nan, 'type': nan}]
+2025-12-18 14:07:19,775 - services.result_builder - INFO - 🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)
+2025-12-18 14:07:19,779 - services.result_builder - INFO -    ✅ filtered_df 크기: (1, 7)
+2025-12-18 14:07:19,779 - services.result_builder - INFO -    📊 filtered_df 샘플 (처음 3개):
+2025-12-18 14:07:19,780 - services.result_builder - INFO - [{'item_name_in_msg': '청구', 'item_nm_alias': '청구', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '가상 상품', 'alias_1': nan, 'type': nan}]
+2025-12-18 14:07:19,780 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-18 14:07:19,780 - services.result_builder - INFO -    - similarities_fuzzy.empty: False
+2025-12-18 14:07:19,780 - services.result_builder - INFO -    ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출
+2025-12-18 14:07:19,780 - services.entity_recognizer - INFO - 🔍 [map_products_to_entities] Started
+2025-12-18 14:07:19,781 - services.entity_recognizer - INFO -    - Input similarities_fuzzy shape: (1, 5)
+2025-12-18 14:07:19,784 - services.entity_recognizer - INFO -    - Filtering: 1 -> 1
+2025-12-18 14:07:19,792 - services.entity_recognizer - INFO -    ✅ product_tag count: 1
+2025-12-18 14:07:19,792 - services.result_builder - INFO -    ✅ 최종 product 개수: 1개
+2025-12-18 14:07:19,792 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': '청구', 'item_id': ['X000000448'], 'item_name_in_msg': ['청구'], 'expected_action': ['기타']}]
+2025-12-18 14:07:19,792 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=1개
+2025-12-18 14:07:19,794 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-18 14:07:19,794 - services.result_builder - INFO -    ✅ 최종 channel 개수: 3개
+2025-12-18 14:07:19,794 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-18 14:07:19,794 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 1개
+2025-12-18 14:07:19,794 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-18 14:07:19,794 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:19,794 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_extraction_result 완료
+2025-12-18 14:07:19,794 - services.result_builder - INFO -    최종 final_result['product'] 개수: 1개
+2025-12-18 14:07:19,794 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:19,794 - core.workflow_core - INFO - ✅ ResultConstructionStep 완료 (3.58초)
+2025-12-18 14:07:19,795 - core.workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - 제목: SKT 콘텐츠 이용료 결제 시 10% 청구 할인 이벤트
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - 목적: ['이벤트 응모 유도', '혜택 안내']
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - 판매 스크립트: SKT 콘텐츠 이용료 결제 시 10% 할인! URL로 참여 안내할까요?
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - 상품 수: 1개
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - 채널 수: 3개
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-18 14:07:19,795 - core.mms_workflow_steps - INFO - 오퍼 항목 수: 1개
+2025-12-18 14:07:19,795 - core.workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-18 14:07:19,795 - core.workflow_core - INFO - 
+============================================================
+2025-12-18 14:07:19,795 - core.workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 21.05초)
+2025-12-18 14:07:19,795 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:07:19,795 - core.workflow_core - INFO - 
+📊 실행 요약:
+2025-12-18 14:07:19,795 - core.workflow_core - INFO -   ✅ InputValidationStep: 0.00초
+2025-12-18 14:07:19,795 - core.workflow_core - INFO -   ✅ EntityExtractionStep: 10.75초
+2025-12-18 14:07:19,795 - core.workflow_core - INFO -   ✅ ProgramClassificationStep: 0.08초
+2025-12-18 14:07:19,796 - core.workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-18 14:07:19,796 - core.workflow_core - INFO -   ✅ LLMExtractionStep: 5.87초
+2025-12-18 14:07:19,796 - core.workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-18 14:07:19,796 - core.workflow_core - INFO -   ✅ ResultConstructionStep: 3.58초
+2025-12-18 14:07:19,796 - core.workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-18 14:07:19,796 - utils.common_utils - INFO - process_message 실행완료: 21.06초
+2025-12-18 14:07:19,796 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-12-18 14:07:19,796 - core.mms_extractor - INFO - 배치 처리 진행률: 1/3 (33.3%)
+2025-12-18 14:07:20,401 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:20,402 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['CU_0 Day']
+2025-12-18 14:07:20,435 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:20,436 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:07:20,452 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:20,453 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:07:20,455 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:20,456 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:07:20,693 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:20,694 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['던킨_T day 해피아워']
+2025-12-18 14:07:20,761 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:20,762 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['던킨_T day 할인', '던킨_T day 적립']
+2025-12-18 14:07:21,290 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:21,291 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:07:21,411 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:21,412 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:07:21,521 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:21,522 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['빛의 벙커_0 day', '빛의 시어터_0 day']
+2025-12-18 14:07:21,683 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:21,684 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:07:21,702 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:21,703 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:07:21,892 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:21,894 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['던킨_T day 이벤트_A.']
+2025-12-18 14:07:22,410 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:22,413 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['빛의 벙커_빛의 벙커', '빛의 시어터_빛의 시어터']
+2025-12-18 14:07:22,426 - utils.common_utils - INFO - extract_entities_with_llm 실행완료: 5.42초
+2025-12-18 14:07:22,427 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: (7, 5)
+2025-12-18 14:07:22,427 - services.result_builder - INFO -    📊 similarities_fuzzy 샘플 (처음 3개):
+2025-12-18 14:07:22,427 - services.result_builder - INFO - [{'item_name_in_msg': '0 day', 'item_nm_alias': 'CU_0 Day', 'sim': 1.6670833333333333, 'rank': 1.0, 'item_dmn_nm': '기타'}, {'item_name_in_msg': '0 day', 'item_nm_alias': '빛의 벙커_0 day', 'sim': 1.5127272727272727, 'rank': 6.0, 'item_dmn_nm': '기타'}, {'item_name_in_msg': '0 day', 'item_nm_alias': '빛의 시어터_0 day', 'sim': 1.4858333333333333, 'rank': 8.0, 'item_dmn_nm': '기타'}]
+2025-12-18 14:07:22,428 - services.result_builder - INFO - 🔍 [STEP 4] alias_pdf_raw와 merge 시작
+2025-12-18 14:07:22,428 - services.result_builder - INFO -    - alias_pdf_raw 크기: (188, 6)
+2025-12-18 14:07:22,431 - services.result_builder - INFO -    ✅ merged_df 크기: (7, 7)
+2025-12-18 14:07:22,431 - services.result_builder - INFO -    📊 merged_df 샘플 (처음 3개):
+2025-12-18 14:07:22,432 - services.result_builder - INFO - [{'item_name_in_msg': '0 day', 'item_nm_alias': 'CU_0 Day', 'sim': 1.6670833333333333, 'rank': 1.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': '0 day', 'item_nm_alias': '빛의 벙커_0 day', 'sim': 1.5127272727272727, 'rank': 6.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': '0 day', 'item_nm_alias': '빛의 시어터_0 day', 'sim': 1.4858333333333333, 'rank': 8.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}]
+2025-12-18 14:07:22,432 - services.result_builder - INFO - 🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)
+2025-12-18 14:07:22,433 - services.result_builder - INFO -    ✅ filtered_df 크기: (2, 7)
+2025-12-18 14:07:22,433 - services.result_builder - INFO -    📊 filtered_df 샘플 (처음 3개):
+2025-12-18 14:07:22,433 - services.result_builder - INFO - [{'item_name_in_msg': '0 day', 'item_nm_alias': '빛의 벙커_0 day', 'sim': 1.5127272727272727, 'rank': 6.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': '0 day', 'item_nm_alias': '빛의 시어터_0 day', 'sim': 1.4858333333333333, 'rank': 8.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}]
+2025-12-18 14:07:22,433 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-18 14:07:22,433 - services.result_builder - INFO -    - similarities_fuzzy.empty: False
+2025-12-18 14:07:22,433 - services.result_builder - INFO -    ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출
+2025-12-18 14:07:22,433 - services.entity_recognizer - INFO - 🔍 [map_products_to_entities] Started
+2025-12-18 14:07:22,434 - services.entity_recognizer - INFO -    - Input similarities_fuzzy shape: (7, 5)
+2025-12-18 14:07:22,436 - services.entity_recognizer - INFO -    - Filtering: 7 -> 7
+2025-12-18 14:07:22,447 - services.entity_recognizer - INFO -    ✅ product_tag count: 5
+2025-12-18 14:07:22,447 - services.result_builder - INFO -    ✅ 최종 product 개수: 5개
+2025-12-18 14:07:22,447 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': 'CU_0 Day', 'item_id': ['P302_9301'], 'item_name_in_msg': ['0 day'], 'expected_action': ['기타']}, {'item_nm': '빛의 벙커_0 day', 'item_id': ['V957_9301'], 'item_name_in_msg': ['0 day', '빛의 벙커 입장권'], 'expected_action': ['구매']}, {'item_nm': '빛의 벙커_빛의 벙커', 'item_id': ['V957_0000'], 'item_name_in_msg': ['빛의 벙커 입장권'], 'expected_action': ['구매']}, {'item_nm': '빛의 시어터_0 day', 'item_id': ['V958_9301'], 'item_name_in_msg': ['0 day', '빛의 시어터 입장권'], 'expected_action': ['구매']}, {'item_nm': '빛의 시어터_빛의 시어터', 'item_id': ['V958_0000'], 'item_name_in_msg': ['빛의 시어터 입장권'], 'expected_action': ['구매']}]
+2025-12-18 14:07:22,447 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=5개
+2025-12-18 14:07:22,448 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-18 14:07:22,448 - services.result_builder - INFO -    ✅ 최종 channel 개수: 3개
+2025-12-18 14:07:22,448 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-18 14:07:22,449 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 5개
+2025-12-18 14:07:22,449 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-18 14:07:22,449 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:22,449 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_extraction_result 완료
+2025-12-18 14:07:22,449 - services.result_builder - INFO -    최종 final_result['product'] 개수: 5개
+2025-12-18 14:07:22,449 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:22,449 - core.workflow_core - INFO - ✅ ResultConstructionStep 완료 (5.44초)
+2025-12-18 14:07:22,449 - core.workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - 제목: SKT 0 day, 빛의 벙커/시어터 입장권 할인 안내
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - 목적: ['혜택 안내', '웹/앱 접속 유도']
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - 판매 스크립트: SKT 0 day로 빛의 벙커/시어터 입장권 할인! 지금 안내할까요?
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - 상품 수: 5개
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - 채널 수: 3개
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-18 14:07:22,449 - core.mms_workflow_steps - INFO - 오퍼 항목 수: 5개
+2025-12-18 14:07:22,449 - core.workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-18 14:07:22,449 - core.workflow_core - INFO - 
+============================================================
+2025-12-18 14:07:22,449 - core.workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 23.71초)
+2025-12-18 14:07:22,449 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:07:22,449 - core.workflow_core - INFO - 
+📊 실행 요약:
+2025-12-18 14:07:22,450 - core.workflow_core - INFO -   ✅ InputValidationStep: 0.00초
+2025-12-18 14:07:22,450 - core.workflow_core - INFO -   ✅ EntityExtractionStep: 10.56초
+2025-12-18 14:07:22,450 - core.workflow_core - INFO -   ✅ ProgramClassificationStep: 0.12초
+2025-12-18 14:07:22,450 - core.workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-18 14:07:22,450 - core.workflow_core - INFO -   ✅ LLMExtractionStep: 6.82초
+2025-12-18 14:07:22,450 - core.workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-18 14:07:22,450 - core.workflow_core - INFO -   ✅ ResultConstructionStep: 5.44초
+2025-12-18 14:07:22,450 - core.workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-18 14:07:22,450 - utils.common_utils - INFO - process_message 실행완료: 23.71초
+2025-12-18 14:07:22,450 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-12-18 14:07:22,450 - core.mms_extractor - INFO - 배치 처리 진행률: 2/3 (66.7%)
+2025-12-18 14:07:22,513 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:22,514 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:07:22,599 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:07:22,601 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['던킨_0 day']
+2025-12-18 14:07:22,612 - utils.common_utils - INFO - extract_entities_with_llm 실행완료: 6.42초
+2025-12-18 14:07:22,612 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: (5, 5)
+2025-12-18 14:07:22,612 - services.result_builder - INFO -    📊 similarities_fuzzy 샘플 (처음 3개):
+2025-12-18 14:07:22,613 - services.result_builder - INFO - [{'item_name_in_msg': 'T Day', 'item_nm_alias': '던킨_T day 적립', 'sim': 1.5127272727272727, 'rank': 1.0, 'item_dmn_nm': '기타'}, {'item_name_in_msg': 'T Day', 'item_nm_alias': '던킨_T day 할인', 'sim': 1.5127272727272727, 'rank': 1.0, 'item_dmn_nm': '기타'}, {'item_name_in_msg': 'T Day', 'item_nm_alias': '던킨_T day 해피아워', 'sim': 1.463076923076923, 'rank': 3.0, 'item_dmn_nm': '기타'}]
+2025-12-18 14:07:22,613 - services.result_builder - INFO - 🔍 [STEP 4] alias_pdf_raw와 merge 시작
+2025-12-18 14:07:22,613 - services.result_builder - INFO -    - alias_pdf_raw 크기: (188, 6)
+2025-12-18 14:07:22,615 - services.result_builder - INFO -    ✅ merged_df 크기: (5, 7)
+2025-12-18 14:07:22,615 - services.result_builder - INFO -    📊 merged_df 샘플 (처음 3개):
+2025-12-18 14:07:22,616 - services.result_builder - INFO - [{'item_name_in_msg': 'T Day', 'item_nm_alias': '던킨_T day 적립', 'sim': 1.5127272727272727, 'rank': 1.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'T Day', 'item_nm_alias': '던킨_T day 할인', 'sim': 1.5127272727272727, 'rank': 1.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'T Day', 'item_nm_alias': '던킨_T day 해피아워', 'sim': 1.463076923076923, 'rank': 3.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}]
+2025-12-18 14:07:22,616 - services.result_builder - INFO - 🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)
+2025-12-18 14:07:22,617 - services.result_builder - INFO -    ✅ filtered_df 크기: 비어있음
+2025-12-18 14:07:22,617 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-18 14:07:22,617 - services.result_builder - INFO -    - similarities_fuzzy.empty: False
+2025-12-18 14:07:22,617 - services.result_builder - INFO -    ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출
+2025-12-18 14:07:22,617 - services.entity_recognizer - INFO - 🔍 [map_products_to_entities] Started
+2025-12-18 14:07:22,617 - services.entity_recognizer - INFO -    - Input similarities_fuzzy shape: (5, 5)
+2025-12-18 14:07:22,619 - services.entity_recognizer - INFO -    - Filtering: 5 -> 5
+2025-12-18 14:07:22,629 - services.entity_recognizer - INFO -    ✅ product_tag count: 5
+2025-12-18 14:07:22,629 - services.result_builder - INFO -    ✅ 최종 product 개수: 5개
+2025-12-18 14:07:22,629 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': '던킨_0 day', 'item_id': ['V700_9301'], 'item_name_in_msg': ['T Day'], 'expected_action': ['기타']}, {'item_nm': '던킨_T day 이벤트_에이닷', 'item_id': ['992_6707'], 'item_name_in_msg': ['T Day'], 'expected_action': ['기타']}, {'item_nm': '던킨_T day 적립', 'item_id': ['V700_9851'], 'item_name_in_msg': ['T Day'], 'expected_action': ['기타']}, {'item_nm': '던킨_T day 할인', 'item_id': ['V700_9251'], 'item_name_in_msg': ['T Day'], 'expected_action': ['기타']}, {'item_nm': '던킨_T day 해피아워', 'item_id': ['V700_9259'], 'item_name_in_msg': ['T Day'], 'expected_action': ['기타']}]
+2025-12-18 14:07:22,629 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=5개
+2025-12-18 14:07:22,630 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-18 14:07:22,631 - services.result_builder - INFO -    ✅ 최종 channel 개수: 3개
+2025-12-18 14:07:22,631 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-18 14:07:22,631 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 5개
+2025-12-18 14:07:22,631 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-18 14:07:22,631 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:22,631 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_extraction_result 완료
+2025-12-18 14:07:22,631 - services.result_builder - INFO -    최종 final_result['product'] 개수: 5개
+2025-12-18 14:07:22,631 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:07:22,631 - core.workflow_core - INFO - ✅ ResultConstructionStep 완료 (6.44초)
+2025-12-18 14:07:22,631 - core.workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - 제목: 9월 T day 던킨 40% 할인/적립 혜택 안내
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - 목적: ['혜택 안내', '웹/앱 접속 유도']
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - 판매 스크립트: 던킨 40% 할인/적립 혜택! 지금 바로 자세히 보기 안내할까요?
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - 상품 수: 5개
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - 채널 수: 3개
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-18 14:07:22,631 - core.mms_workflow_steps - INFO - 오퍼 항목 수: 5개
+2025-12-18 14:07:22,631 - core.workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-18 14:07:22,631 - core.workflow_core - INFO - 
+============================================================
+2025-12-18 14:07:22,631 - core.workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 23.89초)
+2025-12-18 14:07:22,632 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:07:22,632 - core.workflow_core - INFO - 
+📊 실행 요약:
+2025-12-18 14:07:22,632 - core.workflow_core - INFO -   ✅ InputValidationStep: 0.00초
+2025-12-18 14:07:22,632 - core.workflow_core - INFO -   ✅ EntityExtractionStep: 11.01초
+2025-12-18 14:07:22,632 - core.workflow_core - INFO -   ✅ ProgramClassificationStep: 0.43초
+2025-12-18 14:07:22,632 - core.workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-18 14:07:22,632 - core.workflow_core - INFO -   ✅ LLMExtractionStep: 6.01초
+2025-12-18 14:07:22,632 - core.workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-18 14:07:22,632 - core.workflow_core - INFO -   ✅ ResultConstructionStep: 6.44초
+2025-12-18 14:07:22,632 - core.workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-18 14:07:22,632 - utils.common_utils - INFO - process_message 실행완료: 23.89초
+2025-12-18 14:07:22,632 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-12-18 14:07:22,632 - core.mms_extractor - INFO - 배치 처리 진행률: 3/3 (100.0%)
+2025-12-18 14:07:22,633 - core.mms_extractor - INFO - 배치 처리 완료: 3개 메시지, 23.89초
+2025-12-18 14:07:22,633 - core.mms_extractor - INFO - 평균 처리 시간: 7.96초/메시지
+2025-12-18 14:07:23,248 - utils.mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-12-18 14:07:23,250 - utils.mongodb_utils - INFO - 문서 저장 성공: 69438c0ba235d405468a686c
+2025-12-18 14:07:23,251 - utils.mongodb_utils - INFO - MongoDB 연결 해제
+2025-12-18 14:07:23,251 - __main__ - INFO - ✅ 메시지 17 처리 성공
+2025-12-18 14:07:23,259 - utils.mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-12-18 14:07:23,261 - utils.mongodb_utils - INFO - 문서 저장 성공: 69438c0ba235d405468a686e
+2025-12-18 14:07:23,261 - utils.mongodb_utils - INFO - MongoDB 연결 해제
+2025-12-18 14:07:23,262 - __main__ - INFO - ✅ 메시지 117 처리 성공
+2025-12-18 14:07:23,270 - utils.mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-12-18 14:07:23,271 - utils.mongodb_utils - INFO - 문서 저장 성공: 69438c0ba235d405468a6870
+2025-12-18 14:07:23,272 - utils.mongodb_utils - INFO - MongoDB 연결 해제
+2025-12-18 14:07:23,272 - __main__ - INFO - ✅ 메시지 7 처리 성공
+2025-12-18 14:07:23,272 - __main__ - INFO - 🎯 병렬 처리 완료: 3개 메시지, 24.53초 소요
+2025-12-18 14:07:23,272 - __main__ - INFO - 💾 배치 결과 CSV 파일 저장 생략 (--save-results 옵션으로 활성화 가능)
+2025-12-18 14:07:23,273 - __main__ - INFO - Successfully processed 3 messages
+2025-12-18 14:07:23,273 - __main__ - INFO - Processed message IDs: ['17', '117', '7']
+2025-12-18 14:07:23,273 - __main__ - INFO - ==================================================
+2025-12-18 14:07:23,273 - __main__ - INFO - 🎯 배치 처리 성능 요약
+2025-12-18 14:07:23,273 - __main__ - INFO - ==================================================
+2025-12-18 14:07:23,273 - __main__ - INFO - 처리 모드: 병렬 처리
+2025-12-18 14:07:23,273 - __main__ - INFO - 워커 수: 14
+2025-12-18 14:07:23,273 - __main__ - INFO - DAG 추출: OFF
+2025-12-18 14:07:23,273 - __main__ - INFO - 총 처리 메시지: 3개
+2025-12-18 14:07:23,273 - __main__ - INFO - 성공: 3개
+2025-12-18 14:07:23,273 - __main__ - INFO - 실패: 0개
+2025-12-18 14:07:23,273 - __main__ - INFO - 성공률: 100.00%
+2025-12-18 14:07:23,273 - __main__ - INFO - 총 처리 시간: 36.64초
+2025-12-18 14:07:23,273 - __main__ - INFO - 메시지 처리 시간: 24.53초
+2025-12-18 14:07:23,273 - __main__ - INFO - 메시지당 평균 시간: 8.18초
+2025-12-18 14:07:23,273 - __main__ - INFO - 처리량: 0.12 메시지/초
+2025-12-18 14:07:23,273 - __main__ - INFO - ==================================================
+2025-12-18 14:07:23,273 - __main__ - INFO - ==================================================
+2025-12-18 14:07:23,274 - __main__ - INFO - Batch Processing Summary
+2025-12-18 14:07:23,274 - __main__ - INFO - ==================================================
+2025-12-18 14:07:23,274 - __main__ - INFO - status: completed
+2025-12-18 14:07:23,274 - __main__ - INFO - processed_count: 3
+2025-12-18 14:07:23,274 - __main__ - INFO - successful_count: 3
+2025-12-18 14:07:23,274 - __main__ - INFO - failed_count: 0
+2025-12-18 14:07:23,274 - __main__ - INFO - results_file: ./results/batch_results.csv
+2025-12-18 14:07:23,274 - __main__ - INFO - processing_mode: 병렬 처리
+2025-12-18 14:07:23,274 - __main__ - INFO - max_workers: 14
+2025-12-18 14:07:23,274 - __main__ - INFO - dag_extraction: False
+2025-12-18 14:07:23,274 - __main__ - INFO - total_time_seconds: 36.64
+2025-12-18 14:07:23,274 - __main__ - INFO - processing_time_seconds: 24.53
+2025-12-18 14:07:23,274 - __main__ - INFO - avg_time_per_message: 8.18
+2025-12-18 14:07:23,274 - __main__ - INFO - throughput_messages_per_second: 0.12
+2025-12-18 14:07:23,274 - __main__ - INFO - success_rate: 100.0
+2025-12-18 14:07:23,274 - __main__ - INFO - ==================================================
+2025-12-18 14:39:06,655 - __main__ - INFO - 로그 레벨 설정: INFO
+2025-12-18 14:39:06,655 - __main__ - INFO - ==================================================
+2025-12-18 14:39:06,655 - __main__ - INFO - 🚀 Starting Batch MMS Processing
+2025-12-18 14:39:06,655 - __main__ - INFO - ==================================================
+2025-12-18 14:39:06,655 - __main__ - INFO - 배치 크기: 3
+2025-12-18 14:39:06,655 - __main__ - INFO - 출력 파일: ./results/batch_results.csv
+2025-12-18 14:39:06,655 - __main__ - INFO - 병렬 처리: ON
+2025-12-18 14:39:06,655 - __main__ - INFO - 최대 워커 수: 14
+2025-12-18 14:39:06,656 - __main__ - INFO - 추출기 설정: {'offer_info_data_src': 'local', 'product_info_extraction_mode': 'llm', 'entity_extraction_mode': 'llm', 'llm_model': 'ax', 'entity_llm_model': 'ax', 'extract_entity_dag': False, 'entity_extraction_context_mode': 'dag'}
+2025-12-18 14:39:06,656 - __main__ - INFO - 📄 MongoDB 저장 모드 활성화됨
+2025-12-18 14:39:06,656 - __main__ - INFO - ==================================================
+2025-12-18 14:39:06,656 - __main__ - INFO - Loading MMS data from: ./data/mms_data_251023.csv
+2025-12-18 14:39:06,671 - __main__ - INFO - Renamed 'mms_phrs' column to 'msg'
+2025-12-18 14:39:06,674 - __main__ - INFO - Loaded 830 messages
+2025-12-18 14:39:06,674 - __main__ - INFO - Initializing MMS Extractor...
+2025-12-18 14:39:06,674 - core.mms_extractor - INFO - 🚀 MMSExtractor 초기화 시작
+2025-12-18 14:39:06,675 - core.mms_extractor - INFO - ⚙️ 기본 설정 적용 중...
+2025-12-18 14:39:06,675 - core.mms_extractor - INFO - 📋 표준 추출 모드 (DAG 비활성화)
+2025-12-18 14:39:06,675 - core.mms_extractor - INFO - 🔑 환경변수 로드 중...
+2025-12-18 14:39:06,677 - core.mms_extractor - INFO - 💻 디바이스 설정 중...
+2025-12-18 14:39:06,776 - core.mms_extractor - INFO - Using device: mps
+2025-12-18 14:39:06,776 - utils.common_utils - INFO - _initialize_device 실행완료: 0.10초
+2025-12-18 14:39:06,776 - core.mms_extractor - INFO - 🤖 LLM 모델 초기화 중...
+2025-12-18 14:39:06,777 - core.mms_extractor - INFO - LLM 초기화 완료: ax (skt/ax4)
+2025-12-18 14:39:06,777 - utils.common_utils - INFO - _initialize_llm 실행완료: 0.00초
+2025-12-18 14:39:06,777 - core.mms_extractor - INFO - 🧠 임베딩 모델 로드 중...
+2025-12-18 14:39:06,777 - utils.nlp_utils - INFO - Loading model from ./models/ko-sbert-nli...
+2025-12-18 14:39:06,777 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: mps
+2025-12-18 14:39:06,777 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: ./models/ko-sbert-nli
+2025-12-18 14:39:07,330 - utils.nlp_utils - INFO - Model loaded on mps
+2025-12-18 14:39:07,331 - utils.common_utils - INFO - _initialize_embedding_model 실행완료: 0.55초
+2025-12-18 14:39:07,331 - core.mms_extractor - INFO - 📝 NLP 도구 (Kiwi) 초기화 중...
+2025-12-18 14:39:08,010 - core.mms_extractor - INFO - Kiwi 형태소 분석기 초기화 완료
+2025-12-18 14:39:08,011 - utils.common_utils - INFO - _initialize_kiwi 실행완료: 0.68초
+2025-12-18 14:39:08,011 - core.mms_extractor - INFO - 📁 데이터 로드 중...
+2025-12-18 14:39:08,011 - core.mms_extractor - INFO - ============================================================
+2025-12-18 14:39:08,011 - core.mms_extractor - INFO - 📊 데이터 로딩 시작
+2025-12-18 14:39:08,011 - core.mms_extractor - INFO - ============================================================
+2025-12-18 14:39:08,011 - core.mms_extractor - INFO - 데이터 소스 모드: local
+2025-12-18 14:39:08,011 - core.mms_extractor - INFO - 1️⃣ 상품 정보 로드 및 준비 중...
+2025-12-18 14:39:08,011 - services.item_data_loader - INFO - ==================================================
+2025-12-18 14:39:08,011 - services.item_data_loader - INFO - 🚀 상품 데이터 준비 파이프라인 시작
+2025-12-18 14:39:08,011 - services.item_data_loader - INFO - ==================================================
+2025-12-18 14:39:08,011 - services.item_data_loader - INFO - 📊 상품 정보 로드 시작 (소스: local)
+2025-12-18 14:39:08,011 - services.item_data_loader - INFO - 로컬 CSV 파일에서 상품 데이터 로드: ./data/offer_master_data.csv
+2025-12-18 14:39:08,083 - services.item_data_loader - INFO - CSV 파일 로드 성공 (encoding: utf-8)
+2025-12-18 14:39:08,083 - services.item_data_loader - INFO - 원시 데이터 로드 완료: (18070, 9)
+2025-12-18 14:39:08,083 - services.item_data_loader - INFO - 🔧 컬럼 정규화 중...
+2025-12-18 14:39:08,159 - services.item_data_loader - INFO - 컬럼명 소문자 변환 완료
+2025-12-18 14:39:08,163 - services.item_data_loader - INFO - 도메인 필터링: 18070 -> 12305
+2025-12-18 14:39:08,163 - services.item_data_loader - INFO - 🔗 별칭 규칙 로드 중...
+2025-12-18 14:39:08,175 - services.item_data_loader - INFO - 4️⃣ build 타입 별칭 확장
+2025-12-18 14:39:08,175 - services.item_data_loader - INFO - 🔨 Build 타입 별칭 확장 중...
+2025-12-18 14:39:08,370 - services.item_data_loader - INFO - ↔️ 양방향 별칭 추가 중...
+2025-12-18 14:39:08,371 - services.item_data_loader - INFO - 🔄 별칭 규칙 연쇄 적용 중...
+2025-12-18 14:39:08,372 - services.item_data_loader - INFO - 별칭 규칙 수: 429개
+2025-12-18 14:39:18,549 - services.item_data_loader - INFO - 별칭 explode: 131593 -> 42462
+2025-12-18 14:39:18,550 - services.item_data_loader - INFO - 👤 사용자 정의 엔티티 추가: 3개
+2025-12-18 14:39:18,574 - services.item_data_loader - INFO - 🏷️ 도메인명 컬럼 추가 중...
+2025-12-18 14:39:18,588 - services.item_data_loader - INFO - 🧹 TEST 항목 필터링 중...
+2025-12-18 14:39:18,608 - services.item_data_loader - INFO - TEST 필터링: 42465 -> 42314
+2025-12-18 14:39:18,608 - services.item_data_loader - INFO - ==================================================
+2025-12-18 14:39:18,608 - services.item_data_loader - INFO - ✅ 상품 정보 준비 완료
+2025-12-18 14:39:18,608 - services.item_data_loader - INFO - 최종 데이터 크기: (42314, 14)
+2025-12-18 14:39:18,609 - services.item_data_loader - INFO - 최종 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-12-18 14:39:18,609 - services.item_data_loader - INFO - ✅ 모든 중요 컬럼 존재
+2025-12-18 14:39:18,610 - services.item_data_loader - INFO - 상품명 샘플: ['우주패스 Netflix 인증', '우주패스 Netflix 인증', '우주패스 Netflix 인증']
+2025-12-18 14:39:18,611 - services.item_data_loader - INFO - 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증']
+2025-12-18 14:39:18,611 - services.item_data_loader - INFO - ==================================================
+2025-12-18 14:39:18,614 - core.mms_extractor - INFO - ✅ ItemDataLoader를 통한 상품 정보 준비 완료: (42314, 14)
+2025-12-18 14:39:18,614 - core.mms_extractor - INFO - 상품 정보 최종 데이터 크기: (42314, 14)
+2025-12-18 14:39:18,614 - core.mms_extractor - INFO - 상품 정보 컬럼들: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms', 'item_nm_alias', 'start_dt', 'end_dt', 'rank', 'item_dmn_nm']
+2025-12-18 14:39:18,614 - core.mms_extractor - INFO - 2️⃣ 정지어 로드 중...
+2025-12-18 14:39:18,616 - core.mms_extractor - INFO - 정지어 로드 완료: 204개
+2025-12-18 14:39:18,616 - core.mms_extractor - INFO - 로드된 정지어 수: 204개
+2025-12-18 14:39:18,616 - core.mms_extractor - INFO - 3️⃣ Kiwi에 상품명 등록 중...
+2025-12-18 14:39:18,616 - core.mms_extractor - INFO - === Kiwi에 상품명 등록 시작 ===
+2025-12-18 14:39:18,618 - core.mms_extractor - INFO - 등록할 고유 별칭 수: 34387개
+2025-12-18 14:39:18,621 - core.mms_extractor - INFO - 유효한 별칭 수: 34386개
+2025-12-18 14:39:18,621 - core.mms_extractor - INFO - 등록할 별칭 샘플: ['우주패스 Netflix 인증', '우주Pass Netflix 인증', '우주PASS Netflix 인증', '우주pass Netflix 인증', '우주패스 넷플릭스 인증']
+2025-12-18 14:39:18,676 - core.mms_extractor - INFO - Kiwi에 상품명 등록 완료: 34386개 성공, 0개 실패
+2025-12-18 14:39:18,676 - core.mms_extractor - INFO - 4️⃣ 프로그램 분류 정보 로드 중...
+2025-12-18 14:39:18,676 - core.mms_extractor - INFO - 프로그램 분류 정보 로딩 시작...
+2025-12-18 14:39:18,690 - core.mms_extractor - INFO - 로컬 파일에서 프로그램 정보 로드: 25개
+2025-12-18 14:39:18,690 - core.mms_extractor - INFO - 프로그램 분류 임베딩 생성 시작...
+2025-12-18 14:39:18,985 - core.mms_extractor - INFO - 프로그램 분류 임베딩 생성 완료: 25개 프로그램
+2025-12-18 14:39:18,985 - core.mms_extractor - INFO - 프로그램 분류 정보 로드 후 데이터 크기: (25, 6)
+2025-12-18 14:39:18,985 - core.mms_extractor - INFO - 5️⃣ 조직 정보 로드 중...
+2025-12-18 14:39:18,986 - core.mms_extractor - INFO - === 조직 정보 로드 시작 (모드: local) ===
+2025-12-18 14:39:18,986 - core.mms_extractor - INFO - 로컬 CSV 파일에서 조직 정보 로드 중...
+2025-12-18 14:39:18,986 - core.mms_extractor - INFO - CSV 파일 경로: ./data/offer_master_data.csv
+2025-12-18 14:39:19,071 - core.mms_extractor - INFO - 로컬 CSV에서 로드된 원본 조직 데이터 크기: (18070, 9)
+2025-12-18 14:39:19,072 - core.mms_extractor - INFO - 로컬 CSV 원본 컬럼들: ['ITEM_ID', 'ITEM_NM', 'ITEM_DMN', 'ITEM_DESC', 'ITEM_CTG', 'ITEM_ALS', 'ITEM_EMB_VEC', 'OFER_CD', 'OPER_DT_HMS']
+2025-12-18 14:39:19,073 - core.mms_extractor - INFO - 로컬 모드: ITEM_DMN='R' 필터링 후 데이터 크기: (5765, 9)
+2025-12-18 14:39:19,074 - core.mms_extractor - INFO - 조직 데이터 샘플 (3개 행): [{'item_id': 'D15198_0020', 'item_nm': '가로수대리점 하늘도시점', 'item_dmn': 'R', 'item_desc': '인천 중구 하늘중앙로195번길 11,&&1층 105호(중산동)&&003202309011', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541517', 'oper_dt_hms': 20250909151123}, {'item_id': 'D13622_0398', 'item_nm': 'MD대리점 주엽직영점', 'item_dmn': 'R', 'item_desc': '경기 고양시 일산서구 중앙로 1426,&&(주엽동) 1층111호&&003109152662', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430541945', 'oper_dt_hms': 20250909151123}, {'item_id': 'D15320_0001', 'item_nm': '강서대리점(온라인매장)', 'item_dmn': 'R', 'item_desc': '서울 양천구 남부순환로 354,&&1층 (신월동)&&007078567800', 'item_ctg': '501', 'item_als': nan, 'item_emb_vec': nan, 'ofer_cd': '1430542104', 'oper_dt_hms': 20250909151123}]
+2025-12-18 14:39:19,074 - core.mms_extractor - INFO - === 조직 정보 로드 최종 완료: 5765개 조직 ===
+2025-12-18 14:39:19,074 - core.mms_extractor - INFO - 최종 조직 데이터 스키마: ['item_id', 'item_nm', 'item_dmn', 'item_desc', 'item_ctg', 'item_als', 'item_emb_vec', 'ofer_cd', 'oper_dt_hms']
+2025-12-18 14:39:19,074 - core.mms_extractor - INFO - 모든 중요 조직 컬럼이 정상적으로 로드되었습니다.
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - 조직 정보 로드 후 데이터 크기: (5765, 9)
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - ============================================================
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - 📋 데이터 로딩 완료 - 최종 상태 요약
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - ============================================================
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - ✅ 상품 데이터: (42314, 14)
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - ✅ 프로그램 데이터: (25, 6)
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - ✅ 조직 데이터: (5765, 9)
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - ✅ 정지어: 204개
+2025-12-18 14:39:19,075 - core.mms_extractor - INFO - === 상품 데이터 상세 정보 ===
+2025-12-18 14:39:19,076 - core.mms_extractor - INFO - 고유 상품명 수: 8218개
+2025-12-18 14:39:19,079 - core.mms_extractor - INFO - 고유 별칭 수: 34386개
+2025-12-18 14:39:19,082 - core.mms_extractor - INFO - 고유 상품ID 수: 12244개
+2025-12-18 14:39:19,082 - utils.common_utils - INFO - _load_data 실행완료: 11.07초
+2025-12-18 14:39:19,082 - core.mms_extractor - INFO - 🏭 LLM Factory 초기화 중...
+2025-12-18 14:39:19,082 - core.mms_extractor - INFO - ✅ LLM Factory 초기화 완료
+2025-12-18 14:39:19,082 - core.mms_extractor - INFO - 🛠️ 서비스 초기화 중...
+2025-12-18 14:39:19,082 - core.mms_extractor - INFO - ✅ 서비스 초기화 완료
+2025-12-18 14:39:19,082 - core.mms_extractor - INFO - ⚙️ Workflow 엔진 초기화 중...
+2025-12-18 14:39:19,082 - core.mms_extractor - INFO - ✅ Workflow 엔진 초기화 완료 (8개 단계)
+2025-12-18 14:39:19,082 - core.mms_extractor - INFO - ✅ MMSExtractor 초기화 완료
+2025-12-18 14:39:19,082 - __main__ - INFO - MMS Extractor initialized successfully (DAG 추출: OFF)
+2025-12-18 14:39:19,094 - __main__ - WARNING - No msg_id column found in results file
+2025-12-18 14:39:19,095 - __main__ - INFO - Total messages: 830
+2025-12-18 14:39:19,095 - __main__ - INFO - Previously processed: 0
+2025-12-18 14:39:19,095 - __main__ - INFO - Unprocessed messages: 830
+2025-12-18 14:39:19,095 - __main__ - INFO - Sampled 3 messages for processing
+2025-12-18 14:39:19,095 - __main__ - INFO - 🚀 병렬 처리 모드로 3개 메시지 처리 시작 (워커: 14개)
+2025-12-18 14:39:19,095 - core.mms_extractor - INFO - 배치 처리 시작: 3개 메시지, 14개 워커
+2025-12-18 14:39:19,095 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] 10월 0 day 혜택 안내__<every day 혜택>_만 13~34세...
+2025-12-18 14:39:19,096 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:39:19,096 - core.workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-18 14:39:19,096 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:39:19,096 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] T 우주×네이버웹툰 쿠키 2배 이벤트 안내__고객님, 안녕하세요._지금 ...
+2025-12-18 14:39:19,096 - core.workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-18 14:39:19,096 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:39:19,096 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 시작: (광고)[SKT] 9월 T day 혜택 안내__2025년 9월 10일(수)_롯데월드 아쿠아...
+2025-12-18 14:39:19,096 - core.mms_workflow_steps - INFO - 메시지 내용: (광고)[SKT] 10월 0 day 혜택 안내__<every day 혜택>_만 13~34세 고객님이라면_SKT 0 day_[NOL티켓 나폴리를 거닐다 전시 입장권 50% 할인]__* every day 혜택은 10일/20일/30일 혜택과 중복으로 이용하실 수 있습니다.__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=34115&a=&...
+2025-12-18 14:39:19,096 - core.workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-18 14:39:19,097 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - 메시지 길이: 264 문자
+2025-12-18 14:39:19,097 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:39:19,097 - core.workflow_core - INFO - 🚀 MMS Extraction Workflow 시작
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-18 14:39:19,097 - core.workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-18 14:39:19,097 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-18 14:39:19,097 - core.workflow_core - INFO - 
+============================== 1/8: InputValidationStep ==============================
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - 메시지 내용: (광고)[SKT] T 우주×네이버웹툰 쿠키 2배 이벤트 안내__고객님, 안녕하세요._지금 T 우주에서 네이버웹툰 구독하고 슬램덩크를 정주행해 보세요._선착순 1만 명에게 추가 쿠키 혜택도 드립니다.__■ 이벤트 안내_- 기간: 2025년 9월 9일(화)~10월 9일(목)_- 대상: 기간 안에 대상 상품 신규가입 후 이벤트 응모 완료하신 고객님(선착순 1만 ...
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - 메시지 내용: (광고)[SKT] 9월 T day 혜택 안내__2025년 9월 10일(수)_롯데월드 아쿠아리움 입장권 최대 50% 할인(본인+동반 3명)__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=33387&a=&u=https://bit.ly/467rn3q__■ 문의: SKT 고객센터(1558, 무료)__무료 수신거부 1504...
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - LLM 모델: ax
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - 메시지 길이: 604 문자
+2025-12-18 14:39:19,097 - core.mms_workflow_steps - INFO - 메시지 길이: 191 문자
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - === 현재 추출기 설정 ===
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 데이터 소스: local
+2025-12-18 14:39:19,098 - core.workflow_core - INFO - ✅ InputValidationStep 완료 (0.00초)
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 상품 정보 추출 모드: llm
+2025-12-18 14:39:19,098 - core.workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 엔티티 추출 모드: llm
+2025-12-18 14:39:19,098 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - LLM 모델: ax
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - LLM 모델: ax
+2025-12-18 14:39:19,098 - services.entity_recognizer - INFO - Message length: 264 chars
+2025-12-18 14:39:19,098 - core.mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-18 14:39:19,099 - core.mms_workflow_steps - INFO - 상품 데이터 크기: (42314, 14)
+2025-12-18 14:39:19,101 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-18 14:39:19,101 - core.mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-18 14:39:19,101 - core.mms_workflow_steps - INFO - 프로그램 데이터 크기: (25, 6)
+2025-12-18 14:39:19,829 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): []
+2025-12-18 14:39:19,829 - core.workflow_core - INFO - ✅ InputValidationStep 완료 (0.73초)
+2025-12-18 14:39:19,829 - core.workflow_core - INFO - ✅ InputValidationStep 완료 (0.73초)
+2025-12-18 14:39:19,829 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-18 14:39:19,829 - core.workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-18 14:39:19,829 - core.workflow_core - INFO - 
+============================== 2/8: EntityExtractionStep ==============================
+2025-12-18 14:39:19,834 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-18 14:39:19,834 - services.entity_recognizer - INFO - === Kiwi Entity Extraction Started ===
+2025-12-18 14:39:19,834 - services.entity_recognizer - INFO - Message length: 604 chars
+2025-12-18 14:39:19,834 - services.entity_recognizer - INFO - Message length: 191 chars
+2025-12-18 14:39:19,837 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-18 14:39:19,840 - services.entity_recognizer - INFO - Number of aliases to match: 34387
+2025-12-18 14:39:19,854 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): ['네이버웹툰 쿠키', 'T 우주패스 티빙 & 네이버웹툰', 'T 우주패스 with Disney+']
+2025-12-18 14:39:19,857 - services.entity_recognizer - INFO - Entities from Kiwi (filtered): ['롯데월드']
+2025-12-18 14:39:19,857 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-18 14:39:19,857 - services.entity_recognizer - INFO - Starting fuzzy matching...
+2025-12-18 14:39:29,109 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-18 14:39:29,265 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-18 14:39:29,479 - utils.common_utils - INFO - extract_entities_hybrid 실행완료: 9.64초
+2025-12-18 14:39:29,479 - core.mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: ['롯데월드']
+2025-12-18 14:39:29,479 - core.mms_workflow_steps - INFO - 추출된 후보 엔티티: ['롯데월드']
+2025-12-18 14:39:29,480 - core.mms_workflow_steps - INFO - 매칭된 상품 정보: (1, 2)
+2025-12-18 14:39:29,480 - core.workflow_core - INFO - ✅ EntityExtractionStep 완료 (9.65초)
+2025-12-18 14:39:29,480 - core.workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-18 14:39:29,762 - services.entity_recognizer - INFO - Starting sequence similarity calculation...
+2025-12-18 14:39:29,870 - utils.common_utils - INFO - extract_entities_hybrid 실행완료: 10.77초
+2025-12-18 14:39:29,870 - core.mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: []
+2025-12-18 14:39:29,870 - core.mms_workflow_steps - INFO - 추출된 후보 엔티티: ['고피자_0 Day', 'CU_0 Day', '갓잇_0 day', '던킨_0 day', '씽씽_0 day', '컬리_0 day', '쿤달_0 day']
+2025-12-18 14:39:29,870 - core.mms_workflow_steps - INFO - 매칭된 상품 정보: (7, 2)
+2025-12-18 14:39:29,871 - core.workflow_core - INFO - ✅ EntityExtractionStep 완료 (10.77초)
+2025-12-18 14:39:29,871 - core.workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-18 14:39:30,022 - core.mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-18 14:39:30,022 - core.workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.54초)
+2025-12-18 14:39:30,022 - core.workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-18 14:39:30,022 - core.mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 398 문자
+2025-12-18 14:39:30,022 - core.mms_workflow_steps - INFO - 후보 아이템 리스트 크기: 1개
+2025-12-18 14:39:30,022 - core.mms_workflow_steps - INFO - 후보 아이템 리스트: ['롯데월드']
+2025-12-18 14:39:30,022 - core.mms_workflow_steps - INFO - extra_item_pdf 크기: (1, 2)
+2025-12-18 14:39:30,022 - core.mms_workflow_steps - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-12-18 14:39:30,023 - core.mms_workflow_steps - INFO - extra_item_pdf 샘플: [{'item_nm': '롯데월드', 'item_id': ['X000000213']}]
+2025-12-18 14:39:30,023 - core.mms_workflow_steps - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-12-18 14:39:30,023 - core.workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-18 14:39:30,023 - core.workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-18 14:39:30,023 - core.mms_workflow_steps - INFO - 구성된 프롬프트 길이: 7161 문자
+2025-12-18 14:39:30,023 - core.mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: True
+2025-12-18 14:39:30,023 - utils.prompt_utils - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-18 14:39:30,023 - utils.prompt_utils - INFO - 📝 프롬프트 길이: 7,161 문자
+2025-12-18 14:39:30,083 - core.mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-18 14:39:30,083 - core.workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.21초)
+2025-12-18 14:39:30,083 - core.workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-18 14:39:30,084 - core.mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 362 문자
+2025-12-18 14:39:30,084 - core.mms_workflow_steps - INFO - 후보 아이템 리스트 크기: 7개
+2025-12-18 14:39:30,084 - core.mms_workflow_steps - INFO - 후보 아이템 리스트: ['고피자_0 Day', 'CU_0 Day', '갓잇_0 day', '던킨_0 day', '씽씽_0 day', '컬리_0 day', '쿤달_0 day']
+2025-12-18 14:39:30,084 - core.mms_workflow_steps - INFO - extra_item_pdf 크기: (7, 2)
+2025-12-18 14:39:30,084 - core.mms_workflow_steps - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-12-18 14:39:30,084 - core.mms_workflow_steps - INFO - extra_item_pdf 샘플: [{'item_nm': 'CU_0 Day', 'item_id': ['P302_9301']}, {'item_nm': '갓잇_0 day', 'item_id': ['V923_9301']}]
+2025-12-18 14:39:30,084 - core.mms_workflow_steps - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-12-18 14:39:30,084 - core.workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-18 14:39:30,084 - core.workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-18 14:39:30,085 - core.mms_workflow_steps - INFO - 구성된 프롬프트 길이: 7275 문자
+2025-12-18 14:39:30,085 - core.mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: True
+2025-12-18 14:39:30,085 - utils.prompt_utils - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-18 14:39:30,085 - utils.prompt_utils - INFO - 📝 프롬프트 길이: 7,275 문자
+2025-12-18 14:39:30,213 - utils.common_utils - INFO - extract_entities_hybrid 실행완료: 10.38초
+2025-12-18 14:39:30,214 - core.mms_workflow_steps - INFO - 추출된 Kiwi 엔티티: ['T 우주패스 with Disney+', 'T 우주패스 티빙 & 네이버웹툰', '네이버웹툰 쿠키']
+2025-12-18 14:39:30,214 - core.mms_workflow_steps - INFO - 추출된 후보 엔티티: ['우주패스(YouTube premium)②ⓑ', '우주패스(youtube Premium)②ⓒ', '네이버웹툰 쿠키', 'T 우주패스 티빙 & 네이버웹툰', 'T 우주패스 with 티빙', '우주패스(YouTube PREMIUM)②ⓐ', '우주패스(YouTube premium)②ⓐ', '우주패스(YouTube PREMIUM)②ⓑ', 'T 우주패스 with Disney+', '우주패스(YouTube Premium)②ⓒ', '우주패스(YouTube Premium)②ⓑ', '우주패스(youtube Premium)②ⓐ', '우주패스(YouTube premium)②ⓒ', '우주패스(YouTube PREMIUM)②ⓒ', '우주패스(YouTube Premium)②ⓐ', '우주패스(youtube Premium)②ⓑ', 'T 우주패스 with youtube Premium + 네이버웹툰 쿠키', 'T 우주패스 with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주패스 with YouTube Premium + 네이버웹툰 쿠키', 'T 우주패스 with YouTube premium + 네이버웹툰 쿠키', 'T 우주패스 with Disney+ + 네이버웹툰 쿠키', 'T 우주패스 with YouTube Premium', 'T 우주패스 with youtube Premium', 'T 우주패스 with YouTube PREMIUM', 'T 우주패스 with YouTube premium', 'youtube Premium', 'YouTube Premium', 'YouTube PREMIUM', 'YouTube premium', 'T 우주패스 DIY', 'T 우주패스 with YouTube Premium + 네이버WEB툰 쿠키', 'T 우주패스 with YouTube PREMIUM + 네이버web툰 쿠키', 'T 우주패스 with YouTube premium + 네이버WEB툰 쿠키', 'T 우주패스 with YouTube Premium + 네이버web툰 쿠키', 'T 우주패스 with YouTube Premium + 네이버Web툰 쿠키', 'T 우주패스 with YouTube premium + 네이버Web툰 쿠키', 'T 우주패스 with youtube Premium + 네이버web툰 쿠키', 'T 우주패스 with YouTube PREMIUM + 네이버WEB툰 쿠키', 'T 우주패스 with YouTube premium + 네이버web툰 쿠키', 'T 우주패스 with youtube Premium + 네이버Web툰 쿠키', 'T 우주패스 with YouTube PREMIUM + 네이버Web툰 쿠키', 'T 우주패스 with youtube Premium + 네이버WEB툰 쿠키', 'T 우주패스 with 유튜브 PREMIUM + 네이버웹툰 쿠키', 'T 우주패스 with 유튜브 premium + 네이버웹툰 쿠키', 'T 우주패스 with 유튜브 Premium + 네이버웹툰 쿠키', 'T 우주Pass with YouTube premium + 네이버웹툰 쿠키', 'T 우주pass with YouTube Premium + 네이버웹툰 쿠키', 'T 우주pass with youtube Premium + 네이버웹툰 쿠키', 'T 우주pass with YouTube premium + 네이버웹툰 쿠키', 'T 우주Pass with YouTube Premium + 네이버웹툰 쿠키', 'T 우주pass with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주Pass with youtube Premium + 네이버웹툰 쿠키', 'T 우주PASS with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주Pass with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주PASS with youtube Premium + 네이버웹툰 쿠키', 'T 우주PASS with YouTube premium + 네이버웹툰 쿠키', 'T 우주PASS with YouTube Premium + 네이버웹툰 쿠키', 'T 우주패스 with Disney+ + 네이버WEB툰 쿠키', 'T 우주패스 with Disney+ + 네이버Web툰 쿠키', 'T 우주패스 with Disney+ + 네이버web툰 쿠키', 'T 우주PASS with Disney+ + 네이버웹툰 쿠키', 'T 우주pass with Disney+ + 네이버웹툰 쿠키', 'T 우주Pass with Disney+ + 네이버웹툰 쿠키', 'T 우주패스 with youtube 프리미엄 + 네이버웹툰 쿠키', 'T 우주패스 with YouTube 프리미엄 + 네이버웹툰 쿠키', 'T 우주패스 free', 'T 우주패스 with tving', 'T 우주pass 티빙 & 네이버웹툰', 'T 우주패스 with TVING', 'T 우주PASS 티빙 & 네이버웹툰', 'T 우주Pass 티빙 & 네이버웹툰', 'T 우주패스 with 유튜브 premium', 'T 우주패스 with 유튜브 Premium', 'T 우주패스 with 유튜브 PREMIUM', 'T 우주패스 with YouTube PREMIUM + 웨이브 이용권', 'T 우주패스 with YouTube Premium + 웨이브 이용권', 'T 우주패스 with youtube Premium + 웨이브 이용권', 'T 우주패스 with YouTube premium + 웨이브 이용권', 'T 우주PASS with youtube Premium', 'T 우주pass with YouTube premium', 'T 우주Pass with YouTube premium', 'T 우주pass with YouTube Premium', 'T 우주pass with youtube Premium', 'T 우주Pass with YouTube Premium', 'T 우주PASS with YouTube PREMIUM', 'T 우주Pass with YouTube PREMIUM', 'T 우주PASS with YouTube Premium', 'T 우주Pass with youtube Premium', 'T 우주PASS with YouTube premium', 'T 우주pass with YouTube PREMIUM', 'YouTube premium 단독', 'YouTube PREMIUM 단독', 'YouTube Premium 단독', 'youtube premium 단독', 'youtube Premium 단독', 'youtube PREMIUM 단독', 'T 우주Pass with Disney+', 'T 우주pass with Disney+', 'T 우주PASS with Disney+', 'T 우주패스 with youtube 프리미엄', 'T 우주패스 with YouTube 프리미엄', 'T 우주패스 올스이_T', 'T 클래스 premium', 'T 클래스 Premium', 'T 우주패스 with Disney+ + 웨이브 이용권', 'T 우주패스 with 티비ING', 'T 우주패스 티빙 & 네이버WEB툰', 'T 우주패스 티빙 & 네이버Web툰', 'T 우주패스 티빙 & 네이버web툰', 'T 우주PASS with YouTube Premium + 네이버WEB툰 쿠키', 'T 우주Pass with YouTube Premium + 네이버WEB툰 쿠키', 'T 우주Pass with YouTube Premium + 네이버Web툰 쿠키', 'T 우주Pass with YouTube Premium + 네이버web툰 쿠키', 'T 우주pass with YouTube Premium + 네이버web툰 쿠키', 'T 우주pass with YouTube Premium + 네이버WEB툰 쿠키', 'T 우주PASS with YouTube Premium + 네이버Web툰 쿠키', 'T 우주pass with YouTube Premium + 네이버Web툰 쿠키', 'T 우주PASS with YouTube Premium + 네이버web툰 쿠키', 'T 우주패스 with 유튜브 Premium + 네이버WEB툰 쿠키', 'T 우주패스 with 유튜브 Premium + 네이버Web툰 쿠키', 'T 우주패스 with 유튜브 Premium + 네이버web툰 쿠키', '우주PASS(YouTube Premium)②ⓒ', '우주pass(youtube Premium)②ⓒ', '우주pass(youtube Premium)②ⓐ', '우주패스(유튜브 Premium)②ⓒ', '우주pass(youtube Premium)②ⓑ', '우주pass(YouTube premium)②ⓒ', '우주패스(유튜브 Premium)②ⓑ', '우주패스(유튜브 Premium)②ⓐ', '우주PASS(YouTube Premium)②ⓑ', '우주pass(YouTube premium)②ⓑ', '우주pass(YouTube premium)②ⓐ', '우주PASS(YouTube Premium)②ⓐ', '우주PASS(YouTube PREMIUM)②ⓒ', '우주PASS(YouTube PREMIUM)②ⓑ', '우주PASS(YouTube PREMIUM)②ⓐ', '우주PASS(YouTube premium)②ⓐ', '우주PASS(YouTube premium)②ⓑ', '우주PASS(YouTube premium)②ⓒ', '우주PASS(youtube Premium)②ⓐ', '우주PASS(youtube Premium)②ⓑ', '우주PASS(youtube Premium)②ⓒ', '우주Pass(YouTube PREMIUM)②ⓐ', '우주Pass(YouTube PREMIUM)②ⓑ', '우주Pass(YouTube PREMIUM)②ⓒ', '우주Pass(YouTube Premium)②ⓐ', '우주Pass(YouTube Premium)②ⓑ', '우주Pass(YouTube Premium)②ⓒ', '우주Pass(YouTube premium)②ⓐ', '우주Pass(YouTube premium)②ⓑ', '우주Pass(YouTube premium)②ⓒ', '우주Pass(youtube Premium)②ⓐ', '우주Pass(youtube Premium)②ⓑ', '우주Pass(youtube Premium)②ⓒ', '우주pass(YouTube PREMIUM)②ⓐ', '우주pass(YouTube PREMIUM)②ⓑ', '우주pass(YouTube PREMIUM)②ⓒ', '우주pass(YouTube Premium)②ⓐ', '우주pass(YouTube Premium)②ⓑ', '우주pass(YouTube Premium)②ⓒ', 'SK(주)', '이벤트안내', 'T 우주패스 with youtube Premium +카카오페이지 캐시', 'T 우주패스 with YouTube premium +카카오페이지 캐시', 'T 우주패스 with YouTube Premium +카카오페이지 캐시', 'T 우주패스 with YouTube PREMIUM +카카오페이지 캐시', 'T 우주패스 with YouTube 프리미엄 + 네이버WEB툰 쿠키', 'T 우주패스 with YouTube 프리미엄 + 네이버Web툰 쿠키', 'T 우주패스 with YouTube 프리미엄 + 네이버web툰 쿠키', '우주패스 life_T', 'T 우주패스 with YouTube premium + 이모티콘 플러스 이용권', 'T 우주패스 with youtube Premium + 이모티콘 플러스 이용권', 'T 우주패스 with YouTube PREMIUM + 이모티콘 플러스 이용권', 'T 우주패스 with youtube premium + 이모티콘 플러스 이용권', 'T 우주패스 with youtube PREMIUM + 이모티콘 플러스 이용권', 'T 우주패스 with YouTube Premium + 이모티콘 플러스 이용권', 'T 우주패스 TVING & 네이버웹툰', 'T 우주패스 tving & 네이버웹툰', 'T 우주PASS with Disney+ + 네이버web툰 쿠키', 'T 우주pass with Disney+ + 네이버WEB툰 쿠키', 'T 우주PASS with Disney+ + 네이버Web툰 쿠키', 'T 우주PASS with Disney+ + 네이버WEB툰 쿠키', 'T 우주pass with Disney+ + 네이버Web툰 쿠키', 'T 우주pass with Disney+ + 네이버web툰 쿠키', 'T 우주Pass with Disney+ + 네이버web툰 쿠키', 'T 우주Pass with Disney+ + 네이버Web툰 쿠키', 'T 우주Pass with Disney+ + 네이버WEB툰 쿠키', 'T 우주패스 편의점&카페 with YouTube Premium', 'T 우주패스 쇼핑 G마켓 with YouTube premium', 'T 우주PASS with 유튜브 Premium + 네이버웹툰 쿠키', 'T 우주Pass with 유튜브 Premium + 네이버웹툰 쿠키', 'T 우주패스 편의점&카페 with youtube Premium', 'T 우주패스 편의점&카페 with YouTube premium', 'T 우주패스 편의점&카페 with YouTube PREMIUM', 'T 우주패스 쇼핑 G마켓 with youtube Premium', 'T 우주pass with 유튜브 Premium + 네이버웹툰 쿠키', 'T 우주패스 쇼핑 G마켓 with YouTube Premium', 'T 우주패스 쇼핑 G마켓 with YouTube PREMIUM', 'T 우주패스 with YouTube Premium + wavve 이용권', 'T 우주패스 with YouTube Premium + Wavve 이용권', 'T 우주패스 with YouTube premium + Wavve 이용권', 'T 우주패스 with YouTube PREMIUM + Wavve 이용권', 'T 우주패스 with youtube Premium + Wavve 이용권', 'T 우주패스 티비ING & 네이버웹툰', 'T 우주패스 구글 One', 'T 우주패스 할인③ⓑ', 'T 우주패스 할인③ⓐ', 'T 우주패스 할인②ⓒ', 'T 우주패스 할인③ⓒ', 'T 우주패스 할인②ⓑ', 'T 우주패스 할인③ⓓ', 'T 우주패스 할인④ⓐ', 'T 우주패스 할인④ⓑ', 'T 우주패스 할인②ⓐ', 'T 우주패스 할인①ⓐ', 'T 우주패스 할인④ⓒ', 'T 우주패스 할인④ⓓ', 'T 우주패스 with YouTube PREMIUM + 리디셀렉트 이용권', 'T 우주패스 with YouTube Premium + 리디셀렉트 이용권', 'T 우주패스 with youtube Premium + 리디셀렉트 이용권', 'T 우주패스 with YouTube premium + 리디셀렉트 이용권', '우주패스(YouTube 프리미엄)②ⓐ', '우주패스(youtube 프리미엄)②ⓒ', '우주패스(youtube 프리미엄)②ⓑ', '우주패스(youtube 프리미엄)②ⓐ', '우주패스(YouTube 프리미엄)②ⓒ', '우주패스(YouTube 프리미엄)②ⓑ', '5GX Premium(티빙)', '5GX premium(티빙)', 'T 우주Pass with YouTube 프리미엄 + 네이버웹툰 쿠키', 'T 우주pass with YouTube 프리미엄 + 네이버웹툰 쿠키', 'T 우주PASS with YouTube 프리미엄 + 네이버웹툰 쿠키', 'T 우주pass with 티빙', 'T 우주Pass with 티빙', 'T 우주PASS with 티빙', '클럽T premium', '클럽T Premium', 'T 우주패스 with youtube Premium + 이모티콘 Plus 이용권', 'T 우주패스 with YouTube PREMIUM + 이모티콘 plus 이용권', 'T 우주패스 with YouTube premium + 이모티콘 PLUS 이용권', 'T 우주패스 with youtube PREMIUM + 이모티콘 Plus 이용권', 'T 우주패스 with youtube PREMIUM + 이모티콘 PLUS 이용권', 'T 우주패스 with YouTube premium + 이모티콘 plus 이용권', 'T 우주패스 with YouTube PREMIUM + 이모티콘 PLUS 이용권', 'T 우주패스 with YouTube premium + 이모티콘 Plus 이용권', 'T 우주패스 with youtube premium + 이모티콘 Plus 이용권', 'T 우주패스 with YouTube Premium + 이모티콘 plus 이용권', 'T 우주패스 with youtube premium + 이모티콘 plus 이용권', 'T 우주패스 with YouTube Premium + 이모티콘 Plus 이용권', 'T 우주패스 with YouTube Premium + 이모티콘 PLUS 이용권', 'T 우주패스 with youtube premium + 이모티콘 PLUS 이용권', 'T 우주패스 with youtube Premium + 이모티콘 PLUS 이용권', 'T 우주패스 with youtube Premium + 이모티콘 plus 이용권', 'T 우주패스 with YouTube PREMIUM + 이모티콘 Plus 이용권', 'T 우주패스 with youtube PREMIUM + 이모티콘 plus 이용권', '5GX premium(T 우주)', '5GX Premium(T 우주)', 'T 우주패스 with 유튜브 프리미엄 + 네이버웹툰 쿠키', 'T 우주PASS with YouTube Premium + 웨이브 이용권', 'T 우주pass with YouTube Premium + 웨이브 이용권', 'T 우주Pass with YouTube Premium + 웨이브 이용권', '티빙 Premium', '티빙 premium', 'Disney+ 이용권', 'T ARS', 'T freemium', 'T 우주패스 with 유튜브 Premium + 웨이브 이용권', 'T 우주패스 편의점&카페 with Disney+ 이용권', 'T 우주패스 쇼핑 G마켓 with Disney+ 이용권', 'premium패스2', 'premium패스1', 'Premium패스1', 'Premium패스2', 'TVING Premium', 'tving Premium', 'tving premium', 'TVING premium', 'T_GBPremiumX5', 'T_GBpremiumX5', 'T 우주패스 할인2③ⓑ', 'T 우주패스 할인2①ⓐ', 'T 우주패스 할인2③ⓐ', 'T 우주패스 넷플릭스', 'T 우주패스 할인2③ⓒ', 'T 우주패스 할인2④ⓐ', 'T 우주패스 할인2④ⓑ', 'T 우주패스 할인2③ⓓ', 'T 우주패스 할인2④ⓒ', 'T 우주패스 할인2④ⓓ', 'T 우주패스 with 밀리의서재', 'T 우주패스 with Disney+ 3개월 30% 할인', 'T 우주패스 with Disney+ 4개월 40% 할인', 'T 우주패스 with YouTube 프리미엄 + 웨이브 이용권', '0 청년 109(YouTube Premium)', '0 청년 109(YouTube premium)', '0 청년 109(YouTube PREMIUM)', '0 청년 109(youtube PREMIUM)', '0 청년 109(youtube Premium)', '0 청년 109(youtube premium)', 'T우주패스 쇼핑 11번가 with YouTube premium', 'T우주패스 쇼핑 11번가 with youtube Premium', 'T우주패스 쇼핑 11번가 with YouTube PREMIUM', 'T우주패스 쇼핑 11번가 with YouTube Premium', 'T 우주패스 with Disney+ + wavve 이용권', 'T 우주패스 with Disney+ + Wavve 이용권', '(N)T 우주패스 할인④ⓓ', '(N)T 우주패스 할인④ⓒ', '(N)T 우주패스 할인④ⓐ', '(N)T 우주패스 할인④ⓑ', 'T 우주패스 Netflix', 'T 우주패스 쇼핑 11번가 with Disney+ 이용권', 'T 우주패스 쇼핑 G마켓 with Disney+ 스탠다드', 'T 우주패스 편의점&카페 with Disney+ 스탠다드', 'T메모링 premium', 'A. C. iOS premium_', 'A. C. iOS Premium_', 'T 우주PASS with Disney+ + 웨이브 이용권', 'T 우주Pass with Disney+ + 웨이브 이용권', 'T메모링 Premium', 'T 우주pass with Disney+ + 웨이브 이용권']
+2025-12-18 14:39:30,216 - core.mms_workflow_steps - INFO - 매칭된 상품 정보: (75, 2)
+2025-12-18 14:39:30,216 - core.workflow_core - INFO - ✅ EntityExtractionStep 완료 (10.38초)
+2025-12-18 14:39:30,216 - core.workflow_core - INFO - 
+============================== 3/8: ProgramClassificationStep ==============================
+2025-12-18 14:39:30,249 - core.mms_workflow_steps - INFO - 프로그램 분류 결과 키: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+2025-12-18 14:39:30,249 - core.workflow_core - INFO - ✅ ProgramClassificationStep 완료 (0.03초)
+2025-12-18 14:39:30,249 - core.workflow_core - INFO - 
+============================== 4/8: ContextPreparationStep ==============================
+2025-12-18 14:39:30,249 - core.mms_workflow_steps - INFO - 프로그램 분류 컨텍스트 길이: 386 문자
+2025-12-18 14:39:30,249 - core.mms_workflow_steps - INFO - 후보 아이템 리스트 크기: 320개
+2025-12-18 14:39:30,250 - core.mms_workflow_steps - INFO - 후보 아이템 리스트: ['우주패스(YouTube premium)②ⓑ', '우주패스(youtube Premium)②ⓒ', '네이버웹툰 쿠키', 'T 우주패스 티빙 & 네이버웹툰', 'T 우주패스 with 티빙', '우주패스(YouTube PREMIUM)②ⓐ', '우주패스(YouTube premium)②ⓐ', '우주패스(YouTube PREMIUM)②ⓑ', 'T 우주패스 with Disney+', '우주패스(YouTube Premium)②ⓒ', '우주패스(YouTube Premium)②ⓑ', '우주패스(youtube Premium)②ⓐ', '우주패스(YouTube premium)②ⓒ', '우주패스(YouTube PREMIUM)②ⓒ', '우주패스(YouTube Premium)②ⓐ', '우주패스(youtube Premium)②ⓑ', 'T 우주패스 with youtube Premium + 네이버웹툰 쿠키', 'T 우주패스 with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주패스 with YouTube Premium + 네이버웹툰 쿠키', 'T 우주패스 with YouTube premium + 네이버웹툰 쿠키', 'T 우주패스 with Disney+ + 네이버웹툰 쿠키', 'T 우주패스 with YouTube Premium', 'T 우주패스 with youtube Premium', 'T 우주패스 with YouTube PREMIUM', 'T 우주패스 with YouTube premium', 'youtube Premium', 'YouTube Premium', 'YouTube PREMIUM', 'YouTube premium', 'T 우주패스 DIY', 'T 우주패스 with YouTube Premium + 네이버WEB툰 쿠키', 'T 우주패스 with YouTube PREMIUM + 네이버web툰 쿠키', 'T 우주패스 with YouTube premium + 네이버WEB툰 쿠키', 'T 우주패스 with YouTube Premium + 네이버web툰 쿠키', 'T 우주패스 with YouTube Premium + 네이버Web툰 쿠키', 'T 우주패스 with YouTube premium + 네이버Web툰 쿠키', 'T 우주패스 with youtube Premium + 네이버web툰 쿠키', 'T 우주패스 with YouTube PREMIUM + 네이버WEB툰 쿠키', 'T 우주패스 with YouTube premium + 네이버web툰 쿠키', 'T 우주패스 with youtube Premium + 네이버Web툰 쿠키', 'T 우주패스 with YouTube PREMIUM + 네이버Web툰 쿠키', 'T 우주패스 with youtube Premium + 네이버WEB툰 쿠키', 'T 우주패스 with 유튜브 PREMIUM + 네이버웹툰 쿠키', 'T 우주패스 with 유튜브 premium + 네이버웹툰 쿠키', 'T 우주패스 with 유튜브 Premium + 네이버웹툰 쿠키', 'T 우주Pass with YouTube premium + 네이버웹툰 쿠키', 'T 우주pass with YouTube Premium + 네이버웹툰 쿠키', 'T 우주pass with youtube Premium + 네이버웹툰 쿠키', 'T 우주pass with YouTube premium + 네이버웹툰 쿠키', 'T 우주Pass with YouTube Premium + 네이버웹툰 쿠키', 'T 우주pass with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주Pass with youtube Premium + 네이버웹툰 쿠키', 'T 우주PASS with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주Pass with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주PASS with youtube Premium + 네이버웹툰 쿠키', 'T 우주PASS with YouTube premium + 네이버웹툰 쿠키', 'T 우주PASS with YouTube Premium + 네이버웹툰 쿠키', 'T 우주패스 with Disney+ + 네이버WEB툰 쿠키', 'T 우주패스 with Disney+ + 네이버Web툰 쿠키', 'T 우주패스 with Disney+ + 네이버web툰 쿠키', 'T 우주PASS with Disney+ + 네이버웹툰 쿠키', 'T 우주pass with Disney+ + 네이버웹툰 쿠키', 'T 우주Pass with Disney+ + 네이버웹툰 쿠키', 'T 우주패스 with youtube 프리미엄 + 네이버웹툰 쿠키', 'T 우주패스 with YouTube 프리미엄 + 네이버웹툰 쿠키', 'T 우주패스 free', 'T 우주패스 with tving', 'T 우주pass 티빙 & 네이버웹툰', 'T 우주패스 with TVING', 'T 우주PASS 티빙 & 네이버웹툰', 'T 우주Pass 티빙 & 네이버웹툰', 'T 우주패스 with 유튜브 premium', 'T 우주패스 with 유튜브 Premium', 'T 우주패스 with 유튜브 PREMIUM', 'T 우주패스 with YouTube PREMIUM + 웨이브 이용권', 'T 우주패스 with YouTube Premium + 웨이브 이용권', 'T 우주패스 with youtube Premium + 웨이브 이용권', 'T 우주패스 with YouTube premium + 웨이브 이용권', 'T 우주PASS with youtube Premium', 'T 우주pass with YouTube premium', 'T 우주Pass with YouTube premium', 'T 우주pass with YouTube Premium', 'T 우주pass with youtube Premium', 'T 우주Pass with YouTube Premium', 'T 우주PASS with YouTube PREMIUM', 'T 우주Pass with YouTube PREMIUM', 'T 우주PASS with YouTube Premium', 'T 우주Pass with youtube Premium', 'T 우주PASS with YouTube premium', 'T 우주pass with YouTube PREMIUM', 'YouTube premium 단독', 'YouTube PREMIUM 단독', 'YouTube Premium 단독', 'youtube premium 단독', 'youtube Premium 단독', 'youtube PREMIUM 단독', 'T 우주Pass with Disney+', 'T 우주pass with Disney+', 'T 우주PASS with Disney+', 'T 우주패스 with youtube 프리미엄', 'T 우주패스 with YouTube 프리미엄', 'T 우주패스 올스이_T', 'T 클래스 premium', 'T 클래스 Premium', 'T 우주패스 with Disney+ + 웨이브 이용권', 'T 우주패스 with 티비ING', 'T 우주패스 티빙 & 네이버WEB툰', 'T 우주패스 티빙 & 네이버Web툰', 'T 우주패스 티빙 & 네이버web툰', 'T 우주PASS with YouTube Premium + 네이버WEB툰 쿠키', 'T 우주Pass with YouTube Premium + 네이버WEB툰 쿠키', 'T 우주Pass with YouTube Premium + 네이버Web툰 쿠키', 'T 우주Pass with YouTube Premium + 네이버web툰 쿠키', 'T 우주pass with YouTube Premium + 네이버web툰 쿠키', 'T 우주pass with YouTube Premium + 네이버WEB툰 쿠키', 'T 우주PASS with YouTube Premium + 네이버Web툰 쿠키', 'T 우주pass with YouTube Premium + 네이버Web툰 쿠키', 'T 우주PASS with YouTube Premium + 네이버web툰 쿠키', 'T 우주패스 with 유튜브 Premium + 네이버WEB툰 쿠키', 'T 우주패스 with 유튜브 Premium + 네이버Web툰 쿠키', 'T 우주패스 with 유튜브 Premium + 네이버web툰 쿠키', '우주PASS(YouTube Premium)②ⓒ', '우주pass(youtube Premium)②ⓒ', '우주pass(youtube Premium)②ⓐ', '우주패스(유튜브 Premium)②ⓒ', '우주pass(youtube Premium)②ⓑ', '우주pass(YouTube premium)②ⓒ', '우주패스(유튜브 Premium)②ⓑ', '우주패스(유튜브 Premium)②ⓐ', '우주PASS(YouTube Premium)②ⓑ', '우주pass(YouTube premium)②ⓑ', '우주pass(YouTube premium)②ⓐ', '우주PASS(YouTube Premium)②ⓐ', '우주PASS(YouTube PREMIUM)②ⓒ', '우주PASS(YouTube PREMIUM)②ⓑ', '우주PASS(YouTube PREMIUM)②ⓐ', '우주PASS(YouTube premium)②ⓐ', '우주PASS(YouTube premium)②ⓑ', '우주PASS(YouTube premium)②ⓒ', '우주PASS(youtube Premium)②ⓐ', '우주PASS(youtube Premium)②ⓑ', '우주PASS(youtube Premium)②ⓒ', '우주Pass(YouTube PREMIUM)②ⓐ', '우주Pass(YouTube PREMIUM)②ⓑ', '우주Pass(YouTube PREMIUM)②ⓒ', '우주Pass(YouTube Premium)②ⓐ', '우주Pass(YouTube Premium)②ⓑ', '우주Pass(YouTube Premium)②ⓒ', '우주Pass(YouTube premium)②ⓐ', '우주Pass(YouTube premium)②ⓑ', '우주Pass(YouTube premium)②ⓒ', '우주Pass(youtube Premium)②ⓐ', '우주Pass(youtube Premium)②ⓑ', '우주Pass(youtube Premium)②ⓒ', '우주pass(YouTube PREMIUM)②ⓐ', '우주pass(YouTube PREMIUM)②ⓑ', '우주pass(YouTube PREMIUM)②ⓒ', '우주pass(YouTube Premium)②ⓐ', '우주pass(YouTube Premium)②ⓑ', '우주pass(YouTube Premium)②ⓒ', 'SK(주)', '이벤트안내', 'T 우주패스 with youtube Premium +카카오페이지 캐시', 'T 우주패스 with YouTube premium +카카오페이지 캐시', 'T 우주패스 with YouTube Premium +카카오페이지 캐시', 'T 우주패스 with YouTube PREMIUM +카카오페이지 캐시', 'T 우주패스 with YouTube 프리미엄 + 네이버WEB툰 쿠키', 'T 우주패스 with YouTube 프리미엄 + 네이버Web툰 쿠키', 'T 우주패스 with YouTube 프리미엄 + 네이버web툰 쿠키', '우주패스 life_T', 'T 우주패스 with YouTube premium + 이모티콘 플러스 이용권', 'T 우주패스 with youtube Premium + 이모티콘 플러스 이용권', 'T 우주패스 with YouTube PREMIUM + 이모티콘 플러스 이용권', 'T 우주패스 with youtube premium + 이모티콘 플러스 이용권', 'T 우주패스 with youtube PREMIUM + 이모티콘 플러스 이용권', 'T 우주패스 with YouTube Premium + 이모티콘 플러스 이용권', 'T 우주패스 TVING & 네이버웹툰', 'T 우주패스 tving & 네이버웹툰', 'T 우주PASS with Disney+ + 네이버web툰 쿠키', 'T 우주pass with Disney+ + 네이버WEB툰 쿠키', 'T 우주PASS with Disney+ + 네이버Web툰 쿠키', 'T 우주PASS with Disney+ + 네이버WEB툰 쿠키', 'T 우주pass with Disney+ + 네이버Web툰 쿠키', 'T 우주pass with Disney+ + 네이버web툰 쿠키', 'T 우주Pass with Disney+ + 네이버web툰 쿠키', 'T 우주Pass with Disney+ + 네이버Web툰 쿠키', 'T 우주Pass with Disney+ + 네이버WEB툰 쿠키', 'T 우주패스 편의점&카페 with YouTube Premium', 'T 우주패스 쇼핑 G마켓 with YouTube premium', 'T 우주PASS with 유튜브 Premium + 네이버웹툰 쿠키', 'T 우주Pass with 유튜브 Premium + 네이버웹툰 쿠키', 'T 우주패스 편의점&카페 with youtube Premium', 'T 우주패스 편의점&카페 with YouTube premium', 'T 우주패스 편의점&카페 with YouTube PREMIUM', 'T 우주패스 쇼핑 G마켓 with youtube Premium', 'T 우주pass with 유튜브 Premium + 네이버웹툰 쿠키', 'T 우주패스 쇼핑 G마켓 with YouTube Premium', 'T 우주패스 쇼핑 G마켓 with YouTube PREMIUM', 'T 우주패스 with YouTube Premium + wavve 이용권', 'T 우주패스 with YouTube Premium + Wavve 이용권', 'T 우주패스 with YouTube premium + Wavve 이용권', 'T 우주패스 with YouTube PREMIUM + Wavve 이용권', 'T 우주패스 with youtube Premium + Wavve 이용권', 'T 우주패스 티비ING & 네이버웹툰', 'T 우주패스 구글 One', 'T 우주패스 할인③ⓑ', 'T 우주패스 할인③ⓐ', 'T 우주패스 할인②ⓒ', 'T 우주패스 할인③ⓒ', 'T 우주패스 할인②ⓑ', 'T 우주패스 할인③ⓓ', 'T 우주패스 할인④ⓐ', 'T 우주패스 할인④ⓑ', 'T 우주패스 할인②ⓐ', 'T 우주패스 할인①ⓐ', 'T 우주패스 할인④ⓒ', 'T 우주패스 할인④ⓓ', 'T 우주패스 with YouTube PREMIUM + 리디셀렉트 이용권', 'T 우주패스 with YouTube Premium + 리디셀렉트 이용권', 'T 우주패스 with youtube Premium + 리디셀렉트 이용권', 'T 우주패스 with YouTube premium + 리디셀렉트 이용권', '우주패스(YouTube 프리미엄)②ⓐ', '우주패스(youtube 프리미엄)②ⓒ', '우주패스(youtube 프리미엄)②ⓑ', '우주패스(youtube 프리미엄)②ⓐ', '우주패스(YouTube 프리미엄)②ⓒ', '우주패스(YouTube 프리미엄)②ⓑ', '5GX Premium(티빙)', '5GX premium(티빙)', 'T 우주Pass with YouTube 프리미엄 + 네이버웹툰 쿠키', 'T 우주pass with YouTube 프리미엄 + 네이버웹툰 쿠키', 'T 우주PASS with YouTube 프리미엄 + 네이버웹툰 쿠키', 'T 우주pass with 티빙', 'T 우주Pass with 티빙', 'T 우주PASS with 티빙', '클럽T premium', '클럽T Premium', 'T 우주패스 with youtube Premium + 이모티콘 Plus 이용권', 'T 우주패스 with YouTube PREMIUM + 이모티콘 plus 이용권', 'T 우주패스 with YouTube premium + 이모티콘 PLUS 이용권', 'T 우주패스 with youtube PREMIUM + 이모티콘 Plus 이용권', 'T 우주패스 with youtube PREMIUM + 이모티콘 PLUS 이용권', 'T 우주패스 with YouTube premium + 이모티콘 plus 이용권', 'T 우주패스 with YouTube PREMIUM + 이모티콘 PLUS 이용권', 'T 우주패스 with YouTube premium + 이모티콘 Plus 이용권', 'T 우주패스 with youtube premium + 이모티콘 Plus 이용권', 'T 우주패스 with YouTube Premium + 이모티콘 plus 이용권', 'T 우주패스 with youtube premium + 이모티콘 plus 이용권', 'T 우주패스 with YouTube Premium + 이모티콘 Plus 이용권', 'T 우주패스 with YouTube Premium + 이모티콘 PLUS 이용권', 'T 우주패스 with youtube premium + 이모티콘 PLUS 이용권', 'T 우주패스 with youtube Premium + 이모티콘 PLUS 이용권', 'T 우주패스 with youtube Premium + 이모티콘 plus 이용권', 'T 우주패스 with YouTube PREMIUM + 이모티콘 Plus 이용권', 'T 우주패스 with youtube PREMIUM + 이모티콘 plus 이용권', '5GX premium(T 우주)', '5GX Premium(T 우주)', 'T 우주패스 with 유튜브 프리미엄 + 네이버웹툰 쿠키', 'T 우주PASS with YouTube Premium + 웨이브 이용권', 'T 우주pass with YouTube Premium + 웨이브 이용권', 'T 우주Pass with YouTube Premium + 웨이브 이용권', '티빙 Premium', '티빙 premium', 'Disney+ 이용권', 'T ARS', 'T freemium', 'T 우주패스 with 유튜브 Premium + 웨이브 이용권', 'T 우주패스 편의점&카페 with Disney+ 이용권', 'T 우주패스 쇼핑 G마켓 with Disney+ 이용권', 'premium패스2', 'premium패스1', 'Premium패스1', 'Premium패스2', 'TVING Premium', 'tving Premium', 'tving premium', 'TVING premium', 'T_GBPremiumX5', 'T_GBpremiumX5', 'T 우주패스 할인2③ⓑ', 'T 우주패스 할인2①ⓐ', 'T 우주패스 할인2③ⓐ', 'T 우주패스 넷플릭스', 'T 우주패스 할인2③ⓒ', 'T 우주패스 할인2④ⓐ', 'T 우주패스 할인2④ⓑ', 'T 우주패스 할인2③ⓓ', 'T 우주패스 할인2④ⓒ', 'T 우주패스 할인2④ⓓ', 'T 우주패스 with 밀리의서재', 'T 우주패스 with Disney+ 3개월 30% 할인', 'T 우주패스 with Disney+ 4개월 40% 할인', 'T 우주패스 with YouTube 프리미엄 + 웨이브 이용권', '0 청년 109(YouTube Premium)', '0 청년 109(YouTube premium)', '0 청년 109(YouTube PREMIUM)', '0 청년 109(youtube PREMIUM)', '0 청년 109(youtube Premium)', '0 청년 109(youtube premium)', 'T우주패스 쇼핑 11번가 with YouTube premium', 'T우주패스 쇼핑 11번가 with youtube Premium', 'T우주패스 쇼핑 11번가 with YouTube PREMIUM', 'T우주패스 쇼핑 11번가 with YouTube Premium', 'T 우주패스 with Disney+ + wavve 이용권', 'T 우주패스 with Disney+ + Wavve 이용권', '(N)T 우주패스 할인④ⓓ', '(N)T 우주패스 할인④ⓒ', '(N)T 우주패스 할인④ⓐ', '(N)T 우주패스 할인④ⓑ', 'T 우주패스 Netflix', 'T 우주패스 쇼핑 11번가 with Disney+ 이용권', 'T 우주패스 쇼핑 G마켓 with Disney+ 스탠다드', 'T 우주패스 편의점&카페 with Disney+ 스탠다드', 'T메모링 premium', 'A. C. iOS premium_', 'A. C. iOS Premium_', 'T 우주PASS with Disney+ + 웨이브 이용권', 'T 우주Pass with Disney+ + 웨이브 이용권', 'T메모링 Premium', 'T 우주pass with Disney+ + 웨이브 이용권']
+2025-12-18 14:39:30,250 - core.mms_workflow_steps - INFO - extra_item_pdf 크기: (75, 2)
+2025-12-18 14:39:30,250 - core.mms_workflow_steps - INFO - extra_item_pdf 컬럼들: ['item_nm', 'item_id']
+2025-12-18 14:39:30,251 - core.mms_workflow_steps - INFO - extra_item_pdf 샘플: [{'item_nm': '(N)T 우주패스 할인④ⓐ', 'item_id': ['NA00008741']}, {'item_nm': '(N)T 우주패스 할인④ⓑ', 'item_id': ['NA00008745']}]
+2025-12-18 14:39:30,251 - core.mms_workflow_steps - INFO - LLM 모드: 참고용 후보 상품 목록을 RAG 컨텍스트에 추가
+2025-12-18 14:39:30,251 - core.workflow_core - INFO - ✅ ContextPreparationStep 완료 (0.00초)
+2025-12-18 14:39:30,251 - core.workflow_core - INFO - 
+============================== 5/8: LLMExtractionStep ==============================
+2025-12-18 14:39:30,251 - core.mms_workflow_steps - INFO - 구성된 프롬프트 길이: 17538 문자
+2025-12-18 14:39:30,251 - core.mms_workflow_steps - INFO - RAG 컨텍스트 포함 여부: True
+2025-12-18 14:39:30,251 - utils.prompt_utils - INFO - 📝 프롬프트 저장됨: main_extraction_prompt
+2025-12-18 14:39:30,251 - utils.prompt_utils - INFO - 📝 프롬프트 길이: 17,538 문자
+2025-12-18 14:39:35,519 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:35,529 - core.mms_workflow_steps - INFO - LLM 응답 길이: 591 문자
+2025-12-18 14:39:35,530 - core.mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "SKT 0 day 혜택 안내: NOL티켓 나폴리 전시 50% 할인",
+    "purpose": ["혜택 안내", "웹/앱 접속 유도"],
+    "sales_script": "SKT 0 day로 NOL티켓 나폴리 전시 50% 할인! 자세히 보실래요?",
+    "product": [
+        {"name": "SKT 0 day", "action": "사용"},
+        {"name": "NOL티켓 나폴리를 거닐다 전시 입장권", "action": "구매"}
+    ],
+    "channel": [
+        {"type": "URL", "value": "https://bit.ly/46k1M7H", "action": "추가 정보"},
+        {"type": "전화번호", "value": "SKT 고객센터(1558, 무료)", "action": "문의"},
+        {"type": "전화번호", "value": "...
+2025-12-18 14:39:35,530 - core.workflow_core - INFO - ✅ LLMExtractionStep 완료 (5.45초)
+2025-12-18 14:39:35,530 - core.workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-18 14:39:35,530 - core.mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-18 14:39:35,530 - core.mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-18 14:39:35,530 - core.mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': 'SKT 0 day 혜택 안내: NOL티켓 나폴리 전시 50% 할인', 'purpose': ['혜택 안내', '웹/앱 접속 유도'], 'sales_script': 'SKT 0 day로 NOL티켓 나폴리 전시 50% 할인! 자세히 보실래요?', 'product': [{'name': 'SKT 0 day', 'action': '사용'}, {'name': 'NOL티켓 나폴리를 거닐다 전시 입장권', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'https://bit.ly/46k1M7H', 'action': '추가 정보'}, {'type': '전화번호', 'value': 'SKT 고객센터(1558, 무료)', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_T멤버십', '사용법/혜택/이벤트안내_SKT']}
+2025-12-18 14:39:35,530 - core.workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-18 14:39:35,530 - core.workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-18 14:39:35,530 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:35,530 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_extraction_result 시작
+2025-12-18 14:39:35,530 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:35,530 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-18 14:39:35,530 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-18 14:39:35,530 - services.result_builder - INFO -    - 원본 product 내용: [{'name': 'SKT 0 day', 'action': '사용'}, {'name': 'NOL티켓 나폴리를 거닐다 전시 입장권', 'action': '구매'}]
+2025-12-18 14:39:35,531 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 2개
+2025-12-18 14:39:35,531 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': 'SKT 0 day', 'action': '사용'}, {'name': 'NOL티켓 나폴리를 거닐다 전시 입장권', 'action': '구매'}]
+2025-12-18 14:39:35,531 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['SKT 0 day', 'NOL티켓 나폴리를 거닐다 전시 입장권']
+2025-12-18 14:39:35,531 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: []
+2025-12-18 14:39:35,531 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-18 14:39:35,531 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-18 14:39:35,531 - services.result_builder - INFO -    - 사용할 LLM 모델: ax
+2025-12-18 14:39:35,531 - services.result_builder - INFO -    - llm_factory 타입: <class 'utils.llm_factory.LLMFactory'>
+2025-12-18 14:39:35,531 - utils.llm_factory - INFO - ✅ LLM 모델 생성 완료: ax (skt/ax4)
+2025-12-18 14:39:35,532 - utils.llm_factory - INFO - ✅ 총 1개 LLM 모델 생성 완료
+2025-12-18 14:39:35,532 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:39:35,532 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:39:35,532 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-18 14:39:35,532 - services.entity_recognizer - INFO - Context mode: dag
+2025-12-18 14:39:35,756 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:35,758 - core.mms_workflow_steps - INFO - LLM 응답 길이: 736 문자
+2025-12-18 14:39:35,758 - core.mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "9월 T day 롯데월드 아쿠아리움 입장권 50% 할인",
+    "purpose": [
+        "혜택 안내",
+        "웹/앱 접속 유도"
+    ],
+    "sales_script": "9월 T day 롯데월드 아쿠아리움 입장권 50% 할인! 지금 바로 확인하세요.",
+    "product": [
+        {
+            "name": "롯데월드 아쿠아리움 입장권",
+            "action": "구매"
+        }
+    ],
+    "channel": [
+        {
+            "type": "URL",
+            "value": "https://bit.ly/467rn3q",
+            "action": "추가 정보"
+        },
+        {
+            "type": "전화번호",
+            "value": "155...
+2025-12-18 14:39:35,758 - core.workflow_core - INFO - ✅ LLMExtractionStep 완료 (5.74초)
+2025-12-18 14:39:35,758 - core.workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-18 14:39:35,759 - core.mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-18 14:39:35,759 - core.mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-18 14:39:35,759 - core.mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': '9월 T day 롯데월드 아쿠아리움 입장권 50% 할인', 'purpose': ['혜택 안내', '웹/앱 접속 유도'], 'sales_script': '9월 T day 롯데월드 아쿠아리움 입장권 50% 할인! 지금 바로 확인하세요.', 'product': [{'name': '롯데월드 아쿠아리움 입장권', 'action': '구매'}], 'channel': [{'type': 'URL', 'value': 'https://bit.ly/467rn3q', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1558', 'action': '문의'}, {'type': '전화번호', 'value': '1504', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_T멤버십', '사용법/혜택/이벤트안내_SKT']}
+2025-12-18 14:39:35,759 - core.workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-18 14:39:35,759 - core.workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-18 14:39:35,759 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:35,759 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_extraction_result 시작
+2025-12-18 14:39:35,759 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:35,760 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-18 14:39:35,760 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-18 14:39:35,760 - services.result_builder - INFO -    - 원본 product 내용: [{'name': '롯데월드 아쿠아리움 입장권', 'action': '구매'}]
+2025-12-18 14:39:35,760 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 1개
+2025-12-18 14:39:35,760 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': '롯데월드 아쿠아리움 입장권', 'action': '구매'}]
+2025-12-18 14:39:35,760 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['롯데월드 아쿠아리움 입장권']
+2025-12-18 14:39:35,760 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: ['롯데월드']
+2025-12-18 14:39:35,760 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-18 14:39:35,760 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-18 14:39:35,760 - services.result_builder - INFO -    - 사용할 LLM 모델: ax
+2025-12-18 14:39:35,760 - services.result_builder - INFO -    - llm_factory 타입: <class 'utils.llm_factory.LLMFactory'>
+2025-12-18 14:39:35,761 - utils.llm_factory - INFO - ✅ LLM 모델 생성 완료: ax (skt/ax4)
+2025-12-18 14:39:35,761 - utils.llm_factory - INFO - ✅ 총 1개 LLM 모델 생성 완료
+2025-12-18 14:39:35,761 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:39:35,761 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:39:35,761 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-18 14:39:35,761 - services.entity_recognizer - INFO - Context mode: dag
+2025-12-18 14:39:36,458 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:36,462 - core.mms_workflow_steps - INFO - LLM 응답 길이: 692 문자
+2025-12-18 14:39:36,462 - core.mms_workflow_steps - INFO - LLM 응답 내용 (처음 500자): ```json
+{
+    "title": "T 우주×네이버웹툰 쿠키 2배 이벤트, 선착순 1만 명 혜택",
+    "purpose": ["상품 가입 유도", "이벤트 응모 유도", "혜택 안내"],
+    "sales_script": "T 우주패스+네이버웹툰 신규 가입 시 쿠키 30개 추가 증정! 지금 가입 안내할까요?",
+    "product": [
+        {"name": "T 우주패스 with Youtube Premium & 네이버웹툰 쿠키", "action": "가입"},
+        {"name": "T 우주패스 with Disney+ & 네이버웹툰 쿠키", "action": "가입"},
+        {"name": "T 우주패스 티빙 & 네이버웹툰", "action": "가입"}
+    ],
+    "channel": [
+        {"type": "URL", "value": "https://t-mms.kr/aiB/#74", "action": "추가 정보"}...
+2025-12-18 14:39:36,462 - core.workflow_core - INFO - ✅ LLMExtractionStep 완료 (6.21초)
+2025-12-18 14:39:36,463 - core.workflow_core - INFO - 
+============================== 6/8: ResponseParsingStep ==============================
+2025-12-18 14:39:36,464 - core.mms_workflow_steps - INFO - 추출된 JSON 객체 수: 1개
+2025-12-18 14:39:36,464 - core.mms_workflow_steps - INFO - 파싱된 JSON 객체 키: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+2025-12-18 14:39:36,464 - core.mms_workflow_steps - INFO - 파싱된 JSON 내용: {'title': 'T 우주×네이버웹툰 쿠키 2배 이벤트, 선착순 1만 명 혜택', 'purpose': ['상품 가입 유도', '이벤트 응모 유도', '혜택 안내'], 'sales_script': 'T 우주패스+네이버웹툰 신규 가입 시 쿠키 30개 추가 증정! 지금 가입 안내할까요?', 'product': [{'name': 'T 우주패스 with Youtube Premium & 네이버웹툰 쿠키', 'action': '가입'}, {'name': 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'action': '가입'}, {'name': 'T 우주패스 티빙 & 네이버웹툰', 'action': '가입'}], 'channel': [{'type': 'URL', 'value': 'https://t-mms.kr/aiB/#74', 'action': '추가 정보'}, {'type': '전화번호', 'value': '1505', 'action': '문의'}, {'type': '전화번호', 'value': '080-848-0515', 'action': '수신 거부'}], 'pgm': ['사용법/혜택/이벤트안내_구독', '상품및부가서비스가입유도_구독']}
+2025-12-18 14:39:36,465 - core.workflow_core - INFO - ✅ ResponseParsingStep 완료 (0.00초)
+2025-12-18 14:39:36,466 - core.workflow_core - INFO - 
+============================== 7/8: ResultConstructionStep ==============================
+2025-12-18 14:39:36,466 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:36,466 - services.result_builder - INFO - 🔍 [PRODUCT DEBUG] build_extraction_result 시작
+2025-12-18 14:39:36,466 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:36,466 - services.result_builder - INFO - 📋 [STEP 1] product_items 추출
+2025-12-18 14:39:36,467 - services.result_builder - INFO -    - 원본 product 타입: <class 'list'>
+2025-12-18 14:39:36,468 - services.result_builder - INFO -    - 원본 product 내용: [{'name': 'T 우주패스 with Youtube Premium & 네이버웹툰 쿠키', 'action': '가입'}, {'name': 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'action': '가입'}, {'name': 'T 우주패스 티빙 & 네이버웹툰', 'action': '가입'}]
+2025-12-18 14:39:36,468 - services.result_builder - INFO -    ✅ 최종 product_items 개수: 3개
+2025-12-18 14:39:36,468 - services.result_builder - INFO -    ✅ 최종 product_items 내용: [{'name': 'T 우주패스 with Youtube Premium & 네이버웹툰 쿠키', 'action': '가입'}, {'name': 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'action': '가입'}, {'name': 'T 우주패스 티빙 & 네이버웹툰', 'action': '가입'}]
+2025-12-18 14:39:36,468 - services.result_builder - INFO - 📋 [STEP 2] LLM 추출 엔티티: ['T 우주패스 with Youtube Premium & 네이버웹툰 쿠키', 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'T 우주패스 티빙 & 네이버웹툰']
+2025-12-18 14:39:36,469 - services.result_builder - INFO - 📋 [STEP 2] Kiwi 엔티티: ['T 우주패스 with Disney+', 'T 우주패스 티빙 & 네이버웹툰', '네이버웹툰 쿠키']
+2025-12-18 14:39:36,469 - services.result_builder - INFO - 📋 [STEP 2] entity_extraction_mode: llm
+2025-12-18 14:39:36,469 - services.result_builder - INFO - 🔍 [STEP 3] LLM 기반 엔티티 매칭 시작
+2025-12-18 14:39:36,469 - services.result_builder - INFO -    - 사용할 LLM 모델: ax
+2025-12-18 14:39:36,470 - services.result_builder - INFO -    - llm_factory 타입: <class 'utils.llm_factory.LLMFactory'>
+2025-12-18 14:39:36,471 - utils.llm_factory - INFO - ✅ LLM 모델 생성 완료: ax (skt/ax4)
+2025-12-18 14:39:36,471 - utils.llm_factory - INFO - ✅ 총 1개 LLM 모델 생성 완료
+2025-12-18 14:39:36,471 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:39:36,471 - services.result_builder - INFO -    - 초기화된 LLM 모델 수: 1개
+2025-12-18 14:39:36,471 - services.entity_recognizer - INFO - === LLM Entity Extraction Started ===
+2025-12-18 14:39:36,471 - services.entity_recognizer - INFO - Context mode: dag
+2025-12-18 14:39:36,756 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:36,758 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['0 day', 'NOL티켓 나폴리를 거닐다 전시 입장권']
+2025-12-18 14:39:36,759 - services.entity_recognizer - INFO - [skt/ax4] Extracted DAG text (49 chars)
+2025-12-18 14:39:36,916 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:36,916 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T day', '롯데월드 아쿠아리움 입장권']
+2025-12-18 14:39:36,917 - services.entity_recognizer - INFO - [skt/ax4] Extracted DAG text (68 chars)
+2025-12-18 14:39:38,107 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:38,111 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:38,116 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:38,118 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:38,126 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:38,127 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:38,146 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:38,147 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:38,166 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:38,167 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:38,458 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:38,461 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:38,848 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:38,851 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:38,927 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:38,930 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:39,017 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:39,019 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['롯데월드_T Day 적립사용']
+2025-12-18 14:39:39,238 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:39,238 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:39,240 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:39,242 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:39,347 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:39,350 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:39,587 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:39,590 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:39,937 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:39,940 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:39,987 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:39,989 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['롯데월드 아쿠아리움_T day 이벤트']
+2025-12-18 14:39:39,996 - utils.common_utils - INFO - extract_entities_with_llm 실행완료: 4.24초
+2025-12-18 14:39:39,996 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: (2, 5)
+2025-12-18 14:39:39,996 - services.result_builder - INFO -    📊 similarities_fuzzy 샘플 (처음 3개):
+2025-12-18 14:39:39,997 - services.result_builder - INFO - [{'item_name_in_msg': 'T day', 'item_nm_alias': '롯데월드_T Day 적립사용', 'sim': 1.4266666666666665, 'rank': 5.0, 'item_dmn_nm': '기타'}, {'item_name_in_msg': '롯데월드 아쿠아리움 입장권', 'item_nm_alias': '롯데월드 아쿠아리움_T day 이벤트', 'sim': 1.2819047619047619, 'rank': 1.0, 'item_dmn_nm': '쿠폰'}]
+2025-12-18 14:39:39,997 - services.result_builder - INFO - 🔍 [STEP 4] alias_pdf_raw와 merge 시작
+2025-12-18 14:39:39,997 - services.result_builder - INFO -    - alias_pdf_raw 크기: (188, 6)
+2025-12-18 14:39:40,000 - services.result_builder - INFO -    ✅ merged_df 크기: (2, 7)
+2025-12-18 14:39:40,000 - services.result_builder - INFO -    📊 merged_df 샘플 (처음 3개):
+2025-12-18 14:39:40,000 - services.result_builder - INFO - [{'item_name_in_msg': 'T day', 'item_nm_alias': '롯데월드_T Day 적립사용', 'sim': 1.4266666666666665, 'rank': 5.0, 'item_dmn_nm': '기타', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': '롯데월드 아쿠아리움 입장권', 'item_nm_alias': '롯데월드 아쿠아리움_T day 이벤트', 'sim': 1.2819047619047619, 'rank': 1.0, 'item_dmn_nm': '쿠폰', 'alias_1': nan, 'type': nan}]
+2025-12-18 14:39:40,000 - services.result_builder - INFO - 🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)
+2025-12-18 14:39:40,004 - services.result_builder - INFO -    ✅ filtered_df 크기: 비어있음
+2025-12-18 14:39:40,004 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-18 14:39:40,004 - services.result_builder - INFO -    - similarities_fuzzy.empty: False
+2025-12-18 14:39:40,004 - services.result_builder - INFO -    ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출
+2025-12-18 14:39:40,004 - services.entity_recognizer - INFO - 🔍 [map_products_to_entities] Started
+2025-12-18 14:39:40,004 - services.entity_recognizer - INFO -    - Input similarities_fuzzy shape: (2, 5)
+2025-12-18 14:39:40,006 - services.entity_recognizer - INFO -    - Filtering: 2 -> 2
+2025-12-18 14:39:40,017 - services.entity_recognizer - INFO -    ✅ product_tag count: 2
+2025-12-18 14:39:40,017 - services.result_builder - INFO -    ✅ 최종 product 개수: 2개
+2025-12-18 14:39:40,017 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': '롯데월드 아쿠아리움_T day 이벤트', 'item_id': ['73_6767', '73_6782'], 'item_name_in_msg': ['롯데월드 아쿠아리움 입장권'], 'expected_action': ['구매']}, {'item_nm': '롯데월드_T Day 적립사용', 'item_id': ['S201_9851'], 'item_name_in_msg': ['T day'], 'expected_action': ['기타']}]
+2025-12-18 14:39:40,017 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=2개
+2025-12-18 14:39:40,019 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-18 14:39:40,019 - services.result_builder - INFO -    ✅ 최종 channel 개수: 3개
+2025-12-18 14:39:40,019 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-18 14:39:40,019 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 2개
+2025-12-18 14:39:40,020 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-18 14:39:40,020 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:40,020 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_extraction_result 완료
+2025-12-18 14:39:40,020 - services.result_builder - INFO -    최종 final_result['product'] 개수: 2개
+2025-12-18 14:39:40,020 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:40,020 - core.workflow_core - INFO - ✅ ResultConstructionStep 완료 (4.26초)
+2025-12-18 14:39:40,020 - core.workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - 제목: 9월 T day 롯데월드 아쿠아리움 입장권 50% 할인
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - 목적: ['혜택 안내', '웹/앱 접속 유도']
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - 판매 스크립트: 9월 T day 롯데월드 아쿠아리움 입장권 50% 할인! 지금 바로 확인하세요.
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - 상품 수: 2개
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - 채널 수: 3개
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-18 14:39:40,020 - core.mms_workflow_steps - INFO - 오퍼 항목 수: 2개
+2025-12-18 14:39:40,020 - core.workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-18 14:39:40,020 - core.workflow_core - INFO - 
+============================================================
+2025-12-18 14:39:40,020 - core.workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 20.92초)
+2025-12-18 14:39:40,020 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:39:40,020 - core.workflow_core - INFO - 
+📊 실행 요약:
+2025-12-18 14:39:40,020 - core.workflow_core - INFO -   ✅ InputValidationStep: 0.73초
+2025-12-18 14:39:40,020 - core.workflow_core - INFO -   ✅ EntityExtractionStep: 9.65초
+2025-12-18 14:39:40,020 - core.workflow_core - INFO -   ✅ ProgramClassificationStep: 0.54초
+2025-12-18 14:39:40,020 - core.workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-18 14:39:40,020 - core.workflow_core - INFO -   ✅ LLMExtractionStep: 5.74초
+2025-12-18 14:39:40,021 - core.workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-18 14:39:40,021 - core.workflow_core - INFO -   ✅ ResultConstructionStep: 4.26초
+2025-12-18 14:39:40,021 - core.workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-18 14:39:40,021 - utils.common_utils - INFO - process_message 실행완료: 20.92초
+2025-12-18 14:39:40,021 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-12-18 14:39:40,021 - core.mms_extractor - INFO - 배치 처리 진행률: 1/3 (33.3%)
+2025-12-18 14:39:40,067 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:40,068 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:40,077 - utils.common_utils - INFO - extract_entities_with_llm 실행완료: 4.55초
+2025-12-18 14:39:40,078 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: 비어있음
+2025-12-18 14:39:40,078 - services.result_builder - WARNING -    ⚠️ similarities_fuzzy가 비어있습니다!
+2025-12-18 14:39:40,078 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-18 14:39:40,078 - services.result_builder - INFO -    - similarities_fuzzy.empty: True
+2025-12-18 14:39:40,078 - services.result_builder - WARNING -    ⚠️ similarities_fuzzy가 비어있음 → LLM 결과 그대로 사용 (else 브랜치)
+2025-12-18 14:39:40,078 - services.result_builder - INFO -    - product_items 개수: 2개
+2025-12-18 14:39:40,078 - services.result_builder - INFO -    - stop_item_names 개수: 204개
+2025-12-18 14:39:40,078 - services.result_builder - INFO -    - 필터링 후 product_items 개수: 2개
+2025-12-18 14:39:40,078 - services.result_builder - INFO -    - 필터링 후 product_items: [{'name': 'SKT 0 day', 'action': '사용'}, {'name': 'NOL티켓 나폴리를 거닐다 전시 입장권', 'action': '구매'}]
+2025-12-18 14:39:40,078 - services.result_builder - INFO -    ✅ 최종 product 개수: 2개
+2025-12-18 14:39:40,078 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': 'SKT 0 day', 'item_id': ['#'], 'item_name_in_msg': ['SKT 0 day'], 'expected_action': ['사용']}, {'item_nm': 'NOL티켓 나폴리를 거닐다 전시 입장권', 'item_id': ['#'], 'item_name_in_msg': ['NOL티켓 나폴리를 거닐다 전시 입장권'], 'expected_action': ['구매']}]
+2025-12-18 14:39:40,078 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=2개
+2025-12-18 14:39:40,079 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-18 14:39:40,080 - services.result_builder - INFO -    ✅ 최종 channel 개수: 3개
+2025-12-18 14:39:40,080 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-18 14:39:40,080 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 2개
+2025-12-18 14:39:40,080 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-18 14:39:40,080 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:40,080 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_extraction_result 완료
+2025-12-18 14:39:40,080 - services.result_builder - INFO -    최종 final_result['product'] 개수: 2개
+2025-12-18 14:39:40,080 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:39:40,080 - core.workflow_core - INFO - ✅ ResultConstructionStep 완료 (4.55초)
+2025-12-18 14:39:40,080 - core.workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - 제목: SKT 0 day 혜택 안내: NOL티켓 나폴리 전시 50% 할인
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - 목적: ['혜택 안내', '웹/앱 접속 유도']
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - 판매 스크립트: SKT 0 day로 NOL티켓 나폴리 전시 50% 할인! 자세히 보실래요?
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - 상품 수: 2개
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - 채널 수: 3개
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-18 14:39:40,080 - core.mms_workflow_steps - INFO - 오퍼 항목 수: 2개
+2025-12-18 14:39:40,080 - core.workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-18 14:39:40,080 - core.workflow_core - INFO - 
+============================================================
+2025-12-18 14:39:40,081 - core.workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 20.98초)
+2025-12-18 14:39:40,081 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:39:40,081 - core.workflow_core - INFO - 
+📊 실행 요약:
+2025-12-18 14:39:40,081 - core.workflow_core - INFO -   ✅ InputValidationStep: 0.00초
+2025-12-18 14:39:40,081 - core.workflow_core - INFO -   ✅ EntityExtractionStep: 10.77초
+2025-12-18 14:39:40,081 - core.workflow_core - INFO -   ✅ ProgramClassificationStep: 0.21초
+2025-12-18 14:39:40,081 - core.workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-18 14:39:40,081 - core.workflow_core - INFO -   ✅ LLMExtractionStep: 5.45초
+2025-12-18 14:39:40,081 - core.workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-18 14:39:40,081 - core.workflow_core - INFO -   ✅ ResultConstructionStep: 4.55초
+2025-12-18 14:39:40,081 - core.workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-18 14:39:40,081 - utils.common_utils - INFO - process_message 실행완료: 20.99초
+2025-12-18 14:39:40,081 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-12-18 14:39:40,081 - core.mms_extractor - INFO - 배치 처리 진행률: 2/3 (66.7%)
+2025-12-18 14:39:41,447 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:41,450 - services.entity_recognizer - INFO - [skt/ax4] Extracted 5 entities: ['T 우주', 'T 우주패스 with Youtube Premium & 네이버웹툰 쿠키', 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'T 우주패스 티빙 & 네이버웹툰', '네이버웹툰 쿠키 30개 추가 증정']
+2025-12-18 14:39:41,451 - services.entity_recognizer - INFO - [skt/ax4] Extracted DAG text (387 chars)
+2025-12-18 14:39:44,848 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:44,851 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:44,907 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:44,907 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:44,910 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:44,913 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:45,598 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:45,602 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:45,777 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:45,780 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:46,419 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:46,422 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['T 우주패스 티빙 & 네이버웹툰']
+2025-12-18 14:39:46,784 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:46,786 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T 우주패스 with Disney+', 'T 우주패스 TVING & 네이버웹툰']
+2025-12-18 14:39:47,039 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:47,042 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['T 우주패스 TVING & 네이버WEB툰']
+2025-12-18 14:39:47,531 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:47,533 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T 우주패스 with 유튜브 프리미엄', 'T 우주패스 tving & 네이버web툰']
+2025-12-18 14:39:47,999 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:48,003 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T 우주패스 with Disney+ + 네이버웹툰 쿠키', 'T 우주패스 with YouTube Premium']
+2025-12-18 14:39:48,338 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:48,339 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T 우주패스 with Disney+ + 네이버WEB툰 쿠키', 'T 우주패스 with 유튜브 프리미엄 + 웨이브 이용권']
+2025-12-18 14:39:48,754 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:48,756 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:49,428 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:49,432 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T 우주패스 with 유튜브 프리미엄 + 네이버웹툰 쿠키', 'T 우주패스 with Disney+ & 네이버웹툰 쿠키']
+2025-12-18 14:39:49,549 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:49,552 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:49,559 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:49,560 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['T 우주패스 with 유튜브 프리미엄 + 네이버WEB툰 쿠키']
+2025-12-18 14:39:50,329 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:50,330 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:50,370 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:50,371 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:50,906 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:50,907 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['T 우주패스 with 유튜브 PREMIUM + 네이버웹툰 쿠키']
+2025-12-18 14:39:51,228 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:51,228 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:51,236 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:51,237 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:51,897 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:51,898 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T 우주Pass with Disney+', 'T 우주Pass with TVING']
+2025-12-18 14:39:52,088 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:52,091 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:52,197 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:52,200 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T 우주pass with Disney+', 'T 우주pass with 유튜브 프리미엄']
+2025-12-18 14:39:52,728 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:52,729 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:52,980 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:52,983 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:53,268 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:53,271 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:53,579 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:53,583 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:53,800 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:53,803 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:54,170 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:54,172 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:54,373 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:54,374 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:54,629 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:54,632 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:54,914 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:54,915 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:55,159 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:55,161 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:55,373 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:55,374 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:56,011 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:56,012 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['T 우주패스 with YouTube PREMIUM + 네이버웹툰 쿠키']
+2025-12-18 14:39:56,286 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:56,287 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:56,531 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:56,532 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['T 우주패스 with YouTube Premium + 네이버Web툰 쿠키']
+2025-12-18 14:39:57,254 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:57,254 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:57,255 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:57,256 - services.entity_recognizer - INFO - [skt/ax4] Extracted 2 entities: ['T 우주PASS with YouTube PREMIUM + 네이버웹툰 쿠키', 'T 우주PASS tving & 네이버웹툰']
+2025-12-18 14:39:57,326 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:57,327 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:58,050 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:58,051 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:58,073 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:58,073 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:58,095 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:58,096 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:58,858 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:58,859 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:58,909 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:58,910 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:58,970 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:58,972 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:59,601 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:59,603 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:59,678 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:59,679 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:39:59,829 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:39:59,830 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:00,468 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:00,468 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:00,571 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:00,572 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:00,766 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:00,767 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:01,351 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:01,351 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:01,352 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:01,355 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:01,549 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:01,554 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:02,127 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:02,128 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:02,206 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:02,207 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:02,357 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:02,358 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:02,967 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:02,968 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:02,996 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:02,997 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:03,177 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:03,180 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:03,737 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:03,738 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:03,777 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:03,778 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:03,986 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:03,987 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:04,588 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:04,588 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:04,609 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:04,610 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:04,743 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:04,743 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:05,334 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:05,335 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:05,359 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:05,360 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:05,471 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:05,472 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:06,115 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:06,117 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:06,369 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:06,370 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:06,518 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:06,519 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['T 우주PASS with 유튜브 Premium + 네이버WEB툰 쿠키']
+2025-12-18 14:40:07,160 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:07,161 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['T 우주PASS 티빙 & 네이버웹툰']
+2025-12-18 14:40:07,270 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:07,271 - services.entity_recognizer - INFO - [skt/ax4] Extracted 0 entities: []
+2025-12-18 14:40:07,441 - httpx - INFO - HTTP Request: POST https://api.platform.a15t.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-18 14:40:07,442 - services.entity_recognizer - INFO - [skt/ax4] Extracted 1 entities: ['네이버웹툰 쿠키']
+2025-12-18 14:40:07,458 - utils.common_utils - INFO - extract_entities_with_llm 실행완료: 30.99초
+2025-12-18 14:40:07,458 - services.result_builder - INFO -    ✅ similarities_fuzzy 결과 크기: (148, 5)
+2025-12-18 14:40:07,458 - services.result_builder - INFO -    📊 similarities_fuzzy 샘플 (처음 3개):
+2025-12-18 14:40:07,458 - services.result_builder - INFO - [{'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 티빙 & 네이버웹툰', 'sim': 1.474, 'rank': 7.0, 'item_dmn_nm': '구독 상품'}, {'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 TVING & 네이버웹툰', 'sim': 1.4266666666666665, 'rank': 10.0, 'item_dmn_nm': '구독 상품'}, {'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 with Disney+', 'sim': 1.4266666666666665, 'rank': 10.0, 'item_dmn_nm': '구독 상품'}]
+2025-12-18 14:40:07,458 - services.result_builder - INFO - 🔍 [STEP 4] alias_pdf_raw와 merge 시작
+2025-12-18 14:40:07,458 - services.result_builder - INFO -    - alias_pdf_raw 크기: (188, 6)
+2025-12-18 14:40:07,460 - services.result_builder - INFO -    ✅ merged_df 크기: (148, 7)
+2025-12-18 14:40:07,460 - services.result_builder - INFO -    📊 merged_df 샘플 (처음 3개):
+2025-12-18 14:40:07,460 - services.result_builder - INFO - [{'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 티빙 & 네이버웹툰', 'sim': 1.474, 'rank': 7.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 TVING & 네이버웹툰', 'sim': 1.4266666666666665, 'rank': 10.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 with Disney+', 'sim': 1.4266666666666665, 'rank': 10.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}]
+2025-12-18 14:40:07,460 - services.result_builder - INFO - 🔍 [STEP 5] filtered_df 생성 (expansion 타입 필터링)
+2025-12-18 14:40:07,462 - services.result_builder - INFO -    ✅ filtered_df 크기: (31, 7)
+2025-12-18 14:40:07,462 - services.result_builder - INFO -    📊 filtered_df 샘플 (처음 3개):
+2025-12-18 14:40:07,463 - services.result_builder - INFO - [{'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 티빙 & 네이버웹툰', 'sim': 1.474, 'rank': 7.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 TVING & 네이버웹툰', 'sim': 1.4266666666666665, 'rank': 10.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}, {'item_name_in_msg': 'T 우주패스', 'item_nm_alias': 'T 우주패스 with Disney+', 'sim': 1.4266666666666665, 'rank': 10.0, 'item_dmn_nm': '구독 상품', 'alias_1': nan, 'type': nan}]
+2025-12-18 14:40:07,463 - services.result_builder - INFO - 🔍 [STEP 6] 상품 정보 매핑 시작
+2025-12-18 14:40:07,463 - services.result_builder - INFO -    - similarities_fuzzy.empty: False
+2025-12-18 14:40:07,463 - services.result_builder - INFO -    ✅ similarities_fuzzy가 비어있지 않음 → map_products_with_similarity 호출
+2025-12-18 14:40:07,463 - services.entity_recognizer - INFO - 🔍 [map_products_to_entities] Started
+2025-12-18 14:40:07,463 - services.entity_recognizer - INFO -    - Input similarities_fuzzy shape: (148, 5)
+2025-12-18 14:40:07,465 - services.entity_recognizer - INFO -    - Filtering: 148 -> 148
+2025-12-18 14:40:07,475 - services.entity_recognizer - INFO -    ✅ product_tag count: 8
+2025-12-18 14:40:07,475 - services.result_builder - INFO -    ✅ 최종 product 개수: 8개
+2025-12-18 14:40:07,475 - services.result_builder - INFO -    ✅ 최종 product 내용: [{'item_nm': 'T 우주패스 with Disney+', 'item_id': ['PR00000538'], 'item_name_in_msg': ['T 우주패스', 'T 우주패스 with', 'T 우주패스 with Disney+', 'T 우주패스 with Disney+ &', 'T 우주패스 with Disney+ & 네이버웹툰', 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'T 우주패스 with Youtube', 'T 우주패스 with Youtube Premium', 'T 우주패스 with Youtube Premium &', 'T 우주패스 with Youtube Premium & 네이버웹툰', 'T 우주패스 티빙', 'T 우주패스 티빙 &'], 'expected_action': ['가입']}, {'item_nm': 'T 우주패스 with Disney+ + 네이버웹툰 쿠키', 'item_id': ['PR00000689'], 'item_name_in_msg': ['T 우주패스 with', 'T 우주패스 with Disney+', 'T 우주패스 with Disney+ &', 'T 우주패스 with Disney+ & 네이버웹툰', 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'T 우주패스 with Youtube', 'T 우주패스 with Youtube Premium & 네이버웹툰', 'T 우주패스 with Youtube Premium & 네이버웹툰 쿠키', 'T 우주패스 티빙 & 네이버웹툰'], 'expected_action': ['가입']}, {'item_nm': 'T 우주패스 with YouTube Premium', 'item_id': ['PR00000112', 'PR00000714'], 'item_name_in_msg': ['T 우주패스 with', 'T 우주패스 with Disney+', 'T 우주패스 with Disney+ &', 'T 우주패스 with Youtube', 'T 우주패스 with Youtube Premium', 'T 우주패스 with Youtube Premium &', 'T 우주패스 with Youtube Premium & 네이버웹툰', 'T 우주패스 with Youtube Premium & 네이버웹툰 쿠키', 'T 우주패스 with Disney+ & 네이버웹툰', 'T 우주패스 with Disney+ & 네이버웹툰 쿠키'], 'expected_action': ['가입']}, {'item_nm': 'T 우주패스 with YouTube Premium + Wavve 이용권', 'item_id': ['PR00000590'], 'item_name_in_msg': ['T 우주패스 with', 'T 우주패스 with Disney+', 'T 우주패스 with Disney+ &'], 'expected_action': ['기타']}, {'item_nm': 'T 우주패스 with YouTube Premium + 네이버웹툰 쿠키', 'item_id': ['PR00000680'], 'item_name_in_msg': ['T 우주패스 with Disney+ & 네이버웹툰', 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'T 우주패스 with Youtube', 'T 우주패스 with Youtube Premium', 'T 우주패스 with Youtube Premium &', 'T 우주패스 with Youtube Premium & 네이버웹툰', 'T 우주패스 with Youtube Premium & 네이버웹툰 쿠키', 'T 우주패스 with', 'T 우주패스 with Disney+', 'T 우주패스 with Disney+ &', 'T 우주패스 티빙 & 네이버웹툰'], 'expected_action': ['가입']}, {'item_nm': 'T 우주패스 with 티빙', 'item_id': ['PR00000651'], 'item_name_in_msg': ['T 우주패스 with', 'T 우주패스 with Disney+', 'T 우주패스 with Disney+ &', 'T 우주패스 with Youtube'], 'expected_action': ['기타']}, {'item_nm': 'T 우주패스 티빙 & 네이버웹툰', 'item_id': ['PR00000656', 'PR00000657'], 'item_name_in_msg': ['T 우주패스', 'T 우주패스 with', 'T 우주패스 with Disney+ & 네이버웹툰', 'T 우주패스 with Disney+ & 네이버웹툰 쿠키', 'T 우주패스 with Youtube Premium & 네이버웹툰', 'T 우주패스 티빙', 'T 우주패스 티빙 &', 'T 우주패스 티빙 & 네이버웹툰'], 'expected_action': ['가입']}, {'item_nm': '네이버웹툰 쿠키', 'item_id': ['PR00000658'], 'item_name_in_msg': ['네이버웹툰 쿠키', '네이버웹툰 쿠키 30개', '네이버웹툰 쿠키 30개 추가', '네이버웹툰 쿠키 30개 추가 증정'], 'expected_action': ['기타']}]
+2025-12-18 14:40:07,476 - services.result_builder - INFO - 🏷️  [STEP 7] offer_object 초기화: type=product, value 개수=8개
+2025-12-18 14:40:07,477 - services.result_builder - INFO - 🔍 [STEP 8] 채널 정보 처리 및 offer_object 업데이트
+2025-12-18 14:40:07,477 - services.result_builder - INFO -    ✅ 최종 channel 개수: 3개
+2025-12-18 14:40:07,477 - services.result_builder - INFO -    ✅ 최종 offer_object type: product
+2025-12-18 14:40:07,477 - services.result_builder - INFO -    ✅ 최종 offer_object value 개수: 8개
+2025-12-18 14:40:07,477 - services.result_builder - INFO - ✅ [STEP 9] final_result에 offer 필드 추가 완료
+2025-12-18 14:40:07,477 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:40:07,477 - services.result_builder - INFO - ✅ [PRODUCT DEBUG] build_extraction_result 완료
+2025-12-18 14:40:07,477 - services.result_builder - INFO -    최종 final_result['product'] 개수: 8개
+2025-12-18 14:40:07,477 - services.result_builder - INFO - ================================================================================
+2025-12-18 14:40:07,478 - core.workflow_core - INFO - ✅ ResultConstructionStep 완료 (31.01초)
+2025-12-18 14:40:07,478 - core.workflow_core - INFO - 
+============================== 8/8: ValidationStep ==============================
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - === 최종 결과 요약 ===
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - 제목: T 우주×네이버웹툰 쿠키 2배 이벤트, 선착순 1만 명 혜택
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - 목적: ['상품 가입 유도', '이벤트 응모 유도', '혜택 안내']
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - 판매 스크립트: T 우주패스+네이버웹툰 신규 가입 시 쿠키 30개 추가 증정! 지금 가입 안내할까요?
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - 상품 수: 8개
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - 채널 수: 3개
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - 프로그램 수: 2개
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - 오퍼 타입: product
+2025-12-18 14:40:07,478 - core.mms_workflow_steps - INFO - 오퍼 항목 수: 8개
+2025-12-18 14:40:07,478 - core.workflow_core - INFO - ✅ ValidationStep 완료 (0.00초)
+2025-12-18 14:40:07,478 - core.workflow_core - INFO - 
+============================================================
+2025-12-18 14:40:07,478 - core.workflow_core - INFO - ✅ MMS Extraction Workflow 완료 (총 48.38초)
+2025-12-18 14:40:07,478 - core.workflow_core - INFO - ============================================================
+2025-12-18 14:40:07,478 - core.workflow_core - INFO - 
+📊 실행 요약:
+2025-12-18 14:40:07,479 - core.workflow_core - INFO -   ✅ InputValidationStep: 0.73초
+2025-12-18 14:40:07,479 - core.workflow_core - INFO -   ✅ EntityExtractionStep: 10.38초
+2025-12-18 14:40:07,479 - core.workflow_core - INFO -   ✅ ProgramClassificationStep: 0.03초
+2025-12-18 14:40:07,479 - core.workflow_core - INFO -   ✅ ContextPreparationStep: 0.00초
+2025-12-18 14:40:07,479 - core.workflow_core - INFO -   ✅ LLMExtractionStep: 6.21초
+2025-12-18 14:40:07,479 - core.workflow_core - INFO -   ✅ ResponseParsingStep: 0.00초
+2025-12-18 14:40:07,479 - core.workflow_core - INFO -   ✅ ResultConstructionStep: 31.01초
+2025-12-18 14:40:07,479 - core.workflow_core - INFO -   ✅ ValidationStep: 0.00초
+2025-12-18 14:40:07,479 - utils.common_utils - INFO - process_message 실행완료: 48.38초
+2025-12-18 14:40:07,479 - core.mms_extractor - INFO - 워커 프로세스에서 메시지 처리 완료
+2025-12-18 14:40:07,479 - core.mms_extractor - INFO - 배치 처리 진행률: 3/3 (100.0%)
+2025-12-18 14:40:07,480 - core.mms_extractor - INFO - 배치 처리 완료: 3개 메시지, 48.38초
+2025-12-18 14:40:07,480 - core.mms_extractor - INFO - 평균 처리 시간: 16.13초/메시지
+2025-12-18 14:40:07,995 - utils.mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-12-18 14:40:07,996 - utils.mongodb_utils - INFO - 문서 저장 성공: 694393b72a635f200ae6c64f
+2025-12-18 14:40:07,997 - utils.mongodb_utils - INFO - MongoDB 연결 해제
+2025-12-18 14:40:07,997 - __main__ - INFO - ✅ 메시지 808 처리 성공
+2025-12-18 14:40:08,004 - utils.mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-12-18 14:40:08,006 - utils.mongodb_utils - INFO - 문서 저장 성공: 694393b82a635f200ae6c651
+2025-12-18 14:40:08,006 - utils.mongodb_utils - INFO - MongoDB 연결 해제
+2025-12-18 14:40:08,006 - __main__ - INFO - ✅ 메시지 519 처리 성공
+2025-12-18 14:40:08,010 - utils.mongodb_utils - INFO - MongoDB 연결 성공: aos.mmsext
+2025-12-18 14:40:08,011 - utils.mongodb_utils - INFO - 문서 저장 성공: 694393b82a635f200ae6c653
+2025-12-18 14:40:08,011 - utils.mongodb_utils - INFO - MongoDB 연결 해제
+2025-12-18 14:40:08,012 - __main__ - INFO - ✅ 메시지 559 처리 성공
+2025-12-18 14:40:08,012 - __main__ - INFO - 🎯 병렬 처리 완료: 3개 메시지, 48.92초 소요
+2025-12-18 14:40:08,012 - __main__ - INFO - 💾 배치 결과 CSV 파일 저장 생략 (--save-results 옵션으로 활성화 가능)
+2025-12-18 14:40:08,012 - __main__ - INFO - Successfully processed 3 messages
+2025-12-18 14:40:08,012 - __main__ - INFO - Processed message IDs: ['808', '519', '559']
+2025-12-18 14:40:08,012 - __main__ - INFO - ==================================================
+2025-12-18 14:40:08,012 - __main__ - INFO - 🎯 배치 처리 성능 요약
+2025-12-18 14:40:08,012 - __main__ - INFO - ==================================================
+2025-12-18 14:40:08,012 - __main__ - INFO - 처리 모드: 병렬 처리
+2025-12-18 14:40:08,012 - __main__ - INFO - 워커 수: 14
+2025-12-18 14:40:08,012 - __main__ - INFO - DAG 추출: OFF
+2025-12-18 14:40:08,012 - __main__ - INFO - 총 처리 메시지: 3개
+2025-12-18 14:40:08,012 - __main__ - INFO - 성공: 3개
+2025-12-18 14:40:08,012 - __main__ - INFO - 실패: 0개
+2025-12-18 14:40:08,012 - __main__ - INFO - 성공률: 100.00%
+2025-12-18 14:40:08,012 - __main__ - INFO - 총 처리 시간: 61.36초
+2025-12-18 14:40:08,012 - __main__ - INFO - 메시지 처리 시간: 48.92초
+2025-12-18 14:40:08,012 - __main__ - INFO - 메시지당 평균 시간: 16.31초
+2025-12-18 14:40:08,012 - __main__ - INFO - 처리량: 0.06 메시지/초
+2025-12-18 14:40:08,012 - __main__ - INFO - ==================================================
+2025-12-18 14:40:08,013 - __main__ - INFO - ==================================================
+2025-12-18 14:40:08,013 - __main__ - INFO - Batch Processing Summary
+2025-12-18 14:40:08,013 - __main__ - INFO - ==================================================
+2025-12-18 14:40:08,013 - __main__ - INFO - status: completed
+2025-12-18 14:40:08,013 - __main__ - INFO - processed_count: 3
+2025-12-18 14:40:08,013 - __main__ - INFO - successful_count: 3
+2025-12-18 14:40:08,013 - __main__ - INFO - failed_count: 0
+2025-12-18 14:40:08,013 - __main__ - INFO - results_file: ./results/batch_results.csv
+2025-12-18 14:40:08,013 - __main__ - INFO - processing_mode: 병렬 처리
+2025-12-18 14:40:08,013 - __main__ - INFO - max_workers: 14
+2025-12-18 14:40:08,013 - __main__ - INFO - dag_extraction: False
+2025-12-18 14:40:08,013 - __main__ - INFO - total_time_seconds: 61.36
+2025-12-18 14:40:08,013 - __main__ - INFO - processing_time_seconds: 48.92
+2025-12-18 14:40:08,013 - __main__ - INFO - avg_time_per_message: 16.31
+2025-12-18 14:40:08,013 - __main__ - INFO - throughput_messages_per_second: 0.06
+2025-12-18 14:40:08,013 - __main__ - INFO - success_rate: 100.0
+2025-12-18 14:40:08,013 - __main__ - INFO - ==================================================
