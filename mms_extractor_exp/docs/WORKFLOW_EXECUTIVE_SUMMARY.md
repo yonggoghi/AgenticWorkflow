@@ -22,6 +22,12 @@ MMS 광고 메시지에서 **상품명을 추출**하고 **데이터베이스 ID
       "item_id": ["PROD_IP17_001"],
       "item_name_in_msg": ["아이폰"],
       "expected_action": ["구매"]
+    },
+    {
+      "item_nm": "아이폰17 Pro",
+      "item_id": ["PROD_IP17P_001"],
+      "item_name_in_msg": ["아이폰"],
+      "expected_action": ["구매"]
     }
   ]
 }
@@ -141,7 +147,7 @@ MMS 광고 메시지에서 **상품명을 추출**하고 **데이터베이스 ID
 }
 ```
 
-**출력** (최고 유사도 선택):
+**출력** (유사도 0.85 이상 모두 선택):
 ```json
 {
   "matched_entities": [
@@ -150,6 +156,13 @@ MMS 광고 메시지에서 **상품명을 추출**하고 **데이터베이스 ID
       "item_nm": "아이폰17",
       "item_id": "PROD_IP17_001",
       "similarity_score": 0.95,
+      "match_method": "fuzzy_sequence"
+    },
+    {
+      "item_name_in_msg": "아이폰",
+      "item_nm": "아이폰17 Pro",
+      "item_id": "PROD_IP17P_001",
+      "similarity_score": 0.88,
       "match_method": "fuzzy_sequence"
     }
   ]
@@ -170,6 +183,11 @@ MMS 광고 메시지에서 **상품명을 추출**하고 **데이터베이스 ID
       "item_name_in_msg": "아이폰",
       "item_nm": "아이폰17",
       "item_id": "PROD_IP17_001"
+    },
+    {
+      "item_name_in_msg": "아이폰",
+      "item_nm": "아이폰17 Pro",
+      "item_id": "PROD_IP17P_001"
     }
   ]
 }
@@ -181,6 +199,7 @@ MMS 광고 메시지에서 **상품명을 추출**하고 **데이터베이스 ID
 
 상품 정보:
 - 아이폰 (ID: PROD_IP17_001) → 아이폰17
+- 아이폰 (ID: PROD_IP17P_001) → 아이폰17 Pro
 
 다음을 추출하세요:
 1. 상품별 기대 행동 (구매, 가입, 방문 등)
@@ -194,6 +213,12 @@ MMS 광고 메시지에서 **상품명을 추출**하고 **데이터베이스 ID
     {
       "item_nm": "아이폰17",
       "item_id": ["PROD_IP17_001"],
+      "item_name_in_msg": ["아이폰"],
+      "expected_action": ["구매"]
+    },
+    {
+      "item_nm": "아이폰17 Pro",
+      "item_id": ["PROD_IP17P_001"],
       "item_name_in_msg": ["아이폰"],
       "expected_action": ["구매"]
     }
@@ -234,6 +259,12 @@ MMS 광고 메시지에서 **상품명을 추출**하고 **데이터베이스 ID
       {
         "item_nm": "아이폰17",
         "item_id": ["PROD_IP17_001"],
+        "item_name_in_msg": ["아이폰"],
+        "expected_action": ["구매"]
+      },
+      {
+        "item_nm": "아이폰17 Pro",
+        "item_id": ["PROD_IP17P_001"],
         "item_name_in_msg": ["아이폰"],
         "expected_action": ["구매"]
       }
