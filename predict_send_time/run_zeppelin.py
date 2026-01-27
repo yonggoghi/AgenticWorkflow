@@ -118,13 +118,51 @@ def run_paragraph(zepp_url, notebook_id, paragraph_id, params=None):
         time.sleep(5)
         response = requests.get(url)
         data = response.json()
-        status = data.get("body", {}).get("status", "UNKNOWN")
+        body = data.get("body", {})
+        status = body.get("status", "UNKNOWN")
         
         if status != "RUNNING":
             print(f"  Status: {status}")
         
         if status in ["ERROR", "ABORT"]:
             print(f"  FAILED: {status} in paragraph execution")
+            
+            # Extract and print error message
+            error_messages = []
+            
+            # Try to get error from results
+            results = body.get("results", {})
+            if results.get("code") == "ERROR":
+                result_msg = results.get("msg", [])
+                if isinstance(result_msg, list):
+                    for msg in result_msg:
+                        if isinstance(msg, dict) and "data" in msg:
+                            error_messages.append(msg["data"])
+            
+            # Try to get error from msg
+            msg_list = body.get("msg", [])
+            if isinstance(msg_list, list):
+                for msg in msg_list:
+                    if isinstance(msg, dict) and "data" in msg:
+                        error_messages.append(msg["data"])
+            
+            # Print error messages
+            if error_messages:
+                print(f"\n{'='*80}")
+                print(f"ERROR DETAILS:")
+                print(f"{'='*80}")
+                for idx, error_msg in enumerate(error_messages, 1):
+                    # Limit error message length for readability
+                    max_lines = 50
+                    lines = error_msg.split('\n')
+                    if len(lines) > max_lines:
+                        truncated_msg = '\n'.join(lines[:max_lines]) + f"\n... (truncated, {len(lines) - max_lines} more lines)"
+                    else:
+                        truncated_msg = error_msg
+                    print(f"\n--- Error Message {idx} ---")
+                    print(truncated_msg)
+                print(f"{'='*80}\n")
+            
             return False
     
     print(f"  Completed: {paragraph_id}")
@@ -219,11 +257,6 @@ def main():
     for attempt in range(MAX_RETRIES):
         print(f"\nPRE attempt {attempt + 1}/{MAX_RETRIES}")
         
-        # Restart Spark on retry attempts
-        if attempt > 0:
-            restart_spark(zepp_url)
-            print("Spark restarted for PRE retry\n")
-        
         if run_pre_paragraphs(zepp_url, notebook_id, paragraph_ids_pre):
             print("PRE paragraphs completed successfully")
             break
@@ -253,11 +286,6 @@ def main():
         success = False
         for attempt in range(MAX_RETRIES):
             print(f"\nAttempt {attempt + 1}/{MAX_RETRIES} for params {param_list}")
-            
-            # Restart Spark on retry attempts
-            if attempt > 0:
-                restart_spark(zepp_url)
-                print("Spark restarted for param retry\n")
             
             if run_main_paragraphs_with_param(zepp_url, notebook_id, paragraph_ids, param_list):
                 print(f"✓ Params {param_list} completed successfully")
