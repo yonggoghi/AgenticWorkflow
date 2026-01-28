@@ -48,6 +48,17 @@ import scala.collection.JavaConverters._
 spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
 spark.conf.set("spark.sql.adaptive.enabled", "true")
 spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
+
+// 동적 파티션 개수 계산 (코어 수 × 익스큐터 개수)
+val executorInstances = spark.sparkContext.getConf.getInt("spark.executor.instances", 10)
+val executorCores = spark.sparkContext.getConf.getInt("spark.executor.cores", 5)
+val optimalPartitions = executorInstances * executorCores
+
+println(s"===== Dynamic Partitioning Configuration =====")
+println(s"Executor Instances: $executorInstances")
+println(s"Executor Cores: $executorCores")
+println(s"Optimal Partitions: $optimalPartitions")
+println(s"===============================================")
 spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
 spark.conf.set("spark.sql.shuffle.partitions", "400")
 spark.conf.set("spark.sql.files.maxPartitionBytes", "128MB")
@@ -267,7 +278,7 @@ val resDFFiltered = resDF
     )
     .withColumn("res_utility", F.expr(s"case when hour_gap is null then 0.0 else 1.0 / (1 + hour_gap) end"))
     .dropDuplicates()
-    .repartition(200, F.col("svc_mgmt_num"))
+    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"))
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Filtered response data cached")
@@ -289,7 +300,7 @@ val resDFSelected = resDFFiltered
         "click_yn",
         "res_utility"
     )
-    .repartition(200, F.col("svc_mgmt_num"), F.col("chnl_typ"), F.col("cmpgn_typ"), F.col("send_ym"), F.col("send_hournum_cd"))
+    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"), F.col("chnl_typ"), F.col("cmpgn_typ"), F.col("send_ym"), F.col("send_hournum_cd"))
     .dropDuplicates("svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_hournum_cd", "click_yn")
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
@@ -357,7 +368,7 @@ val mmktDFTemp = spark.sql(s"""
     FROM wind_tmt.mmkt_svc_bas_f 
     WHERE strd_ym IN (${featureYmList.mkString("'","','","'")})
 """)
-  .repartition(200, F.col("svc_mgmt_num"))
+  .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"))
 
 // Product 정보 조인
 val prodDF = spark.sql("SELECT prod_id AS fee_prod_id, prod_nm AS fee_prod_nm FROM wind.td_zprd_prod")
@@ -398,7 +409,7 @@ val userYmDF = resDFSelected
     .select("svc_mgmt_num", "feature_ym")
     .distinct()
     .filter(smnCond)
-    .repartition(100, F.col("svc_mgmt_num"))
+    .repartition(optimalPartitions * 2, F.col("svc_mgmt_num"))
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println(s"User-ym pairs extracted for suffix '$smnSuffix'")
@@ -444,7 +455,7 @@ val xdrDF = spark.sql(s"""
     ) hour AS send_hournum_cd, traffic
     WHERE hour.traffic > 1000
 """)
-.repartition(300, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
+.repartition(optimalPartitions * 6, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
 .groupBy("svc_mgmt_num", "feature_ym", "send_hournum_cd")
 .agg(
   F.collect_set("app_nm").alias("app_usage_token"),
@@ -455,7 +466,7 @@ val xdrDF = spark.sql(s"""
   F.sum("traffic").alias("total_traffic_mb"),
   F.count("*").alias("app_cnt")
 )
-.persist(StorageLevel.MEMORY_AND_DISK_SER)
+// .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("XDR hourly data loaded and cached")
 
@@ -479,13 +490,13 @@ val xdrAggregatedFeatures = xdrDF
     .withColumn("peak_usage_hour_cd", F.col("peak_hour_struct.send_hournum_cd"))
     .withColumn("peak_hour_app_cnt", F.col("peak_hour_struct.app_cnt"))
     .drop("peak_hour_struct")
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("XDR aggregated features created")
 
 // Pivot 작업으로 시간대별 앱 사용 토큰 생성
 val xdrDFMon = xdrDF
-    .repartition(200, F.col("svc_mgmt_num"), F.col("feature_ym"))
+    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"), F.col("feature_ym"))
     .groupBy("svc_mgmt_num", "feature_ym")
     .pivot("send_hournum_cd", hourRange.map(_.toString))
     .agg(F.first("app_usage_token"))
@@ -496,7 +507,7 @@ val xdrDFMon = xdrDF
         ): _*
     )
     .join(xdrAggregatedFeatures, Seq("svc_mgmt_num", "feature_ym"), "left")
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("XDR monthly pivot data created and cached")
 println("=" * 80)
@@ -537,7 +548,7 @@ val clickCountDF = resDFSelected
     .join(clickHistoryDF, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "left")
     .na.fill(Map("prev_click_cnt" -> 0.0))
     .withColumnRenamed("prev_click_cnt", "click_cnt")
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Click count features created and cached")
 println("=" * 80)
@@ -558,15 +569,15 @@ println("=" * 80)
 // MMKT 필터링
 val mmktDFFiltered = mmktDF
     .filter(smnCond)
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("MMKT data filtered and cached")
 
 // Response data 필터링
 val resDFSelectedFiltered = resDFSelected
     .filter(smnCond)
-    .repartition(200, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Response data filtered and cached")
 
@@ -580,11 +591,11 @@ val rawDF = resDFSelectedFiltered
     // 2단계: XDR hourly 조인
     .join(xdrDF, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "inner")
     // 3단계: XDR monthly 조인 (파티셔닝 변경)
-    .repartition(200, F.col("svc_mgmt_num"), F.col("feature_ym"))
+    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"), F.col("feature_ym"))
     .join(xdrDFMon, Seq("svc_mgmt_num", "feature_ym"), "inner")
     // 4단계: MMKT 조인 (가장 큰 테이블)
     .join(mmktDFFiltered, Seq("svc_mgmt_num", "feature_ym"), "inner")
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Feature integration completed and cached")
 println("=" * 80)
@@ -642,7 +653,7 @@ val rawDFRev = rawDF.select(
 )
 .distinct()
 .withColumn("suffix", F.expr("right(svc_mgmt_num, 1)"))
-.repartition(200, F.col("send_ym"), F.col("send_hournum_cd"), F.col("suffix"))
+.repartition(optimalPartitions * 4, F.col("send_ym"), F.col("send_hournum_cd"), F.col("suffix"))
 .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Data type conversion completed and cached")
@@ -694,9 +705,9 @@ hourGroups.zipWithIndex.foreach { case (hourGroup, groupIdx) =>
     .filter(F.col("send_hournum_cd").isin(hourGroup: _*))
   
   // 데이터가 있는지 확인 (take(1)로 빠르게 체크)
-  if (rawDFRevHourGroup.take(1).nonEmpty) {
+  // if (rawDFRevHourGroup.take(1).nonEmpty) {
     rawDFRevHourGroup
-      .repartition(10 * hourGroup.size)  // 그룹 크기에 비례한 파티션 수
+      .repartition(100)
       .write
       .mode("overwrite")  // 동적 파티션 덮어쓰기
       .partitionBy("send_ym", "send_hournum_cd", "suffix")
@@ -704,9 +715,9 @@ hourGroups.zipWithIndex.foreach { case (hourGroup, groupIdx) =>
       .parquet(rawDataSavePath)
     
     println(s"  Group ${groupIdx + 1} saved successfully")
-  } else {
-    println(s"  Group ${groupIdx + 1} - no data, skipped")
-  }
+  // } else {
+  //   println(s"  Group ${groupIdx + 1} - no data, skipped")
+  // }
 }
 
 println("=" * 80)
