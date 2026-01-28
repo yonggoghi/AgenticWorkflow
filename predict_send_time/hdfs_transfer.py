@@ -208,12 +208,22 @@ def create_eof_file(remote_user, remote_password, remote_ip, remote_path, archiv
     """원격 서버에 .eof 파일 생성"""
     print("\n# EOF 파일 생성")
     
-    # 압축 파일명에서 .parquet을 제거하고 .eof 추가
+    # 파일명에서 모든 확장자를 제거하고 .eof 추가
     # 예: mth_mms_rcv_ract_score_202601.parquet -> mth_mms_rcv_ract_score_202601.eof
-    base_name = archive_name.replace('.parquet', '').replace('.tar.gz', '')
+    # 예: mth_mms_rcv_ract_score_202601.csv.gz -> mth_mms_rcv_ract_score_202601.eof
+    # 예: data.tar.gz -> data.eof
+    base_name = archive_name
+    
+    # 알려진 확장자들을 순서대로 제거
+    extensions_to_remove = ['.tar.gz', '.csv.gz', '.parquet', '.csv', '.gz']
+    for ext in extensions_to_remove:
+        if base_name.endswith(ext):
+            base_name = base_name[:-len(ext)]
+            break  # 첫 번째 매칭되는 확장자만 제거
+    
     eof_filename = f"{base_name}.eof"
     
-    print(f"Creating EOF file: {eof_filename}")
+    print(f"Creating EOF file: {eof_filename} (from {archive_name})")
     
     # 원격 서버에서 touch 명령으로 빈 .eof 파일 생성
     eof_cmd = f'sshpass -p "{remote_password}" ssh -o StrictHostKeyChecking=no {remote_user}@{remote_ip} "touch {remote_path}/{eof_filename}"'
@@ -261,22 +271,28 @@ def extract_partition_values(file_path, partition_root):
     return partition_info
 
 
-def merge_partitioned_parquet(
+def merge_partitions(
     source_dir,
     output_file,
+    output_format='parquet',
     batch_size=100_000,
     compression='snappy',
+    csv_delimiter=',',
+    csv_header=True,
     verbose=True
 ):
     """
-    파티션된 parquet 파일들을 단일 parquet 파일로 통합합니다.
+    파티션된 parquet 파일들을 단일 파일로 통합합니다 (parquet 또는 CSV).
     PyArrow Streaming 방식을 사용하여 메모리 효율적으로 처리합니다.
     
     Args:
         source_dir: 파티션된 parquet 파일들이 있는 디렉토리
-        output_file: 출력 parquet 파일 경로
+        output_file: 출력 파일 경로
+        output_format: 출력 형식 ('parquet' 또는 'csv')
         batch_size: 한 번에 읽을 row 개수 (메모리 사용량 조절)
-        compression: 압축 알고리즘 (snappy, gzip, zstd, none)
+        compression: 압축 알고리즘 (parquet: snappy/gzip/zstd/none, csv: gzip만 지원)
+        csv_delimiter: CSV 구분자 (기본값: ,)
+        csv_header: CSV 헤더 포함 여부
         verbose: 진행 상황 출력 여부
     
     Returns:
@@ -293,8 +309,12 @@ def merge_partitioned_parquet(
     print("\n# 파티션 통합 (PyArrow Streaming)")
     print(f"Source: {source_dir}")
     print(f"Output: {output_file}")
+    print(f"Format: {output_format.upper()}")
     print(f"Batch size: {batch_size:,} rows")
     print(f"Compression: {compression}")
+    if output_format == 'csv':
+        print(f"CSV Delimiter: '{csv_delimiter}'")
+        print(f"CSV Header: {csv_header}")
     
     # 모든 parquet 파일 찾기
     parquet_files = glob.glob(
@@ -335,11 +355,28 @@ def merge_partitioned_parquet(
         print("No partition columns detected (flat structure)")
         new_schema = original_schema
     
-    # ParquetWriter 초기화
+    # Writer 초기화
     writer = None
+    csv_file = None
     total_rows = 0
     
     try:
+        # CSV 파일 핸들 열기 (CSV 형식인 경우)
+        if output_format == 'csv':
+            import csv as csv_module
+            import gzip
+            
+            # CSV는 gzip 압축만 지원
+            if compression == 'gzip':
+                csv_file = gzip.open(output_file, 'wt', encoding='utf-8', newline='')
+            elif compression == 'none':
+                csv_file = open(output_file, 'w', encoding='utf-8', newline='')
+            else:
+                print(f"Warning: CSV는 gzip 또는 none 압축만 지원합니다. 압축 없이 진행합니다.")
+                csv_file = open(output_file, 'w', encoding='utf-8', newline='')
+            
+            csv_writer = csv_module.writer(csv_file, delimiter=csv_delimiter)
+        
         # 각 파일을 배치 단위로 읽고 쓰기
         for i, parquet_file in enumerate(parquet_files, 1):
             if verbose:
@@ -370,15 +407,28 @@ def merge_partitioned_parquet(
                             )
                 
                 # Writer 초기화 (첫 배치에서만)
-                if writer is None:
-                    writer = pq.ParquetWriter(
-                        output_file,
-                        batch_table.schema,
-                        compression=compression
-                    )
+                if output_format == 'parquet':
+                    if writer is None:
+                        writer = pq.ParquetWriter(
+                            output_file,
+                            batch_table.schema,
+                            compression=compression
+                        )
+                    
+                    # Parquet 배치 쓰기
+                    writer.write_table(batch_table)
                 
-                # 배치 쓰기
-                writer.write_table(batch_table)
+                elif output_format == 'csv':
+                    # CSV 헤더 쓰기 (첫 배치에서만)
+                    if total_rows == 0 and csv_header:
+                        csv_writer.writerow(batch_table.column_names)
+                    
+                    # CSV 데이터 쓰기
+                    # PyArrow Table을 pandas DataFrame으로 변환 후 CSV 쓰기
+                    batch_df = batch_table.to_pandas()
+                    for row in batch_df.itertuples(index=False, name=None):
+                        csv_writer.writerow(row)
+                
                 total_rows += len(batch_table)
                 
                 if verbose and total_rows % (batch_size * 10) == 0:
@@ -399,6 +449,8 @@ def merge_partitioned_parquet(
     finally:
         if writer:
             writer.close()
+        if csv_file:
+            csv_file.close()
 
 
 def main():
@@ -408,11 +460,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 파티션 통합 옵션:
-  --merge-partitions를 사용하면 다운로드된 파티션 파일들을 단일 parquet 파일로 통합합니다.
+  --merge-partitions를 사용하면 다운로드된 파티션 파일들을 단일 파일로 통합합니다.
   이 작업은 PyArrow Streaming 방식을 사용하여 메모리 효율적으로 처리됩니다.
   
   환경 변수 설정:
-    OUTPUT_FILENAME: 통합된 parquet 파일명 (.env 파일에서 설정 가능)
+    OUTPUT_FILENAME: 통합된 파일명 (.env 파일에서 설정 가능, 확장자 자동 추가)
     ARCHIVE_NAME: tar.gz 압축 파일명 (.env 파일에서 설정 가능)
   
   예제:
@@ -422,17 +474,27 @@ def main():
     # tar.gz 압축 해제까지 수행
     python hdfs_transfer.py --extract-remote
     
-    # 파티션 통합 활성화 (로컬 파일 자동 유지)
+    # Parquet 파일로 통합 (기본)
     python hdfs_transfer.py --merge-partitions
+    
+    # CSV 파일로 통합
+    python hdfs_transfer.py --merge-partitions --output-format csv
+    
+    # CSV + gzip 압축
+    python hdfs_transfer.py --merge-partitions --output-format csv --compression gzip
+    
+    # CSV + 탭 구분자
+    python hdfs_transfer.py --merge-partitions --output-format csv --csv-delimiter $'\\t'
+    
+    # 배치 크기와 압축 알고리즘 지정 (Parquet)
+    python hdfs_transfer.py --merge-partitions --batch-size 200000 --compression zstd
+    
+    # 출력 파일명 지정
+    python hdfs_transfer.py --merge-partitions --output-filename merged_data.parquet
+    python hdfs_transfer.py --merge-partitions --output-format csv --output-filename data.csv.gz
     
     # 로컬 파일 삭제 (cleanup)
     python hdfs_transfer.py --cleanup
-    
-    # 배치 크기와 압축 알고리즘 지정
-    python hdfs_transfer.py --merge-partitions --batch-size 200000 --compression zstd
-    
-    # 출력 파일명 지정 (.env의 OUTPUT_FILENAME 대신 사용)
-    python hdfs_transfer.py --merge-partitions --output-filename merged_data.parquet
         """
     )
     parser.add_argument(
@@ -469,7 +531,13 @@ def main():
     parser.add_argument(
         '--merge-partitions',
         action='store_true',
-        help='파티션된 parquet 파일들을 단일 파일로 통합합니다 (PyArrow 필요)'
+        help='파티션된 파일들을 단일 파일로 통합합니다 (PyArrow 필요)'
+    )
+    parser.add_argument(
+        '--output-format',
+        choices=['parquet', 'csv'],
+        default='parquet',
+        help='통합 파일 형식 (기본값: parquet)'
     )
     parser.add_argument(
         '--batch-size',
@@ -481,11 +549,22 @@ def main():
         '--compression',
         choices=['snappy', 'gzip', 'zstd', 'none'],
         default='snappy',
-        help='출력 parquet 파일의 압축 알고리즘 (기본값: snappy)'
+        help='출력 파일의 압축 알고리즘 (기본값: snappy). CSV는 gzip만 지원'
+    )
+    parser.add_argument(
+        '--csv-delimiter',
+        default=',',
+        help='CSV 구분자 (기본값: 쉼표)'
+    )
+    parser.add_argument(
+        '--csv-header',
+        action='store_true',
+        default=True,
+        help='CSV 헤더 포함 (기본값: True)'
     )
     parser.add_argument(
         '--output-filename',
-        help='통합된 parquet 파일명 (환경변수 OUTPUT_FILENAME 또는 기본값: mth_mms_rcv_ract_score_202601.parquet)'
+        help='통합된 파일명 (환경변수 OUTPUT_FILENAME 또는 자동 생성: mth_mms_rcv_ract_score_202601.parquet/.csv)'
     )
     
     args = parser.parse_args()
@@ -514,14 +593,25 @@ def main():
     
     print(f"Archive file name (tar.gz): {ARCHIVE_NAME}")
     
-    # 출력 Parquet 파일명 결정 (우선순위: 명령행 인자 > 환경변수 > 기본값)
-    # 이것은 파티션 통합 후 생성되는 parquet 파일명입니다
+    # 출력 파일명 결정 (우선순위: 명령행 인자 > 환경변수 > 기본값)
+    # 이것은 파티션 통합 후 생성되는 파일명입니다
     if args.output_filename:
         OUTPUT_FILENAME = args.output_filename
     else:
-        OUTPUT_FILENAME = os.getenv('OUTPUT_FILENAME', 'merged.parquet')
+        # 환경변수에서 가져오거나 기본값 사용
+        base_name = os.getenv('OUTPUT_FILENAME', 'merged')
+        # 확장자 제거 (있는 경우)
+        base_name = os.path.splitext(base_name)[0]
+        # format에 따라 확장자 추가
+        if args.output_format == 'csv':
+            if args.compression == 'gzip':
+                OUTPUT_FILENAME = f"{base_name}.csv.gz"
+            else:
+                OUTPUT_FILENAME = f"{base_name}.csv"
+        else:  # parquet
+            OUTPUT_FILENAME = f"{base_name}.parquet"
     
-    print(f"Output parquet file name: {OUTPUT_FILENAME}")
+    print(f"Output file name: {OUTPUT_FILENAME} (format: {args.output_format})")
     
     # 필수 환경 변수 확인
     required_vars = {
@@ -600,14 +690,17 @@ def main():
         print(f"통합 파일: {output_file}")
         
         # 파티션 통합 실행
-        if not merge_partitioned_parquet(
+        if not merge_partitions(
             source_dir=source_dir,
             output_file=output_file,
+            output_format=args.output_format,
             batch_size=args.batch_size,
             compression=args.compression,
+            csv_delimiter=args.csv_delimiter,
+            csv_header=args.csv_header,
             verbose=True
         ):
-            print("Error: Failed to merge partitioned parquet files")
+            print(f"Error: Failed to merge partitioned files to {args.output_format}")
             sys.exit(1)
         
         # 원본 파티션 디렉토리는 유지됨
@@ -620,20 +713,20 @@ def main():
     
     # 전송 방식 구분
     if args.merge_partitions:
-        # 파티션 통합 모드: 단일 parquet 파일 직접 전송
-        print("\n# 통합 파일 직접 전송 (압축 없음)")
+        # 파티션 통합 모드: 단일 파일 직접 전송
+        print(f"\n# 통합 파일 직접 전송 ({args.output_format.upper()})")
         
-        # 통합된 parquet 파일 경로
-        merged_parquet = os.path.join(LOCAL_TMP_PATH, DIR_NAME, OUTPUT_FILENAME)
+        # 통합된 파일 경로
+        merged_file = os.path.join(LOCAL_TMP_PATH, DIR_NAME, OUTPUT_FILENAME)
         
-        if not os.path.exists(merged_parquet):
-            print(f"Error: 통합 파일이 존재하지 않습니다: {merged_parquet}")
+        if not os.path.exists(merged_file):
+            print(f"Error: 통합 파일이 존재하지 않습니다: {merged_file}")
             sys.exit(1)
         
         # 작업 디렉토리를 통합 파일이 있는 디렉토리로 변경
         os.chdir(os.path.join(LOCAL_TMP_PATH, DIR_NAME))
         
-        # parquet 파일 직접 전송
+        # 파일 직접 전송
         if not transfer_data(REMOTE_USER, REMOTE_PASSWORD, REMOTE_IP, REMOTE_PATH, OUTPUT_FILENAME):
             sys.exit(1)
         
