@@ -5,6 +5,7 @@ import urllib.parse
 import argparse
 import importlib.util
 import sys
+import subprocess
 from pathlib import Path
 
 # Max retry count
@@ -39,6 +40,10 @@ def load_config(config_path):
     if not hasattr(config, "RESTART_SPARK_AT_END"):
         config.RESTART_SPARK_AT_END = True
     
+    # Optional: Output check function for smart detection
+    if not hasattr(config, "is_param_completed"):
+        config.is_param_completed = None
+    
     # Generate PARAMS from PARAMS_OUTER and PARAMS_INNER if provided
     if hasattr(config, "PARAMS_OUTER") and hasattr(config, "PARAMS_INNER"):
         if not hasattr(config, "PARAMS") or config.PARAMS is None:
@@ -66,6 +71,28 @@ def load_config(config_path):
         config.PARAMS = []
     
     return config
+
+
+def check_hdfs_path(path):
+    """Check if HDFS path exists
+    
+    Args:
+        path: HDFS path (e.g., "aos/sto/trainDFRev10/send_ym=202512/suffix=c")
+    
+    Returns:
+        bool: True if path exists, False otherwise
+    """
+    try:
+        # Use hadoop fs -test -e for existence check
+        result = subprocess.run(
+            ["hadoop", "fs", "-test", "-e", path],
+            capture_output=True,
+            timeout=10
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        # Hadoop command not available or timed out
+        return False
 
 
 def restart_spark(zepp_url):
@@ -205,6 +232,16 @@ def main():
         default="config_raw_data.py",
         help="Path to config file (default: config_raw_data.py)"
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-execution even if output exists (ignore smart detection)"
+    )
+    parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Only check completion status without executing paragraphs"
+    )
     args = parser.parse_args()
     
     # Load config
@@ -218,12 +255,16 @@ def main():
     params = config.PARAMS
     restart_at_start = config.RESTART_SPARK_AT_START
     restart_at_end = config.RESTART_SPARK_AT_END
+    is_param_completed_fn = config.is_param_completed
     
     print(f"Zeppelin URL: {zepp_url}")
     print(f"Notebook ID: {notebook_id}")
     print(f"Parameters: {params}")
     print(f"Restart Spark at start: {restart_at_start}")
-    print(f"Restart Spark at end: {restart_at_end}\n")
+    print(f"Restart Spark at end: {restart_at_end}")
+    print(f"Smart detection enabled: {is_param_completed_fn is not None}")
+    print(f"Force execution: {args.force}")
+    print(f"Check-only mode: {args.check_only}\n")
     
     # Determine if params is list of lists or list of strings
     if params and len(params) > 0 and isinstance(params[0], list):
@@ -243,6 +284,38 @@ def main():
     else:
         # Empty params
         params_to_run = [None]
+    
+    # Check-only mode: just report status
+    if args.check_only:
+        print(f"\n{'='*80}")
+        print(f"=== CHECK-ONLY MODE: Checking completion status ===")
+        print(f"{'='*80}\n")
+        
+        if is_param_completed_fn is None:
+            print("⚠️  No completion check function defined in config.")
+            print("   Define 'is_param_completed(param_list)' in config file.")
+            return
+        
+        completed_count = 0
+        pending_count = 0
+        
+        for idx, param_list in enumerate(params_to_run, 1):
+            try:
+                is_completed = is_param_completed_fn(param_list)
+                status = "✓ COMPLETED" if is_completed else "⏳ PENDING"
+                if is_completed:
+                    completed_count += 1
+                else:
+                    pending_count += 1
+                print(f"{idx:3d}. {status}: {param_list}")
+            except Exception as e:
+                print(f"{idx:3d}. ❌ ERROR checking: {param_list} - {e}")
+                pending_count += 1
+        
+        print(f"\n{'='*80}")
+        print(f"Summary: {completed_count} completed, {pending_count} pending")
+        print(f"{'='*80}")
+        return
     
     # Initial Spark restart (optional)
     if restart_at_start:
@@ -275,12 +348,24 @@ def main():
     print(f"{'='*80}")
     
     failed_params = []
+    skipped_params = []
+    
     for idx, param_list in enumerate(params_to_run, 1):
         print(f"\n{'='*80}")
         print(f"Processing parameter combination {idx}/{len(params_to_run)}")
         if param_list is not None:
             print(f"Parameters: {param_list}")
         print(f"{'='*80}")
+        
+        # Smart Detection: Check if already completed
+        if not args.force and is_param_completed_fn is not None:
+            try:
+                if is_param_completed_fn(param_list):
+                    print(f"✓ SKIPPED (output already exists): {param_list}")
+                    skipped_params.append(param_list)
+                    continue
+            except Exception as e:
+                print(f"⚠️  Completion check failed, will execute: {e}")
         
         # Retry for this specific parameter combination
         success = False
@@ -304,17 +389,32 @@ def main():
     print(f"\n{'='*80}")
     print(f"=== Execution Summary ===")
     print(f"{'='*80}")
+    executed_count = len(params_to_run) - len(skipped_params)
+    success_count = executed_count - len(failed_params)
+    
     print(f"Total parameter combinations: {len(params_to_run)}")
-    print(f"Successful: {len(params_to_run) - len(failed_params)}")
-    print(f"Failed: {len(failed_params)}")
+    print(f"  Skipped (already completed): {len(skipped_params)}")
+    print(f"  Executed: {executed_count}")
+    print(f"  Successful: {success_count}")
+    print(f"  Failed: {len(failed_params)}")
+    
+    if skipped_params and len(skipped_params) <= 10:
+        print(f"\nSkipped parameter combinations:")
+        for param in skipped_params:
+            print(f"  - {param}")
+    elif len(skipped_params) > 10:
+        print(f"\nSkipped {len(skipped_params)} parameter combinations (use --check-only to see details)")
     
     if failed_params:
         print(f"\nFailed parameter combinations:")
         for param in failed_params:
             print(f"  - {param}")
-        print("\nWARNING: Some parameter combinations failed. Check logs above.")
-    else:
-        print("\n✓ All parameter combinations completed successfully!")
+        print("\n⚠️  WARNING: Some parameter combinations failed. Check logs above.")
+    elif executed_count > 0:
+        print("\n✓ All executed parameter combinations completed successfully!")
+    
+    if len(skipped_params) == len(params_to_run):
+        print("\n✓ All parameter combinations already completed (nothing to execute)!")
     
     # Final Spark restart (optional)
     if restart_at_end:
