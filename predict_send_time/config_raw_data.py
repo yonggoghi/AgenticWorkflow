@@ -51,3 +51,64 @@ PARAMS_INNER = [f"suffix:{hex(i)[2:]}" for i in range(0, 16)]  # 0-f 전체
 # Spark restart options
 RESTART_SPARK_AT_START = True   # Restart Spark before starting PRE paragraphs
 RESTART_SPARK_AT_END = True     # Restart Spark after all paragraphs complete
+
+# Smart Detection: Output check function (optional)
+def is_param_completed(param_list):
+    """
+    Check if the output for given parameter combination already exists.
+    This enables smart detection to skip already completed work.
+    
+    Args:
+        param_list: List of "key:value" strings
+                   Example: ["sendMonth:202512", "suffix:c"]
+    
+    Returns:
+        bool: True if output exists (skip execution), False otherwise
+    
+    Usage:
+        - Return True to skip execution (output already exists)
+        - Return False to execute (output missing or incomplete)
+        - Raise exception to execute with warning
+    """
+    import subprocess
+    
+    # Extract parameter values
+    params_dict = {}
+    for param in param_list:
+        key, value = param.split(":", 1)
+        params_dict[key] = value
+    
+    sendMonth = params_dict.get("sendMonth")
+    suffix = params_dict.get("suffix")
+    
+    if not sendMonth or not suffix:
+        return False  # Missing parameters, execute
+    
+    # Check output path (match Scala output path)
+    # Adjust this path according to your Scala code's output location
+    output_paths = [
+        f"aos/sto/trainDFRev10/send_ym={sendMonth}/suffix={suffix}",
+        f"aos/sto/testDFRev/send_ym={sendMonth}/suffix={suffix}",
+    ]
+    
+    # Check if all required output paths exist
+    try:
+        for path in output_paths:
+            result = subprocess.run(
+                ["hdfs", "dfs", "-test", "-e", path],
+                capture_output=True,
+                timeout=10
+            )
+            if result.returncode != 0:
+                # Path doesn't exist
+                return False
+        
+        # All paths exist
+        return True
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        # Hadoop command not available or timed out, execute to be safe
+        return False
+    except Exception as e:
+        # Other errors, log and execute
+        print(f"  Warning: Output check failed ({e}), will execute")
+        return False
