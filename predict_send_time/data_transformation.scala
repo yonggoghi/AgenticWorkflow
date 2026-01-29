@@ -14,7 +14,7 @@
 // ===== Paragraph 1: Imports and Configuration =====
 
 import com.microsoft.azure.synapse.ml.causal
-import com.skt.mno.dt.utils.commfunc._
+// import com.skt.mno.dt.utils.commfunc._
 import ml.dmlc.xgboost4j.scala.spark.{XGBoostClassificationModel, XGBoostClassifier, XGBoostRegressor}
 import org.apache.spark.ml.classification._
 import org.apache.spark.ml.feature._
@@ -42,6 +42,7 @@ spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
 spark.conf.set("spark.sql.adaptive.enabled", "true")
 spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
 spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
+spark.conf.set("spark.sql.adaptive.advisoryPartitionSizeInBytes", "128MB")
 spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "50m")
 
 // 메모리 최적화 설정 (OOM 방지)
@@ -49,7 +50,14 @@ spark.conf.set("spark.executor.memoryOverhead", "4g")
 spark.conf.set("spark.memory.fraction", "0.8")
 spark.conf.set("spark.memory.storageFraction", "0.3")
 
-println("Spark configuration set for data transformation")
+// 동적 파티션 개수 계산 (코어 수 × 익스큐터 개수)
+val executorInstances = spark.sparkContext.getConf.getInt("spark.executor.instances", 10)
+val executorCores = spark.sparkContext.getConf.getInt("spark.executor.cores", 5)
+val optimalPartitions = executorInstances * executorCores
+spark.conf.set("spark.sql.shuffle.partitions", (optimalPartitions * 4).toString)
+
+println(s"Spark configuration set for data transformation")
+println(s"  Optimal partitions: $optimalPartitions (Executors: $executorInstances × Cores: $executorCores)")
 
 
 // ===== Paragraph 2: Helper Functions =====
@@ -86,6 +94,9 @@ def getPreviousDayMonth(dateStr: String): String = {
   previousDay.format(DateTimeFormatter.ofPattern("yyyyMM"))
 }
 
+val categoryColNameList = Array("_cd", "_yn", "_rank", "_type", "_typ")
+val numericColNameList = Array("_cnt","_amt","_arpu","_mb","_qty","_age","_score","_price","_ratio","_duration","_avg","_distance","_entropy")
+
 println("Helper functions defined")
 
 
@@ -104,7 +115,7 @@ val predictionDTEnd = "20260101"  // 테스트 데이터 종료 날짜
 
 // 학습 기간 설정 (테스트 기준 자동 계산)
 val trainSendMonth = getPreviousDayMonth(predictionDTSta)  // 학습 데이터 기준 월 (예: 20251201 → 202511)
-val trainPeriod = 6                                         // 학습 기간 (개월 수)
+val trainPeriod = 3                                         // 학습 기간 (개월 수)
 val trainSendYmList = getPreviousMonths(trainSendMonth, trainPeriod)  // 학습용 월 리스트
 
 // 테스트 기간 설정 (날짜 범위 기반 자동 계산)
@@ -127,6 +138,10 @@ val testSendYmList = if (testSendMonth == testEndMonth) {
 // Transformed data 저장 버전
 val transformedDataVersion = "1"  // 저장할 버전 번호
 
+// Undersampling 설정 (클래스 불균형 해소)
+val undersamplingEnabled = true  // Undersampling 활성화 여부
+val genSampleNumMulti = 10.0     // Undersampling 배수 (클수록 더 많은 데이터 유지)
+
 // Pipeline fitting 샘플링 비율 (메모리 절약)
 val pipelineSampleRate = 0.3
 
@@ -141,11 +156,26 @@ val suffixSlide = 1      // Slide 크기 (suffixGroupSize와 같으면 overlap �
 val hourGroupSize = 5    // 한 번에 처리할 시간대 개수
 val hourSlide = 5        // Slide 크기
 
+// Cluster 설정 (동적 파티션 수 계산용)
+var nodeNumber = 10
+var coreNumber = 32
+try {
+    nodeNumber = spark.conf.get("spark.executor.instances").toInt
+    coreNumber = spark.conf.get("spark.executor.cores").toInt
+} catch {
+    case ex: Exception => {}
+}
+
 println("=" * 80)
 println("Configuration Summary")
 println("=" * 80)
 println(s"Raw Data Version: $rawDataVersion")
 println(s"Transformed Data Version: $transformedDataVersion")
+println()
+println(s"Cluster Configuration:")
+println(s"  - Executor Instances: $nodeNumber")
+println(s"  - Executor Cores: $coreNumber")
+println(s"  - Total Cores: ${nodeNumber * coreNumber}")
 println()
 println(s"Test Configuration (Primary):")
 println(s"  - Test Date Range: $predictionDTSta ~ $predictionDTEnd")
@@ -156,6 +186,7 @@ println(s"Training Configuration (Auto-calculated from Test):")
 println(s"  - Training Month (base): $trainSendMonth (1 day before $predictionDTSta)")
 println(s"  - Training Period: $trainPeriod months")
 println(s"  - Training Months: ${trainSendYmList.mkString(", ")}")
+println(s"  - Undersampling: ${if (undersamplingEnabled) s"Enabled (multiplier=$genSampleNumMulti)" else "Disabled"}")
 println()
 println(s"Processing Configuration:")
 println(s"  - Pipeline Sample Rate: $pipelineSampleRate")
@@ -190,11 +221,22 @@ println(s"  - Training: send_ym in (${trainSendYmList.mkString(", ")})")
 println(s"  - Testing: send_dt >= $predictionDTSta and send_dt < $predictionDTEnd")
 println(s"             (Pre-filter with send_ym in (${testSendYmList.mkString(", ")}) for performance)")
 
-val noFeatureCols = Array("click_yn","hour_gap")
+val noFeatureCols = Array("click_yn", "hour_gap", "chnl_typ", "cmpgn_typ")
+
+// 기본 컬럼 정의 (rawDF에서 명시적으로 select할 컬럼들 - 중복 방지)
+val baseColumnsFromRaw = Array("cmpgn_num", "svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility")
 
 val tokenCols = rawDF.columns.filter(x => x.endsWith("_token")).distinct
-val continuousCols = (rawDF.columns.filter(x => numericColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false)).distinct.filter(x => !tokenCols.contains(x) && !noFeatureCols.contains(x))).distinct
-val categoryCols = (rawDF.columns.filter(x => categoryColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false)).distinct.filter(x => !tokenCols.contains(x) && !noFeatureCols.contains(x) && !continuousCols.contains(x))).distinct
+val continuousCols = (rawDF.columns
+    .filter(x => numericColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false))
+    .distinct
+    .filter(x => !tokenCols.contains(x) && !noFeatureCols.contains(x))
+).distinct
+val categoryCols = (rawDF.columns
+    .filter(x => categoryColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false))
+    .distinct
+    .filter(x => !tokenCols.contains(x) && !noFeatureCols.contains(x) && !continuousCols.contains(x))
+).distinct
 val vectorCols = rawDF.columns.filter(x => x.endsWith("_vec"))
 
 
@@ -202,8 +244,10 @@ val vectorCols = rawDF.columns.filter(x => x.endsWith("_vec"))
 val trainDFRev = rawDF
     .filter(s"""send_ym in (${trainSendYmList.mkString("'","','","'")})""")
     .withColumn("hour_gap", F.expr("case when res_utility>=1.0 then 1 else 0 end"))
+    .withColumn("send_daynum", F.dayofweek(F.to_date(F.col("send_dt"), "yyyyMMdd")))  // undersampling용 추가
     .select(
-        (Array("cmpgn_num", "svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility").map(F.col(_))
+        ((baseColumnsFromRaw++noFeatureCols).distinct.map(F.col(_))
+        ++ Array(F.col("send_daynum"))  // withColumn으로 추가한 컬럼들
         ++ tokenCols.map(cl => F.coalesce(F.col(cl), F.array(F.lit("#"))).alias(cl))
         ++ vectorCols.map(cl => F.col(cl).alias(cl))
         ++ categoryCols.map(cl => F.when(F.col(cl) === "", F.lit("UKV")).otherwise(F.coalesce(F.col(cl).cast("string"), F.lit("UKV"))).alias(cl))
@@ -215,13 +259,14 @@ val trainDFRev = rawDF
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 // Test 데이터: 날짜 범위 기반 필터링 (성능을 위해 월 pre-filter 사용)
+// persist 제거 - transformation에서 1번만 사용
 val testDFRev = rawDF
     .filter(s"""send_ym in (${testSendYmList.mkString("'","','","'")})""")  // Pre-filter for performance
     .filter(F.col("send_dt") >= predictionDTSta)                         // Primary filter: start date
     .filter(F.col("send_dt") < predictionDTEnd)                          // Primary filter: end date
     .withColumn("hour_gap", F.expr("case when res_utility>=1.0 then 1 else 0 end"))
     .select(
-        (Array("cmpgn_num", "svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility").map(F.col(_))
+        ((baseColumnsFromRaw++noFeatureCols).distinct.map(F.col(_))
         ++ tokenCols.map(cl => F.coalesce(F.col(cl), F.array(F.lit("#"))).alias(cl))
         ++ vectorCols.map(cl => F.col(cl).alias(cl))
         ++ categoryCols.map(cl => F.when(F.col(cl) === "", F.lit("UKV")).otherwise(F.coalesce(F.col(cl).cast("string"), F.lit("UKV"))).alias(cl))
@@ -230,7 +275,6 @@ val testDFRev = rawDF
     )
     .distinct
     .withColumn("suffix", F.expr("right(svc_mgmt_num, 1)"))
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println(s"Split completed:")
 println(s"  - Training period: ${trainSendYmList.head} ~ ${trainSendYmList.last} ($trainPeriod months)")
@@ -239,6 +283,69 @@ println("=" * 80)
 
 // Raw data unpersist (메모리 확보)
 rawDF.unpersist()
+
+
+// ===== Paragraph 4.5: Training Data Undersampling (Class Balance) =====
+
+// =============================================================================
+// Training 데이터 Undersampling - 클래스 불균형 해소
+// =============================================================================
+// 목적: click_yn=1 (클릭)과 click_yn=0 (비클릭)의 비율을 조정하여
+//       모델 학습 시 클래스 불균형 문제를 완화합니다.
+// =============================================================================
+
+val trainDFRevBalanced = if (undersamplingEnabled) {
+    println("=" * 80)
+    println("Undersampling training data for class balance...")
+    println("=" * 80)
+    
+    // Undersampling 키 컬럼 정의
+    val samplingKeyCols = Array("chnl_typ", "cmpgn_typ", "send_daynum", "send_hournum_cd", "click_yn")
+    
+    println(s"Undersampling configuration:")
+    println(s"  - Sampling keys: ${samplingKeyCols.mkString(", ")}")
+    println(s"  - Sample multiplier: $genSampleNumMulti")
+    
+    // 샘플링 비율 계산 (10% 샘플로 빠르게 계산 - 메모리 최적화)
+    val samplingRatioMapDF = trainDFRev
+        .sample(false, 0.1, 42)  // 메모리 부담 감소
+        .groupBy(samplingKeyCols.map(F.col(_)):_*)  // AQE가 자동 최적화
+        .agg(F.count("*").alias("cnt"))
+        .withColumn("min_cnt", F.min("cnt").over(Window.partitionBy(samplingKeyCols.filter(_!="click_yn").map(F.col(_)):_*)))
+        .withColumn("ratio", F.col("min_cnt") / F.col("cnt"))
+        .withColumn("sampling_col", F.expr(s"""concat_ws('-', ${samplingKeyCols.mkString(",")})"""))
+        .selectExpr("sampling_col", s"least(1.0, ratio*${genSampleNumMulti}) ratio")
+        .sort("sampling_col")
+    
+    println("Sampling ratio map created")
+    
+    // Undersampling 적용 (broadcast join으로 최적화)
+    // trainDFRev가 이미 persist되어 있으므로 추가 캐싱 불필요
+    val balanced = trainDFRev
+        .withColumn("sampling_col", F.expr(s"""concat_ws('-', ${samplingKeyCols.mkString(",")})"""))
+        .join(F.broadcast(samplingRatioMapDF), "sampling_col")  // broadcast가 자동 최적화
+        .withColumn("rand", F.rand(42))  // 재현성을 위한 시드
+        .filter("rand<=ratio")
+        .drop("sampling_col", "ratio", "rand")  // 임시 컬럼 제거
+        .persist(StorageLevel.MEMORY_AND_DISK_SER)  // 2번 사용되므로 persist
+    
+    println("Balanced training data created and cached")
+    
+    // 원본 trainDFRev unpersist (메모리 확보)
+    trainDFRev.unpersist()
+    
+    println("=" * 80)
+    println("Undersampling completed")
+    println("=" * 80)
+    
+    balanced
+} else {
+    println("=" * 80)
+    println("Undersampling disabled - using original training data")
+    println("=" * 80)
+    
+    trainDFRev
+}
 
 
 // ===== Paragraph 5: Pipeline Definition and Transformation =====
@@ -255,15 +362,7 @@ println("=" * 80)
 val tokenColsEmbCols = Array("app_usage_token")
 val featureHasherNumFeature = 128
 
-var nodeNumber = 10
-var coreNumber = 32
-try {
-    nodeNumber = spark.conf.get("spark.executor.instances").toInt
-    coreNumber = spark.conf.get("spark.executor.cores").toInt
-} catch {
-    case ex: Exception => {}
-}
-
+// nodeNumber, coreNumber는 Paragraph 3에서 정의됨
 val params: Map[String, Any] = Map(
     "minDF" -> 1,
     "minTF" -> 5,
@@ -496,18 +595,17 @@ val transformPipelineGap = makePipeline(
     userDefinedFeatureListForAssembler = userDefinedFeatureListForAssemblerGap
 )
 
-// Pipeline fitting (샘플 데이터로 수행)
+// Pipeline fitting (샘플 데이터로 수행 - balanced 데이터 사용)
 println(s"Fitting Click transformer pipeline (sample rate: $pipelineSampleRate)...")
 val transformerClick = transformPipelineClick.fit(
-    trainDFRev.sample(false, pipelineSampleRate, 42)
+    trainDFRevBalanced.sample(false, pipelineSampleRate, 42)
 )
 println("Click transformer fitted successfully")
 
-// Click transformer 적용
+// Click transformer 적용 (persist 제거 - 중간 결과는 1번만 사용)
 println("Transforming training data with Click transformer...")
-var transformedTrainDF = transformerClick.transform(trainDFRev)
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
-println("Training data transformed with Click pipeline (cached)")
+var transformedTrainDF = transformerClick.transform(trainDFRevBalanced)
+println("Training data transformed with Click pipeline")
 
 println(s"Fitting Gap transformer pipeline (sample rate: $pipelineSampleRate)...")
 val transformerGap = transformPipelineGap.fit(
@@ -515,22 +613,21 @@ val transformerGap = transformPipelineGap.fit(
 )
 println("Gap transformer fitted successfully")
 
-// Gap transformer 적용
+// Gap transformer 적용 (최종 결과만 persist - write에서 반복 사용)
 println("Transforming training data with Gap transformer...")
 transformedTrainDF = transformerGap.transform(transformedTrainDF)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 println("Training data transformed with Gap pipeline (cached)")
 
-// Test 데이터 변환
+// Test 데이터 변환 (persist 제거 - write에서 1번만 사용)
 println("Transforming test data...")
 var transformedTestDF = transformerClick.transform(testDFRev)
 transformedTestDF = transformerGap.transform(transformedTestDF)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
-println("Test data transformed (cached)")
+println("Test data transformed")
 
-// 원본 데이터 unpersist (메모리 확보)
-trainDFRev.unpersist()
-testDFRev.unpersist()
+// 원본 balanced 데이터 unpersist (메모리 확보)
+trainDFRevBalanced.unpersist()
 
 println("=" * 80)
 println("Pipeline transformation completed")
@@ -547,9 +644,9 @@ println("=" * 80)
 println("Saving transformers and transformed data...")
 println("=" * 80)
 
-// 1단계: Transformer 저장
-val transformerClickPath = s"aos/sto/transformPipelineClick${transformedDataVersion}"
-val transformerGapPath = s"aos/sto/transformPipelineGap${transformedDataVersion}"
+// 1단계: Transformer 저장 (학습 기간 정보 포함)
+val transformerClickPath = s"aos/sto/transformPipelineClick_v${transformedDataVersion}_${trainSendYmList.head}-${trainSendYmList.last}"
+val transformerGapPath = s"aos/sto/transformPipelineGap_v${transformedDataVersion}_${trainSendYmList.head}-${trainSendYmList.last}"
 
 println(s"Saving Click transformer to: $transformerClickPath")
 transformerClick.write.overwrite().save(transformerClickPath)
@@ -600,9 +697,21 @@ hourGroups.zipWithIndex.foreach { case (hourGroup, groupIdx) =>
 println("=" * 80)
 
 // Train과 Test 데이터셋 정의 (send_ym 리스트 포함)
+// 경로에 버전과 기간 정보 포함
+val trainDataPath = s"aos/sto/transformedTrainDF_v${transformedDataVersion}_${trainSendYmList.head}-${trainSendYmList.last}"
+val testDataPath = s"aos/sto/transformedTestDF_v${transformedDataVersion}_${predictionDTSta}-${predictionDTEnd}"
+
+// 최적 파티션 수 계산 (동적, 휴리스틱 기반)
+// 데이터가 send_ym, suffix, hour로 필터링되므로 전체 코어 수보다 작은 값 사용
+val scalingFactor = 10  // 필터링으로 인한 데이터 감소 고려
+val basePartitionsCalculated = nodeNumber * coreNumber / scalingFactor
+val optimalWritePartitions = math.max(nodeNumber, math.min(basePartitionsCalculated.toInt, 100))
+println(s"Optimal write partitions: $optimalWritePartitions")
+println(s"  (base: ${nodeNumber * coreNumber}, scaled: $basePartitionsCalculated, min: $nodeNumber, max: 100)")
+
 val datasetsToSave = Seq(
-    ("training", transformedTrainDF, trainSendYmList, s"aos/sto/transformedTrainDF${transformedDataVersion}", 20),
-    ("test", transformedTestDF, testSendYmList, s"aos/sto/transformedTestDF${transformedDataVersion}", 20)
+    ("training", transformedTrainDF, trainSendYmList, trainDataPath, optimalWritePartitions),
+    ("test", transformedTestDF, testSendYmList, testDataPath, optimalWritePartitions)
 )
 
 // 각 데이터셋에 대해 send_ym별, suffix 그룹별, hour 그룹별로 저장
@@ -619,49 +728,36 @@ datasetsToSave.foreach { case (datasetName, dataFrame, sendYmList, outputPath, b
         val sendYmDF = dataFrame
             .filter(F.col("send_ym") === sendYm)
         
-        // sendYmDF가 비어있는지 확인 (take(1)로 빠르게 체크)
-        if (sendYmDF.take(1).nonEmpty) {
-            suffixGroups.zipWithIndex.foreach { case (suffixGroup, suffixGroupIdx) =>
-                println(s"  [Suffix Group ${suffixGroupIdx + 1}/${suffixGroups.length}] Processing suffixes: ${suffixGroup.mkString(", ")}")
+        // take(1) 체크 제거 - 드라이버 액션 오버헤드, 빈 데이터도 write가 안전하게 처리
+        suffixGroups.zipWithIndex.foreach { case (suffixGroup, suffixGroupIdx) =>
+            println(s"  [Suffix Group ${suffixGroupIdx + 1}/${suffixGroups.length}] Processing suffixes: ${suffixGroup.mkString(", ")}")
+            
+            val suffixGroupDF = sendYmDF
+                .filter(suffixGroup.map(s => s"suffix = '$s'").mkString(" OR "))
+            
+            // Hour 그룹별로 추가 처리
+            hourGroups.zipWithIndex.foreach { case (hourGroup, hourGroupIdx) =>
+                println(s"    [Hour Group ${hourGroupIdx + 1}/${hourGroups.length}] Processing hours: ${hourGroup.mkString(", ")}")
                 
-                val suffixGroupDF = sendYmDF
-                    .filter(suffixGroup.map(s => s"suffix = '$s'").mkString(" OR "))
+                val startTime = System.currentTimeMillis()
                 
-                // suffixGroupDF가 비어있는지 확인 (take(1)로 빠르게 체크)
-                if (suffixGroupDF.take(1).nonEmpty) {
-                    // Hour 그룹별로 추가 처리
-                    hourGroups.zipWithIndex.foreach { case (hourGroup, hourGroupIdx) =>
-                        println(s"    [Hour Group ${hourGroupIdx + 1}/${hourGroups.length}] Processing hours: ${hourGroup.mkString(", ")}")
-                        
-                        val suffixHourGroupDF = suffixGroupDF
-                            .filter(F.col("send_hournum_cd").isin(hourGroup: _*))
-                        
-                        // suffixHourGroupDF가 비어있는지 확인 (take(1)로 빠르게 체크)
-                        if (suffixHourGroupDF.take(1).nonEmpty) {
-                            suffixHourGroupDF
-                                .repartition(basePartitions * suffixGroupSize) // 그룹 크기에 비례한 파티션 수
-                                .write
-                                .mode("overwrite") // Dynamic partition overwrite
-                                .option("compression", "snappy")
-                                .partitionBy("send_ym", "send_hournum_cd", "suffix")
-                                .parquet(outputPath)
-                            
-                            println(s"    [Hour Group ${hourGroupIdx + 1}/${hourGroups.length}] $datasetName data saved")
-                        } else {
-                            println(s"    [Hour Group ${hourGroupIdx + 1}/${hourGroups.length}] No data, skipped")
-                        }
-                    }
-                    
-                    println(s"  [Suffix Group ${suffixGroupIdx + 1}/${suffixGroups.length}] Completed for all hours")
-                } else {
-                    println(s"  [Suffix Group ${suffixGroupIdx + 1}/${suffixGroups.length}] No data for suffixes: ${suffixGroup.mkString(", ")}, skipped")
-                }
+                suffixGroupDF
+                    .filter(F.col("send_hournum_cd").isin(hourGroup: _*))
+                    .coalesce(basePartitions)  // repartition → coalesce (셔플 제거)
+                    .write
+                    .mode("overwrite")
+                    .option("compression", "snappy")
+                    .partitionBy("send_ym", "send_hournum_cd", "suffix")
+                    .parquet(outputPath)
+                
+                val elapsed = (System.currentTimeMillis() - startTime) / 1000
+                println(s"    [Hour Group ${hourGroupIdx + 1}/${hourGroups.length}] $datasetName data saved in ${elapsed}s")
             }
             
-            println(s"[Send_ym ${sendYmIdx + 1}/${sendYmList.length}] Completed for send_ym: $sendYm")
-        } else {
-            println(s"[Send_ym ${sendYmIdx + 1}/${sendYmList.length}] No data for send_ym: $sendYm, skipped")
+            println(s"  [Suffix Group ${suffixGroupIdx + 1}/${suffixGroups.length}] Completed for all hours")
         }
+        
+        println(s"[Send_ym ${sendYmIdx + 1}/${sendYmList.length}] Completed for send_ym: $sendYm")
     }
     
     println("=" * 80)
@@ -674,12 +770,15 @@ println("=" * 80)
 println(s"Summary:")
 println(s"  - Click Transformer: $transformerClickPath")
 println(s"  - Gap Transformer: $transformerGapPath")
-println(s"  - Training Data: aos/sto/transformedTrainDF${transformedDataVersion}")
-println(s"  - Test Data: aos/sto/transformedTestDF${transformedDataVersion}")
+println(s"  - Training Data: $trainDataPath")
+println(s"    * Period: ${trainSendYmList.head} ~ ${trainSendYmList.last} ($trainPeriod months)")
+println(s"    * Undersampling: ${if (undersamplingEnabled) s"Applied (multiplier=$genSampleNumMulti)" else "Not applied"}")
+println(s"  - Test Data: $testDataPath")
+println(s"    * Period: $predictionDTSta ~ $predictionDTEnd")
 println(s"  - Version: $transformedDataVersion")
 println("=" * 80)
 
-// 메모리 정리
+// 메모리 정리 (persist된 DataFrame만)
 transformedTrainDF.unpersist()
 transformedTestDF.unpersist()
 
@@ -719,17 +818,42 @@ println("Data transformation pipeline completed!")
 //   - Training: send_ym in trainSendYmList (월 기반)
 //   - Testing: send_ym in testSendYmList (pre-filter) AND send_dt >= start AND send_dt < end (날짜 기반)
 // 
+// Undersampling 설정 (클래스 불균형 해소):
+//   - undersamplingEnabled: true/false (Undersampling 활성화 여부)
+//   - genSampleNumMulti: Undersampling 배수 (기본값: 10.0)
+//     * 값이 클수록: 더 많은 데이터 유지 (클래스 불균형도 증가)
+//     * 값이 작을수록: 균형잡힌 데이터셋 생성 (데이터 손실 증가)
+//   - 샘플링 키: chnl_typ, cmpgn_typ, send_daynum, send_hournum_cd, click_yn
+//   - 적용 대상: Training 데이터만 (Test 데이터는 원본 유지)
+// 
+// 저장 경로 구조:
+//   Transformers (학습 기간 기반):
+//     Click: aos/sto/transformPipelineClick_v{version}_{firstMonth}-{lastMonth}
+//     Gap:   aos/sto/transformPipelineGap_v{version}_{firstMonth}-{lastMonth}
+//   
+//   Transformed Data:
+//     Training: aos/sto/transformedTrainDF_v{version}_{firstMonth}-{lastMonth}
+//     Test:     aos/sto/transformedTestDF_v{version}_{startDate}-{endDate}
+//   
+//   예시:
+//     aos/sto/transformPipelineClick_v1_202506-202511
+//     aos/sto/transformPipelineGap_v1_202506-202511
+//     aos/sto/transformedTrainDF_v1_202506-202511 (6개월)
+//     aos/sto/transformedTestDF_v1_20251201-20260101
+// 
 // 다음 단계:
 // 1. Transformed data를 로딩하여 모델 학습 (train_and_evaluate.scala)
 // 
 // 확인 방법:
 //   // Transformed training data 확인
-//   val df = spark.read.parquet(s"aos/sto/transformedTrainDF${transformedDataVersion}")
+//   val trainPath = "aos/sto/transformedTrainDF_v1_202506-202511"  // 예시
+//   val df = spark.read.parquet(trainPath)
 //   println(s"Training records: ${df.count()}")
 //   df.printSchema()
 //   
 //   // Transformed test data 확인
-//   val dfTest = spark.read.parquet(s"aos/sto/transformedTestDF${transformedDataVersion}")
+//   val testPath = "aos/sto/transformedTestDF_v1_20251201-20260101"  // 예시
+//   val dfTest = spark.read.parquet(testPath)
 //   println(s"Test records: ${dfTest.count()}")
 //   
 //   // Feature 확인
