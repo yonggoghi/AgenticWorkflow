@@ -29,3 +29,6 @@ PARAMS = []
 # Spark restart options
 RESTART_SPARK_AT_START = True  # Restart Spark before starting PRE paragraphs
 RESTART_SPARK_AT_END = False    # Restart Spark after all paragraphs complete
+
+# Smart Detection: Not used for prediction workflow
+# is_param_completed = None  # or define custom function if needed
