@@ -1,20 +1,15 @@
 // =============================================================================
-// MMS Click Prediction Pipeline - Scala Code for Zeppelin (대용량 처리 최적화 버전)
+// Converted from Zeppelin Notebook
 // =============================================================================
-// 각 섹션은 Zeppelin notebook의 paragraph로 구성되어 있습니다.
-// 섹션 구분: // ===== Paragraph N: [Title] =====
-//
-// [대용량 처리 최적화 사항]
-// 1. Spark 설정 최적화: AQE, Broadcast Join, Shuffle Partition 조정
-// 2. 캐싱 전략: StorageLevel.MEMORY_AND_DISK_SER 사용으로 메모리 절약
-// 3. 파티셔닝 최적화: 조인 전 적절한 파티션 수 조정으로 shuffle 최소화
-// 4. 조인 최적화: 작은 테이블 broadcast, 조인 순서 최적화
-// 5. 메모리 관리: 사용 완료된 DataFrame unpersist, 명시적 count()로 캐시 구체화
-// 6. 저장 최적화: Snappy 압축, small files 방지를 위한 repartition
-// 7. 로그 추가: 각 단계별 레코드 수 확인으로 데이터 흐름 파악 용이
+// Original file: predict_ost_2MC68ADVY_260130.zpln
+// Converted on: 2026-01-30 10:41:31
+// Total paragraphs: 37
 // =============================================================================
 
-// ===== Paragraph 1: Preps (Imports and Configuration) (ID: paragraph_1764658338256_686533166) =====
+
+// =============================================================================
+// Paragraph 1: Preps (Imports and Configuration)
+// =============================================================================
 
 import com.microsoft.azure.synapse.ml.causal
 import com.skt.mno.dt.utils.commfunc._
@@ -48,18 +43,15 @@ spark.conf.set("spark.sql.adaptive.enabled", "true")
 spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
 spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
 // spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "100MB")
-spark.conf.set("spark.sql.shuffle.partitions", "400")
+// spark.conf.set("spark.sql.shuffle.partitions", "400")
 spark.conf.set("spark.sql.files.maxPartitionBytes", "128MB")
-
-// 메모리 최적화 설정 (OOM 방지)
-spark.conf.set("spark.executor.memoryOverhead", "4g")  // Executor 메모리 오버헤드
-spark.conf.set("spark.memory.fraction", "0.8")  // 실행 및 저장 메모리 비율
-spark.conf.set("spark.memory.storageFraction", "0.3")  // 저장 메모리 비율
 
 spark.sparkContext.setCheckpointDir("hdfs://scluster/user/g1110566/checkpoint")
 
 
-// ===== Paragraph 2: Helper Functions (ID: paragraph_1764742922351_426209997) =====
+// =============================================================================
+// Paragraph 2: Helper Functions
+// =============================================================================
 
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -72,60 +64,204 @@ spark.udf.register("vector_to_array", (v: Vector) => v.toArray)
 
 def getPreviousMonths(startMonthStr: String, periodM: Int): Array[String] = {
   val formatter = DateTimeFormatter.ofPattern("yyyyMM")
+
+  // 입력 월 파싱
   val startMonth = YearMonth.parse(startMonthStr, formatter)
+
+  // 결과를 저장할 가변 리스트 (순서를 위해 ListBuffer 사용)
   var resultMonths = scala.collection.mutable.ListBuffer[String]()
   var currentMonth = startMonth
 
+  // M번 반복하여 월을 계산하고 리스트에 추가
   for (i <- 0 until periodM) {
+    // 현재 월을 리스트 맨 앞에 추가
     resultMonths.prepend(currentMonth.format(formatter))
+    // 다음 반복을 위해 이전 달로 이동
     currentMonth = currentMonth.minusMonths(1)
   }
+
+  // 리스트를 Array로 반환
   resultMonths.toArray
 }
 
 def getPreviousDays(startDayStr: String, periodD: Int): Array[String] = {
+  // yyyyMMdd 형식의 포맷터 설정
   val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+
+  // 1. 입력된 날짜 문자열 파싱
   val startDay = LocalDate.parse(startDayStr, formatter)
+
+  // 2. 결과를 저장할 가변 리스트 (순서를 위해 ListBuffer 사용)
   val resultDays = ListBuffer[String]()
   var currentDay = startDay
 
+  // 3. periodD번 반복하여 날짜를 계산하고 리스트에 추가
   for (i <- 0 until periodD) {
+    // 현재 날짜를 리스트 맨 앞에 추가 (최신 날짜가 뒤로 가게 하려면 append 사용)
     resultDays.prepend(currentDay.format(formatter))
+
+    // 다음 반복을 위해 이전 날짜(1일 전)로 이동
     currentDay = currentDay.minusDays(1)
   }
+
+  // 4. 리스트를 Array로 반환
   resultDays.toArray
 }
 
 def getDaysBetween(startDayStr: String, endDayStr: String): Array[String] = {
   val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+
   val start = LocalDate.parse(startDayStr, formatter)
   val end = LocalDate.parse(endDayStr, formatter)
+
+  // 두 날짜 사이의 일수 차이 계산
   val numOfDays = ChronoUnit.DAYS.between(start, end).toInt
+
   val resultDays = ListBuffer[String]()
 
+  // 에러 수정: Scala의 for 루프는 'i <- 시작 to 끝' 형식을 사용합니다.
   for (i <- 0 to numOfDays) {
     resultDays.append(start.plusDays(i).format(formatter))
   }
+
   resultDays.toArray
 }
 
-// ===== Paragraph 3: Date Range and Period Configuration (ID: paragraph_1764742953919_436300403) =====
+
 // =============================================================================
-// 시간 조건 변수 통합 관리 (Time Condition Variables Configuration)
+// Paragraph 3: Response Data Loading - Hive
 // =============================================================================
-// 이 섹션은 5개 작업 흐름의 시간 조건을 중앙에서 관리합니다.
-// 각 작업 흐름별로 필요한 시간 변수를 명확하게 구분하여 유연하고 안정적인 실행을 보장합니다.
+
+val cmpgnYM = z.input("cmpgn_ym", "202512,202601").toString
+val cmpgnYMList = cmpgnYM.split(",").mkString("','")
+
+val cmpgnResDF = spark.sql(s"""
+with ract as
+(
+select A.cmpgn_num
+    ,A.cmpgn_obj_num
+    ,B.svc_mgmt_num
+    ,A.extrt_seq
+    ,CASE WHEN A.ract_typ_cd = '0802' THEN 1 ELSE 0 END AS send_yn
+    ,CASE WHEN A.ract_typ_cd = '0810' THEN 1 ELSE 0 END AS click_yn
+    ,CASE WHEN A.ract_typ_cd = '0811' THEN 1 ELSE 0 END AS read_yn
+    ,CASE WHEN A.ract_typ_cd = '0802' THEN A.cont_dt ELSE null END AS send_dt
+    ,CASE WHEN A.ract_typ_cd = '0810' THEN A.cont_dt ELSE null END AS click_dt
+    ,CASE WHEN A.ract_typ_cd = '0811' THEN A.cont_dt ELSE null END AS read_dt
+    ,CASE WHEN A.ract_typ_cd = '0802' THEN A.cont_tm ELSE null END AS send_tm
+    ,CASE WHEN A.ract_typ_cd = '0810' THEN A.cont_tm ELSE null END AS click_tm
+    ,CASE WHEN A.ract_typ_cd = '0811' THEN A.cont_tm ELSE null END AS read_tm
+    ,CASE WHEN A.cont_chnl_cd = 'C18001' THEN 'MMS'
+            WHEN A.cont_chnl_cd = 'C28001' THEN 'RCS' END AS chnl_typ
+    ,CASE WHEN C.cmpgn_purp_typ_cd IN ('S01', 'S06') THEN 'Sales'
+                WHEN C.cmpgn_purp_typ_cd = 'C01' THEN 'Care'
+                WHEN C.cmpgn_purp_typ_cd = 'B01' THEN 'Bmarketing' END AS cmpgn_typ
+    ,CASE WHEN D.cmpgn_num IS NOT NULL THEN 'url_Y' ELSE 'url_N' END AS url_yn
+from tos.od_tcam_cmpgn_obj_cont as A
+LEFT JOIN (SELECT DISTINCT cmpgn_num, cmpgn_obj_num, svc_mgmt_num FROM tos.od_tcam_cmpgn_obj) AS B
+ON A.cmpgn_obj_num = B.cmpgn_obj_num AND A.cmpgn_num = B.cmpgn_num
+LEFT JOIN tos.od_tcam_cmpgn_brief AS C
+ON A.cmpgn_num = C.cmpgn_num
+LEFT JOIN (SELECT DISTINCT cmpgn_num FROM tos.od_tcam_cmpgn_obj WHERE ract_typ_cd = '0810') AS D
+ON A.cmpgn_num = D.cmpgn_num
+where A.ract_typ_cd in ('0802','0810', '0811')
+AND A.cont_chnl_cd in ('C18001','C28001')
+AND B.svc_mgmt_num != '0'
+AND substring(A.cont_dt, 1, 6) in ('${cmpgnYMList}')
+)
+
+,ract2 as(
+
+select cmpgn_num
+    ,svc_mgmt_num
+    ,extrt_seq
+    ,chnl_typ
+    ,cmpgn_typ
+    ,url_yn
+    ,send_yn
+    ,read_yn
+    ,click_yn
+    ,send_dt
+    ,read_dt
+    ,click_dt
+    ,CASE WHEN LENGTH(send_dt) = 8 AND LENGTH(send_tm) = 6 THEN TO_TIMESTAMP(send_dt || send_tm, 'yyyyMMddHHmmss') ELSE NULL END AS send_time
+    ,CASE WHEN LENGTH(read_dt) = 8 AND LENGTH(read_tm) = 6 THEN TO_TIMESTAMP(read_dt || read_tm, 'yyyyMMddHHmmss') ELSE NULL END AS read_time
+    ,CASE WHEN LENGTH(click_dt) = 8 AND LENGTH(click_tm) = 6 THEN TO_TIMESTAMP(click_dt || click_tm, 'yyyyMMddHHmmss') ELSE NULL END AS click_time
+from ract
+where (send_dt IS NULL OR LENGTH(send_dt) = 8)
+and (send_tm IS NULL OR LENGTH(send_tm) = 6)
+and (read_dt IS NULL OR LENGTH(read_dt) = 8)
+and (read_tm IS NULL OR LENGTH(read_tm) = 6)
+and (click_dt IS NULL OR LENGTH(click_dt) = 8)
+and (click_tm IS NULL OR LENGTH(click_tm) = 6)
+)
+
+,ract3 as(
+select cmpgn_num
+    , svc_mgmt_num
+    , extrt_seq
+    , chnl_typ
+    , cmpgn_typ
+    , url_yn
+    , sum(send_yn) as send_yn
+    , sum(read_yn) as read_yn
+    , sum(click_yn) as click_yn
+    , min(send_dt) as send_dt
+    , min(send_time) as send_time
+    , min(read_dt) as read_dt
+    , min(read_time) as read_time
+    , min(click_dt) as click_dt
+    , min(click_time) as click_time
+from ract2
+group by cmpgn_num, svc_mgmt_num, extrt_seq, chnl_typ, cmpgn_typ, url_yn
+),
+
+tmp AS
+(
+select *
+from ract3
+where (send_yn = 1 OR (send_yn = 2 AND chnl_typ = 'MMS'))
+and (read_yn IS NULL OR read_yn <= 1)
+)
+
+
+SELECT *
+    ,dayofweek(to_date(send_dt, 'yyyyMMdd')) as send_daynum
+    ,dayofweek(to_date(click_dt, 'yyyyMMdd')) as click_daynum
+    ,hour(send_time) as send_hournum
+    ,hour(click_time) as click_hournum
+    ,CAST(datediff(click_time, send_time) AS INTEGER) AS day_gap
+    ,CAST((unix_timestamp(click_time) - unix_timestamp(send_time))/3600 AS INTEGER) AS hour_gap
+    ,CAST((unix_timestamp(click_time) - unix_timestamp(send_time))/60 AS INTEGER) AS minute_gap
+    ,CAST(unix_timestamp(click_time) - unix_timestamp(send_time) AS INTEGER) AS second_gap
+    ,substring(send_dt,1,6) as send_ym
+FROM tmp
+
+""")//.cache()
+
+// cmpgnResDF.createOrReplaceTempView("cmpgn_df_view")
+
+
+// =============================================================================
+// Paragraph 4: Response Data Saving
+// =============================================================================
+
+cmpgnResDF.repartition(100).write.mode("overwrite").partitionBy("send_ym").parquet("aos/sto/response")
+
+
+// =============================================================================
+// Paragraph 5: Date Range and Period Configuration
 // =============================================================================
 
 // -----------------------------------------------------------------------------
 // 작업 흐름 1-2: Campaign 반응 데이터 로딩 및 Train/Test Raw 생성 (Paragraph 3-14)
 // -----------------------------------------------------------------------------
 // 반응 데이터는 학습/테스트 데이터의 기반이 되므로 동일한 시간 조건을 사용합니다.
-// 
+//
 // 학습 및 테스트 데이터 생성을 위한 시간 조건을 정의합니다.
 val sendMonth = "202512"                  // 학습/테스트 데이터 기준 발송 월
 val featureMonth = "202511"               // 피처 추출 기준 월 (발송 월 이전)
-val period = 6                            // 학습 데이터 기간 (개월 수)
+val period = 3                            // 학습 데이터 기간 (개월 수)
 val sendYmList = getPreviousMonths(sendMonth, period+2)
 val featureYmList = getPreviousMonths(featureMonth, period+2)
 
@@ -133,8 +269,8 @@ val featureYmList = getPreviousMonths(featureMonth, period+2)
 val featureDTList = getDaysBetween(featureYmList(0)+"01", sendMonth+"01")
 
 // Train/Test 분할 기준 날짜
-val predictionDTSta = "20251101"          // 테스트 데이터 시작 날짜
-val predictionDTEnd = "20251201"          // 테스트 데이터 종료 날짜
+val predictionDTSta = "20251201"          // 테스트 데이터 시작 날짜
+val predictionDTEnd = "20260101"          // 테스트 데이터 종료 날짜
 
 // 반응 데이터 필터링 조건
 val responseHourGapMax = 5                // 최대 클릭 시간차 (시간 단위)
@@ -254,16 +390,9 @@ if (transformRawDataVersion != transformedTrainSaveVersion) {
 
 println("=" * 80)
 
-// ===== Paragraph 4: Response Data Loading from HDFS (ID: paragraph_1764659911196_1763551717) =====
+
 // =============================================================================
-// [작업 흐름 1-2] Campaign 반응 데이터 로딩
-// =============================================================================
-// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
-// - sendMonth: 반응 데이터 로딩 기준 월
-// - period: 로딩할 기간 (개월 수)
-// - sendYmList: 실제 로딩할 월 리스트
-// 
-// 주의: 이 데이터는 Paragraph 5에서 필터링되어 Train/Test 데이터 생성에 사용됩니다.
+// Paragraph 6: Response Data Loading from HDFS
 // =============================================================================
 
 println("=" * 80)
@@ -280,15 +409,17 @@ val resDF = spark.read.parquet("aos/sto/response")
   .persist(StorageLevel.MEMORY_AND_DISK_SER)
 resDF.createOrReplaceTempView("res_df")
 
-val totalRecords = resDF.count()
-println(s"Response data loaded: $totalRecords records")
+// val totalRecords = resDF.count()
+// println(s"Response data loaded: $totalRecords records")
 println("=" * 80)
 
 resDF.printSchema()
 
 
+// =============================================================================
+// Paragraph 7: Response Data Filtering and Feature Engineering
+// =============================================================================
 
-// ===== Paragraph 5: Response Data Filtering and Feature Engineering (ID: paragraph_1764641394585_598529380) =====
 // =============================================================================
 // [작업 흐름 1-2] Response Data 필터링 및 피처 엔지니어링
 // =============================================================================
@@ -296,7 +427,7 @@ resDF.printSchema()
 // - sendYmList: 필터링할 월 리스트
 // - responseHourGapMax: 최대 클릭 시간차
 // - startHour, endHour: 발송 시간대 범위
-// 
+//
 // 이 필터링된 데이터는 Train/Test raw 데이터 생성의 기반이 됩니다.
 // =============================================================================
 
@@ -328,7 +459,9 @@ println("=" * 80)
 resDF.printSchema()
 
 
-// ===== Paragraph 6: User Feature Data Loading (MMKT_SVC_BAS) (ID: paragraph_1764739202982_181479704) =====
+// =============================================================================
+// Paragraph 8: User Feature Data Loading (MMKT_SVC_BAS)
+// =============================================================================
 
 val allFeaturesMMKT = spark.sql("describe wind_tmt.mmkt_svc_bas_f").select("col_name").collect().map(_.getString(0))
 val sigFeaturesMMKT = spark.read.option("header", "true").csv("feature_importance/table=mmkt_bas/creation_dt=20230407").filter("rank<=100").select("col").collect().map(_(0).toString()).map(_.trim)
@@ -338,7 +471,7 @@ val colListForMMKT = (Array("svc_mgmt_num", "strd_ym feature_ym", "mst_work_dt",
     "svc_cd", "svc_st_cd", "pps_yn", "svc_use_typ_cd", "indv_corp_cl_cd", "frgnr_yn", "nm_cust_num", "wlf_dc_cd"
 ) ++ sigFeaturesMMKT).filter(c => allFeaturesMMKT.contains(c.trim.split(" ")(0).trim)).distinct
 
-val mmktDFTemp = spark.sql(s"""select ${colListForMMKT.mkString(",")}, strd_ym from wind_tmt.mmkt_svc_bas_f a where strd_ym in (${featureYmList.mkString("'","','","'")})""")
+val mmktDFTemp = spark.sql(s"""select ${colListForMMKT.mkString(",")}, strd_ym from wind_tmt.mmkt_svc_bas_f a where strd_ym in (${(featureYmList++sendYmList).distinct.sorted.mkString("'","','","'")})""")
   .repartition(200, F.col("svc_mgmt_num"))  // 조인을 위한 파티셔닝
 
 // Broadcast join for small dimension table
@@ -352,17 +485,18 @@ val mmktDF = {
     .checkpoint()
 }
 
-println("MMKT user data cached (will materialize on next action)")
 
+// =============================================================================
+// Paragraph 9: Train/Test Split and Feature Month Mapping
+// =============================================================================
 
-// ===== Paragraph 7: Train/Test Split and Feature Month Mapping (ID: paragraph_1764739017819_1458690185) =====
 // =============================================================================
 // [작업 흐름 2] Train/Test Split 및 Feature Month Mapping
 // =============================================================================
 // 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
 // - predictionDTSta: 테스트 데이터 시작 날짜
 // - predictionDTEnd: 테스트 데이터 종료 날짜
-// 
+//
 // Train: send_dt < predictionDTSta
 // Test:  send_dt >= predictionDTSta and send_dt < predictionDTEnd
 // =============================================================================
@@ -400,7 +534,9 @@ var resDFSelectedTs = resDFSelected
 println("Test response data checkpointed")
 
 
-// ===== Paragraph 8: Undersampling Ratio Calculation (Class Balance) (ID: paragraph_1764738582669_1614068999) =====
+// =============================================================================
+// Paragraph 10: Undersampling Ratio Calculation (Class Balance)
+// =============================================================================
 
 val samplingKeyCols = Array("chnl_typ","cmpgn_typ","send_daynum","send_hournum_cd","click_yn")
 
@@ -424,7 +560,9 @@ val samplingRatioMapDF = {
 println("Sampling ratio map cached (small table, will materialize quickly)")
 
 
-// ===== Paragraph 9: Training Data Undersampling (Balanced Dataset) (ID: paragraph_1764756027560_85739584) =====
+// =============================================================================
+// Paragraph 11: Training Data Undersampling (Balanced Dataset)
+// =============================================================================
 
 // Undersampling 최적화 - broadcast join 활용
 var resDFSelectedTrBal = resDFSelectedTr
@@ -439,7 +577,9 @@ var resDFSelectedTrBal = resDFSelectedTr
 println("Balanced training data checkpointed")
 
 
-// ===== Paragraph 10: App Usage Data Loading and Aggregation (Large Dataset) (ID: paragraph_1766323923540_1041552789) =====
+// =============================================================================
+// Paragraph 12: App Usage Data Loading and Aggregation (Large Dataset)
+// =============================================================================
 
 import org.apache.spark.sql.functions._
 
@@ -543,7 +683,44 @@ val xdrDFMon = xdrDF
 println("XDR monthly pivot data cached with aggregated features (will materialize on first use)")
 
 
-// ===== Paragraph 11: Historical Click Count Feature Engineering (3-Month Window) (ID: paragraph_1767594403472_2124174124) =====
+// =============================================================================
+// Paragraph 13
+// =============================================================================
+
+%spark.sql
+SELECT
+    -- date_format(
+    --     from_utc_timestamp(
+    --         from_unixtime(summary_create_time),
+    --         "Asia/Seoul"
+    --     ),
+    --     "yyyy-MM-dd HH:mm:ss"
+    -- ) AS summary_create_time,
+
+    distinct
+    date_format(
+        from_utc_timestamp(
+            from_unixtime(traffic_first_time),
+            "Asia/Seoul"
+        ),
+        "yyyy-MM-dd HH:mm:ss"
+    ) AS traffic_first_time,
+
+    svc_mgmt_num,
+    app_id,
+    app_title_ko
+FROM dprobe_raw.xdr_app
+WHERE svc_mgmt_num = 's:e4e78b17ec7efcbc554478829a9272da96a34a40d73dbdf39a9bbad8dc9d83b7'
+    AND dt = '20251216'
+    AND hh >= 10 and hh <= 19
+    and app_id = 'H032'
+ORDER BY traffic_first_time
+LIMIT 100;
+
+
+// =============================================================================
+// Paragraph 14: Historical Click Count Feature Engineering (3-Month Window)
+// =============================================================================
 
 import org.apache.spark.sql.functions._
 
@@ -590,7 +767,9 @@ val clickCountDF = df.as("current")
 println("Click count history cached (will materialize on first use)")
 
 
-// ===== Paragraph 12: Feature Integration via Multi-way Joins (Optimized Order) (ID: paragraph_1764755002817_1620624445) =====
+// =============================================================================
+// Paragraph 15: Feature Integration via Multi-way Joins (Optimized Order)
+// =============================================================================
 
 val mmktDFFiltered = mmktDF.filter(smnCond).persist(StorageLevel.MEMORY_AND_DISK_SER)
 println("Filtered MMKT data cached")
@@ -627,7 +806,9 @@ val testDF = resDFSelectedTs
 println(s"Test data joined successfully")
 
 
-// ===== Paragraph 13: Data Type Conversion and Column Standardization (ID: paragraph_1764832142136_413314670) =====
+// =============================================================================
+// Paragraph 16: Data Type Conversion and Column Standardization
+// =============================================================================
 
 val noFeatureCols = Array("click_yn","hour_gap")
 
@@ -636,8 +817,7 @@ val continuousCols = (trainDF.columns.filter(x => numericColNameList.map(x.endsW
 val categoryCols = (trainDF.columns.filter(x => categoryColNameList.map(x.endsWith(_)).reduceOption(_ || _).getOrElse(false)).distinct.filter(x => !tokenCols.contains(x) && !noFeatureCols.contains(x) && !continuousCols.contains(x))).distinct
 val vectorCols = trainDF.columns.filter(x => x.endsWith("_vec"))
 
-val trainDFRev = trainDF
-.select(
+val trainDFRev = trainDF.select(
     (Array("cmpgn_num", "svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility").map(F.col(_))
     ++ tokenCols.map(cl => F.coalesce(F.col(cl), F.array(F.lit("#"))).alias(cl))
     ++ vectorCols.map(cl => F.col(cl).alias(cl))
@@ -648,8 +828,7 @@ val trainDFRev = trainDF
 .distinct
 .withColumn("suffix", F.expr("right(svc_mgmt_num, 1)"))
 
-val testDFRev = testDF
-.select(
+val testDFRev = testDF.select(
     (Array("cmpgn_num", "svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility").map(F.col(_))
     ++ tokenCols.map(cl => F.coalesce(F.col(cl), F.array(F.lit("#"))).alias(cl))
     ++ vectorCols.map(cl => F.col(cl).alias(cl))
@@ -661,13 +840,16 @@ val testDFRev = testDF
 .withColumn("suffix", F.expr("right(svc_mgmt_num, 1)"))
 
 
-// ===== Paragraph 14: Raw Feature Data Persistence (Parquet Format) (ID: paragraph_1766224516076_433149416) =====
+// =============================================================================
+// Paragraph 17: Raw Feature Data Persistence (Parquet Format)
+// =============================================================================
+
 // =============================================================================
 // [작업 흐름 2] Train/Test Raw 데이터 저장
 // =============================================================================
 // 이 단계에서 생성된 데이터는 Paragraph 15에서 로딩됩니다.
 // 저장 경로와 버전은 transformRawDataVersion과 일치해야 합니다.
-// 
+//
 // ⚠️  중요: 저장 경로는 Paragraph 15의 로딩 경로와 일치해야 합니다.
 // =============================================================================
 
@@ -711,14 +893,17 @@ println(s"  - Train/Test Split: < $predictionDTSta (train) / >= $predictionDTSta
 println("=" * 80)
 
 
-// ===== Paragraph 15: Raw Feature Data Loading and Cache Management (ID: paragraph_1766392634024_1088239830) =====
+// =============================================================================
+// Paragraph 18: Raw Feature Data Loading and Cache Management
+// =============================================================================
+
 // =============================================================================
 // [작업 흐름 3] Transformed Data 생성을 위한 Raw Data 로딩
 // =============================================================================
 // 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
 // - transformRawDataVersion: 로딩할 raw training data 버전
 // - transformTestDataPath: 로딩할 raw test data 경로
-// 
+//
 // ⚠️  중요: 이 경로들은 Paragraph 14에서 저장한 경로와 일치해야 합니다.
 // =============================================================================
 
@@ -727,19 +912,19 @@ println("=" * 80)
 println("[작업 흐름 3] Raw Feature Data Loading for Transformation")
 println("=" * 80)
 println("Cleaning up intermediate cached data...")
-try {
-  resDFSelectedTrBal.unpersist()
-  resDFSelectedTs.unpersist()
-  xdrDF.unpersist()
-  xdrDFMon.unpersist()
-  userYmDF.unpersist()
-  mmktDFFiltered.unpersist()
-  println("Cache cleanup completed")
-} catch {
-  case e: Exception => println(s"Cache cleanup warning: ${e.getMessage}")
-}
+// try {
+//   resDFSelectedTrBal.unpersist()
+//   resDFSelectedTs.unpersist()
+//   xdrDF.unpersist()
+//   xdrDFMon.unpersist()
+//   userYmDF.unpersist()
+//   mmktDFFiltered.unpersist()
+//   println("Cache cleanup completed")
+// } catch {
+//   case e: Exception => println(s"Cache cleanup warning: ${e.getMessage}")
+// }
 
-spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "10g")
+// spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "10g")
 
 // Paragraph 4의 시간 조건 변수를 사용하여 데이터 로딩
 val trainDataPath = s"aos/sto/trainDFRev${transformRawDataVersion}"
@@ -751,7 +936,7 @@ val trainDFRev = spark.read.parquet(trainDataPath)
     // .drop("click_cnt").join(clickCountDF, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "left").na.fill(Map("click_cnt"->0.0))
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println(s"Training data loaded and cached: ${trainDFRev.count()} records")
+// println(s"Training data loaded and cached: ${trainDFRev.count()} records")
 
 println(s"Loading test data from: $testDataPath")
 val testDFRev = spark.read.parquet(testDataPath)
@@ -759,7 +944,7 @@ val testDFRev = spark.read.parquet(testDataPath)
     // .drop("click_cnt").join(clickCountDF, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "left").na.fill(Map("click_cnt"->0.0))
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println(s"Test data loaded and cached: ${testDFRev.count()} records")
+// println(s"Test data loaded and cached: ${testDFRev.count()} records")
 
 // 피처 컬럼 분석
 println("Analyzing feature columns...")
@@ -777,18 +962,15 @@ println(s"  - Vector columns: ${vectorCols.length}")
 println("=" * 80)
 
 
-// ===== Paragraph 16: Prediction Dataset Preparation for Production (ID: paragraph_1765765120629_645290475) =====
 // =============================================================================
-// [작업 흐름 5] 실제 서비스용 데이터 생성 및 예측
+// Paragraph 19: Prediction Dataset Preparation for Production
 // =============================================================================
-// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
-// - predDT: 예측 기준 날짜 (발송 예정일)
-// - predFeatureYM: 피처 추출 기준 월
-// - predSendYM: 예측 발송 월
-// - predSuffix: 처리할 suffix 패턴
-// 
-// 이 단계에서는 실제 예측에 사용할 데이터를 준비합니다.
-// =============================================================================
+
+val predDT = "20260101"
+val predFeatureYM = getPreviousMonths(predDT.take(6), 2)(0)
+val predSendYM = predDT.take(6)
+
+val prdSuffix = "%"
 
 println("=" * 80)
 println("[작업 흐름 5] Prediction Dataset Preparation for Production")
@@ -823,7 +1005,7 @@ val xdrDFPred = spark.sql(s"""
         AND ym = '$predFeatureYM'
         AND ($prdSuffixCond)
 """)
-.repartition(400, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
+.repartition(300, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
 .groupBy("svc_mgmt_num", "feature_ym", "send_hournum_cd")
 .agg(
   collect_set("app_nm").alias("app_usage_token"),
@@ -858,7 +1040,7 @@ val xdrPredAggregatedFeatures = xdrDFPred
 println("Prediction XDR aggregated features cached")
 
 val xdrPredDF = xdrDFPred
-    .repartition(400, F.col("svc_mgmt_num"), F.col("feature_ym"))
+    .repartition(200, F.col("svc_mgmt_num"), F.col("feature_ym"))
     .groupBy("svc_mgmt_num", "feature_ym")
     .pivot("send_hournum_cd", hourRange.map(_.toString))
     .agg(first("app_usage_token"))
@@ -889,11 +1071,11 @@ val predDF = mmktDF
     .withColumn("hour_gap", F.lit(0))
     .withColumn("res_utility", F.lit(0.0))
     .withColumn("send_hournum_cd", F.explode(F.expr(s"array(${(startHour to endHour).toArray.mkString(",")})")))
-    .repartition(400, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
+    .repartition(200, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
     .join(clickCountDF, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "left")  // 1단계: 가장 작은 테이블
     .na.fill(Map("click_cnt" -> 0.0))
     .join(xdrDFPred, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "left")  // 2단계: 세 번째로 작은 테이블
-    .repartition(400, F.col("svc_mgmt_num"), F.col("feature_ym"))  // xdrPredDF 조인을 위한 파티셔닝
+    .repartition(200, F.col("svc_mgmt_num"), F.col("feature_ym"))  // xdrPredDF 조인을 위한 파티셔닝
     .join(xdrPredDF, Seq("svc_mgmt_num", "feature_ym"), "left")  // 3단계: 두 번째로 작은 테이블
 
 val predDFRev = predDF.select(
@@ -916,7 +1098,9 @@ val predDFRev = predDF.select(
 println("Prediction data prepared and cached")
 
 
-// ===== Paragraph 17: Pipeline Parameters and Feature Column Settings (ID: paragraph_1764833771372_1110341451) =====
+// =============================================================================
+// Paragraph 20: Pipeline Parameters and Feature Column Settings
+// =============================================================================
 
 val tokenColsEmbCols = Array("app_usage_token")
 val featureHasherNumFeature = 128
@@ -955,14 +1139,16 @@ val selectedFeatureColGap = "selectedFeaturesGap"
 val onlyGapFeature = Array[String]()
 
 val doNotHashingCateCols = Array[String]("send_hournum_cd", "peak_usage_hour_cd")
-val doNotHashingContCols = Array[String]("click_cnt", 
+val doNotHashingContCols = Array[String]("click_cnt",
   "heavy_usage_app_cnt", "medium_usage_app_cnt", "light_usage_app_cnt",
   "total_traffic_mb", "app_cnt", "peak_hour_app_cnt", "active_hour_cnt",
-  "avg_hourly_app_avg", "total_daily_traffic_mb", "total_heavy_apps_cnt", 
+  "avg_hourly_app_avg", "total_daily_traffic_mb", "total_heavy_apps_cnt",
   "total_medium_apps_cnt", "total_light_apps_cnt")
 
 
-// ===== Paragraph 18: Feature Engineering Pipeline Function Definition (makePipeline) (ID: paragraph_1765330122144_909170709) =====
+// =============================================================================
+// Paragraph 21: Feature Engineering Pipeline Function Definition (makePipeline)
+// =============================================================================
 
 def makePipeline(
     labelCols: Array[Map[String,String]] = Array.empty,
@@ -1016,7 +1202,7 @@ def makePipeline(
 
     if (tokenColsCnt.size > 0) {
         // HashingTF에서 CountVectorizer + TF-IDF로 변경 (정보 손실 최소화)
-        val cntVectorizer = tokenColsCnt.map(c => 
+        val cntVectorizer = tokenColsCnt.map(c =>
             new CountVectorizer()
                 .setInputCol(c)
                 .setOutputCol(c + "_" + colNmSuffix + "_cntvec")
@@ -1025,7 +1211,7 @@ def makePipeline(
                 .setBinary(false)      // 빈도 정보 유지
         )
         transformPipeline.setStages(if(transformPipeline.getStages.isEmpty){cntVectorizer}else{transformPipeline.getStages++cntVectorizer})
-        
+
         // TF-IDF 가중치 추가 (중요한 앱에 더 높은 가중치)
         val tfidfTransformers = tokenColsCnt.map(c =>
             new IDF()
@@ -1033,7 +1219,7 @@ def makePipeline(
                 .setOutputCol(c + "_" + colNmSuffix + "_tfidf")
         )
         transformPipeline.setStages(transformPipeline.getStages ++ tfidfTransformers)
-        
+
         // TF-IDF 피처를 사용 (원본 cntvec 대신)
         featureListForAssembler ++= tokenColsCnt.map(_ + "_" + colNmSuffix + "_tfidf")
     }
@@ -1091,7 +1277,9 @@ def makePipeline(
 }
 
 
-// ===== Paragraph 19: Feature Engineering Pipeline Fitting and Transformation (ID: paragraph_1767353227961_983246072) =====
+// =============================================================================
+// Paragraph 22: Feature Engineering Pipeline Fitting and Transformation
+// =============================================================================
 
 val transformPipelineClick = makePipeline(
     labelCols = Array(),
@@ -1164,129 +1352,79 @@ transformedTestDF = transformerGap.transform(transformedTestDF)
 println("Test data transformed (cached)")
 
 
-// ===== Paragraph 20: Transformer and Transformed Data Saving (Batch by Suffix) (ID: paragraph_1765520460775_2098641576) =====
 // =============================================================================
-// [작업 흐름 3] Transformed Data 저장
-// =============================================================================
-// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
-// - transformedTrainSaveVersion: Transformed training data 저장 버전
-// - transformedTestSaveVersion: Transformed test data 저장 버전
-// - transformSuffixGroupSize: Suffix별 배치 저장 시 그룹 크기
-// 
-// ⚠️  중요: 이 저장 경로와 버전은 Paragraph 21에서 로딩할 때 일치해야 합니다.
+// Paragraph 23: Transformer and Transformed Data Saving (Batch by Suffix)
 // =============================================================================
 
-println("=" * 80)
-println("[작업 흐름 3] Saving Transformers and Transformed Data")
-println("=" * 80)
-
-// 1단계: Transformer 저장
-val transformerClickPath = s"aos/sto/transformPipelineXDRClick${transformedTrainSaveVersion}"
-val transformerGapPath = s"aos/sto/transformPipelineXDRGap${transformedTrainSaveVersion}"
-
-println(s"Saving Click transformer to: $transformerClickPath")
-transformerClick.write.overwrite().save(transformerClickPath)
-
-println(s"Saving Gap transformer to: $transformerGapPath")
-transformerGap.write.overwrite().save(transformerGapPath)
-
-println("Transformers saved successfully")
+println("Saving transformers...")
+transformerClick.write.overwrite().save("aos/sto/transformPipelineXDRClick10")
+transformerGap.write.overwrite().save("aos/sto/transformPipelineXDRGap10")
 
 // 2단계: Train/Test 데이터를 Suffix별 배치 저장 (메모리 과부하 방지)
 // suffixGroupSizeTrans: 한 번에 처리할 suffix 개수 (예: 4 = [0,1,2,3], [4,5,6,7], ...)
-println(s"Using suffix group size: $transformSuffixGroupSize")
+val suffixGroupSizeTrans = 2  // 조정 가능: 1(개별), 2, 4, 8, 16(전체)
 
 // Train과 Test 데이터셋 정의
 val datasetsToSave = Seq(
-  ("training", transformedTrainDF, s"aos/sto/transformedTrainDFXDR${transformedTrainSaveVersion}", 20),
-  ("test", transformedTestDF, s"aos/sto/transformedTestDFXDF${transformedTestSaveVersion}", 20)
+  ("training", transformedTrainDF, "aos/sto/transformedTrainDFXDR10", 20),
+  ("test", transformedTestDF, "aos/sto/transformedTestDFXDF10", 20)
 )
 
 // 각 데이터셋에 대해 suffix 그룹별로 저장
 datasetsToSave.foreach { case (datasetName, dataFrame, outputPath, basePartitions) =>
-  println(s"Saving transformed $datasetName data by suffix (group size: $transformSuffixGroupSize)...")
-  println(s"  Output path: $outputPath")
-  
-  (0 to 15).map(_.toHexString).grouped(transformSuffixGroupSize).zipWithIndex.foreach { case (suffixGroup, groupIdx) =>
-    println(s"  [Group ${groupIdx + 1}/${16 / transformSuffixGroupSize}] Processing $datasetName suffixes: ${suffixGroup.mkString(", ")}")
+  println(s"Saving transformed $datasetName data by suffix (group size: $suffixGroupSizeTrans)...")
+
+  (0 to 15).map(_.toHexString).grouped(suffixGroupSizeTrans).zipWithIndex.foreach { case (suffixGroup, groupIdx) =>
+    println(s"  [Group ${groupIdx + 1}/${16 / suffixGroupSizeTrans}] Processing $datasetName suffixes: ${suffixGroup.mkString(", ")}")
     dataFrame
       .filter(suffixGroup.map(s => s"suffix = '$s'").mkString(" OR "))
-      .repartition(basePartitions * transformSuffixGroupSize)  // 그룹 크기에 비례한 파티션 수
+      .repartition(basePartitions * suffixGroupSizeTrans)  // 그룹 크기에 비례한 파티션 수
       .write
       .mode("overwrite")  // Dynamic partition overwrite
       .option("compression", "snappy")
       .partitionBy("send_ym", "send_hournum_cd", "suffix")
       .parquet(outputPath)
   }
-  
+
   println(s"  Completed saving $datasetName data")
 }
 
-println("=" * 80)
 println("All transformers and transformed data saved successfully")
-println(s"  - Click Transformer: $transformerClickPath")
-println(s"  - Gap Transformer: $transformerGapPath")
-println(s"  - Training Data: aos/sto/transformedTrainDFXDR${transformedTrainSaveVersion}")
-println(s"  - Test Data: aos/sto/transformedTestDFXDF${transformedTestSaveVersion}")
-println("=" * 80)
 
-// ===== Paragraph 21: Pipeline Transformers and Transformed Data Loading (ID: paragraph_1765521446308_1651058139) =====
+
 // =============================================================================
-// [작업 흐름 4] Transformed Data를 통한 학습 및 테스트
-// =============================================================================
-// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
-// - modelTrainDataVersion: 로딩할 transformed training data 버전
-// - modelTestDataVersion: 로딩할 transformed test data 버전
-// - modelTransformerVersion: 로딩할 transformer 버전
-// 
-// ⚠️  중요: 이 로딩 경로는 Paragraph 20에서 저장한 경로와 일치해야 합니다.
+// Paragraph 24: Pipeline Transformers and Transformed Data Loading
 // =============================================================================
 
-println("=" * 80)
-println("[작업 흐름 4] Loading Transformers and Transformed Data for Training")
-println("=" * 80)
+val sendMonth = "202512"
+val featureMonth = "202511"
+val period = 6
+val sendYmList = getPreviousMonths(sendMonth, period+2)
+val featureYmList = getPreviousMonths(featureMonth, period+2)
 
-// Transformer 로딩 경로 설정
-val transformerClickLoadPath = s"aos/sto/transformPipelineXDRClick${modelTransformerVersion}"
-val transformerGapLoadPath = s"aos/sto/transformPipelineXDRGap${modelTransformerVersion}"
 
-println(s"Loading Click transformer from: $transformerClickLoadPath")
-val transformerClick = PipelineModel.load(transformerClickLoadPath)
-println("Click transformer loaded successfully")
+println("Loading Click transformer...")
+val transformerClick = PipelineModel.load("aos/sto/transformPipelineXDRClick10")
 
-println(s"Loading Gap transformer from: $transformerGapLoadPath")
-val transformerGap = PipelineModel.load(transformerGapLoadPath)
-println("Gap transformer loaded successfully")
+println("Loading Gap transformer...")
+val transformerGap = PipelineModel.load("aos/sto/transformPipelineXDRGap10")
 
-// Transformed data 로딩 경로 설정
-val transformedTrainLoadPath = s"aos/sto/transformedTrainDFXDR${modelTrainDataVersion}"
-val transformedTestLoadPath = s"aos/sto/transformedTestDFXDF${modelTestDataVersion}"
-
-println(s"Loading transformed training data from: $transformedTrainLoadPath")
-val transformedTrainDF = spark.read.parquet(transformedTrainLoadPath)
+println("Loading transformed training data...")
+val transformedTrainDF = spark.read.parquet("aos/sto/transformedTrainDFXDR10")
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-val trainRecordCount = transformedTrainDF.count()
-println(s"Transformed training data loaded and cached: $trainRecordCount records")
+println("Transformed training data loaded and cached")
 
-println(s"Loading transformed test data from: $transformedTestLoadPath")
-val transformedTestDF = spark.read.parquet(transformedTestLoadPath)
+println("Loading transformed test data...")
+val transformedTestDF = spark.read.parquet("aos/sto/transformedTestDFXDF10")
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-val testRecordCount = transformedTestDF.count()
-println(s"Transformed test data loaded and cached: $testRecordCount records")
-
-println("=" * 80)
-println("Data loading summary:")
-println(s"  - Training records: $trainRecordCount")
-println(s"  - Test records: $testRecordCount")
-println(s"  - Train/Test ratio: ${trainRecordCount.toDouble / testRecordCount}")
-println("=" * 80)
-
-// val transformedPredDF = transformer.transform(predDFRev)//.persist(StorageLevel.MEMORY_AND_DISK_SER)
+println("Transformed test data loaded and cached")
 
 
-// ===== Paragraph 22: ML Model Definitions (GBT, FM, XGBoost, LightGBM) (ID: paragraph_1764836200898_700489598) =====
+// =============================================================================
+// Paragraph 25: ML Model Definitions (GBT, FM, XGBoost, LightGBM)
+// =============================================================================
 
 import org.apache.spark.ml.classification._
 import org.apache.spark.ml.regression._
@@ -1359,12 +1497,7 @@ val gbtg = new GBTClassifier("gbtc_gap")
   .setLabelCol(indexedLabelColGap)
   .setFeaturesCol(indexedFeatureColGap)
   .setMaxIter(100)
-  .setMaxDepth(6)
-  .setStepSize(0.1)
-  .setSubsamplingRate(0.8)
-  .setFeatureSubsetStrategy("sqrt")
-  .setMinInstancesPerNode(10)
-  .setMinInfoGain(0.001)
+  .setFeatureSubsetStrategy("auto")
   .setPredictionCol("pred_gbtc_gap")
   .setProbabilityCol("prob_gbtc_gap")
   .setRawPredictionCol("pred_raw_gbtc_gap")
@@ -1398,7 +1531,9 @@ val xgbr = new XGBoostRegressor("xgbr")
   .setPredictionCol("pred_xgbr")
 
 
-// ===== Paragraph 23: XGBoost Feature Interaction and Monotone Constraints (ID: paragraph_1765939568349_1781513249) =====
+// =============================================================================
+// Paragraph 26: XGBoost Feature Interaction and Monotone Constraints
+// =============================================================================
 
 // Feature Interaction Constraints를 위한 설정
 
@@ -1415,7 +1550,7 @@ assemblerInputCols.zipWithIndex.foreach { case (col, idx) =>
 
 // 2. send_hournum_cd의 인덱스 찾기
 val sendHournumFeatureIndices = assemblerInputCols.zipWithIndex
-  .filter { case (colName, _) => 
+  .filter { case (colName, _) =>
     colName.contains("send_hournum_cd") || colName == "send_hournum_cd_enc"
   }
   .map(_._2)
@@ -1466,13 +1601,14 @@ println("\n✅ XGBoostRegressor with Feature Interaction Constraints created!")
 println(s"Interaction Constraints: [[$sendHournumIndices],[$allFeatureIndices]]")
 
 
-// ===== Paragraph 24: Click Prediction Model Training (ID: paragraph_1765789893517_1550413688) =====
+// =============================================================================
+// Paragraph 27: Click Prediction Model Training
+// =============================================================================
 
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 
-// 학습에 사용할 모델 선택 (gbtc, xgbc, fmc, lgbmc 중 선택)
-val modelClickforCV = gbtc  // 또는 xgbc, fmc, lgbmc
+val modelClickforCV = gbtc
 
 val pipelineMLClick = new Pipeline().setStages(Array(modelClickforCV))
 
@@ -1503,19 +1639,22 @@ val trainSampleClick = transformedTrainDF
 println("Click model training samples prepared and cached")
 
 println("Training Click prediction model...")
-val pipelineModelClick = pipelineMLClick.fit(trainSampleClick)
+val pipelineModelClick = pipelineMLClick.fit(trainSampleClick.select(indexedFeatureColClick, indexedLabelColClick))
 
 trainSampleClick.unpersist()  // 학습 완료 후 메모리 해제
 println("Click model training completed")
 
 
-// ===== Paragraph 25: Click-to-Action Gap Model Training (ID: paragraph_1767010803374_275395458) =====
+// =============================================================================
+// Paragraph 28: Click-to-Action Gap Model Training
+// =============================================================================
 
 val modelGapforCV = xgbg
 
 val pipelineMLGap = new Pipeline().setStages(Array(modelGapforCV))
 
 val posSampleRatioGap = 0.45
+
 
 // Gap 모델 학습 데이터 샘플링 최적화
 val trainSampleGap = transformedTrainDF
@@ -1534,13 +1673,35 @@ val trainSampleGap = transformedTrainDF
 println("Gap model training samples prepared and cached")
 
 println("Training Gap prediction model...")
-val pipelineModelGap = pipelineMLGap.fit(trainSampleGap)
+val pipelineModelGap = pipelineMLGap.fit(trainSampleGap.select(indexedFeatureColGap, indexedLabelColGap))
 
 trainSampleGap.unpersist()  // 학습 완료 후 메모리 해제
 println("Gap model training completed")
 
 
-// ===== Paragraph 26: Response Utility Regression Model Training (ID: paragraph_1765764610094_1504595267) =====
+// =============================================================================
+// Paragraph 29: Prediction Model Saving
+// =============================================================================
+
+val modelVersion = 1
+
+pipelineModelClick.write.overwrite().save(s"aos/sto/model/pipelineModelClick${modelVersion}")
+pipelineModelGap.write.overwrite().save(s"aos/sto/model/pipelineModelGap${modelVersion}")
+
+
+// =============================================================================
+// Paragraph 30: Prediction Model Loading
+// =============================================================================
+
+val modelVersion = 1
+
+val pipelineModelClick = PipelineModel.load(s"aos/sto/model/pipelineModelClick${modelVersion}")
+val pipelineModelGap = PipelineModel.load(s"aos/sto/model/pipelineModelGap${modelVersion}")
+
+
+// =============================================================================
+// Paragraph 31: Response Utility Regression Model Training
+// =============================================================================
 
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 
@@ -1563,7 +1724,9 @@ trainSampleReg.unpersist()  // 학습 완료 후 메모리 해제
 println("Regression model training completed")
 
 
-// ===== Paragraph 27: Model Prediction on Test Dataset (ID: paragraph_1765345345715_612147457) =====
+// =============================================================================
+// Paragraph 32: Model Prediction on Test Dataset
+// =============================================================================
 
 // 테스트 데이터 중복 제거 후 예측 - 파티션 최적화
 val testDataForPred = transformedTestDF
@@ -1587,20 +1750,78 @@ val predictionsGapDev = pipelineModelGap.transform(testDataForPred)
 println("Gap predictions cached")
 
 
-// ===== Paragraph 28: Click Model Performance Evaluation (Precision@K per Hour & MAP) (ID: paragraph_1764838154931_1623772564) =====
+// =============================================================================
+// Paragraph 33
+// =============================================================================
+
+val gbtc = new GBTClassifier("gbtc_click")
+  .setLabelCol(indexedLabelColClick)
+  .setFeaturesCol(indexedFeatureColClick)
+  .setMaxIter(100)  // 50 → 100 (더 많은 트리)
+  .setMaxDepth(4)   // 4 → 6 (더 깊은 트리)
+//   .setStepSize(0.1) // learning rate 추가
+//   .setSubsamplingRate(0.8)  // 80% 샘플링으로 과적합 방지
+  .setFeatureSubsetStrategy("auto")  // auto → sqrt (Random Forest 스타일)
+//   .setMinInstancesPerNode(10)  // 리프 노드 최소 샘플 수
+//   .setMinInfoGain(0.001)  // 분할 최소 정보 이득
+//   .setWeightCol("sample_weight")
+  .setPredictionCol("pred_gbtc_click")
+  .setProbabilityCol("prob_gbtc_click")
+  .setRawPredictionCol("pred_raw_gbtc_click")
+
+val modelClickforCV = gbtc
+
+val pipelineMLClick = new Pipeline().setStages(Array(modelClickforCV))
+
+val negSampleRatioClick = 0.1
+
+val trainSampleClick = transformedTrainDF
+    .filter("cmpgn_typ=='Sales'")
+    .stat.sampleBy(
+        F.col(indexedLabelColClick),
+        Map(
+            0.0 -> negSampleRatioClick,  // 3:1 비율 (Negative를 27% 샘플링) ✓
+            1.0 -> 1.0,   // Positive 전체 사용
+        ),
+        42L
+    )
+    // sample_weight는 XGBoost에서만 사용되므로 그대로 유지
+    .withColumn("sample_weight", F.expr(s"case when $indexedLabelColClick>0.0 then 10.0 else 1.0 end"))
+    .repartition(200)  // 학습을 위한 적절한 파티션 수
+    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+println("Click model training samples prepared and cached")
+
+println("Training Click prediction model...")
+val pipelineModelClick = pipelineMLClick.fit(trainSampleClick)
+
+trainSampleClick.unpersist()  // 학습 완료 후 메모리 해제
+println("Click model training completed")
+
+
+println("Generating Click predictions...")
+val predictionsClickDev = pipelineModelClick.transform(testDataForPred)
+    .persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+println("Click predictions cached")
+
+
+// =============================================================================
+// Paragraph 34: Click Model Performance Evaluation (Precision@K per Hour & MAP)
+// =============================================================================
 
 val stagesClick = pipelineModelClick.stages
 
-stagesClick.foreach { stage => 
+stagesClick.foreach { stage =>
 
     val evalModelName = stage.uid  // 학습에 사용된 모델의 UID 자동 추출
     val evalModelShortName = evalModelName.replace("_click", "").toUpperCase
-        
+
     println("\n" + "=" * 80)
     println(s"실제 서비스 평가: Precision@K per Hour & MAP")
     println("-" * 80)
     println(s"평가 모델: $evalModelShortName (UID: $evalModelName)")
-    
+
     // 모델별 하이퍼파라미터 출력
     evalModelName match {
         case "gbtc_click" =>
@@ -1620,19 +1841,17 @@ stagesClick.foreach { stage =>
             println(s"  - Model: $evalModelName")
     }
     println("=" * 80 + "\n")
-    
+
     // ========================================
     // Part 1: Precision@K per Hour (시간대별 평가)
     // ========================================
-    
+
     println("=" * 80)
     println("Part 1: Precision@K per Hour (시간대별 상위 K명 선택 시 클릭률)")
     println("=" * 80)
-    
-    // 시간대별 사용자 확률 생성
-    // suffix 기반 샘플링 (shuffle 없이 빠르게 처리)
+
     val suffixRange = (0 to 8).map(_.toHexString)  // 0~9: 약 62.5% 샘플링, 0~f: 100%
-    
+
     val hourlyUserPredictions = predictionsClickDev
         .filter("click_yn >= 0")
         .withColumn("suffix", F.substring(F.col("svc_mgmt_num"), -1, 1))  // 마지막 자리 추출
@@ -1652,38 +1871,38 @@ stagesClick.foreach { stage =>
         )
         .repartition(200)  // 집계 후 파티션 조정
         .persist(StorageLevel.MEMORY_AND_DISK_SER)  // cache → persist로 변경
-    
+
     // K 값들
     val kValues = Array(100, 500, 1000, 2000, 5000, 10000)
-    
+
     println("\n시간대별 Precision@K:")
     println("-" * 100)
     println(f"Hour | ${"K=100"}%8s | ${"K=500"}%8s | ${"K=1000"}%9s | ${"K=2000"}%9s | ${"K=5000"}%9s | ${"K=10000"}%10s |")
     println("-" * 100)
-    
+
     // 각 시간대별로 계산
     val hours = (9 to 18).toArray
-    
+
     hours.foreach { hour =>
         val hourData = hourlyUserPredictions.filter(s"hour = $hour")
-        
+
         val precisions = kValues.map { k =>
             // 확률 상위 K명 선택
             val topK = hourData
                 .orderBy(F.desc("click_prob"))
                 .limit(k)
-            
+
             val totalK = topK.count().toDouble
             val clickedK = topK.filter("actual_click > 0").count().toDouble
-            
+
             if (totalK > 0) clickedK / totalK else 0.0
         }
-        
+
         println(f"$hour%4d | ${precisions(0) * 100}%7.2f%% | ${precisions(1) * 100}%7.2f%% | ${precisions(2) * 100}%8.2f%% | ${precisions(3) * 100}%8.2f%% | ${precisions(4) * 100}%8.2f%% | ${precisions(5) * 100}%9.2f%% |")
     }
-    
+
     println("-" * 100)
-    
+
     // 전체 평균 (시간대별 평균)
     println("\n전체 평균 Precision@K (시간대별 평균):")
     kValues.foreach { k =>
@@ -1694,43 +1913,43 @@ stagesClick.foreach { stage =>
             val clickedK = topK.filter("actual_click > 0").count().toDouble
             if (totalK > 0) clickedK / totalK else 0.0
         }.sum / hours.length
-        
+
         println(f"  Precision@$k%5d: $avgPrecision%.4f (${avgPrecision * 100}%.2f%%)")
     }
-    
+
     // ========================================
     // Part 1.5: Recall@K per Hour (시간대별 커버리지)
     // ========================================
-    
+
     println("\n" + "=" * 80)
     println("Part 1.5: Recall@K per Hour (시간대별 상위 K명이 전체 클릭자 중 차지하는 비율)")
     println("=" * 80)
-    
+
     println("\n시간대별 Recall@K:")
     println("-" * 100)
     println(f"Hour | ${"K=100"}%8s | ${"K=500"}%8s | ${"K=1000"}%9s | ${"K=2000"}%9s | ${"K=5000"}%9s | ${"K=10000"}%10s |")
     println("-" * 100)
-    
+
     hours.foreach { hour =>
         val hourData = hourlyUserPredictions.filter(s"hour = $hour")
         val totalClicked = hourData.filter("actual_click > 0").count().toDouble
-        
+
         val recalls = kValues.map { k =>
             // 확률 상위 K명 선택
             val topK = hourData
                 .orderBy(F.desc("click_prob"))
                 .limit(k)
-            
+
             val clickedK = topK.filter("actual_click > 0").count().toDouble
-            
+
             if (totalClicked > 0) clickedK / totalClicked else 0.0
         }
-        
+
         println(f"$hour%4d | ${recalls(0) * 100}%7.2f%% | ${recalls(1) * 100}%7.2f%% | ${recalls(2) * 100}%8.2f%% | ${recalls(3) * 100}%8.2f%% | ${recalls(4) * 100}%8.2f%% | ${recalls(5) * 100}%9.2f%% |")
     }
-    
+
     println("-" * 100)
-    
+
     // 전체 평균 Recall
     println("\n전체 평균 Recall@K (시간대별 평균):")
     kValues.foreach { k =>
@@ -1741,17 +1960,17 @@ stagesClick.foreach { stage =>
             val clickedK = topK.filter("actual_click > 0").count().toDouble
             if (totalClicked > 0) clickedK / totalClicked else 0.0
         }.sum / hours.length
-        
+
         println(f"  Recall@$k%5d: $avgRecall%.4f (${avgRecall * 100}%.2f%%)")
     }
-    
+
     // Precision-Recall 트레이드오프 분석
     println("\n" + "=" * 80)
     println("Precision-Recall 트레이드오프 (시간대별 평균)")
     println("=" * 80)
     println(f"${"K"}%8s | ${"Precision"}%10s | ${"Recall"}%8s | ${"F1-Score"}%10s | ${"클릭자/발송"}%12s |")
     println("-" * 80)
-    
+
     kValues.foreach { k =>
         val (avgPrec, avgRec, avgClicked) = hours.map { hour =>
             val hourData = hourlyUserPredictions.filter(s"hour = $hour")
@@ -1759,21 +1978,21 @@ stagesClick.foreach { stage =>
             val topK = hourData.orderBy(F.desc("click_prob")).limit(k)
             val totalK = topK.count().toDouble
             val clickedK = topK.filter("actual_click > 0").count().toDouble
-            
+
             val prec = if (totalK > 0) clickedK / totalK else 0.0
             val rec = if (totalClicked > 0) clickedK / totalClicked else 0.0
-            
+
             (prec, rec, clickedK)
         }.reduce((a, b) => (a._1 + b._1, a._2 + b._2, a._3 + b._3))
-        
+
         val finalPrec = avgPrec / hours.length
         val finalRec = avgRec / hours.length
         val f1 = if (finalPrec + finalRec > 0) 2 * (finalPrec * finalRec) / (finalPrec + finalRec) else 0.0
         val avgClickedPerHour = avgClicked / hours.length
-        
+
         println(f"$k%8d | ${finalPrec * 100}%9.2f%% | ${finalRec * 100}%7.2f%% | $f1%10.4f | ${avgClickedPerHour}%12.1f |")
     }
-    
+
     println("-" * 80)
     println("\n💡 해석:")
     println("- K 증가 → Precision 감소, Recall 증가 (정상)")
@@ -1781,20 +2000,20 @@ stagesClick.foreach { stage =>
     println("- 비즈니스 목표에 따라 K 선택:")
     println("  • 효율 우선 (높은 Precision): 작은 K")
     println("  • 커버리지 우선 (높은 Recall): 큰 K")
-    
+
     // ========================================
     // Part 2: MAP (Mean Average Precision) - IR 표준 방식
     // ========================================
-    
+
     println("\n" + "=" * 80)
     println("Part 2: MAP (정보검색 표준 방식) - 시간대별 AP → 평균")
     println("=" * 80)
-    
+
     println("\n각 시간대(질의어)별 Average Precision:")
     println("-" * 80)
     println(f"${"Hour"}%5s | ${"클릭자 수"}%10s | ${"AP"}%8s | ${"설명"}%40s")
     println("-" * 80)
-    
+
     // 각 시간대별로 AP 계산
     val hourlyAPs = hours.map { hour =>
         val hourData = hourlyUserPredictions
@@ -1802,9 +2021,9 @@ stagesClick.foreach { stage =>
             .orderBy(F.desc("click_prob"))  // 확률 순 정렬
             .withColumn("rank", F.row_number().over(Window.orderBy(F.desc("click_prob"))).cast("long"))
             .cache()
-        
+
         val totalClicked = hourData.filter("actual_click > 0").count()
-        
+
         if (totalClicked > 0) {
             // 클릭한 사용자들의 순위
             val clickedRanks = hourData
@@ -1820,12 +2039,12 @@ stagesClick.foreach { stage =>
                     }
                     rank.toDouble
                 }
-            
+
             // AP 계산: sum(precision@rank) / total_relevant
             val ap = clickedRanks.zipWithIndex.map { case (rank, idx) =>
                 (idx + 1).toDouble / rank  // precision@rank = (idx+1) / rank
             }.sum / totalClicked
-            
+
             hourData.unpersist()
             (hour, totalClicked, ap)
         } else {
@@ -1833,7 +2052,7 @@ stagesClick.foreach { stage =>
             (hour, 0L, 0.0)
         }
     }
-    
+
     // 시간대별 AP 출력
     hourlyAPs.foreach { case (hour, clicked, ap) =>
         val desc = if (clicked > 0) {
@@ -1843,9 +2062,9 @@ stagesClick.foreach { stage =>
         }
         println(f"$hour%5d | $clicked%10d | $ap%8.4f | $desc%-40s")
     }
-    
+
     println("-" * 80)
-    
+
     // MAP 계산 (클릭이 있는 시간대만)
     val validAPs = hourlyAPs.filter(_._2 > 0)
     val map = if (validAPs.nonEmpty) {
@@ -1853,20 +2072,20 @@ stagesClick.foreach { stage =>
     } else {
         0.0
     }
-    
+
     println(f"\n★ MAP (Mean Average Precision): $map%.4f")
     println(f"   평가 대상 시간대: ${validAPs.length}/10")
     println(f"   해석: 각 시간대별로 클릭자를 얼마나 상위에 랭킹했는지 평균")
     println(f"   기준: MAP > 0.3 (양호), > 0.5 (우수), > 0.7 (매우 우수)")
-    
+
     // ========================================
     // Part 2.5: 사용자별 MAP (보조 지표 - 비표준)
     // ========================================
-    
+
     println("\n" + "=" * 80)
     println("Part 2.5: 사용자별 MAP (보조 지표 - 사용자 관점)")
     println("=" * 80)
-    
+
     // 각 사용자별 시간대별 확률 및 클릭 여부
     val userAPData = predictionsClickDev
         .filter("click_yn >= 0")
@@ -1887,22 +2106,22 @@ stagesClick.foreach { stage =>
                 )
             ).alias("hourly_data")
         )
-        .withColumn("hourly_data_sorted", 
+        .withColumn("hourly_data_sorted",
             F.expr("array_sort(hourly_data, (left, right) -> case when left.click_prob > right.click_prob then -1 when left.click_prob < right.click_prob then 1 else 0 end)")
         )
         .withColumn("clicked_hours_count",
             F.expr("size(filter(hourly_data, x -> x.actual_click > 0))")
         )
         .filter("clicked_hours_count > 0")  // 실제 클릭이 있는 사용자만
-        .withColumn("ap", 
+        .withColumn("ap",
             F.expr("""
                 aggregate(
                     sequence(0, size(hourly_data_sorted) - 1),
                     cast(0.0 as double),
-                    (acc, i) -> case 
-                        when element_at(hourly_data_sorted, i + 1).actual_click > 0 
+                    (acc, i) -> case
+                        when element_at(hourly_data_sorted, i + 1).actual_click > 0
                         then acc + (
-                            size(filter(slice(hourly_data_sorted, 1, i + 1), x -> x.actual_click > 0)) 
+                            size(filter(slice(hourly_data_sorted, 1, i + 1), x -> x.actual_click > 0))
                             / cast(i + 1 as double)
                         )
                         else acc
@@ -1911,19 +2130,19 @@ stagesClick.foreach { stage =>
             """)
         )
         .cache()
-    
+
     val userMAP = userAPData
         .agg(F.avg("ap"))
         .first()
         .getDouble(0)
-    
+
     val totalUsersMAP = userAPData.count()
-    
+
     println(f"\n사용자별 MAP: $userMAP%.4f")
     println(f"  → 평가 대상 사용자 수: $totalUsersMAP")
     println(f"  → 의미: 각 사용자별로 클릭 시간대를 얼마나 상위에 예측했는지")
     println(f"  → 주의: IR 표준 MAP과 다름! 보조 지표로만 활용")
-    
+
     // AP 분포
     println("\n사용자별 AP 분포:")
     userAPData
@@ -1933,21 +2152,21 @@ stagesClick.foreach { stage =>
         .orderBy("ap_bucket")
         .withColumn("percentage", F.expr(s"count * 100.0 / $totalUsersMAP"))
         .show(10, false)
-    
+
     // ========================================
     // Part 3: 보조 지표 (참고용)
     // ========================================
-    
+
     println("\n" + "=" * 80)
     println("Part 3: 보조 지표 (사용자별 Top-K Accuracy - 참고용)")
     println("=" * 80)
-    
+
     val userMetrics = userAPData
         .withColumn("top1_hour", F.expr("hourly_data_sorted[0].hour"))
-        .withColumn("actual_click_hours", 
+        .withColumn("actual_click_hours",
             F.expr("transform(filter(hourly_data, x -> x.actual_click > 0), x -> x.hour)")
         )
-        .withColumn("top1_match", 
+        .withColumn("top1_match",
             F.expr("array_contains(actual_click_hours, top1_hour)")
         )
         .withColumn("top3_hours",
@@ -1957,14 +2176,14 @@ stagesClick.foreach { stage =>
             F.expr("size(array_intersect(top3_hours, actual_click_hours)) > 0")
         )
         .cache()
-    
+
     val top1Acc = userMetrics.filter("top1_match").count().toDouble / totalUsersMAP
     val top3Acc = userMetrics.filter("top3_match").count().toDouble / totalUsersMAP
-    
+
     println(f"Top-1 Accuracy: $top1Acc%.4f (${top1Acc * 100}%.2f%%)")
     println(f"  → 랜덤 대비: ${top1Acc / 0.1}%.2f배")
     println(f"Top-3 Accuracy: $top3Acc%.4f (${top3Acc * 100}%.2f%%)")
-    
+
     println("\n" + "=" * 80)
     println("💡 종합 해석 가이드 (정보검색 관점)")
     println("=" * 80)
@@ -1973,107 +2192,107 @@ stagesClick.foreach { stage =>
     println("  문서(Document) → 사용자")
     println("  관련성         → 해당 시간대 클릭 여부")
     println("  검색 결과      → 확률 순 사용자 리스트")
-    
+
     println("\n1. Precision@K per Hour (IR 표준 ✓):")
     println("   - 의미: 질의어(시간대) q에 대해 상위 K개 문서(사용자) 중 관련 문서 비율")
     println("   - 활용: 각 시간대별 발송 인원(K) 결정")
     println("   - 전략: 높은 Precision 시간대에 더 많은 예산")
-    
+
     println("\n2. Recall@K per Hour (IR 표준 ✓):")
     println("   - 의미: 질의어(시간대) q에 대해 전체 관련 문서 중 상위 K개에 포함된 비율")
     println("   - 활용: K에 따른 커버리지 파악")
     println("   - 전략: 목표 Recall 달성을 위한 최소 K 결정")
-    
+
     println("\n3. Precision-Recall 트레이드오프:")
     println("   - F1-Score 최대 지점 = 효율과 커버리지 균형점")
     println("   - 비즈니스 목표에 따라 K 선택")
-    
+
     println("\n4. MAP - 시간대별 (IR 표준 ✓):")
     println("   - 의미: 각 질의어(시간대)별 AP를 평균")
     println("   - AP = 각 관련 문서(클릭자)의 순위에서 precision 평균")
     println("   - 활용: 전체 모델 품질 평가, 모델 간 비교")
     println("   - 기준: MAP > 0.3 (양호), > 0.5 (우수), > 0.7 (매우 우수)")
-    
+
     println("\n5. 사용자별 MAP (비표준, 보조):")
     println("   - 의미: 각 사용자별로 클릭 시간대를 얼마나 상위에 예측했는지")
     println("   - 주의: IR 표준과 다름! 관점이 반대 (사용자 중심)")
     println("   - 활용: Top-K Accuracy와 유사, 보조 지표로만 사용")
-    
+
     println("\n6. Top-K Accuracy (보조):")
     println("   - 사용자 관점 평가")
     println("   - 랜덤 대비 성능 확인")
-    
+
     println("\n★ 표준 IR 평가 vs 우리 평가:")
     println("  ✓ Precision@K per Hour: 완벽히 일치")
     println("  ✓ Recall@K per Hour: 완벽히 일치")
     println("  ✓ MAP (시간대별): 완벽히 일치")
     println("  ⚠ 사용자별 MAP: 비표준 (보조용)")
-    
+
     println("\n실전 활용 예시:")
     println("  목표: 시간당 1000명 발송, 최소 Recall 20%")
     println("  → Recall@1000 >= 20%인 시간대 선택")
     println("  → 해당 시간대의 Precision@1000 확인 (예상 클릭률)")
     println("  → MAP으로 전체 모델 품질 추적")
-    
+
     // ========================================
     // 로그 저장용 데이터 사전 수집 (unpersist 전에 모든 계산 완료)
     // ========================================
     println("\n로그 저장을 위한 데이터 수집 중...")
-    
+
     // Precision@K와 Recall@K를 한 번에 계산하여 로컬로 수집
     val precisionRecallResults = hours.map { hour =>
         val hourData = hourlyUserPredictions.filter(s"hour = $hour")
         val totalClicked = hourData.filter("actual_click > 0").count().toDouble
-        
+
         val metricsPerK = kValues.map { k =>
             val topK = hourData.orderBy(F.desc("click_prob")).limit(k)
             val totalK = topK.count().toDouble
             val clickedK = topK.filter("actual_click > 0").count().toDouble
-            
+
             val precision = if (totalK > 0) clickedK / totalK else 0.0
             val recall = if (totalClicked > 0) clickedK / totalClicked else 0.0
-            
+
             (precision, recall)
         }
-        
+
         (hour, metricsPerK)
     }
-    
+
     // MAP 및 User Metrics를 로컬 변수로 저장
     val mapValue = map
     val validAPsLength = validAPs.length
     val userMAPValue = userMAP
     val totalUsersMAPValue = totalUsersMAP
-    
+
     println("데이터 수집 완료. 메모리 해제 중...")
-    
+
     // 이제 안전하게 unpersist
     hourlyUserPredictions.unpersist()
     userAPData.unpersist()
     userMetrics.unpersist()
-    
+
     println("메모리 해제 완료. 로그 저장 시작...")
-    
+
     // ========================================
     // 평가 결과 로그 저장 (수집된 로컬 데이터 사용)
     // ========================================
     import java.io.{File, PrintWriter}
     import java.time.LocalDateTime
     import java.time.format.DateTimeFormatter
-    
+
     val logDir = new File("/data/myfiles/aos_ost/predict")
     if (!logDir.exists()) logDir.mkdirs()
-    
+
     val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
     val logFile = new File(logDir, s"click_model_eval_${evalModelName}_${timestamp}.log")
     val writer = new PrintWriter(logFile)
-    
+
     try {
         writer.println("=" * 80)
         writer.println(s"Click Model Evaluation Log - $timestamp")
         writer.println("=" * 80)
         writer.println()
-        
+
         // 모델 정보
         writer.println("[Model Information]")
         writer.println(s"Model: $evalModelShortName (UID: $evalModelName)")
@@ -2095,7 +2314,7 @@ stagesClick.foreach { stage =>
                 writer.println(s"  - Model: $evalModelName")
         }
         writer.println()
-        
+
         // 학습 데이터 정보
         writer.println("[Training Data Information]")
         writer.println(s"Negative Sample Ratio: $negSampleRatioClick")
@@ -2103,17 +2322,17 @@ stagesClick.foreach { stage =>
         writer.println(s"Sample Strategy: stat.sampleBy")
         writer.println(s"Estimated neg:pos ratio: ${(negSampleRatioClick * 100).toInt}:100")
         writer.println()
-        
+
         // Precision@K 결과 저장 (수집된 데이터 사용)
         writer.println("[Precision@K per Hour]")
         writer.println(f"${"Hour"}%5s | ${"K=100"}%7s | ${"K=500"}%7s | ${"K=1000"}%8s | ${"K=2000"}%8s | ${"K=5000"}%8s | ${"K=10000"}%9s")
         writer.println("-" * 75)
-        
+
         precisionRecallResults.foreach { case (hour, metricsPerK) =>
             val precisions = metricsPerK.map(_._1)
             writer.println(f"$hour%5d | ${precisions(0)*100}%6.2f%% | ${precisions(1)*100}%6.2f%% | ${precisions(2)*100}%7.2f%% | ${precisions(3)*100}%7.2f%% | ${precisions(4)*100}%7.2f%% | ${precisions(5)*100}%8.2f%%")
         }
-        
+
         // 평균 Precision@K
         writer.println("-" * 75)
         val avgPrecisions = kValues.indices.map { idx =>
@@ -2125,17 +2344,17 @@ stagesClick.foreach { stage =>
         }
         writer.println()
         writer.println()
-        
+
         // Recall@K 결과 저장 (수집된 데이터 사용)
         writer.println("[Recall@K per Hour]")
         writer.println(f"${"Hour"}%5s | ${"K=100"}%7s | ${"K=500"}%7s | ${"K=1000"}%8s | ${"K=2000"}%8s | ${"K=5000"}%8s | ${"K=10000"}%9s")
         writer.println("-" * 75)
-        
+
         precisionRecallResults.foreach { case (hour, metricsPerK) =>
             val recalls = metricsPerK.map(_._2)
             writer.println(f"$hour%5d | ${recalls(0)*100}%6.2f%% | ${recalls(1)*100}%6.2f%% | ${recalls(2)*100}%7.2f%% | ${recalls(3)*100}%7.2f%% | ${recalls(4)*100}%7.2f%% | ${recalls(5)*100}%8.2f%%")
         }
-        
+
         // 평균 Recall@K
         writer.println("-" * 75)
         val avgRecalls = kValues.indices.map { idx =>
@@ -2147,7 +2366,7 @@ stagesClick.foreach { stage =>
         }
         writer.println()
         writer.println()
-        
+
         // MAP 결과 저장 (수집된 데이터 사용)
         writer.println("[MAP - Mean Average Precision]")
         writer.println(f"MAP (시간대별): $mapValue%.4f")
@@ -2155,35 +2374,37 @@ stagesClick.foreach { stage =>
         writer.println(f"User-based MAP: $userMAPValue%.4f")
         writer.println(f"Evaluated Users: $totalUsersMAPValue")
         writer.println()
-        
+
         // 해석 가이드
         writer.println("[Interpretation Guide]")
         writer.println("- Precision@K: 상위 K명 발송 시 클릭률")
         writer.println("- Recall@K: 전체 클릭자 중 상위 K명에 포함된 비율")
         writer.println("- MAP > 0.3: 양호, > 0.5: 우수, > 0.7: 매우 우수")
         writer.println()
-        
+
         writer.println("=" * 80)
         writer.println("Log saved successfully!")
-        
+
         println(s"\n✅ Click Model 평가 결과 로그 저장: ${logFile.getAbsolutePath}")
-        
+
     } finally {
         writer.close()
     }
 }
 
 
-// ===== Paragraph 29: Gap Model Performance Evaluation (Precision, Recall, F1) (ID: paragraph_1767010293011_1290077245) =====
+// =============================================================================
+// Paragraph 35: Gap Model Performance Evaluation (Precision, Recall, F1)
+// =============================================================================
 
 val stagesGap = pipelineModelGap.stages
 
-stagesGap.foreach { stage => 
-    
+stagesGap.foreach { stage =>
+
     val modelName = stage.uid
-    
+
     println(s"Evaluating model: $modelName")
-    
+
     // 집계 및 평가용 데이터 준비 - 파티션 최적화
     val aggregatedPredictionsGap = predictionsGapDev
         .filter("click_yn>0")
@@ -2196,66 +2417,66 @@ stagesGap.foreach { stage =>
         .sample(false, 0.3, 42)  // ← 30% 샘플링 추가
         .repartition(50)  // 샘플링 후 파티션 재조정
         .persist(StorageLevel.MEMORY_AND_DISK_SER)
-    
+
     // ========================================
     // 완전 분산 평가 (Driver 수집 없음, 매우 빠름!)
     // ========================================
-    
+
     println(s"######### $modelName 예측 결과 #########")
-    
+
     // 1. DataFrame 연산으로 Confusion Matrix 계산 (완전 분산)
     val confusionDF = aggregatedPredictionsGap
         .groupBy(indexedLabelColGap, "prediction_gap")
         .count()
         .cache()
-    
+
     // 2. TP, FP, TN, FN 계산 (분산 연산)
     val tp = confusionDF.filter(s"$indexedLabelColGap = 1.0 AND prediction_gap = 1.0").select("count").first().getLong(0).toDouble
     val fp = confusionDF.filter(s"$indexedLabelColGap = 0.0 AND prediction_gap = 1.0").select("count").first().getLong(0).toDouble
     val tn = confusionDF.filter(s"$indexedLabelColGap = 0.0 AND prediction_gap = 0.0").select("count").first().getLong(0).toDouble
     val fn = confusionDF.filter(s"$indexedLabelColGap = 1.0 AND prediction_gap = 0.0").select("count").first().getLong(0).toDouble
-    
+
     // 3. 지표 계산 (Driver에서 간단한 계산만)
     val precision_1 = if (tp + fp > 0) tp / (tp + fp) else 0.0
     val recall_1 = if (tp + fn > 0) tp / (tp + fn) else 0.0
     val f1_1 = if (precision_1 + recall_1 > 0) 2 * (precision_1 * recall_1) / (precision_1 + recall_1) else 0.0
-    
+
     val precision_0 = if (tn + fn > 0) tn / (tn + fn) else 0.0
     val recall_0 = if (tn + fp > 0) tn / (tn + fp) else 0.0
     val f1_0 = if (precision_0 + recall_0 > 0) 2 * (precision_0 * recall_0) / (precision_0 + recall_0) else 0.0
-    
+
     val accuracy = (tp + tn) / (tp + tn + fp + fn)
     val total = tp + tn + fp + fn
-    
+
     val weightedPrecision = (precision_1 * (tp + fn) + precision_0 * (tn + fp)) / total
     val weightedRecall = (recall_1 * (tp + fn) + recall_0 * (tn + fp)) / total
-    
+
     // 4. BinaryClassificationEvaluator로 AUC 계산 (분산)
     val binaryEvaluator = new BinaryClassificationEvaluator()
         .setLabelCol(indexedLabelColGap)
         .setRawPredictionCol("prob")
         .setMetricName("areaUnderROC")
     val auc = binaryEvaluator.evaluate(aggregatedPredictionsGap)
-    
+
     // 5. 결과 출력
     println("--- 레이블별 성능 지표 ---")
     println(f"Label 0.0 (클래스): Precision = $precision_0%.4f, Recall = $recall_0%.4f, F1 = $f1_0%.4f")
     println(f"Label 1.0 (클래스): Precision = $precision_1%.4f, Recall = $recall_1%.4f, F1 = $f1_1%.4f")
-    
+
     println(f"\nWeighted Precision (전체 평균): $weightedPrecision%.4f")
     println(f"Weighted Recall (전체 평균): $weightedRecall%.4f")
     println(f"Accuracy (전체 정확도): $accuracy%.4f")
     println(f"AUC (Area Under ROC): $auc%.4f")
-    
+
     println("\n--- Confusion Matrix (혼동 행렬) ---")
     println(f"              Predicted 0    Predicted 1")
     println(f"Actual 0:     ${tn}%.0f         ${fp}%.0f")
     println(f"Actual 1:     ${fn}%.0f         ${tp}%.0f")
-    
+
     // ========================================
     // 로그 저장용 데이터 사전 수집 (unpersist 전에 모든 값을 로컬로)
     // ========================================
-    
+
     // 성능 지표들을 로컬 변수로 저장
     val precision_0_local = precision_0
     val recall_0_local = recall_0
@@ -2272,31 +2493,31 @@ stagesGap.foreach { stage =>
     val tn_local = tn
     val fn_local = fn
     val total_local = total
-    
+
     // 메모리 해제
     confusionDF.unpersist()
     aggregatedPredictionsGap.unpersist()
-    
+
     // ========================================
     // Gap Model 평가 결과 로그 저장 (수집된 로컬 데이터 사용)
     // ========================================
     import java.io.{File, PrintWriter}
     import java.time.LocalDateTime
     import java.time.format.DateTimeFormatter
-    
+
     val logDir = new File("/data/myfiles/aos_ost/predict")
     if (!logDir.exists()) logDir.mkdirs()
-    
+
     val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
     val logFile = new File(logDir, s"gap_model_eval_${modelName}_${timestamp}.log")
     val writer = new PrintWriter(logFile)
-    
+
     try {
         writer.println("=" * 80)
         writer.println(s"Gap Model Evaluation Log - $timestamp")
         writer.println("=" * 80)
         writer.println()
-        
+
         // 모델 정보
         writer.println("[Model Information]")
         writer.println(s"Model: ${modelName.replace("_gap", "").toUpperCase} (UID: $modelName)")
@@ -2313,7 +2534,7 @@ stagesGap.foreach { stage =>
                 writer.println(s"  - Model: $modelName")
         }
         writer.println()
-        
+
         // 학습 데이터 정보
         writer.println("[Training Data Information]")
         writer.println(s"Data Filter: click_yn > 0 (클릭 발생 케이스만)")
@@ -2321,7 +2542,7 @@ stagesGap.foreach { stage =>
         writer.println(s"Negative Sample Ratio (hour_gap = 0): 1.0")
         writer.println(s"Sample Strategy: stat.sampleBy")
         writer.println()
-        
+
         // 성능 지표 (로컬 변수 사용)
         writer.println("[Performance Metrics]")
         writer.println(f"Precision (Label 0): $precision_0_local%.4f")
@@ -2337,137 +2558,104 @@ stagesGap.foreach { stage =>
         writer.println(f"Accuracy: $accuracy_local%.4f")
         writer.println(f"AUC: $auc_local%.4f")
         writer.println()
-        
+
         // Confusion Matrix (로컬 변수 사용)
         writer.println("[Confusion Matrix]")
         writer.println(f"              Predicted 0    Predicted 1")
         writer.println(f"Actual 0:     ${tn_local}%.0f         ${fp_local}%.0f")
         writer.println(f"Actual 1:     ${fn_local}%.0f         ${tp_local}%.0f")
         writer.println()
-        
+
         // 해석
         writer.println("[Interpretation]")
         writer.println("- Label 0: 즉시 클릭 (hour_gap = 0)")
         writer.println("- Label 1: 지연 클릭 (hour_gap > 0)")
         writer.println(s"- 총 평가 샘플: ${total_local.toLong}")
         writer.println()
-        
+
         writer.println("=" * 80)
         writer.println("Log saved successfully!")
-        
+
         println(s"\n✅ Gap Model 평가 결과 로그 저장: ${logFile.getAbsolutePath}")
-        
+
     } finally {
         writer.close()
     }
 }
 
 
-// ===== Paragraph 30: Regression Model Performance Evaluation (RMSE) (ID: paragraph_1765786040626_1985577608) =====
+// =============================================================================
+// Paragraph 36: Regression Model Performance Evaluation (RMSE)
+// =============================================================================
 
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 
-val stagesReg = pipelineModelReg.stages
+// val stages = pipelineModelReg.bestModel.asInstanceOf[PipelineModel].stages
+val stages = pipelineModelReg.stages
 
-println("Evaluating Regression models...")
-
-// Regression 평가를 위한 prediction 생성 필요 (predictionsDev가 정의되지 않음)
-val predictionsRegDev = pipelineModelReg.transform(
-    transformedTestDF
-        .filter("click_yn>0")
-        .repartition(50)
-        .persist(StorageLevel.MEMORY_AND_DISK_SER)
-)
-
-println("Regression predictions generated")
-
-stagesReg.foreach { stage => 
+stages.foreach{stage =>
 
     val modelName = stage.uid.split("_")(0)
-    
-    println(s"Evaluating model: $modelName")
 
     val evaluator = new RegressionEvaluator()
       .setLabelCol(indexedLabelColReg)
       .setPredictionCol(s"pred_${modelName}")
       .setMetricName("rmse")
-    val rmse = evaluator.evaluate(predictionsRegDev)
+    val rmse = evaluator.evaluate(predictionsDev.filter("click_yn>0"))
     println(s"######### $modelName 예측 결과 #########")
     println(f"Root Mean Squared Error (RMSE) : $rmse%.4f")
 }
 
-predictionsRegDev.unpersist()  // 메모리 해제
-
-
-// ===== Paragraph 31: Propensity Score Calculation and Persistence (Batch by Suffix) (ID: paragraph_1765768974381_910321724) =====
-
-// 메모리 절약을 위해 이전 캐시 정리
-try {
-  transformedTrainDF.unpersist()
-  transformedTestDF.unpersist()
-  predictionsClickDev.unpersist()
-  predictionsGapDev.unpersist()
-  testDataForPred.unpersist()
-} catch {
-  case e: Exception => println(s"Cache cleanup warning: ${e.getMessage}")
-}
 
 // =============================================================================
-// [작업 흐름 5] Propensity Score 계산 및 저장
-// =============================================================================
-// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
-// - predSuffixGroupSize: Propensity score 계산 시 suffix 배치 크기
-// - predRepartitionSize: 예측 데이터 repartition 크기
-// - predOutputPath: Propensity score 저장 경로
-// - predCompression: 압축 방식
-// 
-// Propensity Score 계산 - suffix별로 배치 처리하되 메모리 효율적으로
+// Paragraph 37: Propensity Score Calculation and Persistence (Batch by Suffix)
 // =============================================================================
 
-println("=" * 80)
-println("[작업 흐름 5] Propensity Score Calculation and Saving")
-println("=" * 80)
-println(s"Processing configuration:")
-println(s"  - Suffix group size: $predSuffixGroupSize")
-println(s"  - Repartition size base: $predRepartitionSize")
-println(s"  - Output path: $predOutputPath")
-println(s"  - Compression: $predCompression")
-println("=" * 80)
+import org.apache.spark.ml.linalg.Vector
+
+val predDT = "20260101"
+val predFeatureYM = getPreviousMonths(predDT.take(6), 2)(0)
+val predSendYM = predDT.take(6)
 
 val pivotColumns = hourRange.toList.map(h => f"$h, total_traffic_$h%02d").mkString(", ")
 
-(0 to 15).map(_.toHexString).foreach { suffix =>
+val suffix = z.input("suffix", "0").toString
 
-    val prdSuffixCond = s"svc_mgmt_num like '%${suffix}'"
+(0 to 15).map(_.toHexString).foreach{suffix =>
+
+// val suffix = "000"
+
+    println(suffix)
+
+    val prdSuffixCond = suffix.map(c => s"svc_mgmt_num like '%${c}'").mkString(" or ")
 
     // Prediction용 앱 사용 데이터 로딩 최적화
-    println(s"Loading prediction XDR data for feature_ym=$predFeatureYM...")
     val xdrDFPred = spark.sql(s"""
-        SELECT
-            svc_mgmt_num,
-            ym AS feature_ym,
-            COALESCE(rep_app_title, app_uid) AS app_nm,
-            CAST(hour.send_hournum_cd AS STRING) AS send_hournum_cd,
-            hour.traffic
-        FROM dprobe.mst_app_svc_app_monthly
-        LATERAL VIEW STACK(
-            ${hourRange.size},
-            ${pivotColumns}
-        ) hour AS send_hournum_cd, traffic
-        WHERE hour.traffic > 1000
-            AND ym = '$predFeatureYM'
-            AND ($prdSuffixCond)
+    SELECT
+        svc_mgmt_num,
+        ym AS feature_ym,
+        COALESCE(rep_app_title, app_uid) AS app_nm,
+        CAST(hour.send_hournum_cd AS STRING) AS send_hournum_cd,
+        hour.traffic
+    FROM dprobe.mst_app_svc_app_monthly
+    LATERAL VIEW STACK(
+        ${hourRange.size},
+        ${pivotColumns}
+    ) hour AS send_hournum_cd, traffic
+    WHERE hour.traffic > 1000
+        AND ym = '$predFeatureYM'
+        AND ($prdSuffixCond)
     """)
     .repartition(400, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
     .groupBy("svc_mgmt_num", "feature_ym", "send_hournum_cd")
     .agg(
-    collect_set("app_nm").alias("app_usage_token"),
-    // 트래픽 정보 기반 피처 추가 (training과 동일)
-    F.count(F.when(F.col("traffic") > 100000, 1)).alias("heavy_usage_app_cnt"),
-    F.count(F.when(F.col("traffic").between(10000, 100000), 1)).alias("medium_usage_app_cnt"),
-    F.count(F.when(F.col("traffic") < 10000, 1)).alias("light_usage_app_cnt"),
-    F.sum("traffic").alias("total_traffic_mb"),
-    F.count("*").alias("app_cnt")
+      collect_set("app_nm").alias("app_usage_token"),
+      // 트래픽 정보 기반 피처 추가 (training과 동일)
+      F.count(F.when(F.col("traffic") > 100000, 1)).alias("heavy_usage_app_cnt"),
+      F.count(F.when(F.col("traffic").between(10000, 100000), 1)).alias("medium_usage_app_cnt"),
+      F.count(F.when(F.col("traffic") < 10000, 1)).alias("light_usage_app_cnt"),
+      F.sum("traffic").alias("total_traffic_mb"),
+      F.count("*").alias("app_cnt")
     )
     // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
@@ -2477,13 +2665,13 @@ val pivotColumns = hourRange.toList.map(h => f"$h, total_traffic_$h%02d").mkStri
     val xdrPredAggregatedFeatures = xdrDFPred
         .groupBy("svc_mgmt_num", "feature_ym")
         .agg(
-        F.max(F.struct(F.col("app_cnt"), F.col("send_hournum_cd"))).alias("peak_hour_struct"),
-        F.count(F.when(F.col("app_cnt") > 0, 1)).alias("active_hour_cnt"),
-        F.avg("app_cnt").alias("avg_hourly_app_avg"),
-        F.sum("total_traffic_mb").alias("total_daily_traffic_mb"),
-        F.sum("heavy_usage_app_cnt").alias("total_heavy_apps_cnt"),
-        F.sum("medium_usage_app_cnt").alias("total_medium_apps_cnt"),
-        F.sum("light_usage_app_cnt").alias("total_light_apps_cnt")
+          F.max(F.struct(F.col("app_cnt"), F.col("send_hournum_cd"))).alias("peak_hour_struct"),
+          F.count(F.when(F.col("app_cnt") > 0, 1)).alias("active_hour_cnt"),
+          F.avg("app_cnt").alias("avg_hourly_app_avg"),
+          F.sum("total_traffic_mb").alias("total_daily_traffic_mb"),
+          F.sum("heavy_usage_app_cnt").alias("total_heavy_apps_cnt"),
+          F.sum("medium_usage_app_cnt").alias("total_medium_apps_cnt"),
+          F.sum("light_usage_app_cnt").alias("total_light_apps_cnt")
         )
         .withColumn("peak_usage_hour_cd", F.col("peak_hour_struct.send_hournum_cd"))
         .withColumn("peak_hour_app_cnt", F.col("peak_hour_struct.app_cnt"))
@@ -2493,7 +2681,7 @@ val pivotColumns = hourRange.toList.map(h => f"$h, total_traffic_$h%02d").mkStri
     println("Prediction XDR aggregated features cached")
 
     val xdrPredDF = xdrDFPred
-        .repartition(400, F.col("svc_mgmt_num"), F.col("feature_ym"))
+        .repartition(200, F.col("svc_mgmt_num"), F.col("feature_ym"))
         .groupBy("svc_mgmt_num", "feature_ym")
         .pivot("send_hournum_cd", hourRange.map(_.toString))
         .agg(first("app_usage_token"))
@@ -2548,595 +2736,28 @@ val pivotColumns = hourRange.toList.map(h => f"$h, total_traffic_$h%02d").mkStri
     // .distinct
     // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-    val predDFForSuffixGroup = predDFRev
-        .repartition(predRepartitionSize * predSuffixGroupSize)  // 그룹 크기에 비례한 파티션 수
-        .persist(StorageLevel.MEMORY_AND_DISK_SER)
-    
-    // count() 대신 take(1)로 존재 여부만 확인 (훨씬 빠름)
-    val hasRecords = predDFForSuffixGroup.take(1).nonEmpty
-    
-    if (hasRecords) {
-        println(s"  Transforming data for suffix group ${suffixGroup.mkString(", ")}...")
-        val transformedPredDF = transformerGap.transform(
-            transformerClick.transform(predDFForSuffixGroup)
-        ).persist(StorageLevel.MEMORY_AND_DISK_SER)
-        
-        println(s"  Deduplicating...")
-        val dedupedDF = transformedPredDF
-            .dropDuplicates("svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_hournum_cd", "click_yn")
-        
-        println(s"  Generating Click predictions...")
-        val predictionsSVCClick = pipelineModelClick.transform(dedupedDF)
-        
-        println(s"  Generating Gap predictions...")
-        val predictionsSVCFinal = pipelineModelGap.transform(predictionsSVCClick)
-        
-        println(s"  Calculating propensity scores...")
-        var predictedPropensityScoreDF = predictionsSVCFinal
-            .withColumn("prob_click", F.expr(s"""aggregate(array(${pipelineModelClick.stages.map(m => s"vector_to_array(prob_${m.uid})[1]").mkString(",")}), 0D, (acc, x) -> acc + x)"""))
-            .withColumn("prob_gap", F.expr(s"""aggregate(array(${pipelineModelGap.stages.map(m => s"vector_to_array(prob_${m.uid})[1]").mkString(",")}), 0D, (acc, x) -> acc + x)"""))
-            .withColumn("propensity_score", F.expr("prob_click*prob_gap"))
-        
-        println(s"  Saving propensity scores to: $predOutputPath")
-        predictedPropensityScoreDF
-            .selectExpr("default.decodekey(svc_mgmt_num, svc_mgmt_num) svc_mgmt_num", "send_ym","send_hournum_cd send_hour"
-                ,"ROUND(prob_click, 4) prob_click" 
-                ,"ROUND(prob_gap, 4) prob_gap"
-                ,"ROUND(propensity_score, 4) propensity_score")
-            .withColumn("suffix", F.lit(suffix))
-            .repartition(10 * predSuffixGroupSize)  // 그룹 크기에 비례
-            .write
-            .mode("overwrite")  // Dynamic partition overwrite
-            .option("compression", predCompression)
-            .partitionBy("send_ym", "send_hour", "suffix")
-            .parquet(predOutputPath)
-        
-        // 메모리 해제
-        predDFForSuffixGroup.unpersist()
-        transformedPredDF.unpersist()
-        
-        println(s"  Completed processing suffix ${suffix}")
-    } else {
-        println(s"  No records found for suffix ${suffix}, skipping...")
-    }
+    val transformedPredDF = transformerGap.transform(transformerClick.transform(
+        predDFRev
+        // .filter(s"svc_mgmt_num like '%${suffix}'")
+    ))//.cache()
+
+    val predictionsSVCClick = pipelineModelClick.transform(transformedPredDF)
+    val predictionsSVCFinal = pipelineModelGap.transform(predictionsSVCClick)
+
+    var predictedPropensityScoreDF = predictionsSVCFinal
+    .withColumn("prob_click", F.expr(s"""aggregate(array(${pipelineModelClick.stages.map(m => s"vector_to_array(prob_${m.uid})[1]").mkString(",")}), 0D, (acc, x) -> acc + x)"""))
+    .withColumn("prob_gap", F.expr(s"""aggregate(array(${pipelineModelGap.stages.map(m => s"vector_to_array(prob_${m.uid})[1]").mkString(",")}), 0D, (acc, x) -> acc + x)"""))
+    // .withColumn("res_utility", F.expr(s"""aggregate(array(${pipelineModelReg.stages.map(m => s"pred_${m.uid}").mkString(",")}), 0D, (acc, x) -> acc + x)"""))
+    .withColumn("propensity_score", F.expr("prob_click*prob_gap"))
+
+    predictedPropensityScoreDF.selectExpr("default.decodekey(svc_mgmt_num, svc_mgmt_num) svc_mgmt_num", "send_ym","send_hournum_cd send_hour"
+    ,"ROUND(prob_click, 4) prob_click"
+    ,"ROUND(prob_gap, 4) prob_gap"
+    // ,"ROUND(res_utility, 4) res_utility"
+    ,"ROUND(propensity_score, 4) propensity_score")
+    .withColumn("suffix", F.lit(suffix))
+    // .repartition(10)
+    .write.mode("overwrite").partitionBy("send_ym", "send_hour", "suffix").parquet("aos/sto/mms_score")
+    // .sort("svc_mgmt_num","send_hour").show()
+
 }
-
-println("=" * 80)
-println("Propensity score calculation completed")
-println(s"Results saved to: $predOutputPath")
-println("=" * 80)
-
-
-// ===== Paragraph 32: Propensity Score Data Loading and Verification (ID: paragraph_1767943423474_1143363402) =====
-// =============================================================================
-// [작업 흐름 5] Propensity Score 데이터 로딩 및 검증
-// =============================================================================
-// 이 단계는 Paragraph 4에서 정의된 시간 조건 변수를 사용합니다:
-// - predOutputPath: Propensity score 저장 경로
-// 
-// ⚠️  중요: 이 로딩 경로는 Paragraph 31에서 저장한 경로와 일치해야 합니다.
-// =============================================================================
-
-println("=" * 80)
-println("[작업 흐름 5] Propensity Score Data Loading and Verification")
-println("=" * 80)
-println(s"Loading propensity score data from: $predOutputPath")
-
-val dfPropensity = spark.read.parquet(predOutputPath)
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
-
-val propensityRecordCount = dfPropensity.count()
-println(s"Propensity score data loaded and cached: $propensityRecordCount records")
-println("=" * 80)
-
-// 기본 통계 확인 (summary에 이미 count 포함)
-dfPropensity
-    .select("prob_click", "prob_gap", "propensity_score")
-    .summary("count", "mean", "stddev", "min", "max")
-    .show()
-
-// 필요시에만 전체 레코드 수 확인 (시간이 걸림)
-// val propensityCount = dfPropensity.count()
-// println(s"Total propensity score records: $propensityCount")
-
-
-// ===== Paragraph 33: Performance Monitoring and Optimization Tips =====
-
-/*
- * [대용량 처리 성능 모니터링 및 추가 최적화 팁]
- * 
- * 1. Spark UI 모니터링:
- *    - Stage별 실행 시간과 데이터 shuffle 크기 확인
- *    - Task skew 확인 (일부 task만 오래 걸리는지)
- *    - GC 시간이 전체 실행 시간의 10% 이상이면 메모리 부족
- * 
- * 2. 메모리 튜닝:
- *    - spark.executor.memory: Executor당 메모리 (권장: 8-16GB)
- *    - spark.driver.memory: Driver 메모리 (권장: 4-8GB)
- *    - spark.memory.fraction: 실행/저장 메모리 비율 (기본: 0.6)
- * 
- * 3. 파티션 수 조정:
- *    - spark.sql.shuffle.partitions: 현재 400으로 설정됨
- *    - 데이터 크기에 따라 200-800 사이에서 조정
- *    - 각 파티션 크기는 128MB-256MB가 이상적
- * 
- * 4. 데이터 Skew 해결:
- *    - Skew가 심한 경우 salting 기법 사용
- *    - AQE의 skewJoin이 자동으로 처리하지만, 수동 조정 가능
- * 
- * 5. Checkpoint 전략:
- *    - 긴 lineage를 끊기 위해 중요한 중간 결과는 checkpoint
- *    - 현재 resDFSelectedTrBal, resDFSelectedTs에 적용됨
- * 
- * 6. 캐시 정리:
- *    - 사용 완료된 DataFrame은 반드시 unpersist() 호출
- *    - 주기적으로 spark.catalog.clearCache() 실행
- * 
- * 7. Broadcast Join 임계값:
- *    - 현재 100MB로 설정 (spark.sql.autoBroadcastJoinThreshold)
- *    - 네트워크 대역폭이 충분하면 200-500MB로 증가 가능
- * 
- * 8. 압축 알고리즘:
- *    - 현재 Snappy 사용 (빠른 압축/해제)
- *    - 저장 공간이 중요하면 gzip 또는 zstd 고려
- * 
- * 9. 실행 순서 최적화:
- *    - 데이터 로딩 -> 필터링 -> 파티셔닝 -> 조인 -> 집계 순서 유지
- *    - 가능한 한 일찍 필터링하여 데이터 크기 축소
- * 
- * 10. 리소스 사용량 모니터링:
- *     spark.sparkContext.statusTracker.getExecutorInfos.foreach { info =>
- *       println(s"Executor ${info.host()}: ${info.totalCores()} cores")
- *     }
- */
-
-println("Performance optimization tips displayed. Check code comments for details.")
-
-
-// ===== Paragraph 34: Feature Engineering Improvements Summary and Performance Comparison Guide =====
-
-/*
- * [피처 엔지니어링 개선 사항 요약]
- * 
- * 이 코드는 다음과 같은 피처 개선이 적용되었습니다:
- * 
- * ========================================
- * 1. HashingTF → CountVectorizer + TF-IDF
- * ========================================
- * 
- * **이전 방식** (Line 676, 현재 주석 처리됨):
- *   - HashingTF with vocabSize=30
- *   - 문제점: Hash collision, 정보 손실, 작은 vocabulary
- * 
- * **개선된 방식** (Line 740-759):
- *   - CountVectorizer with vocabSize=1000
- *   - TF-IDF 가중치 추가
- *   - 장점: 
- *     • 정확한 앱 매핑 (hash collision 없음)
- *     • 더 많은 앱 추적 가능 (30개 → 1000개)
- *     • 중요한 앱에 높은 가중치 (TF-IDF)
- *   - 예상 개선: 5-10% 정확도 향상
- * 
- * ========================================
- * 2. 트래픽 정보 기반 피처 추가
- * ========================================
- * 
- * **추가된 피처** (Paragraph 10, Line 289-300):
- *   - heavy_usage_app_cnt: 트래픽 > 100,000인 앱 개수
- *   - medium_usage_app_cnt: 트래픽 10,000-100,000인 앱 개수
- *   - light_usage_app_cnt: 트래픽 < 10,000인 앱 개수
- *   - total_traffic_mb: 시간대별 총 트래픽양 (MB)
- *   - app_cnt: 사용한 앱 개수
- * 
- * **적용 위치**:
- *   - Training: xdrDF (Paragraph 10)
- *   - Prediction: xdrDFPred (Paragraph 16)
- * 
- * **장점**:
- *   - 단순 앱 리스트가 아닌 사용 강도 정보 포함
- *   - 트래픽 구간별 사용 패턴 파악
- *   - 예상 개선: 3-5% 정확도 향상
- * 
- * ========================================
- * 3. 시간대 집계 피처 추가
- * ========================================
- * 
- * **추가된 피처** (Paragraph 10, Line 301-327):
- *   - peak_usage_hour_cd: 가장 활발한 시간대 (category)
- *   - peak_hour_app_cnt: 피크 시간대 앱 개수
- *   - active_hour_cnt: 활동 시간대 개수
- *   - avg_hourly_app_avg: 시간당 평균 앱 사용 개수
- *   - total_daily_traffic_mb: 전체 일일 트래픽 (MB)
- *   - total_heavy_apps_cnt, total_medium_apps_cnt, total_light_apps_cnt: 트래픽 구간별 총계
- * 
- * **적용 위치**:
- *   - Training: xdrAggregatedFeatures → xdrDFMon 조인 (Paragraph 10)
- *   - Prediction: xdrPredAggregatedFeatures → xdrPredDF 조인 (Paragraph 16)
- * 
- * **장점**:
- *   - 24개 시간대를 8개 요약 피처로 압축
- *   - 시간적 패턴 포착 (피크 시간, 활동 시간대 수)
- *   - 차원 축소로 모델 학습 효율성 향상
- *   - 예상 개선: 2-4% 정확도 향상
- * 
- * ========================================
- * 4. 피처 설정 업데이트
- * ========================================
- * 
- * **업데이트된 설정** (Paragraph 17, Line 664, 684-686):
- *   - vocabSize: 30 → 1000
- *   - doNotHashingCateCols: "peak_usage_hour" 추가
- *   - doNotHashingContCols: 12개 집계 피처 추가
- * 
- * ========================================
- * 전체 예상 성능 영향
- * ========================================
- * 
- * | 항목                    | 계산 시간 증가 | 메모리 증가 | 정확도 향상 (예상) |
- * |------------------------|--------------|-----------|-----------------|
- * | CountVectorizer        | +20%         | +30%      | +5-10%          |
- * | TF-IDF                 | +10%         | +15%      | +2-3%           |
- * | 트래픽 피처             | +5%          | +10%      | +3-5%           |
- * | 시간대 집계 피처        | +15%         | +20%      | +2-4%           |
- * | **전체**               | **+50%**     | **+75%**  | **+12-22%**     |
- * 
- * ========================================
- * 모델 재학습 및 성능 비교 가이드
- * ========================================
- * 
- * 1. 기존 모델 성능 기록
- *    - Paragraph 28-30의 평가 결과 저장
- *    - 주요 지표: AUC, Precision, Recall, F1-Score
- * 
- * 2. 신규 모델 학습
- *    - Paragraph 1부터 순차적으로 실행
- *    - 새로운 피처가 포함된 transformedTrainDF로 학습
- *    - Paragraph 24-26에서 모델 학습
- * 
- * 3. 성능 비교
- *    a) 정량적 비교:
- *       - AUC, Precision, Recall 비교
- *       - 실행 시간 비교
- *       - 메모리 사용량 비교
- * 
- *    b) 정성적 비교:
- *       - Feature importance 분석
- *         ```scala
- *         val featureImportances = pipelineModelClick.stages
- *           .filter(_.isInstanceOf[GBTClassificationModel])
- *           .head.asInstanceOf[GBTClassificationModel]
- *           .featureImportances
- *         ```
- *       - 새로 추가된 피처들의 중요도 확인
- * 
- * 4. A/B 테스트 (Production 환경)
- *    - 기존 모델과 신규 모델을 50:50으로 트래픽 분할
- *    - 실제 클릭률(CTR) 비교
- *    - 최소 2주간 테스트 후 결정
- * 
- * 5. 모니터링 지표
- *    ```scala
- *    // 모델별 성능 비교
- *    val oldModelMetrics = Map(
- *      "AUC" -> 0.XX,
- *      "Precision" -> 0.XX,
- *      "Recall" -> 0.XX,
- *      "TrainingTime" -> "XX minutes"
- *    )
- *    
- *    val newModelMetrics = Map(
- *      "AUC" -> 0.XX,  // 예상: +5-10% 향상
- *      "Precision" -> 0.XX,
- *      "Recall" -> 0.XX,
- *      "TrainingTime" -> "XX minutes"  // 예상: +50% 증가
- *    )
- *    
- *    // 개선율 계산
- *    val aucImprovement = (newModelMetrics("AUC") - oldModelMetrics("AUC")) / oldModelMetrics("AUC") * 100
- *    println(s"AUC improved by: ${aucImprovement}%")
- *    ```
- * 
- * 6. 롤백 계획
- *    - 성능이 기대에 미치지 못할 경우:
- *      • aos/sto/transformPipelineXDRClick10 → 이전 버전으로 복구
- *      • aos/sto/transformedTrainDFXDR10 → 이전 버전으로 복구
- *    - 기존 모델 백업 필수:
- *      ```scala
- *      // 백업 명령
- *      hadoop fs -cp aos/sto/transformPipelineXDRClick aos/sto/transformPipelineXDRClick_backup_YYYYMMDD
- *      ```
- * 
- * ========================================
- * 추가 개선 가능 항목 (Phase 2)
- * ========================================
- * 
- * 1. 앱 카테고리 피처
- *    - 앱-카테고리 매핑 테이블 필요
- *    - SNS/게임/쇼핑/동영상 등 카테고리별 사용 패턴
- *    - 예상 개선: +5-8%
- * 
- * 2. 시간적 연속성 피처
- *    - Window 함수로 이전/이후 시간대와의 관계 파악
- *    - 앱 사용 일관성 지표
- *    - 예상 개선: +3-5%
- * 
- * 3. 사용자 세그먼트별 피처
- *    - 연령대/성별/요금제별 앱 사용 패턴
- *    - 세그먼트별 개인화 피처
- *    - 예상 개선: +4-7%
- */
-
-println("Feature engineering improvements summary displayed. Check code comments for details.")
-println("=" * 80)
-println("IMPORTANT: This code includes the following improvements:")
-println("  1. HashingTF → CountVectorizer + TF-IDF (vocabSize: 30 → 1000)")
-println("  2. Traffic-based features (heavy/medium/light usage counts)")
-println("  3. Time aggregation features (peak hour, active hours, etc.)")
-println("  4. GBT hyperparameter tuning (maxDepth: 4→6, maxIter: 50→100)")
-println("  5. Threshold optimization analysis (Paragraph 28.5)")
-println("  6. Expected accuracy improvement: +12-22%")
-println("  7. Expected compute time increase: +50%")
-println("=" * 80)
-
-
-// ===== Paragraph 35: Additional Feature Recommendations for Future Improvement =====
-
-/*
- * ========================================
- * 추가 피처 개선 로드맵 (AUC 0.66 → 0.75+)
- * ========================================
- * 
- * **현재 상태 (1:1 언더샘플링)**:
- *   - GBT: AUC 0.66, Precision 1.4%, Recall 46.7%, F1 0.027
- *   - XGBoost: AUC 0.52, Precision 0.8%, Recall 89.9%, F1 0.016
- *   - 결론: GBT가 우수하지만, 여전히 Precision이 낮음
- * 
- * **목표**:
- *   - AUC: 0.75-0.80
- *   - Precision: 3-5%
- *   - F1-Score: 0.05-0.08
- * 
- * ========================================
- * Priority 1: 과거 클릭 이력 피처 (가장 중요!)
- * ========================================
- * 
- * 데이터 소스: MMS 발송/클릭 이력 테이블
- * 
- * ```scala
- * // 과거 7일/30일 클릭 이력 집계
- * val userClickHistory = clickHistoryDF
- *   .filter("click_date >= date_sub(current_date(), 30)")
- *   .groupBy("svc_mgmt_num")
- *   .agg(
- *     F.count(F.when(F.col("click_date") >= F.date_sub(F.current_date(), 7), 1)).alias("last_7d_click_cnt"),
- *     F.count("*").alias("last_30d_click_cnt"),
- *     (F.count(F.when(F.col("click_yn") > 0, 1)) / F.count("*")).alias("avg_click_rate"),
- *     F.datediff(F.current_date(), F.max("click_date")).alias("last_click_days_ago")
- *   )
- * 
- * // 메인 데이터와 조인
- * val enrichedDF = mainDF.join(userClickHistory, Seq("svc_mgmt_num"), "left")
- *   .na.fill(Map(
- *     "last_7d_click_cnt" -> 0,
- *     "last_30d_click_cnt" -> 0,
- *     "avg_click_rate" -> 0.0,
- *     "last_click_days_ago" -> 9999
- *   ))
- * ```
- * 
- * **예상 효과**:
- *   - AUC: +0.10-0.15
- *   - Precision: +2-3%
- *   - 과거 클릭 이력이 있는 사용자의 재클릭 확률이 10-20배 높을 것으로 예상
- * 
- * ========================================
- * Priority 2: Interaction 피처
- * ========================================
- * 
- * ```scala
- * // 앱 카테고리별 선호 시간대
- * val appCategoryHourDF = xdrDF
- *   .groupBy("svc_mgmt_num", "hour", "app_category")
- *   .agg(F.sum("traffic").alias("traffic_sum"))
- *   .withColumn("rank", F.row_number().over(
- *     Window.partitionBy("svc_mgmt_num").orderBy(F.desc("traffic_sum"))))
- *   .filter("rank = 1")
- *   .select(
- *     F.col("svc_mgmt_num"),
- *     F.concat(F.col("app_category"), F.lit("_"), F.col("hour")).alias("top_category_hour_cd")
- *   )
- * 
- * // ARPU 구간별 캠페인 반응도
- * val arpuCampaignDF = mainDF
- *   .withColumn("arpu_segment", 
- *     F.when(F.col("arpu") > 50000, "high")
- *      .when(F.col("arpu") > 30000, "medium")
- *      .otherwise("low"))
- *   .withColumn("arpu_campaign_cd", 
- *     F.concat(F.col("arpu_segment"), F.lit("_"), F.col("campaign_type")))
- * ```
- * 
- * **예상 효과**:
- *   - AUC: +0.03-0.05
- *   - 사용자 세그먼트별 맞춤 예측
- * 
- * ========================================
- * Priority 3: 시간 기반 피처 강화
- * ========================================
- * 
- * ```scala
- * val timeEnrichedDF = mainDF
- *   .withColumn("day_of_week_cd", F.dayofweek(F.col("send_date")).cast("string"))
- *   .withColumn("is_weekend", 
- *     F.when(F.dayofweek(F.col("send_date")).isin(1, 7), 1).otherwise(0))
- *   .withColumn("is_peak_time", 
- *     F.when(F.col("send_hournum").between(18, 22), 1).otherwise(0))
- *   .withColumn("days_since_last_send", 
- *     F.datediff(F.current_date(), F.col("last_send_date")))
- * ```
- * 
- * **예상 효과**:
- *   - AUC: +0.02-0.04
- *   - 요일/시간대별 패턴 포착
- * 
- * ========================================
- * Priority 4: 캠페인-사용자 적합도 피처
- * ========================================
- * 
- * ```scala
- * // 유사 사용자 그룹 클릭률
- * val similarUserClickRate = mainDF
- *   .withColumn("user_segment", 
- *     F.concat(
- *       F.when(F.col("age") < 30, "young").when(F.col("age") < 50, "middle").otherwise("senior"),
- *       F.lit("_"),
- *       F.col("gender_cd"),
- *       F.lit("_"),
- *       F.when(F.col("arpu") > 40000, "high_arpu").otherwise("low_arpu")
- *     ))
- *   .join(
- *     clickHistoryDF
- *       .groupBy("user_segment", "campaign_type")
- *       .agg((F.sum("click_yn") / F.count("*")).alias("segment_click_rate")),
- *     Seq("user_segment", "campaign_type"),
- *     "left"
- *   )
- * ```
- * 
- * **예상 효과**:
- *   - AUC: +0.05-0.08
- *   - 개인화 스코어로 정확도 향상
- * 
- * ========================================
- * 구현 우선순위 및 일정
- * ========================================
- * 
- * **Phase 1 (즉시 시작 가능)**:
- *   - Priority 1 (과거 클릭 이력) 구현
- *   - 예상 기간: 2-3일
- *   - 예상 AUC: 0.66 → 0.75
- * 
- * **Phase 2 (Phase 1 완료 후)**:
- *   - Priority 2 (Interaction 피처) 구현
- *   - Priority 3 (시간 피처) 구현
- *   - 예상 기간: 3-4일
- *   - 예상 AUC: 0.75 → 0.78
- * 
- * **Phase 3 (선택적)**:
- *   - Priority 4 (적합도 피처) 구현
- *   - 예상 기간: 4-5일
- *   - 예상 AUC: 0.78 → 0.80
- * 
- * ========================================
- * 중요: 실제 서비스 평가 - Ranking Approach
- * ========================================
- * 
- * **실제 사용 시나리오** (Paragraph 28.5):
- *   - 목적: **최적 발송 시간 선택** (발송 여부 결정 아님!)
- *   - 방법: 각 사용자별 9~18시(10개 시간대) 모두 예측
- *   - 발송: 가장 높은 확률의 시간대 1개 선택
- *   - 예: 사용자 A의 11시 확률 = 0.87, 13시 = 0.88 → 13시 발송
- * 
- * **Ranking 평가 지표** (Paragraph 28.5):
- *   - **Top-1 Accuracy**: 최고 확률 시간대 = 실제 클릭 시간대 비율
- *     * 랜덤: 10% (10개 중 1개)
- *     * 목표: > 20% (랜덤 대비 2배)
- *     * 우수: > 30% (랜덤 대비 3배)
- *   - **Top-3 Accuracy**: 상위 3개 중 실제 클릭 시간대 포함 비율
- *   - **MRR**: Mean Reciprocal Rank
- *   - **평균 순위**: 실제 클릭 시간대의 평균 예측 순위
- * 
- * **Binary Classification vs Ranking**:
- *   - Paragraph 28: Precision, Recall, F1 (참고용)
- *   - **Paragraph 28.5**: Top-K Accuracy, MRR (실제 평가) ✓
- *   - Paragraph 28.6: Threshold 분석 (사용 안 함)
- * 
- * **샘플링 비율 재해석**:
- *   - 3:1 vs 2:1 비교 시 **Top-1 Accuracy로 재평가 필요**
- *   - F1-Score는 참고용 (실제 서비스와 무관)
- *   - Ranking 성능이 더 중요한 지표
- * 
- * ========================================
- * 참고: Threshold vs Feature Engineering
- * ========================================
- * 
- * **Threshold 조정**:
- *   - 장점: 즉시 적용 가능, 구현 비용 없음
- *   - 단점: 근본적인 성능 향상 없음 (Precision/Recall 트레이드오프만 조정)
- *   - 용도: Binary Classification 시나리오용 (실제 서비스 미사용!)
- * 
- * **Feature Engineering**:
- *   - 장점: 근본적인 성능 향상 (AUC 증가)
- *   - 단점: 구현 시간/비용, 계산 리소스 증가
- *   - 용도: 중장기 모델 품질 개선
- * 
- * **Undersampling 비율**:
- *   - 장점: 학습 속도 향상, 클래스 불균형 완화, 메모리 절감
- *   - 단점: 데이터 손실, 비율 선택 필요
- *   - 용도: 극단적 불균형 해결 (127:1 → 2:1)
- * 
- * **권장 전략**:
- *   1. 단기: Paragraph 28.5로 최적 Threshold 찾기
- *   2. 중기: Priority 1 피처 추가로 AUC 0.75 달성
- *   3. 장기: Priority 2-4로 AUC 0.80 목표
- *   4. 샘플링 비율은 2:1 고정 (실험 검증 완료)
- * 
- * ========================================
- * Priority 5: 언더샘플링 비율 최적화 (완료!)
- * ========================================
- * 
- * **실험 결과**:
- * 
- * | neg:pos | Neg 샘플링 | Precision | Recall | F1 | Pred+ | 학습시간 |
- * |---------|-----------|-----------|--------|-----|-------|----------|
- * | 1:1     | 9%        | ~6-8%     | ~5%    | 최고 | 최소   | 최단     |
- * | 2:1     | 18%       | 2.5%      | 17.1%  | 0.044 | 74K  | 중간     |
- * | **3:1** | **27%**   | **4.2%**  | **7.8%** | **0.055** ✓ | **20K** | **중장** ✓ |
- * | 전체    | 100%      | <1%       | ~90%   | 최저 | 최대   | 최장     |
- * 
- * **3:1 선택 근거** (Binary Classification 관점):
- *   - F1-Score 최대 (0.055 > 0.044)
- *   - Precision 4.2% (100명 중 4명 클릭)
- *   - 예측 Positive 1.4% (비용 효율)
- *   - AUC 0.66 (양호)
- * 
- * **중요**: 실제 서비스는 Ranking 방식 사용!
- *   - 각 사용자별 9~18시 모두 예측
- *   - 가장 높은 확률의 시간대에 발송
- *   - Paragraph 28.5에서 Top-K Accuracy로 평가
- *   - Threshold, Precision/Recall은 참고용
- * 
- * **코드 적용** (Paragraph 24, Line 1159):
- *   ```scala
- *   .stat.sampleBy(
- *       F.col(indexedLabelColClick),
- *       Map(
- *           0.0 -> 0.27,  // 3:1 비율 (27%) ✓
- *           1.0 -> 1.0,   // Positive 전체
- *       ),
- *       42L
- *   )
- *   ```
- * 
- * **비즈니스 시나리오별**:
- *   - 비용 최소화: 1:1 (또는 Threshold 높임)
- *   - 커버리지 확대: 2:1 (또는 Threshold 낮춤)
- *   - **균형/표준**: 3:1 ✓ 권장
- * 
- * **Threshold vs Sampling**:
- *   - Sampling: 모델 자체를 변경 (학습 단계)
- *   - Threshold: 예측 기준만 변경 (예측 단계)
- *   - **권장**: Sampling 2:1 고정 + Threshold로 미세 조정
- * 
- */
-
-println("=" * 80)
-println("Additional feature recommendations added (Paragraph 35)")
-println("Priority 1: User click history features (expected AUC +0.10-0.15)")
-println("Priority 2: Interaction features (expected AUC +0.03-0.05)")
-println("Priority 3: Enhanced time features (expected AUC +0.02-0.04)")
-println("Priority 4: Campaign-user affinity (expected AUC +0.05-0.08)")
-println("Priority 5: Undersampling ratio = 3:1 (COMPLETED)")
-println("IMPORTANT: Paragraph 28.5 - Ranking-based evaluation (Top-K Accuracy)")
-println("  → 실제 서비스 시나리오: 9~18시 중 최적 시간 선택")
-println("=" * 80)

@@ -19,7 +19,7 @@
 // ===== Paragraph 1: Imports and Configuration =====
 
 import com.microsoft.azure.synapse.ml.causal
-import com.skt.mno.dt.utils.commfunc._
+// import com.skt.mno.dt.utils.commfunc._
 import ml.dmlc.xgboost4j.scala.spark.{XGBoostClassificationModel, XGBoostClassifier, XGBoostRegressor}
 import org.apache.spark.ml.classification._
 import org.apache.spark.ml.feature._
@@ -54,19 +54,24 @@ val executorInstances = spark.sparkContext.getConf.getInt("spark.executor.instan
 val executorCores = spark.sparkContext.getConf.getInt("spark.executor.cores", 5)
 val optimalPartitions = executorInstances * executorCores
 
+// AQE가 자동으로 최적화하도록 shuffle.partitions도 동적 설정
+val shufflePartitions = optimalPartitions * 4
+spark.conf.set("spark.sql.shuffle.partitions", shufflePartitions.toString)
+spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
+spark.conf.set("spark.sql.adaptive.advisoryPartitionSizeInBytes", "128MB")  // AQE 타겟 파티션 크기
+spark.conf.set("spark.sql.files.maxPartitionBytes", "128MB")
+
 println(s"===== Dynamic Partitioning Configuration =====")
 println(s"Executor Instances: $executorInstances")
 println(s"Executor Cores: $executorCores")
-println(s"Optimal Partitions: $optimalPartitions")
+println(s"Optimal Partitions (base): $optimalPartitions")
+println(s"Shuffle Partitions (AQE managed): $shufflePartitions")
 println(s"===============================================")
-spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
-spark.conf.set("spark.sql.shuffle.partitions", "400")
-spark.conf.set("spark.sql.files.maxPartitionBytes", "128MB")
 
-// 메모리 최적화 설정 (OOM 방지)
-spark.conf.set("spark.executor.memoryOverhead", "4g")
-spark.conf.set("spark.memory.fraction", "0.8")
-spark.conf.set("spark.memory.storageFraction", "0.3")
+// // 메모리 최적화 설정 (OOM 방지)
+// spark.conf.set("spark.executor.memoryOverhead", "4g")
+// spark.conf.set("spark.memory.fraction", "0.8")
+// spark.conf.set("spark.memory.storageFraction", "0.3")
 
 spark.sparkContext.setCheckpointDir("hdfs://scluster/user/g1110566/checkpoint")
 
@@ -122,6 +127,9 @@ def getDaysBetween(startDayStr: String, endDayStr: String): Array[String] = {
   }
   resultDays.toArray
 }
+
+val categoryColNameList = Array("_cd", "_yn", "_rank", "_type", "_typ")
+val numericColNameList = Array("_cnt","_amt","_arpu","_mb","_qty","_age","_score","_price","_ratio","_duration","_avg","_distance","_entropy")
 
 println("Helper functions registered")
 
@@ -225,13 +233,14 @@ println(s"  - Period: $period months")
 println(s"  - Target months: ${sendYmList.mkString(", ")}")
 println("=" * 80)
 
-// 대용량 데이터는 MEMORY_AND_DISK_SER 사용하여 메모리 절약
+// Response data 로드 (persist 필수 - MAIN에서 48번 재사용)
+// NOTE: PRE paragraph에서 persist한 DataFrame은 모든 MAIN 실행에서 재사용됨
 val resDF = spark.read.parquet("aos/sto/cmpgn_res").filter(s"send_ym in (${sendYmList.mkString("'","','","'")})")
   .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 resDF.createOrReplaceTempView("res_df")
 
-println("Response data loaded and cached")
+println("Response data loaded and cached (for 48 MAIN executions)")
 println("=" * 80)
 
 
@@ -254,8 +263,9 @@ println(s"  - Hour gap: 0 ~ $responseHourGapMax")
 println(s"  - Send hour: $startHour ~ $endHour")
 println("=" * 80)
 
-// 필터링 및 기본 변환
-val resDFFiltered = resDF
+// 필터링 및 기본 변환 + feature_ym 추가
+// NOTE: PRE에서 persist - MAIN에서 48번 재사용 (userYmDF, clickHistoryDF, clickCountDF 생성)
+val resDFSelected = resDF
     .filter(s"""send_ym in (${sendYmList.mkString("'","','","'")})""")
     .filter(s"hour_gap is null or (hour_gap between 0 and $responseHourGapMax)")
     .filter(s"send_hournum between $startHour and $endHour")
@@ -278,13 +288,6 @@ val resDFFiltered = resDF
     )
     .withColumn("res_utility", F.expr(s"case when hour_gap is null then 0.0 else 1.0 / (1 + hour_gap) end"))
     .dropDuplicates()
-    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"))
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
-
-println("Filtered response data cached")
-
-// Feature month 추가 및 중복 제거
-val resDFSelected = resDFFiltered
     .withColumn("feature_ym", F.date_format(F.add_months(F.unix_timestamp(F.col("send_dt"), "yyyyMMdd").cast(TimestampType), -1), "yyyyMM").cast(StringType))
     .selectExpr(
         "cmpgn_num",
@@ -300,15 +303,12 @@ val resDFSelected = resDFFiltered
         "click_yn",
         "res_utility"
     )
-    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"), F.col("chnl_typ"), F.col("cmpgn_typ"), F.col("send_ym"), F.col("send_hournum_cd"))
+    .coalesce(optimalPartitions * 2)  // repartition → coalesce (셔플 제거)
     .dropDuplicates("svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_hournum_cd", "click_yn")
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Response data prepared with feature_ym")
+println("Response data prepared with feature_ym and cached (for 48 MAIN executions)")
 println("=" * 80)
-
-// 이전 캐시 정리
-resDFFiltered.unpersist()
 
 
 // ===== Paragraph 6: User Feature Data Loading (MMKT_SVC_BAS) =====
@@ -405,12 +405,12 @@ println(s"Condition: $smnCond")
 println("=" * 80)
 
 // Suffix별 user-ym pair 추출
+// NOTE: MAIN에서 매 실행마다 생성 (48번), SQL에서 한 번만 사용
+// persist 불필요, repartition도 AQE에 맡김
 val userYmDF = resDFSelected
     .select("svc_mgmt_num", "feature_ym")
     .distinct()
     .filter(smnCond)
-    .repartition(optimalPartitions * 2, F.col("svc_mgmt_num"))
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println(s"User-ym pairs extracted for suffix '$smnSuffix'")
 
@@ -455,7 +455,7 @@ val xdrDF = spark.sql(s"""
     ) hour AS send_hournum_cd, traffic
     WHERE hour.traffic > 1000
 """)
-.repartition(optimalPartitions * 6, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
+// repartition 제거 - groupBy가 자동으로 셔플하므로 이중 셔플 방지
 .groupBy("svc_mgmt_num", "feature_ym", "send_hournum_cd")
 .agg(
   F.collect_set("app_nm").alias("app_usage_token"),
@@ -466,7 +466,7 @@ val xdrDF = spark.sql(s"""
   F.sum("traffic").alias("total_traffic_mb"),
   F.count("*").alias("app_cnt")
 )
-// .persist(StorageLevel.MEMORY_AND_DISK_SER)
+.persist(StorageLevel.MEMORY_AND_DISK_SER)  // ✅ 필요: 3번 사용 (aggregated, pivot, join)
 
 println("XDR hourly data loaded and cached")
 
@@ -496,7 +496,7 @@ println("XDR aggregated features created")
 
 // Pivot 작업으로 시간대별 앱 사용 토큰 생성
 val xdrDFMon = xdrDF
-    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"), F.col("feature_ym"))
+    // repartition 제거 - pivot이 자동으로 셔플하므로 이중 셔플 방지
     .groupBy("svc_mgmt_num", "feature_ym")
     .pivot("send_hournum_cd", hourRange.map(_.toString))
     .agg(F.first("app_usage_token"))
@@ -507,7 +507,6 @@ val xdrDFMon = xdrDF
         ): _*
     )
     .join(xdrAggregatedFeatures, Seq("svc_mgmt_num", "feature_ym"), "left")
-    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("XDR monthly pivot data created and cached")
 println("=" * 80)
@@ -573,13 +572,11 @@ val mmktDFFiltered = mmktDF
 
 println("MMKT data filtered and cached")
 
-// Response data 필터링
+// Response data 필터링 (repartition 제거 - 조인이 자동 셔플)
 val resDFSelectedFiltered = resDFSelected
     .filter(smnCond)
-    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"), F.col("feature_ym"), F.col("send_hournum_cd"))
-    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Response data filtered and cached")
+println("Response data filtered")
 
 // Multi-way join (조인 순서 최적화)
 println("Performing multi-way join...")
@@ -590,12 +587,10 @@ val rawDF = resDFSelectedFiltered
     .na.fill(Map("click_cnt" -> 0.0))
     // 2단계: XDR hourly 조인
     .join(xdrDF, Seq("svc_mgmt_num", "feature_ym", "send_hournum_cd"), "inner")
-    // 3단계: XDR monthly 조인 (파티셔닝 변경)
-    .repartition(optimalPartitions * 4, F.col("svc_mgmt_num"), F.col("feature_ym"))
+    // 3단계: XDR monthly 조인 (repartition 제거 - AQE가 최적화)
     .join(xdrDFMon, Seq("svc_mgmt_num", "feature_ym"), "inner")
     // 4단계: MMKT 조인 (가장 큰 테이블)
     .join(mmktDFFiltered, Seq("svc_mgmt_num", "feature_ym"), "inner")
-    // .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println("Feature integration completed and cached")
 println("=" * 80)
@@ -613,7 +608,7 @@ println(s"Data Type Conversion for suffix: $smnSuffix")
 println("=" * 80)
 
 // 제외할 컬럼 (label 등)
-val noFeatureCols = Array("click_yn", "hour_gap")
+val noFeatureCols = Array("click_yn", "hour_gap", "chnl_typ", "cmpgn_typ")
 
 // 컬럼 분류
 val tokenCols = rawDF.columns.filter(x => x.endsWith("_token")).distinct
@@ -639,8 +634,7 @@ println(s"  - Vector columns: ${vectorCols.length}")
 
 // 데이터 타입 변환
 val rawDFRev = rawDF.select(
-    (Array("cmpgn_num", "svc_mgmt_num", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility")
-        .map(F.col(_))
+    ((Array("cmpgn_num", "svc_mgmt_num", "send_ym", "send_dt", "feature_ym", "click_yn", "res_utility")++noFeatureCols).distinct.map(F.col(_))
     ++ tokenCols.map(cl => F.coalesce(F.col(cl), F.array(F.lit("#"))).alias(cl))
     ++ vectorCols.map(cl => F.col(cl).alias(cl))
     ++ categoryCols.map(cl => 
@@ -653,16 +647,13 @@ val rawDFRev = rawDF.select(
 )
 .distinct()
 .withColumn("suffix", F.expr("right(svc_mgmt_num, 1)"))
-.repartition(optimalPartitions * 4, F.col("send_ym"), F.col("send_hournum_cd"), F.col("suffix"))
-.persist(StorageLevel.MEMORY_AND_DISK_SER)
+.coalesce(optimalPartitions * 2)  // repartition → coalesce, 파티션 수 줄임 (200 → 100)
+.persist(StorageLevel.MEMORY_AND_DISK_SER)  // ✅ 필요: hour group별 반복 필터링
 
 println("Data type conversion completed and cached")
 println("=" * 80)
 
-// 메모리 정리
-rawDF.unpersist()
-resDFSelectedFiltered.unpersist()
-mmktDFFiltered.unpersist()
+// (persist되지 않은 DataFrame의 unpersist 제거)
 
 
 // ===== Paragraph 12: Raw Data Persistence =====
@@ -686,6 +677,7 @@ println(s"Save path: $rawDataSavePath")
 println(s"Partition by: send_ym, send_hournum_cd, suffix")
 println(s"Hour range: ${hourRange.mkString(", ")}")
 println(s"Hour group size: $hourGroupSize, Slide: $hourSlide")
+println(s"Optimal partitions for write: $optimalPartitions")
 println("=" * 80)
 
 // Sliding window로 시간대 그룹 생성
@@ -704,20 +696,18 @@ hourGroups.zipWithIndex.foreach { case (hourGroup, groupIdx) =>
   val rawDFRevHourGroup = rawDFRev
     .filter(F.col("send_hournum_cd").isin(hourGroup: _*))
   
-  // 데이터가 있는지 확인 (take(1)로 빠르게 체크)
-  // if (rawDFRevHourGroup.take(1).nonEmpty) {
-    rawDFRevHourGroup
-      .repartition(100)
-      .write
-      .mode("overwrite")  // 동적 파티션 덮어쓰기
-      .partitionBy("send_ym", "send_hournum_cd", "suffix")
-      .option("compression", "snappy")
-      .parquet(rawDataSavePath)
-    
-    println(s"  Group ${groupIdx + 1} saved successfully")
-  // } else {
-  //   println(s"  Group ${groupIdx + 1} - no data, skipped")
-  // }
+  val startTime = System.currentTimeMillis()
+  
+  rawDFRevHourGroup
+    .coalesce(optimalPartitions)  // ✅ 셔플 없이 병합
+    .write
+    .mode("overwrite")  // 동적 파티션 덮어쓰기
+    .partitionBy("send_ym", "send_hournum_cd", "suffix")
+    .option("compression", "snappy")
+    .parquet(rawDataSavePath)
+  
+  val elapsed = (System.currentTimeMillis() - startTime) / 1000
+  println(s"  Group ${groupIdx + 1} saved in ${elapsed}s")
 }
 
 println("=" * 80)
@@ -726,11 +716,7 @@ println("=" * 80)
 
 // 최종 메모리 정리
 rawDFRev.unpersist()
-xdrDF.unpersist()
-xdrDFMon.unpersist()
-xdrAggregatedFeatures.unpersist()
-clickCountDF.unpersist()
-userYmDF.unpersist()
+xdrDF.unpersist()  // ✅ MAIN에서 persist된 DataFrame
 
 println(s"Suffix '$smnSuffix' processing completed!")
 println("=" * 80)
