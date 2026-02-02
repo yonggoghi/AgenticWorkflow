@@ -252,12 +252,19 @@ Guidelines:
 5. Refer to the '{context_keyword} Context' which maps each offering to its primary benefit. 이를 **사용자의 최종 획득 대상인 핵심 혜택(Primary Benefit)**을 구별하는 데 사용하십시오. (e.g., 가입 대상이 아닌, 최종 혜택인 '캐시백'이나 '기프티콘'과 관련된 개체를 식별)"""
     elif context_keyword == 'ONT':
         context_guideline = """
-5. **Ontology DAG 활용**: 'ONT Context'에 제공된 DAG 경로를 참고하여 사용자 행동 흐름을 파악하세요.
-   - DAG 형식: (Entity:Action) -[Edge]-> (Entity:Action)
-   - **Root Node** (흐름 시작점): Product, Store, Subscription, RatePlan 타입 우선
-   - **Leaf Node** (흐름 종점): Benefit 타입 (캐시백, 할인, 증정 등)
-   - Campaign/Event는 마케팅 맥락으로, 직접적인 오퍼링이 아닌 경우 제외
-   - PartnerBrand (올리브영, 스타벅스 등)는 혜택 제공 채널로, 단독 오퍼링이 아니면 제외"""
+5. **Ontology Context 활용**: 'ONT Context'에 제공된 DAG 경로와 Entity Types를 참고하세요.
+   - **DAG**: 사용자 행동 경로 - (Entity:Action) -[Edge]-> (Entity:Action)
+   - **Entity Types**: 각 엔티티의 온톨로지 타입 - EntityName(Type) 형식
+
+   타입별 선택 기준:
+   | 타입 | 포함 여부 | 근거 |
+   |------|----------|------|
+   | Product, Subscription, RatePlan | 포함 | 핵심 오퍼링 |
+   | Store | 포함 | 물리적 접점 (대리점 프로모션) |
+   | Benefit | 조건부 | 단독 주제인 경우만 포함 |
+   | Campaign, Event | 제외 | 마케팅 맥락, 직접 오퍼링 아님 |
+   | PartnerBrand | 제외 | 제휴 채널, 단독 구독 대상 아니면 제외 |
+   | Channel | 제외 | 접점 채널, 오퍼링 아님 |"""
     else:
         context_guideline = ""
     

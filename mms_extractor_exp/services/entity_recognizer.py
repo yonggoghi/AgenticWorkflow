@@ -645,12 +645,26 @@ class EntityRecognizer:
                         parsed = self._parse_ontology_response(response)
                         cand_entity_list = [e for e in parsed['entities']
                                           if e not in self.stop_item_names and len(e) >= 2]
-                        context_text = parsed['dag_text']
+
+                        # Build rich context with DAG and Entity Types
+                        dag_text = parsed['dag_text']
+                        entity_types = parsed.get('entity_types', {})
+                        entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
+
+                        # Combine DAG and Entity Types into context_text
+                        context_parts = []
+                        if dag_text:
+                            context_parts.append(f"DAG: {dag_text}")
+                        if entity_type_str:
+                            context_parts.append(f"Entity Types: {entity_type_str}")
+                        context_text = "\n".join(context_parts)
+
                         logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (ONT mode): {cand_entity_list}")
+                        logger.info(f"[{model_name}] Entity types: {entity_types}")
                         return {
                             "entities": cand_entity_list,
                             "context_text": context_text,
-                            "entity_types": parsed.get('entity_types', {})
+                            "entity_types": entity_types
                         }
 
                     # Standard mode: use regex parsing
