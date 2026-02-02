@@ -732,11 +732,20 @@ class EntityRecognizer:
             
             all_entities = []
             all_contexts = []
+            all_entity_types = {}
+            all_relationships = []
+
             for result_dict in batch_results_dicts:
                 all_entities.extend(result_dict['entities'])
                 if result_dict['context_text']:
                     all_contexts.append(result_dict['context_text'])
-            
+                # ONT 모드에서 entity_types와 relationships 수집
+                if context_mode == 'ont':
+                    if 'entity_types' in result_dict:
+                        all_entity_types.update(result_dict.get('entity_types', {}))
+                    if 'relationships' in result_dict:
+                        all_relationships.extend(result_dict.get('relationships', []))
+
             combined_context = "\n".join(all_contexts)
             
             if external_cand_entities:
@@ -803,14 +812,30 @@ class EntityRecognizer:
                 batch_results = parallel(delayed(get_entities_only_by_llm)(args) for args in batches)
             
             cand_entity_list = list(set(sum(batch_results, [])))
-            
+
             cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list")
-            
+
+            # ONT 모드일 경우 메타데이터 포함하여 반환
+            if context_mode == 'ont':
+                return {
+                    'similarities_df': cand_entities_sim,
+                    'ont_metadata': {
+                        'dag_text': combined_context,
+                        'entity_types': all_entity_types,
+                        'relationships': all_relationships
+                    }
+                }
+
             return cand_entities_sim
-            
+
         except Exception as e:
             logger.error(f"LLM entity extraction failed: {e}")
             logger.error(traceback.format_exc())
+            if context_mode == 'ont':
+                return {
+                    'similarities_df': pd.DataFrame(),
+                    'ont_metadata': None
+                }
             return pd.DataFrame()
 
     def _match_entities_with_products(self, cand_entity_list: List[str], rank_limit: int) -> pd.DataFrame:

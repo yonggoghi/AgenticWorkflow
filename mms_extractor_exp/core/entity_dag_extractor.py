@@ -597,6 +597,72 @@ class DAGParser:
         return '\n'.join(output)
 
 
+def build_dag_from_ontology(ont_result: dict) -> nx.DiGraph:
+    """
+    ONT 결과에서 NetworkX DiGraph 생성 (LLM 호출 없음)
+
+    Args:
+        ont_result: ONT 모드에서 추출된 결과
+            {
+                'dag_text': str,
+                'entity_types': dict,  # {entity_id: type}
+                'relationships': list  # [{source, target, type}, ...]
+            }
+
+    Returns:
+        nx.DiGraph: DAG 그래프
+    """
+    G = nx.DiGraph()
+
+    entity_types = ont_result.get('entity_types', {})
+    relationships = ont_result.get('relationships', [])
+    dag_text = ont_result.get('dag_text', '')
+
+    # 방법 1: relationships에서 그래프 생성 (더 정확한 타입 정보 보존)
+    if relationships:
+        for rel in relationships:
+            src = rel.get('source', '')
+            tgt = rel.get('target', '')
+            rel_type = rel.get('type', '')
+
+            if src and tgt:
+                # 노드 추가 (타입 정보 포함)
+                src_type = entity_types.get(src, 'Unknown')
+                tgt_type = entity_types.get(tgt, 'Unknown')
+
+                G.add_node(src, entity=src, entity_type=src_type, action='')
+                G.add_node(tgt, entity=tgt, entity_type=tgt_type, action='')
+
+                # 엣지 추가
+                G.add_edge(src, tgt, relation=rel_type)
+
+        logger.info(f"📊 ONT 그래프 생성 (relationships 기반): {G.number_of_nodes()} 노드, {G.number_of_edges()} 엣지")
+        return G
+
+    # 방법 2: dag_text 파싱 (relationships가 없는 경우)
+    if dag_text:
+        # DAG 패턴: (Entity:Action) -[Relation]-> (Entity:Action)
+        dag_pattern = r'\(([^:)]+):([^)]+)\)\s*-\[([^\]]+)\]->\s*\(([^:)]+):([^)]+)\)'
+        matches = re.findall(dag_pattern, dag_text)
+
+        for match in matches:
+            src_entity, src_action, relation, dst_entity, dst_action = match
+
+            src_node = f"{src_entity.strip()}:{src_action.strip()}"
+            dst_node = f"{dst_entity.strip()}:{dst_action.strip()}"
+
+            src_type = entity_types.get(src_entity.strip(), 'Unknown')
+            dst_type = entity_types.get(dst_entity.strip(), 'Unknown')
+
+            G.add_node(src_node, entity=src_entity.strip(), action=src_action.strip(), entity_type=src_type)
+            G.add_node(dst_node, entity=dst_entity.strip(), action=dst_action.strip(), entity_type=dst_type)
+            G.add_edge(src_node, dst_node, relation=relation.strip())
+
+        logger.info(f"📊 ONT 그래프 생성 (dag_text 파싱): {G.number_of_nodes()} 노드, {G.number_of_edges()} 엣지")
+
+    return G
+
+
 def extract_dag(parser: DAGParser, msg: str, llm_model, prompt_mode: str = 'cot'):
     """
     엔티티 관계 DAG 추출 메인 함수

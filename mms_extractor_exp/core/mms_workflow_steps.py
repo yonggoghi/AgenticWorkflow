@@ -266,27 +266,49 @@ class EntityExtractionStep(WorkflowStep):
     def execute(self, state: WorkflowState) -> WorkflowState:
         if state.has_error():
             return state
-        
+
         msg = state.get("msg")
         extractor = state.get("extractor")
-        
+
         # DB 모드 진단
         if extractor.offer_info_data_src == "db":
             self._diagnose_db_mode(extractor)
-        
+
         # 엔티티 추출
         entities_from_kiwi, cand_item_list, extra_item_pdf = self.entity_recognizer.extract_entities_hybrid(msg)
-        
+
         self._log_extraction_results(entities_from_kiwi, cand_item_list, extra_item_pdf)
-        
+
         # DB 모드 결과 분석
         if extractor.offer_info_data_src == "db":
             self._analyze_db_results(cand_item_list)
-        
+
+        # ONT 모드일 경우 LLM 기반 추출 및 메타데이터 저장
+        if hasattr(extractor, 'entity_extraction_context_mode') and extractor.entity_extraction_context_mode == 'ont':
+            logger.info("🔍 ONT 모드 감지: LLM 기반 엔티티 추출 수행")
+            try:
+                ont_result = self.entity_recognizer.extract_entities_with_llm(
+                    msg_text=msg,
+                    rank_limit=50,
+                    llm_models=[extractor.llm_model],
+                    external_cand_entities=cand_item_list,
+                    context_mode='ont'
+                )
+
+                # ONT 결과에서 메타데이터 추출 및 저장
+                if isinstance(ont_result, dict) and 'ont_metadata' in ont_result:
+                    ont_metadata = ont_result.get('ont_metadata')
+                    if ont_metadata:
+                        state.set("ont_extraction_result", ont_metadata)
+                        logger.info(f"✅ ONT 메타데이터 저장: entity_types={len(ont_metadata.get('entity_types', {}))}, "
+                                   f"relationships={len(ont_metadata.get('relationships', []))}")
+            except Exception as e:
+                logger.warning(f"ONT 모드 추출 실패 (무시): {e}")
+
         state.set("entities_from_kiwi", entities_from_kiwi)
         state.set("cand_item_list", cand_item_list)
         state.set("extra_item_pdf", extra_item_pdf)
-        
+
         return state
     
     def _diagnose_db_mode(self, extractor):
@@ -726,10 +748,10 @@ class DAGExtractionStep(WorkflowStep):
     def execute(self, state: WorkflowState) -> WorkflowState:
         """
         DAG 추출 실행
-        
+
         Args:
             state: 현재 워크플로우 상태
-            
+
         Returns:
             업데이트된 워크플로우 상태 (entity_dag 필드 추가)
         """
@@ -741,46 +763,53 @@ class DAGExtractionStep(WorkflowStep):
             final_result = state.get("final_result", {})
             final_result['entity_dag'] = []
             state.set("final_result", final_result)
-            
+
             raw_result = state.get("raw_result", {})
             raw_result['entity_dag'] = []
             state.set("raw_result", raw_result)
             return state
-        
+
         msg = state.get("msg")
         message_id = state.get("message_id", "#")
-        
+
+        # ONT 모드 확인: 이미 추출된 결과가 있으면 재사용 (LLM 재호출 없음)
+        if hasattr(extractor, 'entity_extraction_context_mode') and extractor.entity_extraction_context_mode == 'ont':
+            ont_result = state.get("ont_extraction_result")
+            if ont_result and (ont_result.get('dag_text') or ont_result.get('relationships')):
+                logger.info("🔗 ONT 모드: 기존 추출 결과로 DAG 생성 (LLM 재호출 없음)")
+                return self._execute_from_ont(state, ont_result, msg, message_id)
+
         logger.info("🔗 DAG 추출 시작...")
-        
+
         try:
             # entity_dag_extractor의 extract_dag 함수 호출
             from .entity_dag_extractor import extract_dag
-            
+
             dag_result = extract_dag(
                 self.dag_parser,
                 msg,
                 extractor.llm_model,
                 prompt_mode='cot'
             )
-            
+
             # DAG 섹션을 리스트로 변환 (빈 줄 제거 및 정렬)
             dag_list = sorted([
-                d.strip() for d in dag_result['dag_section'].split('\n') 
+                d.strip() for d in dag_result['dag_section'].split('\n')
                 if d.strip()
             ])
-            
+
             logger.info(f"✅ DAG 추출 완료: {len(dag_list)}개 엣지")
-            
+
             # final_result에 entity_dag 추가
             final_result = state.get("final_result", {})
             final_result['entity_dag'] = dag_list
             state.set("final_result", final_result)
-            
+
             # raw_result에도 추가
             raw_result = state.get("raw_result", {})
             raw_result['entity_dag'] = dag_list
             state.set("raw_result", raw_result)
-            
+
             # DAG 다이어그램 생성 (선택적)
             if dag_result['dag'].number_of_nodes() > 0:
                 try:
@@ -790,19 +819,92 @@ class DAGExtractionStep(WorkflowStep):
                     logger.info(f"📊 DAG 다이어그램 저장: {dag_filename}.png")
                 except Exception as e:
                     logger.warning(f"DAG 다이어그램 생성 실패 (무시): {e}")
-            
+
         except Exception as e:
             logger.error(f"❌ DAG 추출 실패: {e}")
             logger.error(f"상세 오류: {traceback.format_exc()}")
-            
+
             # 실패 시 빈 배열로 설정
             final_result = state.get("final_result", {})
             final_result['entity_dag'] = []
             state.set("final_result", final_result)
-            
+
             raw_result = state.get("raw_result", {})
             raw_result['entity_dag'] = []
             state.set("raw_result", raw_result)
-        
+
+        return state
+
+    def _execute_from_ont(self, state: WorkflowState, ont_result: dict, msg: str, message_id: str) -> WorkflowState:
+        """
+        ONT 결과에서 DAG 생성 (LLM 호출 없음)
+
+        Args:
+            state: 워크플로우 상태
+            ont_result: ONT 모드에서 추출된 메타데이터
+            msg: 원본 메시지
+            message_id: 메시지 ID
+
+        Returns:
+            업데이트된 워크플로우 상태
+        """
+        from .entity_dag_extractor import build_dag_from_ontology
+
+        try:
+            # 1. DAG 텍스트를 리스트로 변환
+            dag_text = ont_result.get('dag_text', '')
+            dag_lines = []
+
+            if dag_text:
+                for line in dag_text.split('\n'):
+                    line = line.strip()
+                    if line.startswith('DAG:'):
+                        dag_lines.append(line.replace('DAG:', '').strip())
+                    elif '-[' in line and ']->' in line:
+                        dag_lines.append(line)
+                    elif line and not line.startswith('Entities:') and not line.startswith('Relationships:'):
+                        # dag_text 전체가 DAG 형식일 수 있음
+                        if '(' in line and ')' in line:
+                            dag_lines.append(line)
+
+            dag_list = sorted([d for d in dag_lines if d])
+
+            # 2. NetworkX 그래프 생성
+            dag = build_dag_from_ontology(ont_result)
+
+            logger.info(f"✅ ONT 기반 DAG 생성 완료: {len(dag_list)}개 엣지, {dag.number_of_nodes()} 노드")
+
+            # 3. 결과 저장
+            final_result = state.get("final_result", {})
+            final_result['entity_dag'] = dag_list
+            state.set("final_result", final_result)
+
+            raw_result = state.get("raw_result", {})
+            raw_result['entity_dag'] = dag_list
+            state.set("raw_result", raw_result)
+
+            # 4. 이미지 생성
+            if dag.number_of_nodes() > 0:
+                try:
+                    from utils import create_dag_diagram, sha256_hash
+                    dag_filename = f'dag_{message_id}_{sha256_hash(msg)}'
+                    create_dag_diagram(dag, filename=dag_filename)
+                    logger.info(f"📊 DAG 다이어그램 저장 (ONT): {dag_filename}.png")
+                except Exception as e:
+                    logger.warning(f"DAG 다이어그램 생성 실패 (무시): {e}")
+
+        except Exception as e:
+            logger.error(f"❌ ONT 기반 DAG 생성 실패: {e}")
+            logger.error(f"상세 오류: {traceback.format_exc()}")
+
+            # 실패 시 빈 배열로 설정
+            final_result = state.get("final_result", {})
+            final_result['entity_dag'] = []
+            state.set("final_result", final_result)
+
+            raw_result = state.get("raw_result", {})
+            raw_result['entity_dag'] = []
+            state.set("raw_result", raw_result)
+
         return state
 
