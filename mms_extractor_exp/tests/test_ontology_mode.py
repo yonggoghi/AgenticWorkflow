@@ -219,7 +219,7 @@ class TestBuildContextPromptONT(unittest.TestCase):
 
         prompt = build_context_based_entity_extraction_prompt('ONT')
 
-        self.assertIn('Ontology Context', prompt)
+        self.assertIn('Ontology DAG', prompt)
         self.assertIn('Product', prompt)
         self.assertIn('Subscription', prompt)
         self.assertIn('Store', prompt)
