@@ -252,18 +252,23 @@ Guidelines:
 5. Refer to the '{context_keyword} Context' which maps each offering to its primary benefit. 이를 **사용자의 최종 획득 대상인 핵심 혜택(Primary Benefit)**을 구별하는 데 사용하십시오. (e.g., 가입 대상이 아닌, 최종 혜택인 '캐시백'이나 '기프티콘'과 관련된 개체를 식별)"""
     elif context_keyword == 'ONT':
         context_guideline = """
-5. **Ontology Context 활용**: 'ONT Context'에 제공된 DAG 경로와 Entity Types를 참고하세요.
+5. **Ontology Context 활용**: 'ONT Context'에 제공된 Entities, Relationships, DAG를 참고하세요.
+   - **Entities**: 각 엔티티의 온톨로지 타입 - EntityName(Type) 형식
+   - **Relationships**: 엔티티 간 관계 - Source -[TYPE]-> Target 형식
+     - PROMOTES: 캠페인/매장이 상품을 프로모션
+     - OFFERS: 캠페인/상품이 혜택을 제공
+     - REQUIRES: 참여에 필요한 조건
+     - PROVIDES: 제휴사가 혜택의 실제 제공자
    - **DAG**: 사용자 행동 경로 - (Entity:Action) -[Edge]-> (Entity:Action)
-   - **Entity Types**: 각 엔티티의 온톨로지 타입 - EntityName(Type) 형식
 
    타입별 선택 기준:
    | 타입 | 포함 여부 | 근거 |
    |------|----------|------|
-   | Product, Subscription, RatePlan | 포함 | 핵심 오퍼링 |
-   | Store | 포함 | 물리적 접점 (대리점 프로모션) |
-   | Benefit | 조건부 | 단독 주제인 경우만 포함 |
-   | Campaign, Event | 제외 | 마케팅 맥락, 직접 오퍼링 아님 |
-   | PartnerBrand | 제외 | 제휴 채널, 단독 구독 대상 아니면 제외 |
+   | Product, Subscription, RatePlan | 포함 | 핵심 오퍼링 (PROMOTES 타겟) |
+   | Store | 포함 | 물리적 접점 (PROMOTES 소스) |
+   | Benefit | 조건부 | 단독 주제인 경우만 (OFFERS 타겟) |
+   | Campaign, Event | 제외 | 마케팅 맥락 (PROMOTES 소스지만 오퍼링 아님) |
+   | PartnerBrand | 제외 | 제휴 채널 (PROVIDES 소스) |
    | Channel | 제외 | 접점 채널, 오퍼링 아님 |"""
     else:
         context_guideline = ""

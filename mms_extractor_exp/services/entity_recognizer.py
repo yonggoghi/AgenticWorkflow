@@ -514,6 +514,7 @@ class EntityRecognizer:
             dict with keys:
               - 'entities': List[str] - entity IDs
               - 'entity_types': Dict[str, str] - {id: type} mapping
+              - 'relationships': List[dict] - [{source, target, type}, ...]
               - 'dag_text': str - user_action_path.dag
               - 'raw_json': dict - original parsed JSON
         """
@@ -533,12 +534,16 @@ class EntityRecognizer:
             entity_types = {e.get('id'): e.get('type', 'Unknown')
                            for e in data.get('entities', []) if e.get('id')}
 
+            # relationships 추출
+            relationships = data.get('relationships', [])
+
             # DAG 텍스트 추출
             dag_text = data.get('user_action_path', {}).get('dag', '')
 
             return {
                 'entities': entities,
                 'entity_types': entity_types,
+                'relationships': relationships,
                 'dag_text': dag_text,
                 'raw_json': data
             }
@@ -548,6 +553,7 @@ class EntityRecognizer:
             return {
                 'entities': self._parse_entity_response(response),
                 'entity_types': {},
+                'relationships': [],
                 'dag_text': '',
                 'raw_json': {}
             }
@@ -646,25 +652,42 @@ class EntityRecognizer:
                         cand_entity_list = [e for e in parsed['entities']
                                           if e not in self.stop_item_names and len(e) >= 2]
 
-                        # Build rich context with DAG and Entity Types
-                        dag_text = parsed['dag_text']
+                        # Build rich context with Entity Types, Relationships, and DAG
                         entity_types = parsed.get('entity_types', {})
+                        relationships = parsed.get('relationships', [])
+                        dag_text = parsed['dag_text']
+
+                        # Format entity types: Name(Type), ...
                         entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
 
-                        # Combine DAG and Entity Types into context_text
+                        # Format relationships: Source -[TYPE]-> Target
+                        rel_lines = []
+                        for rel in relationships:
+                            src = rel.get('source', '')
+                            tgt = rel.get('target', '')
+                            rel_type = rel.get('type', '')
+                            if src and tgt and rel_type:
+                                rel_lines.append(f"  - {src} -[{rel_type}]-> {tgt}")
+                        relationships_str = "\n".join(rel_lines) if rel_lines else ""
+
+                        # Combine all parts into context_text
                         context_parts = []
+                        if entity_type_str:
+                            context_parts.append(f"Entities: {entity_type_str}")
+                        if relationships_str:
+                            context_parts.append(f"Relationships:\n{relationships_str}")
                         if dag_text:
                             context_parts.append(f"DAG: {dag_text}")
-                        if entity_type_str:
-                            context_parts.append(f"Entity Types: {entity_type_str}")
                         context_text = "\n".join(context_parts)
 
                         logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (ONT mode): {cand_entity_list}")
                         logger.info(f"[{model_name}] Entity types: {entity_types}")
+                        logger.info(f"[{model_name}] Relationships: {len(relationships)} found")
                         return {
                             "entities": cand_entity_list,
                             "context_text": context_text,
-                            "entity_types": entity_types
+                            "entity_types": entity_types,
+                            "relationships": relationships
                         }
 
                     # Standard mode: use regex parsing
