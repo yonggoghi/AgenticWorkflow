@@ -107,6 +107,7 @@ final_sim = sim_s1 + sim_s2
 - LLM 모드는 context_mode에 따라 다른 프롬프트 사용
   - 'dag': HYBRID_DAG_EXTRACTION_PROMPT (사용자 행동 경로)
   - 'pairing': HYBRID_PAIRING_EXTRACTION_PROMPT (혜택 매핑)
+  - 'ont': ONTOLOGY_PROMPT (팔란티어 온톨로지 기반 JSON 추출)
   - 'none': SIMPLE_ENTITY_EXTRACTION_PROMPT (단순 추출)
 - 병렬 처리로 성능 최적화 (joblib Parallel)
 - 메시지 길이에 따라 배치 크기 자동 조정
@@ -118,6 +119,7 @@ final_sim = sim_s1 + sim_s2
 import logging
 import traceback
 import re
+import json
 from typing import List, Tuple, Dict, Optional, Any
 import pandas as pd
 from langchain_core.prompts import PromptTemplate
@@ -143,7 +145,8 @@ from prompts import (
     HYBRID_DAG_EXTRACTION_PROMPT,
     CONTEXT_BASED_ENTITY_EXTRACTION_PROMPT,
     build_context_based_entity_extraction_prompt,
-    HYBRID_PAIRING_EXTRACTION_PROMPT
+    HYBRID_PAIRING_EXTRACTION_PROMPT,
+    ONTOLOGY_PROMPT
 )
 
 # Config imports
@@ -500,6 +503,55 @@ class EntityRecognizer:
             logger.error(f"Entity parsing failed: {e}")
             return []
 
+    def _parse_ontology_response(self, response: str) -> dict:
+        """
+        Parse ontology JSON response from LLM.
+
+        Args:
+            response: LLM response (expected JSON format)
+
+        Returns:
+            dict with keys:
+              - 'entities': List[str] - entity IDs
+              - 'entity_types': Dict[str, str] - {id: type} mapping
+              - 'dag_text': str - user_action_path.dag
+              - 'raw_json': dict - original parsed JSON
+        """
+        try:
+            # JSON 추출 (코드 블록 처리)
+            json_str = response.strip()
+            if json_str.startswith('```'):
+                json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
+                json_str = re.sub(r'\n?```$', '', json_str)
+
+            data = json.loads(json_str)
+
+            # entities 추출
+            entities = [e.get('id', '') for e in data.get('entities', []) if e.get('id')]
+
+            # entity_types 매핑
+            entity_types = {e.get('id'): e.get('type', 'Unknown')
+                           for e in data.get('entities', []) if e.get('id')}
+
+            # DAG 텍스트 추출
+            dag_text = data.get('user_action_path', {}).get('dag', '')
+
+            return {
+                'entities': entities,
+                'entity_types': entity_types,
+                'dag_text': dag_text,
+                'raw_json': data
+            }
+        except json.JSONDecodeError as e:
+            logger.warning(f"Ontology JSON parsing failed: {e}")
+            # Fallback: 기존 파싱 로직 사용
+            return {
+                'entities': self._parse_entity_response(response),
+                'entity_types': {},
+                'dag_text': '',
+                'raw_json': {}
+            }
+
     def _calculate_optimal_batch_size(self, msg_text: str, base_size: int = 50) -> int:
         """Calculate optimal batch size based on message length"""
         msg_length = len(msg_text)
@@ -515,14 +567,18 @@ class EntityRecognizer:
                                 external_cand_entities: List[str] = [], context_mode: str = 'dag') -> pd.DataFrame:
         """
         LLM-based entity extraction with multi-model support and configurable context mode.
-        
+
         Args:
             msg_text: Message text to extract entities from
             rank_limit: Maximum rank for entity candidates
             llm_models: List of LLM models to use (defaults to self.llm_model)
             external_cand_entities: External candidate entities to include
-            context_mode: Context extraction mode - 'dag', 'pairing', or 'none' (default: 'dag')
-        
+            context_mode: Context extraction mode - 'dag', 'pairing', 'ont', or 'none' (default: 'dag')
+                - 'dag': HYBRID_DAG_EXTRACTION_PROMPT (사용자 행동 경로)
+                - 'pairing': HYBRID_PAIRING_EXTRACTION_PROMPT (혜택 매핑)
+                - 'ont': ONTOLOGY_PROMPT (팔란티어 온톨로지 기반 JSON 추출)
+                - 'none': SIMPLE_ENTITY_EXTRACTION_PROMPT (단순 추출)
+
         Returns:
             DataFrame with extracted entities and similarity scores
         """
@@ -536,7 +592,7 @@ class EntityRecognizer:
                 llm_models = [self.llm_model]
             
             # Validate context_mode
-            if context_mode not in ['dag', 'pairing', 'none']:
+            if context_mode not in ['dag', 'pairing', 'none', 'ont']:
                 logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'dag'")
                 context_mode = 'dag'
             
@@ -547,6 +603,9 @@ class EntityRecognizer:
             elif context_mode == 'pairing':
                 first_stage_prompt = HYBRID_PAIRING_EXTRACTION_PROMPT
                 context_keyword = 'PAIRING'
+            elif context_mode == 'ont':
+                first_stage_prompt = ONTOLOGY_PROMPT
+                context_keyword = 'ONT'
             else:  # 'none'
                 first_stage_prompt = SIMPLE_ENTITY_EXTRACTION_PROMPT
                 context_keyword = None
@@ -556,8 +615,9 @@ class EntityRecognizer:
                 llm_model, prompt = args_dict['llm_model'], args_dict['prompt']
                 extract_context = args_dict.get('extract_context', True)
                 context_kw = args_dict.get('context_keyword', None)
+                is_ontology_mode = args_dict.get('is_ontology_mode', False)
                 model_name = getattr(llm_model, 'model_name', 'Unknown')
-                
+
                 try:
                     # Log the prompt being sent to LLM
                     prompt_res_log_list = []
@@ -565,11 +625,11 @@ class EntityRecognizer:
                     prompt_res_log_list.append("="*100)
                     prompt_res_log_list.append(prompt)
                     prompt_res_log_list.append("="*100)
-                    
+
                     response = llm_model.invoke(f"""
-                    
+
                     {prompt}
-                    
+
                     """).content
 
                     # Log the response received from LLM
@@ -577,14 +637,28 @@ class EntityRecognizer:
                     prompt_res_log_list.append("-"*100)
                     prompt_res_log_list.append(response)
                     prompt_res_log_list.append("-"*100)
-                    
+
                     logger.debug("\n".join(prompt_res_log_list))
-                    
+
+                    # Ontology mode: use JSON parsing
+                    if is_ontology_mode:
+                        parsed = self._parse_ontology_response(response)
+                        cand_entity_list = [e for e in parsed['entities']
+                                          if e not in self.stop_item_names and len(e) >= 2]
+                        context_text = parsed['dag_text']
+                        logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (ONT mode): {cand_entity_list}")
+                        return {
+                            "entities": cand_entity_list,
+                            "context_text": context_text,
+                            "entity_types": parsed.get('entity_types', {})
+                        }
+
+                    # Standard mode: use regex parsing
                     cand_entity_list_raw = self._parse_entity_response(response)
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
-                    
+
                     logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities: {cand_entity_list}")
-                    
+
                     context_text = ""
                     if extract_context and context_kw:
                         context_match = re.search(rf'{context_kw}:\s*(.*)', response, re.DOTALL | re.IGNORECASE)
@@ -593,7 +667,7 @@ class EntityRecognizer:
                             logger.info(f"[{model_name}] Extracted {context_kw} text ({len(context_text)} chars)")
                         else:
                             logger.debug(f"[{model_name}] No {context_kw} found in response")
-                    
+
                     return {"entities": cand_entity_list, "context_text": context_text}
                 except Exception as e:
                     logger.error(f"LLM extraction failed for {model_name}: {e}")
@@ -608,10 +682,11 @@ class EntityRecognizer:
             for llm_model in llm_models:
                 prompt = f"{first_stage_prompt}\n\n## message:\n{msg_text}"
                 batches.append({
-                    "prompt": prompt, 
-                    "llm_model": llm_model, 
+                    "prompt": prompt,
+                    "llm_model": llm_model,
                     "extract_context": (context_mode != 'none'),
-                    "context_keyword": context_keyword
+                    "context_keyword": context_keyword,
+                    "is_ontology_mode": (context_mode == 'ont')
                 })
             
             n_jobs = min(len(batches), 3)

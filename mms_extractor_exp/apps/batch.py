@@ -708,8 +708,8 @@ def main():
                        help='메인 프롬프트에 사용할 LLM 모델 (default: ax)')
     parser.add_argument('--entity-llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='엔티티 추출에 사용할 LLM 모델 (default: ax)')
-    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none'], default='dag',
-                       help='엔티티 추출 컨텍스트 모드 (dag: DAG 컨텍스트, pairing: PAIRING 컨텍스트, none: 컨텍스트 없음, default: dag)')
+    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont'], default='dag',
+                       help='엔티티 추출 컨텍스트 모드 (dag: DAG 컨텍스트, pairing: PAIRING 컨텍스트, none: 컨텍스트 없음, ont: 온톨로지 기반 추출, default: dag)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, 
                        help='엔티티 DAG 추출 활성화 - 메시지에서 엔티티 간 관계를 그래프로 추출하고 시각화 (default: False)')
     

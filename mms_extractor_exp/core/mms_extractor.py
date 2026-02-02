@@ -366,7 +366,7 @@ class MMSExtractor(MMSExtractorDataMixin):
             llm_model (str, optional): 사용할 LLM 모델. 기본값: 'ax'
             entity_llm_model (str, optional): 엔티티 추출용 LLM 모델. 기본값: 'ax'
             extract_entity_dag (bool, optional): DAG 추출 여부. 기본값: False
-            entity_extraction_context_mode (str, optional): 엔티티 추출 컨텍스트 모드 ('dag', 'pairing', 'none'). 기본값: 'dag'
+            entity_extraction_context_mode (str, optional): 엔티티 추출 컨텍스트 모드 ('dag', 'pairing', 'none', 'ont'). 기본값: 'dag'
             
         Raises:
             Exception: 초기화 과정에서 발생하는 모든 오류

@@ -377,7 +377,7 @@ def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='l
         product_info_extraction_mode: 상품 정보 추출 모드 ('nlp', 'llm', 'rag')
         entity_matching_mode: 엔티티 매칭 모드 ('logic', 'llm')
         entity_llm_model: 엔티티 추출에 사용할 LLM 모델 ('gemma', 'ax', 'claude', 'gpt', 'gemini')
-        entity_extraction_context_mode: 엔티티 추출 컨텍스트 모드 ('dag', 'pairing', 'none')
+        entity_extraction_context_mode: 엔티티 추출 컨텍스트 모드 ('dag', 'pairing', 'none', 'ont')
     
     Returns:
         MMSExtractor: 구성된 추출기 인스턴스

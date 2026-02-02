@@ -76,6 +76,8 @@ from .entity_extraction_prompt import (
     SIMPLE_ENTITY_EXTRACTION_PROMPT
 )
 
+from .ontology_prompt import ONTOLOGY_PROMPT
+
 # 외부에서 사용 가능한 모든 함수와 상수들을 명시적으로 정의
 __all__ = [
     # 메인 정보 추출 관련
@@ -102,4 +104,7 @@ __all__ = [
     'build_context_based_entity_extraction_prompt',  # 동적 컨텍스트 기반 프롬프트 빌더
     'HYBRID_DAG_EXTRACTION_PROMPT',     # DAG-Entity 하이브리드 추출 프롬프트
     'HYBRID_PAIRING_EXTRACTION_PROMPT', # PAIRING-Entity 하이브리드 추출 프롬프트
+
+    # 온톨로지 프롬프트
+    'ONTOLOGY_PROMPT',                  # 팔란티어 온톨로지 기반 추출 프롬프트
 ]

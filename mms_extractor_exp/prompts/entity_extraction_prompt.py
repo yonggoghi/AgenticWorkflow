@@ -250,6 +250,12 @@ Guidelines:
     elif context_keyword == 'PAIRING':
         context_guideline = f"""
 5. Refer to the '{context_keyword} Context' which maps each offering to its primary benefit. 이를 **사용자의 최종 획득 대상인 핵심 혜택(Primary Benefit)**을 구별하는 데 사용하십시오. (e.g., 가입 대상이 아닌, 최종 혜택인 '캐시백'이나 '기프티콘'과 관련된 개체를 식별)"""
+    elif context_keyword == 'ONT':
+        context_guideline = """
+5. **Ontology Context 활용**: 'ONT Context'의 엔티티 타입과 관계 정보를 참고하여
+   핵심 오퍼링(Product, Subscription, Store)과 혜택(Benefit)을 구분하세요.
+   - Campaign/Event는 마케팅 맥락으로, 직접 오퍼링이 아님
+   - PartnerBrand는 혜택 제공자로, 최종 혜택과 연결"""
     else:
         context_guideline = ""
     
