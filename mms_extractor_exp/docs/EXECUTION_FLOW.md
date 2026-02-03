@@ -853,6 +853,11 @@ msg_001,"(광고)[SKT] ...","{...}","2025-12-18 14:00:00","T day 혜택","[\"프
 ## 참고사항
 
 - **DAG 추출**: `--extract-entity-dag` 플래그가 활성화되면 Step 9 (DAGExtractionStep)이 실행됩니다.
+- **ONT 모드 최적화**: `--entity-extraction-context-mode ont` 사용 시 Step 9에서 별도 LLM 호출 없이 기존 온톨로지 결과를 재사용합니다.
 - **데이터 소스**: `--offer-data-source local` 옵션으로 로컬 CSV 파일에서 데이터를 로드합니다.
 - **워크플로우 엔진**: [core/workflow_core.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/workflow_core.py)에서 정의된 `WorkflowEngine`이 모든 단계를 순차적으로 실행합니다.
 - **에러 처리**: 각 단계에서 에러 발생 시 `state.add_error()`로 기록되며, 후속 단계는 자동으로 스킵됩니다.
+
+---
+
+*최종 업데이트: 2026-02-03*

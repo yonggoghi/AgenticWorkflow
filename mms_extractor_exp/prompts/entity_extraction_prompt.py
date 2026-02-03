@@ -232,8 +232,23 @@ Return format: Do not use Markdown formatting. Use plain text.
 REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
 ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match"""
     
-    # For DAG/PAIRING modes, use detailed prompt with context reference
-    base_prompt = """Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+    # ONT mode uses a different base prompt focused on PartnerBrand, Benefit, and Product matching
+    if context_keyword == 'ONT':
+        base_prompt = """Select entities from 'candidate entities in vocabulary' that match the PartnerBrand, Benefit, or Product entities extracted from the message.
+
+***핵심 지침 (Critical Constraint):
+1. ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다.
+2. 'entities in message'의 개체명(예: 올리브영)이 'candidate entities in vocabulary'의 개체명(예: 올리브영_올리브영)과 **부분 일치**하면 해당 vocabulary 개체를 선택하세요.
+3. 메시지의 핵심 혜택(예: 올리브영 기프트 카드)을 제공하는 **제휴 브랜드(PartnerBrand)**가 vocabulary에 있으면 반드시 선택하세요.***
+
+Guidelines:
+1. **PartnerBrand 매칭**: 'entities in message'에 제휴 브랜드(예: 올리브영, 스타벅스)가 있고, vocabulary에 해당 브랜드를 포함하는 개체(예: 올리브영_올리브영)가 있으면 선택
+2. **Benefit 매칭**: 혜택 관련 개체(예: 기프트카드, 쿠폰)가 vocabulary에 있으면 선택
+3. **Product 매칭**: 상품/요금제 개체가 vocabulary에 있으면 선택
+4. ONT Context의 entity type을 참고하여 PartnerBrand, Benefit, Product 타입 개체를 우선 선택"""
+    else:
+        # For DAG/PAIRING modes, use detailed prompt with context reference
+        base_prompt = """Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
 
 ***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지나 RAG Context에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
 
@@ -242,7 +257,7 @@ Guidelines:
 2. Exclude general concepts not tied to specific offerings
 3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
 4. Multiple entities in 'entities in message' may combine into one composite entity"""
-    
+
     # Add context-specific guideline
     if context_keyword == 'DAG':
         context_guideline = f"""
@@ -261,15 +276,17 @@ Guidelines:
      - PROVIDES: 제휴사가 혜택의 실제 제공자
    - **DAG**: 사용자 행동 경로 - (Entity:Action) -[Edge]-> (Entity:Action)
 
-   타입별 선택 기준:
+   ***ONT 모드 타입별 선택 기준:***
    | 타입 | 포함 여부 | 근거 |
    |------|----------|------|
-   | Product, Subscription, RatePlan | 포함 | 핵심 오퍼링 (PROMOTES 타겟) |
-   | Store | 포함 | 물리적 접점 (PROMOTES 소스) |
-   | Benefit | 조건부 | 단독 주제인 경우만 (OFFERS 타겟) |
-   | Campaign, Event | 제외 | 마케팅 맥락 (PROMOTES 소스지만 오퍼링 아님) |
-   | PartnerBrand | 제외 | 제휴 채널 (PROVIDES 소스) |
-   | Channel | 제외 | 접점 채널, 오퍼링 아님 |"""
+   | Product, Subscription, RatePlan | **포함** | 핵심 오퍼링 (PROMOTES 타겟) |
+   | PartnerBrand | **포함** | 제휴 브랜드 - 핵심 혜택 제공자 (PROVIDES 소스) |
+   | Benefit | **포함** | 사용자가 실제로 받는 혜택 (OFFERS 타겟) |
+   | Store | 제외 | 접점이지만 entity로 불필요 |
+   | Campaign, Event | 제외 | 마케팅 맥락 |
+   | Channel | 제외 | 접점 채널 |
+
+   **중요**: ONT 모드에서는 Product/Subscription/RatePlan, PartnerBrand(예: 올리브영, 스타벅스), Benefit(예: 기프트카드, 쿠폰, 캐시백)을 선택하세요."""
     else:
         context_guideline = ""
     

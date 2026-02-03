@@ -127,7 +127,35 @@ def update_execution_flow_doc():
             'filter_test_items()': 'L511',
         },
         'services/entity_recognizer.py': {
-            'EntityRecognizer.extract_entities_hybrid()': 'L247',
+            'EntityRecognizer.__init__()': 'L221',
+            'EntityRecognizer.extract_entities_hybrid()': 'L250',
+            'EntityRecognizer.extract_entities_with_llm()': 'L572',
+            'EntityRecognizer._match_entities_with_products()': 'L859',
+            'EntityRecognizer._calculate_combined_similarity()': 'L410',
+            'EntityRecognizer.map_products_to_entities()': 'L938',
+            'EntityRecognizer._parse_entity_response()': 'L455',
+            'EntityRecognizer._parse_ontology_response()': 'L506',
+        },
+        'services/result_builder.py': {
+            'ResultBuilder.__init__()': 'L188',
+            'ResultBuilder.build_extraction_result()': 'L203',
+            'ResultBuilder._map_programs_to_result()': 'L377',
+            'ResultBuilder._extract_and_enrich_channels()': 'L399',
+        },
+        'prompts/entity_extraction_prompt.py': {
+            'build_context_based_entity_extraction_prompt()': 'L209',
+            'build_entity_extraction_prompt()': 'L437',
+        },
+        'utils/similarity_utils.py': {
+            'parallel_fuzzy_similarity()': 'L50',
+            'parallel_seq_similarity()': 'L191',
+            'calculate_fuzzy_similarity()': 'L14',
+            'longest_common_subsequence_ratio()': 'L68',
+            'combined_sequence_similarity()': 'L152',
+        },
+        'utils/text_utils.py': {
+            'validate_text_input()': 'L7',
+            'extract_ngram_candidates()': 'L111',
         },
         'core/mms_workflow_steps.py': {
             'InputValidationStep.execute()': 'L206',
@@ -144,6 +172,13 @@ def update_execution_flow_doc():
             'initialize_global_extractor()': 'L286',
             'extract_message()': 'L472',
             'get_configured_extractor()': 'L368',
+        },
+        'tests/trace_product_extraction.py': {
+            'ProductExtractionTracer.__init__()': 'L147',
+            'ProductExtractionTracer.trace_message()': 'L668',
+            'ProductExtractionTracer._patch_entity_recognizer_for_tracing()': 'L184',
+            'ProductExtractionTracer._patch_result_builder_for_tracing()': 'L459',
+            'ProductExtractionTracer._generate_enhanced_text_report()': 'L1050',
         },
     }
     
