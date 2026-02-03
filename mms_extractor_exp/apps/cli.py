@@ -227,10 +227,18 @@ def main():
                     # results 디렉토리 생성
                     results_dir = Path(__file__).parent.parent / 'results'
                     results_dir.mkdir(exist_ok=True)
-                    
+
+                    # 원본 메시지를 결과에 추가
+                    results_with_raw = []
+                    for i, result in enumerate(results):
+                        result_with_raw = result.copy()
+                        if i < len(messages):
+                            result_with_raw['raw_message'] = messages[i]
+                        results_with_raw.append(result_with_raw)
+
                     output_file = results_dir / f"batch_results_{int(time.time())}.json"
                     with open(output_file, 'w', encoding='utf-8') as f:
-                        json.dump(results, f, indent=4, ensure_ascii=False)
+                        json.dump(results_with_raw, f, indent=4, ensure_ascii=False)
                     print(f"💾 결과 저장: {output_file}")
                 else:
                     logger.info("💾 배치 결과 JSON 파일 저장 생략 (--save-batch-results 옵션으로 활성화 가능)")
