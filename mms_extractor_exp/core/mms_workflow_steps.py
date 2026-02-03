@@ -851,21 +851,23 @@ class DAGExtractionStep(WorkflowStep):
         from .entity_dag_extractor import build_dag_from_ontology
 
         try:
-            # 1. DAG 텍스트를 리스트로 변환
-            dag_text = ont_result.get('dag_text', '')
+            # 1. relationships에서 DAG 리스트 생성
+            # 형식: (entity value:entity type) -[relationship]-> (entity value:entity type)
+            entity_types = ont_result.get('entity_types', {})
+            relationships = ont_result.get('relationships', [])
             dag_lines = []
 
-            if dag_text:
-                for line in dag_text.split('\n'):
-                    line = line.strip()
-                    if line.startswith('DAG:'):
-                        dag_lines.append(line.replace('DAG:', '').strip())
-                    elif '-[' in line and ']->' in line:
-                        dag_lines.append(line)
-                    elif line and not line.startswith('Entities:') and not line.startswith('Relationships:'):
-                        # dag_text 전체가 DAG 형식일 수 있음
-                        if '(' in line and ')' in line:
-                            dag_lines.append(line)
+            for rel in relationships:
+                src = rel.get('source', '')
+                tgt = rel.get('target', '')
+                rel_type = rel.get('type', '')
+
+                if src and tgt and rel_type:
+                    src_type = entity_types.get(src, 'Unknown')
+                    tgt_type = entity_types.get(tgt, 'Unknown')
+                    # DAG 모드와 동일한 형식: (entity:type) -[relation]-> (entity:type)
+                    dag_line = f"({src}:{src_type}) -[{rel_type}]-> ({tgt}:{tgt_type})"
+                    dag_lines.append(dag_line)
 
             dag_list = sorted([d for d in dag_lines if d])
 

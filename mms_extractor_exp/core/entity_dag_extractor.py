@@ -630,11 +630,15 @@ def build_dag_from_ontology(ont_result: dict) -> nx.DiGraph:
                 src_type = entity_types.get(src, 'Unknown')
                 tgt_type = entity_types.get(tgt, 'Unknown')
 
-                G.add_node(src, entity=src, entity_type=src_type, action='')
-                G.add_node(tgt, entity=tgt, entity_type=tgt_type, action='')
+                # 노드 ID에 타입 포함 (예: "9월 T day:Campaign")
+                src_node_id = f"{src}:{src_type}"
+                tgt_node_id = f"{tgt}:{tgt_type}"
+
+                G.add_node(src_node_id, entity=src, entity_type=src_type, action='')
+                G.add_node(tgt_node_id, entity=tgt, entity_type=tgt_type, action='')
 
                 # 엣지 추가
-                G.add_edge(src, tgt, relation=rel_type)
+                G.add_edge(src_node_id, tgt_node_id, relation=rel_type)
 
         logger.info(f"📊 ONT 그래프 생성 (relationships 기반): {G.number_of_nodes()} 노드, {G.number_of_edges()} 엣지")
         return G

@@ -757,12 +757,30 @@ class EntityRecognizer:
             cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
             
             if not cand_entity_list:
+                if context_mode == 'ont':
+                    return {
+                        'similarities_df': pd.DataFrame(),
+                        'ont_metadata': {
+                            'dag_text': combined_context,
+                            'entity_types': all_entity_types,
+                            'relationships': all_relationships
+                        }
+                    }
                 return pd.DataFrame()
-            
+
             # Match with products
             cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
-            
+
             if cand_entities_sim.empty:
+                if context_mode == 'ont':
+                    return {
+                        'similarities_df': pd.DataFrame(),
+                        'ont_metadata': {
+                            'dag_text': combined_context,
+                            'entity_types': all_entity_types,
+                            'relationships': all_relationships
+                        }
+                    }
                 return pd.DataFrame()
             
             # 2. Second Stage: Filtering
