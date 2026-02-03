@@ -252,13 +252,21 @@ class ResultBuilder:
                     logger.warning("⚠️ llm_factory가 설정되지 않았습니다. 빈 리스트를 사용합니다.")
                     default_llm_models = []
                 logger.info(f"   - 초기화된 LLM 모델 수: {len(default_llm_models)}개")
-                similarities_fuzzy = self.entity_recognizer.extract_entities_with_llm(
-                    msg, 
-                    llm_models=default_llm_models, 
-                    rank_limit=100, 
+                llm_result = self.entity_recognizer.extract_entities_with_llm(
+                    msg,
+                    llm_models=default_llm_models,
+                    rank_limit=100,
                     external_cand_entities=list(set(entities_from_kiwi+primary_llm_extracted_entities)),
                     context_mode=self.entity_extraction_context_mode
                 )
+
+                # ONT 모드일 경우 dict 반환, 그 외는 DataFrame 반환
+                if isinstance(llm_result, dict):
+                    similarities_fuzzy = llm_result.get('similarities_df', pd.DataFrame())
+                    logger.info(f"   ✅ ONT 모드: similarities_df 추출 완료")
+                else:
+                    similarities_fuzzy = llm_result
+
                 logger.info(f"   ✅ similarities_fuzzy 결과 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
             
             if not similarities_fuzzy.empty:
