@@ -225,12 +225,12 @@ class ItemDataLoader:
         """
         logger.info("🔧 컬럼 정규화 중...")
         
-        # ITEM_NM 처리: 단말기(E)는 ITEM_DESC 사용
-        if 'ITEM_DMN' in df.columns and 'ITEM_DESC' in df.columns:
-            df['ITEM_NM'] = df.apply(
-                lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' else x['ITEM_NM'], 
-                axis=1
-            )
+        # # ITEM_NM 처리: 단말기(E)는 ITEM_DESC 사용
+        # if 'ITEM_DMN' in df.columns and 'ITEM_DESC' in df.columns:
+        #     df['ITEM_NM'] = df.apply(
+        #         lambda x: x['ITEM_DESC'] if x['ITEM_DMN']=='E' and pd.notna(x['ITEM_DESC']) else x['ITEM_NM'], 
+        #         axis=1
+        #     )
         
         # 컬럼명을 소문자로 변환
         df = df.rename(columns={c: c.lower() for c in df.columns})
@@ -312,10 +312,13 @@ class ItemDataLoader:
         ].to_dict('records')
         
         for alias in alias_list_ext:
-            adf = item_df.query(
-                "item_nm.str.contains(@alias['alias_1']) and item_dmn==@alias['category']"
-            )[['item_nm','item_desc','item_dmn']].rename(
-                columns={'item_nm':'alias_2','item_desc':'description','item_dmn':'category'}
+            # Use boolean indexing instead of query() for better pandas compatibility
+            mask = (
+                item_df['item_nm'].str.contains(alias['alias_1'], na=False) &
+                (item_df['item_dmn'] == alias['category'])
+            )
+            adf = item_df.loc[mask, ['item_nm', 'item_desc', 'item_dmn']].rename(
+                columns={'item_nm': 'alias_2', 'item_desc': 'description', 'item_dmn': 'category'}
             ).drop_duplicates()
             
             adf['alias_1'] = alias['alias_1']
@@ -351,7 +354,7 @@ class ItemDataLoader:
         return alias_pdf
     
     def apply_cascading_alias_rules(self, item_df: pd.DataFrame, alias_pdf: pd.DataFrame, 
-                               max_depth: int = 3) -> pd.DataFrame:
+                               max_depth: int = 7) -> pd.DataFrame:
         """
         별칭 규칙을 연쇄적으로 적용 (병렬 처리)
         
