@@ -287,11 +287,21 @@ class ItemDataLoader:
         
         # 별칭 규칙 전처리
         alias_pdf = self.alias_pdf_raw.copy()
+
+        # Add default case sensitivity columns if not present (backward compatibility)
+        if 'case_1' not in alias_pdf.columns:
+            alias_pdf['case_1'] = 'S'
+        if 'case_2' not in alias_pdf.columns:
+            alias_pdf['case_2'] = 'S'
+        # Fill NaN values with default 'S' (sensitive)
+        alias_pdf['case_1'] = alias_pdf['case_1'].fillna('S')
+        alias_pdf['case_2'] = alias_pdf['case_2'].fillna('S')
+
         alias_pdf['alias_1'] = alias_pdf['alias_1'].str.split("&&")
         alias_pdf['alias_2'] = alias_pdf['alias_2'].str.split("&&")
         alias_pdf = alias_pdf.explode('alias_1')
         alias_pdf = alias_pdf.explode('alias_2')
-        
+
         return alias_pdf
     
     def expand_build_aliases(self, alias_pdf: pd.DataFrame, item_df: pd.DataFrame) -> pd.DataFrame:
@@ -308,9 +318,9 @@ class ItemDataLoader:
         logger.info("🔨 Build 타입 별칭 확장 중...")
         
         alias_list_ext = alias_pdf.query("type=='build'")[
-            ['alias_1','category','direction','type']
+            ['alias_1','category','direction','type','case_1','case_2']
         ].to_dict('records')
-        
+
         for alias in alias_list_ext:
             # Use boolean indexing instead of query() for better pandas compatibility
             mask = (
@@ -320,10 +330,12 @@ class ItemDataLoader:
             adf = item_df.loc[mask, ['item_nm', 'item_desc', 'item_dmn']].rename(
                 columns={'item_nm': 'alias_2', 'item_desc': 'description', 'item_dmn': 'category'}
             ).drop_duplicates()
-            
+
             adf['alias_1'] = alias['alias_1']
             adf['direction'] = alias['direction']
             adf['type'] = alias['type']
+            adf['case_1'] = alias['case_1']
+            adf['case_2'] = alias['case_2']
             adf = adf[alias_pdf.columns]
             
             alias_pdf = pd.concat([
@@ -337,19 +349,20 @@ class ItemDataLoader:
     def create_bidirectional_aliases(self, alias_pdf: pd.DataFrame) -> pd.DataFrame:
         """
         방향성 'B'인 별칭에 대해 역방향 추가
-        
+
         Args:
             alias_pdf: 별칭 규칙 데이터프레임
-            
+
         Returns:
             pd.DataFrame: 양방향 별칭이 추가된 데이터프레임
         """
         logger.info("↔️ 양방향 별칭 추가 중...")
-        
+
+        # For bidirectional rules, swap alias_1/alias_2 AND case_1/case_2
         bidirectional = alias_pdf.query("direction=='B'").rename(
-            columns={'alias_1':'alias_2', 'alias_2':'alias_1'}
+            columns={'alias_1':'alias_2', 'alias_2':'alias_1', 'case_1':'case_2', 'case_2':'case_1'}
         )[alias_pdf.columns]
-        
+
         alias_pdf = pd.concat([alias_pdf, bidirectional])
         return alias_pdf
     
@@ -369,9 +382,11 @@ class ItemDataLoader:
         logger.info("🔄 별칭 규칙 연쇄 적용 중...")
         
         alias_rule_set = list(zip(
-            alias_pdf['alias_1'], 
-            alias_pdf['alias_2'], 
-            alias_pdf['type']
+            alias_pdf['alias_1'],
+            alias_pdf['alias_2'],
+            alias_pdf['type'],
+            alias_pdf['case_1'],
+            alias_pdf['case_2']
         ))
         logger.info(f"별칭 규칙 수: {len(alias_rule_set)}개")
         
@@ -397,33 +412,61 @@ class ItemDataLoader:
                 processed.add(current_item)
                 
                 for r in alias_rule_set:
-                    alias_from, alias_to, alias_type = r[0], r[1], r[2]
+                    alias_from, alias_to, alias_type, case_1, case_2 = r[0], r[1], r[2], r[3], r[4]
                     rule_key = (alias_from, alias_to, alias_type)
-                    
+
                     if rule_key in path_applied_rules:
                         continue
-                    
-                    # 타입에 따른 매칭
+
+                    # 타입에 따른 매칭 (case_1 적용)
                     if alias_type == 'exact':
-                        matched = (current_item == alias_from)
-                    else:
-                        matched = (alias_from in current_item)
-                    
+                        if case_1 == 'I':
+                            matched = (current_item.lower() == alias_from.lower())
+                        else:
+                            matched = (current_item == alias_from)
+                    else:  # partial
+                        if case_1 == 'I':
+                            matched = (alias_from.lower() in current_item.lower())
+                        else:
+                            matched = (alias_from in current_item)
+
                     if matched:
-                        new_item = alias_to.strip() if alias_type == 'exact' else current_item.replace(alias_from.strip(), alias_to.strip())
-                        
-                        if new_item not in result_dict:
-                            result_dict[new_item] = alias_from.strip()
-                            to_process.append((new_item, depth + 1, path_applied_rules | {rule_key}))
+                        # Generate alias variants based on case_2
+                        if alias_type == 'exact':
+                            new_items = [alias_to.strip()]
+                        else:
+                            # For partial match, replace the matched portion
+                            if case_1 == 'I':
+                                # Case-insensitive replacement
+                                import re
+                                pattern = re.compile(re.escape(alias_from), re.IGNORECASE)
+                                new_items = [pattern.sub(alias_to.strip(), current_item, count=1)]
+                            else:
+                                new_items = [current_item.replace(alias_from.strip(), alias_to.strip())]
+
+                        # If case_2 is 'I', also generate case variants
+                        if case_2 == 'I':
+                            base_items = new_items.copy()
+                            for base_item in base_items:
+                                # Add lowercase and uppercase variants
+                                if base_item.lower() not in [x.lower() for x in new_items]:
+                                    new_items.append(base_item.lower())
+                                if base_item.upper() not in [x.upper() for x in new_items]:
+                                    new_items.append(base_item.upper())
+
+                        for new_item in new_items:
+                            if new_item not in result_dict:
+                                result_dict[new_item] = alias_from.strip()
+                                to_process.append((new_item, depth + 1, path_applied_rules | {rule_key}))
             
-            item_nm_list = [{'item_nm': k, 'item_nm_alias': v} for k, v in result_dict.items()]
-            adf = pd.DataFrame(item_nm_list)
-            selected_alias = select_most_comprehensive(adf['item_nm_alias'].tolist())
-            result_aliases = list(adf.query("item_nm_alias in @selected_alias")['item_nm'].unique())
-            
+            # Return all generated aliases without filtering
+            # The select_most_comprehensive was filtering out aliases derived from shorter patterns
+            # (e.g., 'iPhone 17' derived from '아이폰' pattern was filtered because '아이폰' is substring of '아이폰 17 PRO')
+            result_aliases = list(result_dict.keys())
+
             if item_nm not in result_aliases:
                 result_aliases.append(item_nm)
-            
+
             return {'item_nm': item_nm, 'item_nm_alias': result_aliases}
         
         def parallel_alias_rule_cascade(texts, max_depth=5, n_jobs=None):

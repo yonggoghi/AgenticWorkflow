@@ -5,6 +5,7 @@ Usage:
     ../venv/bin/python tests/generate_alias_list.py "iPhone 17"
     ../venv/bin/python tests/generate_alias_list.py "갤럭시 S25"
     ../venv/bin/python tests/generate_alias_list.py "iPhone 17" --csv data/offer_master_data_251023_rev.csv
+    ../venv/bin/python tests/generate_alias_list.py "iPhone 17" --max-depth 5
 """
 
 import os
@@ -18,13 +19,14 @@ import pandas as pd
 from services.item_data_loader import ItemDataLoader
 
 
-def generate_alias_list(item_nm: str, offer_csv: str = None) -> list:
+def generate_alias_list(item_nm: str, offer_csv: str = None, max_depth: int = 3) -> list:
     """
     Generate alias list for a given string.
 
     Args:
         item_nm: The item name to generate aliases for
         offer_csv: Optional path to offer CSV file for build aliases
+        max_depth: Maximum cascading depth (default: 3)
 
     Returns:
         List of alias strings
@@ -56,26 +58,34 @@ def generate_alias_list(item_nm: str, offer_csv: str = None) -> list:
     alias_pdf = loader.expand_build_aliases(alias_pdf, item_df)
     alias_pdf = loader.create_bidirectional_aliases(alias_pdf)
 
-    result_df = loader.apply_cascading_alias_rules(test_df, alias_pdf, max_depth=3)
+    result_df = loader.apply_cascading_alias_rules(test_df, alias_pdf, max_depth=max_depth)
     return result_df['item_nm_alias'].tolist()
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: python generate_alias_list.py <item_name> [--csv <path>]")
+        print("Usage: python generate_alias_list.py <item_name> [--csv <path>] [--max-depth <n>]")
         print("Example: python generate_alias_list.py 'iPhone 17'")
         print("Example: python generate_alias_list.py 'iPhone 17' --csv data/offer_master_data_251023_rev.csv")
+        print("Example: python generate_alias_list.py 'iPhone 17' --max-depth 5")
         sys.exit(1)
 
     item_nm = sys.argv[1]
     offer_csv = None
+    max_depth = 3
 
     if '--csv' in sys.argv:
         csv_idx = sys.argv.index('--csv')
         if csv_idx + 1 < len(sys.argv):
             offer_csv = sys.argv[csv_idx + 1]
 
-    aliases = generate_alias_list(item_nm, offer_csv)
+    if '--max-depth' in sys.argv:
+        depth_idx = sys.argv.index('--max-depth')
+        if depth_idx + 1 < len(sys.argv):
+            max_depth = int(sys.argv[depth_idx + 1])
+
+    print(f"Using max_depth={max_depth}")
+    aliases = generate_alias_list(item_nm, offer_csv, max_depth)
 
     print(f"\nAliases for '{item_nm}' ({len(aliases)}):")
     for alias in aliases:

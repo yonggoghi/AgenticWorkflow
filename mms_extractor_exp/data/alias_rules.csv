@@ -1,189 +1,83 @@
-alias_1,alias_2,category,description,direction,type
-넷플릭스,Netflix,brand,영상 스트리밍 서비스,B,partial
-유튜브,YouTube,brand,동영상 플랫폼,B,partial
-유튜브,youtube,brand,동영상 플랫폼,B,partial
-구글,Google,brand,검색엔진 및 IT 서비스,B,partial
-구글,google,brand,검색엔진 및 IT 서비스,B,partial
-애플,Apple,brand,IT 기업,B,partial
-애플,APPLE,brand,IT 기업,B,partial
-애플,apple,brand,IT 기업,B,partial
-삼성,Samsung,brand,전자제품 제조사,B,partial
-삼성,SAMSUNG,brand,전자제품 제조사,B,partial
-삼성,samsung,brand,전자제품 제조사,B,partial
-샤오미,Xiaomi,brand,중국 스마트폰 제조사,B,partial
-샤오미,XIAOMI,brand,중국 스마트폰 제조사,B,partial
-샤오미,xiaomi,brand,중국 스마트폰 제조사,B,partial
-웨이브,Wavve,brand,국내 OTT 서비스,B,partial
-웨이브,wavve,brand,국내 OTT 서비스,B,partial
-플로,Flo,brand,음악 스트리밍 서비스,B,partial
-플로,FLO,brand,음악 스트리밍 서비스,B,partial
-플로,flo,brand,음악 스트리밍 서비스,B,partial
-아이폰,iPhone,device,애플 스마트폰,B,partial
-아이폰,IPHONE,device,애플 스마트폰,B,partial
-아이폰,iphone,device,애플 스마트폰,B,partial
-IPHONE,iPhone,device,애플 스마트폰,B,partial
-iPhone,iphone,device,애플 스마트폰,B,partial
-아이패드,iPad,device,애플 태블릿,B,partial
-아이패드,IPAD,device,애플 태블릿,B,partial
-아이패드,ipad,device,애플 태블릿,B,partial
-갤럭시,Galaxy,device,삼성 스마트폰 시리즈,B,partial
-갤럭시,GALAXY,device,삼성 스마트폰 시리즈,B,partial
-갤럭시,galaxy,device,삼성 스마트폰 시리즈,B,partial
-워치,Watch,device,스마트워치,B,partial
-워치,WATCH,device,스마트워치,B,partial
-워치,watch,device,스마트워치,B,partial
-노트,Note,device,스마트폰 노트 시리즈,B,partial
-노트,NOTE,device,스마트폰 노트 시리즈,B,partial
-노트,note,device,스마트폰 노트 시리즈,B,partial
-탭,Tab,device,태블릿 기기,B,partial
-탭,TAB,device,태블릿 기기,B,partial
-탭,tab,device,태블릿 기기,B,partial
-레드미,Redmi,device,샤오미 스마트폰 시리즈,B,partial
-레드미,REDMI,device,샤오미 스마트폰 시리즈,B,partial
-레드미,redmi,device,샤오미 스마트폰 시리즈,B,partial
-웹,WEB,tech,월드와이드웹,B,partial
-웹,Web,tech,월드와이드웹,B,partial
-웹,web,tech,월드와이드웹,B,partial
-와이파이,WiFi,tech,무선 인터넷,B,partial
-와이파이,wifi,tech,무선 인터넷,B,partial
-와이파이,Wi-Fi,tech,무선 인터넷,B,partial
-와이파이,WIFI,tech,무선 인터넷,B,partial
-앱,App,tech,애플리케이션,B,partial
-앱,APP,tech,애플리케이션,B,partial
-앱,app,tech,애플리케이션,B,partial
-데이터,Data,tech,디지털 정보,B,partial
-데이터,DATA,tech,디지털 정보,B,partial
-데이터,data,tech,디지털 정보,B,partial
-비디오,Video,tech,영상,B,partial
-비디오,VIDEO,tech,영상,B,partial
-비디오,video,tech,영상,B,partial
-오디오,Audio,tech,음성,B,partial
-오디오,AUDIO,tech,음성,B,partial
-오디오,audio,tech,음성,B,partial
-클라우드,Cloud,tech,클라우드 컴퓨팅,B,partial
-클라우드,CLOUD,tech,클라우드 컴퓨팅,B,partial
-클라우드,cloud,tech,클라우드 컴퓨팅,B,partial
-케어,Care,service,돌봄 서비스,B,partial
-케어,CARE,service,돌봄 서비스,B,partial
-케어,care,service,돌봄 서비스,B,partial
-플러스,Plus,service,추가 서비스,B,partial
-플러스,PLUS,service,추가 서비스,B,partial
-플러스,plus,service,추가 서비스,B,partial
-프로,Pro,service,전문가용 서비스,B,partial
-프로,PRO,service,전문가용 서비스,B,partial
-프로,pro,service,전문가용 서비스,B,partial
-프리미엄,Premium,service,고급 서비스,B,partial
-프리미엄,PREMIUM,service,고급 서비스,B,partial
-프리미엄,premium,service,고급 서비스,B,partial
-스마트,Smart,service,지능형 서비스,B,partial
-스마트,SMART,service,지능형 서비스,B,partial
-스마트,smart,service,지능형 서비스,B,partial
-패스,Pass,service,통행권 서비스,B,partial
-패스,PASS,service,통행권 서비스,B,partial
-패스,pass,service,통행권 서비스,B,partial
-플랜,Plan,service,요금제,B,partial
-플랜,PLAN,service,요금제,B,partial
-플랜,plan,service,요금제,B,partial
-밴드,Band,service,밴드 서비스,B,partial
-밴드,BAND,service,밴드 서비스,B,partial
-밴드,band,service,밴드 서비스,B,partial
-링,Ring,service,링 서비스,B,partial
-링,RING,service,링 서비스,B,partial
-링,ring,service,링 서비스,B,partial
-티비,TV,tech_abbr,텔레비전,B,partial
-문자,SMS,tech_abbr,단문메시지서비스,B,partial
-멀티미디어문자,MMS,tech_abbr,멀티미디어메시지서비스,B,partial
-엘티이,LTE,tech_abbr,4세대 이동통신,B,partial
-볼티,VoLTE,tech_abbr,음성통화 서비스,B,partial
-사물인터넷,IoT,tech_abbr,사물인터넷,B,partial
-인공지능,AI,tech_abbr,인공지능,B,partial
-심,SIM,tech_abbr,가입자식별모듈,B,partial
-이심,eSIM,tech_abbr,내장형 SIM,B,partial
-기가,GB,tech_abbr,기가바이트,B,partial
-테라,TB,tech_abbr,테라바이트,B,partial
-로밍,Roaming,telecom,해외 통신 서비스,B,partial
-로밍,ROAMING,telecom,해외 통신 서비스,B,partial
-로밍,roaming,telecom,해외 통신 서비스,B,partial
-테더링,Tethering,telecom,인터넷 공유,B,partial
-테더링,TETHERING,telecom,인터넷 공유,B,partial
-테더링,tethering,telecom,인터넷 공유,B,partial
-스팸,Spam,telecom,스팸 메시지,B,partial
-스팸,SPAM,telecom,스팸 메시지,B,partial
-스팸,spam,telecom,스팸 메시지,B,partial
-충전,Charge,telecom,요금 충전,B,partial
-충전,CHARGE,telecom,요금 충전,B,partial
-충전,charge,telecom,요금 충전,B,partial
-바로,Baro,telecom,SKT 서비스,B,partial
-바로,BARO,telecom,SKT 서비스,B,partial
-바로,baro,telecom,SKT 서비스,B,partial
-원패스,OnePass,telecom,통합 인증 서비스,B,partial
-원패스,ONEPASS,telecom,통합 인증 서비스,B,partial
-원패스,onepass,telecom,통합 인증 서비스,B,partial
-올케어,AllCare,telecom,T 케어 서비스,B,partial
-올케어,ALLCARE,telecom,T 케어 서비스,B,partial
-올케어,allcare,telecom,T 케어 서비스,B,partial
-블랙,Black,color,검은색,B,partial
-블랙,BLACK,color,검은색,B,partial
-블랙,black,color,검은색,B,partial
-화이트,White,color,흰색,B,partial
-화이트,WHITE,color,흰색,B,partial
-화이트,white,color,흰색,B,partial
-블루,Blue,color,파란색,B,partial
-블루,BLUE,color,파란색,B,partial
-블루,blue,color,파란색,B,partial
-레드,Red,color,빨간색,B,partial
-레드,RED,color,빨간색,B,partial
-레드,red,color,빨간색,B,partial
-그린,Green,color,녹색,B,partial
-그린,GREEN,color,녹색,B,partial
-그린,green,color,녹색,B,partial
-골드,Gold,color,금색,B,partial
-골드,GOLD,color,금색,B,partial
-골드,gold,color,금색,B,partial
-실버,Silver,color,은색,B,partial
-실버,SILVER,color,은색,B,partial
-실버,silver,color,은색,B,partial
-울트라,Ultra,size,최고급형,B,partial
-울트라,ULTRA,size,최고급형,B,partial
-울트라,ultra,size,최고급형,B,partial
-맥스,Max,size,최대형,B,partial
-맥스,MAX,size,최대형,B,partial
-맥스,max,size,최대형,B,partial
-미니,Mini,size,소형,B,partial
-미니,MINI,size,소형,B,partial
-미니,mini,size,소형,B,partial
-플립,Flip,size,접이형,B,partial
-플립,FLIP,size,접이형,B,partial
-플립,flip,size,접이형,B,partial
-폴드,Fold,size,폴더형,B,partial
-폴드,FOLD,size,폴더형,B,partial
-폴드,fold,size,폴더형,B,partial
-라이트,Lite,size,라이트형,B,partial
-라이트,LITE,size,라이트형,B,partial
-라이트,lite,size,라이트형,B,partial
-티맵,T map,앱,앱,B,partial
-티맵,t map,앱,앱,B,partial
-티 맵,T map,앱,앱,B,partial
-티 맵,t map,앱,앱,B,partial
-바이탈리티,Vitality,서비스,서비스,B,partial
-티빙,TVING,OTT,OTT,B,partial
-티빙,tving,OTT,OTT,B,partial
-에이닷,A.,앱,앱,U,partial
-키즈폰,#,E,단말기,B,build
-아이폰 AIR,아이폰 에어&&아이폰 AIR&&IPHONE AIR&&iPhone AIR,device,애플 스마트폰,B,exact
-아이폰 AIR,iPhone AIR&&아이폰 AIR&&IPHONE AIR&&iPhone AIR,device,애플 스마트폰,B,exact
-iPhone AIR,아이폰 에어&&아이폰 AIR&&IPHONE AIR,device,애플 스마트폰,B,exact
-IPHONE AIR,아이폰 에어&&아이폰 AIR&&iPhone AIR,device,애플 스마트폰,B,exact
-아이폰 Air,아이폰 에어&&아이폰 AIR&&IPHONE AIR&&iPhone AIR,device,애플 스마트폰,B,exact
-아이폰 Air,iPhone AIR&&아이폰 AIR&&IPHONE AIR&&iPhone AIR,device,애플 스마트폰,B,exact
-iPhone Air,아이폰 에어&&아이폰 AIR&&IPHONE AIR,device,애플 스마트폰,B,exact
-IPHONE Air,아이폰 에어&&아이폰 AIR&&iPhone AIR,device,애플 스마트폰,B,exact
-티머니,T money&&t money&&T-money&&t-money&&T 머니&&T-머니&&t 머니&&t-머니,service,T 머니 서비스,B,partial
-퀀텀,갤럭시 퀀텀,device,삼성 스마트폰 시리즈,B,partial
-갤럭시 Z 폴드&&갤럭시 Z 플립,갤럭시 폴더블,device,삼성 스마트폰 시리즈,U,partial
-에이닷,A. (에이닷),앱,앱,U,partial
-아이폰 17&&아이폰 17 PRO&&아이폰 17 PRO MAX&&아이폰 Air,아이폰 신제품&&아이폰 최신폰&&아이폰&&iPhone 신제품,device,애플 스마트폰,U,exact
-아이폰 17&&아이폰 17 PRO&&아이폰 17 PRO MAX,아이폰 17&&아이폰 17 시리즈,device,애플 스마트폰,U,exact
-아이폰 17&&아이폰 17 PRO,아이폰 17/17 Pro,device,애플 스마트폰,U,exact
-갤럭시 Z 플립7&&갤럭시 Z 폴드7,갤럭시 Z 플립7/폴드7,device,삼성 스마트폰 시리즈,U,exact
-갤럭시 폴더블&&갤럭시 퀀텀,갤럭시 폴더블/퀀텀,device,삼성 스마트폰 시리즈,U,exact
+alias_1,alias_2,category,description,direction,type,case_1,case_2
+넷플릭스,Netflix,brand,영상 스트리밍 서비스,B,partial,S,S
+유튜브,YouTube&&youtube,brand,동영상 플랫폼,B,partial,S,S
+구글,Google&&google,brand,검색엔진 및 IT 서비스,B,partial,S,S
+애플,Apple&&APPLE&&apple,brand,IT 기업,B,partial,S,S
+삼성,Samsung&&SAMSUNG&&samsung,brand,전자제품 제조사,B,partial,S,S
+샤오미,Xiaomi&&XIAOMI&&xiaomi,brand,중국 스마트폰 제조사,B,partial,S,S
+웨이브,Wavve&&wavve,brand,국내 OTT 서비스,B,partial,S,S
+플로,Flo&&FLO&&flo,brand,음악 스트리밍 서비스,B,partial,S,S
+아이폰,iPhone&&IPHONE&&iphone,device,애플 스마트폰,B,partial,S,S
+IPHONE,iPhone,device,애플 스마트폰,B,partial,I,S
+iPhone,iphone,device,애플 스마트폰,B,partial,I,S
+아이패드,iPad&&IPAD&&ipad,device,애플 태블릿,B,partial,S,S
+갤럭시,Galaxy&&GALAXY&&galaxy,device,삼성 스마트폰 시리즈,B,partial,S,S
+워치,Watch&&WATCH&&watch,device,스마트워치,B,partial,S,S
+노트,Note&&NOTE&&note,device,스마트폰 노트 시리즈,B,partial,S,S
+탭,Tab&&TAB&&tab,device,태블릿 기기,B,partial,S,S
+레드미,Redmi&&REDMI&&redmi,device,샤오미 스마트폰 시리즈,B,partial,S,S
+웹,WEB&&Web&&web,tech,월드와이드웹,B,partial,S,S
+와이파이,WiFi&&wifi&&WIFI,tech,무선 인터넷,B,partial,S,S
+와이파이,Wi-Fi,tech,무선 인터넷,B,partial,S,S
+앱,App&&APP&&app,tech,애플리케이션,B,partial,S,S
+데이터,Data&&DATA&&data,tech,디지털 정보,B,partial,S,S
+비디오,Video&&VIDEO&&video,tech,영상,B,partial,S,S
+오디오,Audio&&AUDIO&&audio,tech,음성,B,partial,S,S
+클라우드,Cloud&&CLOUD&&cloud,tech,클라우드 컴퓨팅,B,partial,S,S
+케어,Care&&CARE&&care,service,돌봄 서비스,B,partial,S,S
+플러스,Plus&&PLUS&&plus,service,추가 서비스,B,partial,S,S
+프로,Pro&&PRO&&pro,service,전문가용 서비스,B,partial,S,S
+프리미엄,Premium&&PREMIUM&&premium,service,고급 서비스,B,partial,S,S
+스마트,Smart&&SMART&&smart,service,지능형 서비스,B,partial,S,S
+패스,Pass&&PASS&&pass,service,통행권 서비스,B,partial,S,S
+플랜,Plan&&PLAN&&plan,service,요금제,B,partial,S,S
+밴드,Band&&BAND&&band,service,밴드 서비스,B,partial,S,S
+링,Ring&&RING&&ring,service,링 서비스,B,partial,S,S
+티비,TV,tech_abbr,텔레비전,B,partial,S,S
+문자,SMS,tech_abbr,단문메시지서비스,B,partial,S,S
+멀티미디어문자,MMS,tech_abbr,멀티미디어메시지서비스,B,partial,S,S
+엘티이,LTE,tech_abbr,4세대 이동통신,B,partial,S,S
+볼티,VoLTE,tech_abbr,음성통화 서비스,B,partial,S,S
+사물인터넷,IoT,tech_abbr,사물인터넷,B,partial,S,S
+인공지능,AI,tech_abbr,인공지능,B,exact,S,S
+심,SIM,tech_abbr,가입자식별모듈,B,partial,S,S
+이심,eSIM,tech_abbr,내장형 SIM,B,partial,S,S
+기가,GB,tech_abbr,기가바이트,B,partial,S,S
+테라,TB,tech_abbr,테라바이트,B,partial,S,S
+로밍,Roaming&&ROAMING&&roaming,telecom,해외 통신 서비스,B,partial,S,S
+테더링,Tethering&&TETHERING&&tethering,telecom,인터넷 공유,B,partial,S,S
+스팸,Spam&&SPAM&&spam,telecom,스팸 메시지,B,partial,S,S
+충전,Charge&&CHARGE&&charge,telecom,요금 충전,B,partial,S,S
+바로,Baro&&BARO&&baro,telecom,SKT 서비스,B,partial,S,S
+원패스,OnePass&&ONEPASS&&onepass,telecom,통합 인증 서비스,B,partial,S,S
+올케어,AllCare&&ALLCARE&&allcare,telecom,T 케어 서비스,B,partial,S,S
+블랙,Black&&BLACK&&black,color,검은색,B,partial,S,S
+화이트,White&&WHITE&&white,color,흰색,B,partial,S,S
+블루,Blue&&BLUE&&blue,color,파란색,B,partial,S,S
+레드,Red&&RED&&red,color,빨간색,B,partial,S,S
+그린,Green&&GREEN&&green,color,녹색,B,partial,S,S
+골드,Gold&&GOLD&&gold,color,금색,B,partial,S,S
+실버,Silver&&SILVER&&silver,color,은색,B,partial,S,S
+울트라,Ultra&&ULTRA&&ultra,size,최고급형,B,partial,S,S
+맥스,Max&&MAX&&max,size,최대형,B,partial,S,S
+미니,Mini&&MINI&&mini,size,소형,B,partial,S,S
+플립,Flip&&FLIP&&flip,size,접이형,B,partial,S,S
+폴드,Fold&&FOLD&&fold,size,폴더형,B,partial,S,S
+라이트,Lite&&LITE&&lite,size,라이트형,B,partial,S,S
+티맵,T map&&t map,앱,앱,B,partial,S,S
+티 맵,T map&&t map,앱,앱,B,partial,S,S
+바이탈리티,Vitality,서비스,서비스,B,partial,S,S
+티빙,TVING&&tving,OTT,OTT,B,partial,S,S
+에이닷,A.,앱,앱,U,partial,S,S
+키즈폰,#,E,단말기,B,build,S,S
+아이폰 AIR,아이폰 에어&&아이폰 AIR&&IPHONE AIR&&iPhone AIR,device,애플 스마트폰,B,exact,I,S
+iPhone AIR,아이폰 에어&&아이폰 AIR&&IPHONE AIR,device,애플 스마트폰,B,exact,I,S
+티머니,T money&&t money&&T-money&&t-money&&T 머니&&T-머니&&t 머니&&t-머니,service,T 머니 서비스,B,partial,S,S
+퀀텀,갤럭시 퀀텀,device,삼성 스마트폰 시리즈,B,partial,S,S
+갤럭시 Z 폴드&&갤럭시 Z 플립,갤럭시 폴더블,device,삼성 스마트폰 시리즈,U,partial,S,S
+에이닷,A. (에이닷),앱,앱,U,partial,S,S
+아이폰 17&&아이폰 17 PRO&&아이폰 17 PRO MAX,아이폰 신제품&&아이폰 최신폰&&아이폰&&iPhone 신제품,device,애플 스마트폰,U,exact,S,S
+아이폰 17&&아이폰 17 PRO&&아이폰 17 PRO MAX,아이폰17&&아이폰 17&&아이폰 17 시리즈,device,애플 스마트폰,U,exact,S,S
+아이폰 17&&아이폰 17 PRO,아이폰 17/17 Pro,device,애플 스마트폰,U,exact,S,S
+갤럭시 Z 플립7&&갤럭시 Z 폴드7,갤럭시 Z 플립7/폴드7,device,삼성 스마트폰 시리즈,U,exact,S,S
+갤럭시 폴더블&&갤럭시 퀀텀,갤럭시 폴더블/퀀텀,device,삼성 스마트폰 시리즈,U,exact,S,S
