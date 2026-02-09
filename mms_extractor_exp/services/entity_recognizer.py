@@ -174,6 +174,27 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Entity types to keep for product/service matching in ONT mode
+# Excludes: Benefit, Channel, Segment, Contract, MembershipTier
+ONT_PRODUCT_RELEVANT_TYPES = {
+    'Store', 'Subscription', 'RatePlan', 'Product',
+    'Campaign', 'WiredService', 'Event', 'ContentOffer', 'PartnerBrand'
+}
+
+
+def normalize_entity_name(name: str) -> str:
+    """Normalize extracted entity name for better DB matching.
+
+    - Strip parenthetical specs: '갤럭시 Z 플립7(512GB 용량 업그레이드)' -> '갤럭시 Z 플립7'
+    - Collapse multiple spaces
+    """
+    import re
+    # Strip parenthetical content (Korean/English specs, capacity, etc.)
+    name = re.sub(r'\([^)]*\)', '', name).strip()
+    # Collapse multiple spaces
+    name = re.sub(r'\s+', ' ', name).strip()
+    return name
+
 
 class EntityRecognizer:
     """
@@ -301,13 +322,13 @@ class EntityRecognizer:
             logger.info("Starting fuzzy matching...")
             similarities_fuzzy = safe_execute(
                 parallel_fuzzy_similarity,
-                sentence_list, 
+                sentence_list,
                 unique_aliases,
                 threshold=getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.5),
-                text_col_nm='sent', 
+                text_col_nm='sent',
                 item_col_nm='item_nm_alias',
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
-                batch_size=30,
+                batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
                 default_return=pd.DataFrame()
             )
             
@@ -393,7 +414,7 @@ class EntityRecognizer:
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
-                batch_size=30,
+                batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
                 default_return=pd.DataFrame()
             )
             
@@ -416,7 +437,7 @@ class EntityRecognizer:
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
-                batch_size=30,
+                batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
                 normalization_value='s1',
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s1'})
@@ -427,7 +448,7 @@ class EntityRecognizer:
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
                 n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
-                batch_size=30,
+                batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
                 normalization_value='s2',
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s2'})
@@ -657,6 +678,14 @@ class EntityRecognizer:
                         relationships = parsed.get('relationships', [])
                         dag_text = parsed['dag_text']
 
+                        # Filter by entity type - keep only product/service-relevant types
+                        removed = [f"{e}({entity_types.get(e, '?')})" for e in cand_entity_list
+                                   if entity_types.get(e, 'Unknown') not in ONT_PRODUCT_RELEVANT_TYPES]
+                        cand_entity_list = [e for e in cand_entity_list
+                                           if entity_types.get(e, 'Unknown') in ONT_PRODUCT_RELEVANT_TYPES]
+                        if removed:
+                            logger.info(f"[{model_name}] ONT type filter removed {len(removed)}: {removed}")
+
                         # Format entity types: Name(Type), ...
                         entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
 
@@ -752,7 +781,12 @@ class EntityRecognizer:
                 all_entities.extend(external_cand_entities)
             
             cand_entity_list = list(set(all_entities))
-            
+
+            # Normalize entity names (strip parenthetical specs, collapse spaces)
+            cand_entity_list = list(set(
+                normalize_entity_name(e) for e in cand_entity_list if normalize_entity_name(e)
+            ))
+
             # N-gram expansion
             cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
             
@@ -867,10 +901,10 @@ class EntityRecognizer:
                 threshold=getattr(PROCESSING_CONFIG, 'entity_llm_fuzzy_threshold', 0.6),
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
-                n_jobs=6,
-                batch_size=30
+                n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
+                batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
             )
-            
+
             if similarities_fuzzy.empty:
                 return pd.DataFrame()
             
@@ -882,8 +916,8 @@ class EntityRecognizer:
                 sent_item_pdf=similarities_fuzzy,
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
-                n_jobs=6,
-                batch_size=30,
+                n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
+                batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
                 normalization_value='s1'
             ).rename(columns={'sim': 'sim_s1'})
             
@@ -891,8 +925,8 @@ class EntityRecognizer:
                 sent_item_pdf=similarities_fuzzy,
                 text_col_nm='item_name_in_msg',
                 item_col_nm='item_nm_alias',
-                n_jobs=6,
-                batch_size=30,
+                n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
+                batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
                 normalization_value='s2'
             ).rename(columns={'sim': 'sim_s2'})
             

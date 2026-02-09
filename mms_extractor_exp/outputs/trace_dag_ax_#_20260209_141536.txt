@@ -1,0 +1,426 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "(광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생..."
+Timestamp: 2026-02-09 14:15:20
+Total Duration: 16.43 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: dag <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 5
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (25, 6)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담_- 시니어 전용 요금제로 통신비 절약 가능__■ 다원대리점 분당수내점_- 주소: 경기도 성남시 분당구 불정로 266(수내동) _- 연락처: 031-711-9011_- 찾아오시는 길: 동국대학교 분당한방병원 옆 건물 1층 코너__▶ 매장 홈페이지
+
+OUTPUT:
+  msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100%...
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (1.49s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.591s (39.7%)
+  kiwi_tokenization_nnp: 0.009s (0.6%)
+  fuzzy_matching: 0.517s (34.8%)
+  sequence_similarity: 0.356s (24.0%)
+  threshold_filter_merge: 0.009s (0.6%)
+
+INPUT:
+  msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담_- 시니어 전용 요금제로 통신비 절약 가능__■ 다원대리점 분당수내점_- 주소: 경기도 성남시 분당구 불정로 266(수내동) _- 연락처: 031-711-9011_- 찾아오시는 길: 동국대학교 분당한방병원 옆 건물 1층 코너__▶ 매장 홈페이지
+  context_mode: dag
+
+OUTPUT:
+  entities_from_kiwi: []
+  cand_item_list: ['IPCC', 'SK(주)', 'B tv 혜택', 'CU 할인']
+  cand_item_count: 4
+  extra_item_pdf_shape: (4, 2)
+  extra_item_pdf_sample: [{'item_nm': 'B tv 혜택', 'item_id': ['PR00000374']}, {'item_nm': 'CU 할인', 'item_id': ['PR00000344', 'PR00000734']}, {'item_nm': 'IPCC', 'item_id': ['PD00013624']}, {'item_nm': 'SK(주)', 'item_id': ['X000000044']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 0
+  candidate_products_matched: 4
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.15s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰
+	상품및부가서비스가입유도_유선  : 결합, 인터넷, internet, 할인, IPTV, TV, 기가, 초고속, 와이파이, wifi, 약정
+	사용법/혜택/이벤트안내_T멤버십 : 멤버십, Tday, T day, VIP, 등급, 할인, 쿠폰, 이벤트, 혜택, 적립, 무료
+	기변유도및해지방어 : TDS, 기기, 변경, 약정, 할인, 혜택, 업그레이드, 신규단말, 신규 단말, 보상,
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['IPCC', 'SK(주)', 'B tv 혜택', 'CU 할인']
+  extra_item_pdf_shape: (4, 2)
+
+OUTPUT:
+  rag_context_length: 454
+  rag_context_preview: 
+### 광고 분류 기준 정보 ###
+	타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰
+	상품및부가서비스가입유도_유선  : 결합, 인터넷, internet, 할인, IPTV, TV, 기가, 초고속, 와이파이, wifi, 약정
+	사용법/혜택/이벤트안내_T멤버십 : 멤버십, Tday, T day, VIP, 등급, 할인, 쿠폰, 이벤트, 혜택, 적립, 무료
+	기변유도및해지방어 : TDS, 기기, 변경, 약정, 할인, 혜택, 업...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (9.25s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사
+  rag_context_length: 454
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 1204
+  result_json_text_preview: ```json
+{
+    "title": "11월 인터넷/IPTV/휴대폰/시니어 요금제 특별 혜택 안내",
+    "purpose": [
+        "상품 가입 유도",
+        "대리점/매장 방문 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "인터넷/IPTV, 휴대폰 통신사 이동, 시니어 요금제 혜택! 분당수내점 방문 시 상담/가입 안내",
+    "product": [
+        {
+            "name": "인터넷/IPTV",
+            "action"...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 1204
+  result_json_text_preview: ```json
+{
+    "title": "11월 인터넷/IPTV/휴대폰/시니어 요금제 특별 혜택 안내",
+    "purpose": [
+        "상품 가입 유도",
+        "대리점/매장 방문 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "인터넷/IPTV, 휴대폰 통신사 이동, 시니어 요금제 혜택! 분당수내점 방문 시 상담/가입 안내",
+    "product": [
+        {
+            "name": "인터넷/IPTV",
+            "action": "가입"
+        },
+        {
+            "name": "휴대폰",
+            "action": "가입"
+        },
+        {
+            "name": "시니어 전용 요금제",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+  
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '인터넷/IPTV', 'action': '가입'}, {'name': '휴대폰', 'action': '가입'}, {'name': '시니어 전용 요금제', 'action': '가입'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 3
+  llm_product_names: ['인터넷/IPTV', '휴대폰', '시니어 전용 요금제']
+  llm_product_actions: ['가입', '가입', '가입']
+
+--------------------------------------------------------------------------------
+STEP 7: ResultConstructionStep (5.54s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  llm_stage1_llm_call: 4.107s (74.2%)
+  llm_normalization_ngram: 0.000s (0.0%)
+  llm_product_matching: 0.291s (5.2%)
+  llm_stage2_llm_call: 0.909s (16.4%)
+  (overhead/other): 0.231s (4.2%)
+
+INPUT:
+  json_objects_product: [{'name': '인터넷/IPTV', 'action': '가입'}, {'name': '휴대폰', 'action': '가입'}, {'name': '시니어 전용 요금제', 'action': '가입'}]
+  entities_from_kiwi: []
+  entity_extraction_mode: llm
+  context_mode: dag
+
+OUTPUT:
+  final_result_product: [{'item_nm': '인터넷/IPTV', 'item_id': ['#'], 'item_name_in_msg': ['인터넷/IPTV'], 'expected_action': ['가입']}, {'item_nm': '시니어 전용 요금제', 'item_id': ['#'], 'item_name_in_msg': ['시니어 전용 요금제'], 'expected_action': ['가입']}]
+  final_result_product_count: 2
+  offer_type: org
+  entity_extraction_prompt: (length=1000)
+    Preview: 
+Analyze the advertisement to extract **User Action Paths**.
+Output two distinct sections:
+1. **ENTITY**: A list of independent Root Nodes.
+2. **DAG**: A structured graph representing the flow from Root to Benefit.
+
+## Crucial Language Rule
+* **DO NOT TRANSLATE:** Extract entities **exactly as they ...
+  candidate_entities_for_matching: ['만 65세', '시니어 전용 요금제', '만 65세 이상', '만 65세 이상 시니어', '휴대폰', '인터넷/IPTV', '다원대리점 분당수내점', '만 65세 이상 시니어 고객님']
+  similarity_scores_count: 3
+  similarity_scores_sample:
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 안심결제', 'sim': 1.4562499999999998, 'rank': 1.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 인증보호', 'sim': 1.4562499999999998, 'rank': 1.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 안SIM결제', 'sim': 1.403, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+
+PRODUCT FOCUS:
+  final_product_count: 2
+  product_details:
+    - item_nm: 인터넷/IPTV
+      item_id: ['#']
+      item_name_in_msg: ['인터넷/IPTV']
+      expected_action: ['가입']
+    - item_nm: 시니어 전용 요금제
+      item_id: ['#']
+      item_name_in_msg: ['시니어 전용 요금제']
+      expected_action: ['가입']
+  similarity_matching:
+    - total_matches: 3
+    - unique_entities_in_msg: 1
+    - unique_aliases_matched: 3
+  top_similarity_matches:
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 안심결제', 'sim': 1.4562499999999998}
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 인증보호', 'sim': 1.4562499999999998}
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 안SIM결제', 'sim': 1.403}
+
+--------------------------------------------------------------------------------
+STEP 8: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 2
+
+OUTPUT:
+  validated_product_count: 2
+  has_errors: False
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 3
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+  item_name_in_msg item_nm_alias      sim  rank  item_dmn_nm
+0              휴대폰      휴대폰 안심결제  1.45625   1.0  요금제 및 관련 상품
+1              휴대폰      휴대폰 인증보호  1.45625   1.0  요금제 및 관련 상품
+2              휴대폰    휴대폰 안SIM결제  1.40300   2.0  요금제 및 관련 상품
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 191
+  Unique item_name_in_msg: 7
+  Unique item_nm_alias: 181
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 191
+  sim_s1 range: 0.1500 - 0.9969
+  sim_s2 range: 0.0941 - 0.6333
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 4
+  Filtered OUT at this stage: 187 rows
+  Sample of filtered items:
+    - 만 65세 -> T끼리 65 (s1=0.4800, s2=0.4000)
+    - 만 65세 -> 3G band 데이터 6.5G (s1=0.4800, s2=0.1500)
+    - 만 65세 -> 3G band Data 6.5G (s1=0.4800, s2=0.1412)
+    - 만 65세 -> 3G band DATA 6.5G (s1=0.4800, s2=0.1412)
+    - 만 65세 -> 3G band data 6.5G (s1=0.4800, s2=0.1412)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 4
+  Combined sim range: 0.9164 - 1.4562
+  All items with combined scores:
+    - 휴대폰 -> 휴대폰 안심결제: sim=1.456250
+    - 휴대폰 -> 휴대폰 인증보호: sim=1.456250
+    - 휴대폰 -> 휴대폰 안SIM결제: sim=1.403000
+    - 시니어 전용 요금제 -> 로밍임대폰 전용요금제: sim=0.916364
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 3
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  1 items filtered out:
+    - 시니어 전용 요금제 -> 로밍임대폰 전용요금제: sim=0.916364 -> FAILED (need 1.1, got 0.916364)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - 휴대폰 -> 휴대폰 안심결제: sim=1.456250
+    - 휴대폰 -> 휴대폰 인증보호: sim=1.456250
+    - 휴대폰 -> 휴대폰 안SIM결제: sim=1.403000
+
+------------------------------------------------------------
+STAGE 5.5: 2nd STAGE LLM FILTERING *** CRITICAL FOR DAG vs ONT ***
+------------------------------------------------------------
+  Context Mode: dag
+
+  Entities in Message (sent to 2nd stage):
+    - 휴대폰
+
+  Candidate Aliases (vocab sent to 2nd stage): 3
+    - 휴대폰 안심결제
+    - 휴대폰 인증보호
+    - 휴대폰 안SIM결제
+
+  Context Text (passed to 2nd stage LLM):
+    (다원대리점 분당수내점:방문) -[상담]-> (인터넷/IPTV:통신사 이동) -[제공]-> (사은품:증정)
+    (다원대리점 분당수내점:방문) -[상담]-> (휴대폰:통신사 이동) -[지원]-> (유심 비용:100% 지원)
+    (다원대리점 분당수내점:방문) -[상담]-> (휴대폰:통신사 이동) -[가능]-> (가족결합:즉시 가능)
+    (다원대리점 분당수내점:방문) -[상담]-> (휴대폰:통신사 이동) -[선택]-> (선택약정:월정액 25% 할인)
+    (다원대리점 분당수내점:방문) -[상담]-> (만 65세 이상 시니어 고객님:연금 할인) -[가능]-> (시니어 전용 요금제:통신비 절약)
+
+  2nd Stage Prompts: 1 calls
+  --- Prompt 1 (truncated) ---
+    
+                    Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+    
+    ***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지나 RAG Context에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
+    
+    Guidelines:
+    1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+    2. Exclude general concepts not tied to specific offerings
+    3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+    4. Multiple entities in 'entities in message' may combine into one composite entity
+    5. Refer to the 'DAG Context' which describes the user action flow. 이를 **사용자의 최종 획득/응모 대상인 핵심 혜택(Core Offering)**을 구별하는 데 사용하십시오. (e.g., 퀴즈 주제인 '아이폰'이 아닌, 최종 혜택인 '올리브영 기프트 카드'와 관련된 개체를 식별)
+    
+    Return format: Do not use Markdown formatting. Use plain text.
+    REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
+    ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match
+    
+                    ## message:
+                    (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동
+    ... (962 more chars)
+
+  2nd Stage Responses: 1 responses
+  --- Response 1 ---
+    REASON: 메시지에는 휴대폰 통신사 이동 혜택이 언급되었으나, 'candidate entities in vocabulary'에 일치하는 엔티티가 없습니다.
+ENTITY:
+
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 3
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 3
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+    "title": "11월 인터넷/IPTV/휴대폰/시니어 요금제 특별 혜택 안내",
+    "purpose": [
+        "상품 가입 유도",
+        "대리점/매장 방문 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "인터넷/IPTV, 휴대폰 통신사 이동, 시니어 요금제 혜택! 분당수내점 방문 시 상담/가입 안내",
+    "product": [
+        {
+            "name": "인터넷/IPTV",
+            "action": "가입"
+        },
+        {
+            "name": "휴대폰",
+            "action": "가입"
+        },
+        {
+            "name": "시니어 전용 요금제",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+        {
+            "type": "대리점",
+            "value": "다원대리점 분당수내점",
+            "action": "추가 정보"
+        },
+        {
+            "type": "전화번호",
+            "value": "031-711-9011",
+            "action": "문의"
+        },
+        {
+            "type": "URL",
+            "value": "https://t-mms.kr/t.do?m=#61&s=34495&a=&u=http://tworldfriends.co.kr/D146360023",
+            "action": "추가 정보"
+        },
+        {
+            "type": "전화번호",
+            "value": "1558",
+            "action": "문의"
+        },
+        {
+            "type": "전화번호",
+            "value": "1504",
+            "action": "수신 거부"
+        }
+    ],
+    "pgm": [
+        "타사회선(가망)_win-back",
+        "상품및부가서비스가입유도_유선"
+    ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 2
+================================================================================
+1. 인터넷/IPTV
+   - item_id: ['#']
+   - item_name_in_msg: ['인터넷/IPTV']
+   - expected_action: ['가입']
+2. 시니어 전용 요금제
+   - item_id: ['#']
+   - item_name_in_msg: ['시니어 전용 요금제']
+   - expected_action: ['가입']
+
+================================================================================
