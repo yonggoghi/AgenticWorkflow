@@ -75,7 +75,7 @@ def main():
     parser.add_argument('--offer-data-source', choices=['local', 'db'], default='db',
                        help='데이터 소스 (local: CSV 파일, db: 데이터베이스)')
     parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm', 'rag'], default='llm',
-                       help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
+                       help='Main prompt에서 상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
     parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
