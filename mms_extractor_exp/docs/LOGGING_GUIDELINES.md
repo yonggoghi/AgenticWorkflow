@@ -283,6 +283,7 @@ logging.basicConfig(level=getattr(logging, log_level))
 
 ---
 
-*작성일: 2025-12-10*  
-*대상: mms_extractor_exp 프로젝트*  
-*버전: 1.0*
+*작성일: 2025-12-10*
+*최종 업데이트: 2026-02-09*
+*대상: mms_extractor_exp 프로젝트*
+*버전: 1.1*

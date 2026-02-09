@@ -1,8 +1,8 @@
 # MMS Extractor - Agent Quick Reference
 
 > **사용 목적**: Agent가 수정/개선/확장 작업 시 첫 번째로 참조하는 문서  
-> **업데이트**: 2025-12-10  
-> **버전**: 1.0
+> **업데이트**: 2026-02-09
+> **버전**: 1.1
 
 ---
 
@@ -125,11 +125,11 @@ graph TB
 |---------|----------|------------|------------|
 | **MMSExtractor** | 전체 오케스트레이션 | WorkflowEngine, LLMFactory, ItemDataLoader, Config | CLI, API, Batch |
 | **WorkflowEngine** | 단계 순차 실행 | WorkflowSteps | MMSExtractor |
-| **EntityRecognizer** | 엔티티 추출 및 매칭 | Kiwi, item_pdf, llm, Config | EntityExtractionStep |
+| **EntityRecognizer** | 엔티티 추출 및 매칭 | Kiwi, item_pdf, llm, similarity_utils, Config | EntityExtractionStep |
 | **ResultBuilder** | 최종 결과 구성 | StoreMatcher, SchemaTransformer, LLMFactory | ResultConstructionStep |
 | **ProgramClassifier** | 프로그램 분류 | emb_model, pgm_pdf, Config | ProgramClassificationStep |
 | **StoreMatcher** | 매장 매칭 | org_pdf, Config | ResultBuilder |
-| **ItemDataLoader** | 상품 데이터 로딩 | CSV/DB, Config | MMSExtractor |
+| **ItemDataLoader** | 상품 데이터 로딩 (별칭 규칙, case sensitivity 지원) | CSV/DB, Config | MMSExtractor |
 | **LLMFactory** | LLM 모델 생성 | Config | MMSExtractor, ResultBuilder, WorkflowSteps |
 
 ---
@@ -160,6 +160,9 @@ core/
 
 utils/
 ├── llm_factory.py                   # LLM 생성 로직
+├── similarity_utils.py              # 유사도 계산 (bigram pre-filtering 포함)
+├── text_utils.py                    # 텍스트 전처리
+├── nlp_utils.py                     # NLP 유틸리티
 └── __init__.py                      # 유틸리티 함수
 ```
 
@@ -209,6 +212,9 @@ prompts/entity_extraction_prompt.py
 ```bash
 # CLI로 단일 메시지 테스트
 python apps/cli.py --message "테스트 메시지" --entity-matching-mode llm
+
+# ONT 모드 테스트 (엔티티 추출 + DAG 최적화)
+python apps/cli.py --message "테스트 메시지" --entity-extraction-context-mode ont --extract-entity-dag
 
 # 배치 테스트
 python apps/cli.py --batch-file test_messages.txt
@@ -424,7 +430,7 @@ grep "❌" logs/mms_extractor.log
 | LLM 호출 실패 | API 키 문제, 네트워크 오류 | `.env`, `utils/llm_factory.py` |
 | JSON 파싱 오류 | LLM 응답 형식 불일치 | `mms_workflow_steps.py` → `ResponseParsingStep` |
 | 결과 누락 | 필드 매핑 오류 | `services/result_builder.py` |
-| 성능 저하 | 데이터 크기 증가, 임베딩 계산 | `services/entity_recognizer.py`, `services/program_classifier.py` |
+| 성능 저하 | 데이터 크기 증가, 임베딩 계산 | `services/entity_recognizer.py`, `utils/similarity_utils.py`, `services/program_classifier.py` |
 
 #### C-2. 에러 처리 패턴
 
@@ -705,5 +711,5 @@ python -m pytest tests/
 
 ---
 
-*최종 업데이트: 2025-12-10*  
+*최종 업데이트: 2026-02-09*
 *다음 업데이트 예정: 주요 구조 변경 시*

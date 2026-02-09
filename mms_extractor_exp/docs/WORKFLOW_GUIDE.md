@@ -40,12 +40,12 @@ graph TD
 
 | 단계 | 평균 소요 시간 | 비고 |
 |------|---------------|------|
-| 1-3단계 | 2-3초 | 로컬 처리 |
+| 1-3단계 | 1-2초 | 로컬 처리 (bigram 최적화 적용) |
 | 4단계 | 1-2초 | RAG 컨텍스트 구성 |
 | 5단계 | 5-15초 | **LLM API 호출 (병목)** |
 | 6-8단계 | 1-2초 | 로컬 처리 |
 | 9단계 | 5-10초 | LLM API 호출 (선택적) |
-| **전체** | **15-35초** | DAG 포함 시 |
+| **전체** | **10-25초** | DAG 포함 시 |
 
 ---
 
@@ -159,6 +159,11 @@ elif entity_extraction_mode == 'llm':
 - `ProgramClassifier`: 프로그램 분류
 - `SentenceTransformer`: 임베딩 모델
 
+**성능 최적화 (2026-02-09)**:
+- Bigram pre-filtering으로 Fuzzy Matching 대상 94.7% 감소 (904K → 48K)
+- 100K 미만 비교 시 단일 프로세스로 joblib IPC 오버헤드 제거
+- Step 2 전체: 16.2초 → 1.5초 (11x 개선)
+
 **성능**:
 - 평균 처리 시간: 0.5-1초
 - 임베딩 캐싱으로 최적화
@@ -194,9 +199,10 @@ elif entity_extraction_mode == 'llm':
   ```
 
 **컨텍스트 모드**:
-- `dag`: DAG 형식 컨텍스트
+- `dag`: DAG 형식 컨텍스트 (기본)
 - `pairing`: 페어링 형식 컨텍스트
-- `none`: 컨텍스트 없음
+- `simple`: 단순 엔티티 리스트
+- `ont`: 온톨로지 기반 컨텍스트 (엔티티 타입, 관계 포함)
 
 ---
 
@@ -374,6 +380,7 @@ if extract_entity_dag:
 **성능**:
 - 평균 처리 시간: 5-10초
 - 선택적 기능이므로 비활성화 가능
+- **ONT 모드 최적화**: `entity_extraction_context_mode='ont'` 사용 시 LLM 재호출 없이 기존 온톨로지 결과 재사용
 
 ---
 
@@ -615,6 +622,7 @@ def execute(self, state: WorkflowState) -> WorkflowState:
 
 ---
 
-*작성일: 2025-12-16*  
-*버전: 1.0*  
+*작성일: 2025-12-16*
+*최종 업데이트: 2026-02-09*
+*버전: 1.2*
 *작성자: 신용욱 with Google Antigravity*

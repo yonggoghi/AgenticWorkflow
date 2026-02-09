@@ -20,7 +20,8 @@ MMS 광고 메시지에서 구조화된 정보를 추출하는 AI 기반 시스�
 - **엔티티 추출**: 상품, 채널, 프로그램, 매장 정보 추출
 - **LLM 기반 분석**: 다중 LLM 모델 지원 (Gemini, Claude, GPT-4, AX)
 - **DAG 추출**: 엔티티 간 관계 그래프 생성
-- **Workflow 기반**: 모듈화된 8단계 처리 파이프라인
+- **다양한 컨텍스트 모드**: dag, pairing, simple, ont 지원
+- **Workflow 기반**: 모듈화된 9단계 처리 파이프라인
 
 ---
 
@@ -47,7 +48,9 @@ mms_extractor_exp/
 ├── prompts/                 # LLM 프롬프트 관리
 │   ├── main_extraction_prompt.py
 │   ├── entity_extraction_prompt.py
-│   └── dag_extraction_prompt.py
+│   ├── dag_extraction_prompt.py
+│   ├── ontology_prompt.py   # 온톨로지 프롬프트
+│   └── retry_enhancement_prompt.py
 │
 ├── config/                  # 설정 관리
 │   └── settings.py         # 모든 설정 중앙화
@@ -55,20 +58,46 @@ mms_extractor_exp/
 ├── utils/                   # 유틸리티 함수
 │   ├── __init__.py         # 유사도 계산, DAG 시각화 등
 │   ├── llm_factory.py      # LLM 모델 생성 Factory
+│   ├── similarity_utils.py  # 유사도 계산 (bigram pre-filtering 포함)
+│   ├── text_utils.py        # 텍스트 전처리
+│   ├── nlp_utils.py         # NLP 유틸리티
 │   ├── prompt_utils.py     # 프롬프트 관리
+│   ├── json_utils.py       # JSON 파싱 유틸리티
+│   ├── validation_utils.py  # 검증 유틸리티
+│   ├── common_utils.py      # 공통 유틸리티
+│   ├── hash_utils.py        # 해시 유틸리티
+│   ├── db_utils.py          # DB 연결 유틸리티
+│   ├── mongodb_utils.py     # MongoDB 유틸리티
+│   ├── visualization_utils.py  # 시각화 유틸리티
 │   └── retry_utils.py      # 재시도 로직
 │
 ├── apps/                    # 실행 인터페이스
 │   ├── cli.py              # CLI 인터페이스
-│   ├── api.py              # FastAPI 서버
-│   └── batch.py            # 배치 처리
+│   ├── api.py              # REST API 서버 (Flask)
+│   ├── batch.py            # 배치 처리
+│   ├── quick_extractor.py  # 빠른 추출기
+│   └── demo_streamlit.py   # Streamlit 데모
 │
 ├── tests/                   # 테스트
 │   ├── test_workflow.py
-│   └── test_architecture_improvements.py
+│   ├── test_ontology_mode.py
+│   ├── test_architecture_improvements.py
+│   ├── trace_product_extraction.py  # 상품 추출 트레이서
+│   └── ...                  # 기타 디버깅/분석 스크립트
 │
 └── docs/                    # 문서
-    └── LOGGING_GUIDELINES.md
+    ├── ARCHITECTURE.md
+    ├── WORKFLOW_GUIDE.md
+    ├── WORKFLOW_EXECUTIVE_SUMMARY.md
+    ├── WORKFLOW_SUMMARY.md
+    ├── WORKFLOW_FLOWCHARTS.md
+    ├── EXECUTION_FLOW.md
+    ├── QUICK_REFERENCE.md
+    ├── AGENT_DEVELOPMENT_GUIDE.md
+    ├── LOGGING_GUIDELINES.md
+    ├── CASE_SENSITIVITY_PLAN.md
+    ├── PLAN_ONT_DAG_INTEGRATION.md
+    └── PROMPT_IMPROVE_ENTITY_EXTRACTION.md
 ```
 
 ### 핵심 설계 패턴
@@ -93,7 +122,7 @@ WorkflowEngine             # 단계들을 순차 실행
 6. `ResponseParsingStep`: LLM 응답 파싱
 7. `ResultConstructionStep`: 최종 결과 구성
 8. `ValidationStep`: 결과 검증
-9. `DAGExtractionStep`: DAG 추출 (선택적)
+9. `DAGExtractionStep`: DAG 추출 (선택적, ONT 모드 시 기존 결과 재사용)
 
 #### 2. **Service Layer Pattern**
 
@@ -711,7 +740,7 @@ class QualityMetrics:
 
 ---
 
-*최초 작성일: 2025-12-10*  
-*최종 업데이트: 2025-12-16*  
-*대상: Agent 및 개발자*  
-*버전: 2.0*
+*최초 작성일: 2025-12-10*
+*최종 업데이트: 2026-02-09*
+*대상: Agent 및 개발자*
+*버전: 2.2*
