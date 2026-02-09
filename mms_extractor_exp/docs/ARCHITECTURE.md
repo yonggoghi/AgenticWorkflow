@@ -15,7 +15,7 @@
 MMS Extractor는 MMS 광고 메시지에서 구조화된 정보를 추출하는 AI 기반 시스템입니다.
 
 ### 핵심 특징
-- **Workflow 기반 아키텍처**: 9단계 처리 파이프라인
+- **Workflow 기반 아키텍처**: 10단계 처리 파이프라인 (조건부 스킵 지원)
 - **서비스 레이어 분리**: 독립적인 비즈니스 로직 서비스
 - **다중 LLM 지원**: OpenAI, Anthropic, Gemini, AX 등
 - **유연한 데이터 소스**: 로컬 CSV 또는 Oracle DB
@@ -48,9 +48,10 @@ graph TB
         STEP4[ContextPreparationStep]
         STEP5[LLMExtractionStep]
         STEP6[ResponseParsingStep]
-        STEP7[ResultConstructionStep]
-        STEP8[ValidationStep]
-        STEP9[DAGExtractionStep]
+        STEP7[EntityMatchingStep]
+        STEP8[ResultConstructionStep]
+        STEP9[ValidationStep]
+        STEP10[DAGExtractionStep]
     end
     
     subgraph ServiceLayer["Service Layer"]
@@ -89,11 +90,13 @@ graph TB
     STEP6 --> STEP7
     STEP7 --> STEP8
     STEP8 --> STEP9
-    
+    STEP9 --> STEP10
+
     STEP2 --> RECOGNIZER
     STEP3 --> CLASSIFIER
-    STEP7 --> BUILDER
-    
+    STEP7 --> RECOGNIZER
+    STEP8 --> BUILDER
+
     RECOGNIZER --> LOADER
     BUILDER --> MATCHER
     BUILDER --> TRANSFORMER
@@ -113,7 +116,7 @@ graph TB
 |--------|------|---------------|
 | **Entry Points** | 사용자 인터페이스 제공 | CLI, API, Batch |
 | **Core Layer** | 전체 프로세스 오케스트레이션 | MMSExtractor, WorkflowEngine |
-| **Workflow Steps** | 단계별 처리 로직 | 9개 Step 클래스 |
+| **Workflow Steps** | 단계별 처리 로직 | 10개 Step 클래스 |
 | **Service Layer** | 독립적인 비즈니스 로직 | 6개 Service 클래스 |
 | **Infrastructure** | 공통 기능 및 설정 | Factory, Config, Utils |
 | **Data Sources** | 데이터 저장소 | CSV, Oracle DB |
@@ -138,7 +141,7 @@ sequenceDiagram
     Extractor->>State: Create initial state
     Extractor->>Engine: execute(state)
     
-    loop 9 Workflow Steps
+    loop 10 Workflow Steps
         Engine->>Steps: execute(state)
         Steps->>Services: Call service
         Services-->>Steps: Return result
@@ -188,11 +191,12 @@ class WorkflowState:
     rag_context: str                # RAG 컨텍스트
     llm_response: str               # LLM 응답
     json_objects: List[Dict]        # 파싱된 객체
-    
+    matched_products: List[Dict]    # 엔티티 매칭된 상품 (Step 7)
+
     # 최종 결과
     final_result: Dict              # 최종 추출 결과
     entity_dag: List[str]           # DAG 엣지 (선택적)
-    
+
     # 메타데이터
     is_fallback: bool = False       # 폴백 여부
     error_message: str = ""         # 에러 메시지
@@ -249,7 +253,6 @@ graph TD
     
     ResultBuilder --> StoreMatcher
     ResultBuilder --> SchemaTransformer
-    ResultBuilder --> LLMFactory
     
     StoreMatcher --> ItemDataLoader
     
@@ -270,7 +273,7 @@ graph TD
 | **Level 1** | LLMFactory, ItemDataLoader | Settings |
 | **Level 2** | StoreMatcher, SchemaTransformer | ItemDataLoader |
 | **Level 3** | EntityRecognizer, ProgramClassifier | LLMFactory, ItemDataLoader |
-| **Level 4** | ResultBuilder | StoreMatcher, SchemaTransformer, LLMFactory |
+| **Level 4** | ResultBuilder | StoreMatcher, SchemaTransformer |
 | **Level 5** | WorkflowSteps | EntityRecognizer, ProgramClassifier, ResultBuilder |
 | **Level 6** | WorkflowEngine | WorkflowSteps |
 | **Level 7** | MMSExtractor | 모든 컴포넌트 (최상위) |
@@ -281,13 +284,14 @@ graph TD
 
 ### 1. Workflow Pattern 채택
 
-**결정**: 처리 로직을 9개의 독립적인 Step으로 분리
+**결정**: 처리 로직을 10개의 독립적인 Step으로 분리 (조건부 스킵 가능)
 
 **이유**:
 - ✅ 각 단계의 책임이 명확함
 - ✅ 새로운 단계 추가가 용이
 - ✅ 단계별 독립 테스트 가능
 - ✅ 에러 발생 시 어느 단계에서 실패했는지 명확
+- ✅ `should_execute()` 메서드로 조건부 스킵 가능
 
 **트레이드오프**:
 - ⚠️ 초기 설정 복잡도 증가

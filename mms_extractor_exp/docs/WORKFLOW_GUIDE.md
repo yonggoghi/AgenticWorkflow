@@ -12,7 +12,7 @@
 
 ## Workflow 개요
 
-MMS Extractor는 9단계의 Workflow로 구성되어 있으며, 각 단계는 독립적으로 실행되고 `WorkflowState`를 통해 데이터를 주고받습니다.
+MMS Extractor는 10단계의 Workflow로 구성되어 있으며, 각 단계는 독립적으로 실행되고 `WorkflowState`를 통해 데이터를 주고받습니다. 각 단계는 `should_execute()` 메서드를 통해 조건부로 스킵될 수 있습니다.
 
 ### Workflow 순서도
 
@@ -24,13 +24,14 @@ graph TD
     STEP3 --> STEP4[4. ContextPreparation<br/>컨텍스트 준비]
     STEP4 --> STEP5[5. LLMExtraction<br/>LLM 추출]
     STEP5 --> STEP6[6. ResponseParsing<br/>응답 파싱]
-    STEP6 --> STEP7[7. ResultConstruction<br/>결과 구성]
-    STEP7 --> STEP8[8. Validation<br/>결과 검증]
-    STEP8 --> DECISION{DAG 추출<br/>활성화?}
-    DECISION -->|Yes| STEP9[9. DAGExtraction<br/>DAG 추출]
+    STEP6 --> STEP7[7. EntityMatching<br/>엔티티 매칭]
+    STEP7 --> STEP8[8. ResultConstruction<br/>결과 구성]
+    STEP8 --> STEP9[9. Validation<br/>결과 검증]
+    STEP9 --> DECISION{DAG 추출<br/>활성화?}
+    DECISION -->|Yes| STEP10[10. DAGExtraction<br/>DAG 추출]
     DECISION -->|No| END([추출 완료])
-    STEP9 --> END
-    
+    STEP10 --> END
+
     style START fill:#f9f,stroke:#333
     style END fill:#9f9,stroke:#333
     style DECISION fill:#ff9,stroke:#333
@@ -43,8 +44,9 @@ graph TD
 | 1-3단계 | 1-2초 | 로컬 처리 (bigram 최적화 적용) |
 | 4단계 | 1-2초 | RAG 컨텍스트 구성 |
 | 5단계 | 5-15초 | **LLM API 호출 (병목)** |
-| 6-8단계 | 1-2초 | 로컬 처리 |
-| 9단계 | 5-10초 | LLM API 호출 (선택적) |
+| 6-7단계 | 1-5초 | 응답 파싱 + 엔티티 매칭 |
+| 8-9단계 | 1-2초 | 결과 구성 + 검증 |
+| 10단계 | 5-10초 | LLM API 호출 (선택적) |
 | **전체** | **10-25초** | DAG 포함 시 |
 
 ---
@@ -280,22 +282,64 @@ RAG 컨텍스트: 참조 정보
 
 ---
 
-### 7. ResultConstructionStep
+### 7. EntityMatchingStep
 
-**목적**: 최종 결과 구성
+**목적**: LLM 파싱 결과의 상품명을 DB 엔티티와 매칭하여 item_id 부여
+
+**조건부 스킵**: `should_execute()` → `has_error`, `is_fallback`, 또는 상품/Kiwi 엔티티 없으면 스킵
 
 **입력**:
-- `state.json_objects`: 파싱된 JSON 객체
+- `state.json_objects`: 파싱된 JSON 객체 (product items)
+- `state.entities_from_kiwi`: Kiwi 추출 엔티티
 - `state.msg`: 원본 메시지
-- `state.pgm_info`: 프로그램 정보
-- `state.entities_from_kiwi`: Kiwi 엔티티
 
 **처리 로직**:
 ```python
-1. ResultBuilder 서비스 호출
-2. 스키마 변환 (item_name_in_msg → item_nm 중심)
-3. 매장 정보 매칭
-4. 최종 결과 포맷팅
+1. json_objects에서 product items 추출
+2. entities_from_kiwi + product names로 cand_entities 구성
+3. entity_extraction_mode에 따라 분기:
+   - logic: entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)
+   - llm: entity_recognizer.extract_entities_with_llm(msg, ...)
+4. alias type 필터링 (non-expansion 타입 제거)
+5. entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)
+6. 매칭 결과가 없으면 fallback (item_id='#')
+```
+
+**출력**:
+- `state.matched_products`: 매칭된 상품 리스트
+  ```python
+  [
+      {
+          "item_nm": "아이폰17",
+          "item_id": ["PROD_IP17_001"],
+          "item_name_in_msg": ["아이폰 17"],
+          "expected_action": ["기변"]
+      }
+  ]
+  ```
+
+**협력 객체**:
+- `EntityRecognizer`: 엔티티 매칭 수행
+
+---
+
+### 8. ResultConstructionStep
+
+**목적**: 매칭된 상품 기반으로 최종 결과 조립
+
+**입력**:
+- `state.matched_products`: 매칭된 상품 (Step 7 출력)
+- `state.json_objects`: 파싱된 JSON 객체
+- `state.msg`: 원본 메시지
+- `state.pgm_info`: 프로그램 정보
+
+**처리 로직**:
+```python
+1. ResultBuilder.assemble_result() 호출
+2. 채널 정보 추출 및 보강
+3. 프로그램 매핑
+4. Offer 객체 생성
+5. entity_dag, message_id 첨부
 ```
 
 **출력**:
@@ -315,13 +359,13 @@ RAG 컨텍스트: 참조 정보
   ```
 
 **협력 객체**:
-- `ResultBuilder`: 결과 구성
+- `ResultBuilder`: 결과 조립 (`assemble_result()`)
 - `StoreMatcher`: 매장 매칭
 - `SchemaTransformer`: 스키마 변환
 
 ---
 
-### 8. ValidationStep
+### 9. ValidationStep
 
 **목적**: 추출 결과 검증
 
@@ -346,7 +390,7 @@ RAG 컨텍스트: 참조 정보
 
 ---
 
-### 9. DAGExtractionStep (선택적)
+### 10. DAGExtractionStep (선택적)
 
 **목적**: 엔티티 간 관계를 DAG (Directed Acyclic Graph)로 추출
 
@@ -403,8 +447,9 @@ class WorkflowState:
     rag_context: str = ""           # RAG 컨텍스트 (Step 4)
     llm_response: str = ""          # LLM 응답 (Step 5)
     json_objects: List[Dict] = field(default_factory=list)  # 파싱 결과 (Step 6)
-    final_result: Dict = field(default_factory=dict)  # 최종 결과 (Step 7)
-    entity_dag: List[str] = field(default_factory=list)  # DAG (Step 9)
+    matched_products: List[Dict] = field(default_factory=list)  # 매칭된 상품 (Step 7)
+    final_result: Dict = field(default_factory=dict)  # 최종 결과 (Step 8)
+    entity_dag: List[str] = field(default_factory=list)  # DAG (Step 10)
     
     # === 메타데이터 ===
     is_fallback: bool = False       # 폴백 여부
@@ -415,10 +460,14 @@ class WorkflowState:
     def set(self, key: str, value: Any):
         """상태 필드 설정"""
         setattr(self, key, value)
-    
+
     def get(self, key: str, default=None) -> Any:
         """상태 필드 조회"""
         return getattr(self, key, default)
+
+    def has_error(self) -> bool:
+        """에러 여부 확인"""
+        return bool(self.error_message)
 ```
 
 ### 상태 전달 흐름
@@ -428,7 +477,7 @@ class WorkflowState:
     ↓
 Step 1: msg 설정
     ↓
-Step 2: entities_from_kiwi 설정
+Step 2: entities_from_kiwi 설정 (스킵 가능: --skip-entity-extraction)
     ↓
 Step 3: pgm_info 설정
     ↓
@@ -438,11 +487,13 @@ Step 5: llm_response 설정
     ↓
 Step 6: json_objects 설정
     ↓
-Step 7: final_result 설정
+Step 7: matched_products 설정 (스킵 가능: 에러/폴백/상품없음)
     ↓
-Step 8: 검증 (상태 변경 없음)
+Step 8: final_result 설정
     ↓
-Step 9: entity_dag 설정 (선택적)
+Step 9: 검증 (상태 변경 없음)
+    ↓
+Step 10: entity_dag 설정 (선택적)
     ↓
 최종 상태 반환
 ```
@@ -577,10 +628,17 @@ steps = [
 ### 단계 비활성화
 
 ```python
-# 특정 단계 건너뛰기
+# 방법 1: 단계를 등록하지 않음
 if not extract_entity_dag:
     # DAGExtractionStep 추가하지 않음
     pass
+
+# 방법 2: should_execute() 오버라이드로 조건부 스킵
+class EntityExtractionStep(WorkflowStep):
+    def should_execute(self, state: WorkflowState) -> bool:
+        if self.skip_entity_extraction:
+            return False  # 워크플로우 히스토리에 "skipped"로 기록
+        return not state.has_error()
 ```
 
 ---

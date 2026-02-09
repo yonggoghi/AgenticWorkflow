@@ -33,17 +33,18 @@
     ↓
 [MMSExtractor.process_message()]
     ↓
-[WorkflowEngine.run()] ← 9단계 순차 실행
+[WorkflowEngine.run()] ← 10단계 순차 실행 (각 단계 should_execute()로 조건부 스킵 가능)
     ↓
     ├─ 1. InputValidationStep
-    ├─ 2. EntityExtractionStep ← EntityRecognizer
+    ├─ 2. EntityExtractionStep ← EntityRecognizer (--skip-entity-extraction 시 스킵)
     ├─ 3. ProgramClassificationStep ← ProgramClassifier
     ├─ 4. ContextPreparationStep
     ├─ 5. LLMExtractionStep ← LLM (via LLMFactory)
     ├─ 6. ResponseParsingStep
-    ├─ 7. ResultConstructionStep ← ResultBuilder
-    ├─ 8. ValidationStep
-    └─ 9. DAGExtractionStep (선택적)
+    ├─ 7. EntityMatchingStep ← EntityRecognizer (에러/폴백/상품없음 시 스킵)
+    ├─ 8. ResultConstructionStep ← ResultBuilder
+    ├─ 9. ValidationStep
+    └─ 10. DAGExtractionStep (선택적)
     ↓
 [결과 반환: ext_result, raw_result, prompts]
 ```
@@ -61,7 +62,7 @@ graph TB
     subgraph "Core Engine"
         MMSExtractor[core/mms_extractor.py<br/>MMSExtractor]
         WorkflowEngine[core/workflow_core.py<br/>WorkflowEngine]
-        WorkflowSteps[core/mms_workflow_steps.py<br/>9 Workflow Steps]
+        WorkflowSteps[core/mms_workflow_steps.py<br/>10 Workflow Steps]
     end
     
     subgraph "Services Layer"
@@ -105,7 +106,6 @@ graph TB
     
     ResultBuilder --> StoreMatcher
     ResultBuilder --> SchemaTransformer
-    ResultBuilder --> LLMFactory
     
     LLMFactory --> Config
     
@@ -126,7 +126,7 @@ graph TB
 | **MMSExtractor** | 전체 오케스트레이션 | WorkflowEngine, LLMFactory, ItemDataLoader, Config | CLI, API, Batch |
 | **WorkflowEngine** | 단계 순차 실행 | WorkflowSteps | MMSExtractor |
 | **EntityRecognizer** | 엔티티 추출 및 매칭 | Kiwi, item_pdf, llm, similarity_utils, Config | EntityExtractionStep |
-| **ResultBuilder** | 최종 결과 구성 | StoreMatcher, SchemaTransformer, LLMFactory | ResultConstructionStep |
+| **ResultBuilder** | 결과 조립 (채널, 프로그램 매핑) | StoreMatcher, SchemaTransformer | ResultConstructionStep |
 | **ProgramClassifier** | 프로그램 분류 | emb_model, pgm_pdf, Config | ProgramClassificationStep |
 | **StoreMatcher** | 매장 매칭 | org_pdf, Config | ResultBuilder |
 | **ItemDataLoader** | 상품 데이터 로딩 (별칭 규칙, case sensitivity 지원) | CSV/DB, Config | MMSExtractor |
@@ -287,12 +287,12 @@ def execute(self, state: WorkflowState) -> WorkflowState:
         state.events = json_objects['event']  # ← 추가
 
 # STEP 4: 결과 구성에 포함
-# 파일: services/result_builder.py → build_extraction_result()
+# 파일: services/result_builder.py → assemble_result()
 
-def build_extraction_result(self, state: WorkflowState) -> Dict:
+def assemble_result(self, json_objects, matched_products, msg, pgm_info, message_id) -> Dict:
     result = {
         # 기존 필드들...
-        "event": state.events  # ← 추가
+        "event": ...  # ← 추가
     }
 ```
 
