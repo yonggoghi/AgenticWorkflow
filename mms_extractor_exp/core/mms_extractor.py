@@ -113,6 +113,7 @@ from .mms_workflow_steps import (
     ContextPreparationStep,
     LLMExtractionStep,
     ResponseParsingStep,
+    EntityMatchingStep,
     ResultConstructionStep,
     ValidationStep,
     DAGExtractionStep
@@ -344,9 +345,10 @@ class MMSExtractor(MMSExtractorDataMixin):
     - `extract_entity_dag`: DAG 추출 활성화 여부
     """
     
-    def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None, 
-                 entity_extraction_mode=None, offer_info_data_src='db', llm_model='ax', 
-                 entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='dag'):
+    def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None,
+                 entity_extraction_mode=None, offer_info_data_src='db', llm_model='ax',
+                 entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='dag',
+                 skip_entity_extraction=False):
         """
         MMSExtractor 초기화 메소드
         
@@ -383,9 +385,10 @@ class MMSExtractor(MMSExtractorDataMixin):
         try:
             # 1단계: 기본 설정 매개변수 구성
             logger.info("⚙️ 기본 설정 적용 중...")
-            self._set_default_config(model_path, data_dir, product_info_extraction_mode, 
-                                   entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model, 
-                                   extract_entity_dag, entity_extraction_context_mode)
+            self._set_default_config(model_path, data_dir, product_info_extraction_mode,
+                                   entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model,
+                                   extract_entity_dag, entity_extraction_context_mode,
+                                   skip_entity_extraction)
             
             # 2단계: 환경변수 로드 (API 키 등)
             logger.info("🔑 환경변수 로드 중...")
@@ -430,27 +433,33 @@ class MMSExtractor(MMSExtractorDataMixin):
             )
             self.store_matcher = StoreMatcher(self.org_pdf)
             self.result_builder = ResultBuilder(
-                self.entity_recognizer,
                 self.store_matcher,
-                self.alias_pdf_raw,
                 self.stop_item_names,
                 self.num_cand_pgms,
-                self.entity_extraction_mode,
-                self.llm_factory,  # LLMFactory 인스턴스 전달
-                self.entity_llm_model_name,
-                self.entity_extraction_context_mode
             )
             logger.info("✅ 서비스 초기화 완료")
-            
+
             # Workflow 엔진 초기화
             logger.info("⚙️ Workflow 엔진 초기화 중...")
             self.workflow_engine = WorkflowEngine("MMS Extraction Workflow")
             self.workflow_engine.add_step(InputValidationStep())
-            self.workflow_engine.add_step(EntityExtractionStep(self.entity_recognizer))
+            self.workflow_engine.add_step(EntityExtractionStep(
+                self.entity_recognizer,
+                skip_entity_extraction=self.skip_entity_extraction,
+            ))
             self.workflow_engine.add_step(ProgramClassificationStep(self.program_classifier))
             self.workflow_engine.add_step(ContextPreparationStep())
             self.workflow_engine.add_step(LLMExtractionStep())
             self.workflow_engine.add_step(ResponseParsingStep())
+            self.workflow_engine.add_step(EntityMatchingStep(
+                entity_recognizer=self.entity_recognizer,
+                alias_pdf_raw=self.alias_pdf_raw,
+                stop_item_names=self.stop_item_names,
+                entity_extraction_mode=self.entity_extraction_mode,
+                llm_factory=self.llm_factory,
+                llm_model=self.entity_llm_model_name,
+                entity_extraction_context_mode=self.entity_extraction_context_mode,
+            ))
             self.workflow_engine.add_step(ResultConstructionStep(self.result_builder))
             self.workflow_engine.add_step(ValidationStep())
             
@@ -469,9 +478,10 @@ class MMSExtractor(MMSExtractorDataMixin):
             logger.error(traceback.format_exc())
             raise
 
-    def _set_default_config(self, model_path, data_dir, product_info_extraction_mode, 
-                          entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model, 
-                          extract_entity_dag, entity_extraction_context_mode):
+    def _set_default_config(self, model_path, data_dir, product_info_extraction_mode,
+                          entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model,
+                          extract_entity_dag, entity_extraction_context_mode,
+                          skip_entity_extraction):
         """기본 설정값 적용"""
         self.data_dir = data_dir if data_dir is not None else './data/'
         self.model_path = model_path if model_path is not None else getattr(EMBEDDING_CONFIG, 'ko_sbert_model_path', 'jhgan/ko-sroberta-multitask')
@@ -483,7 +493,8 @@ class MMSExtractor(MMSExtractorDataMixin):
         self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 5)
         self.extract_entity_dag = extract_entity_dag
         self.entity_extraction_context_mode = entity_extraction_context_mode
-        
+        self.skip_entity_extraction = skip_entity_extraction
+
         # DAG 추출 설정 로깅
         # extract_entity_dag: 엔티티 간 관계를 DAG(Directed Acyclic Graph)로 추출
         # True인 경우 추가적으로 LLM을 사용하여 엔티티 관계를 분석하고

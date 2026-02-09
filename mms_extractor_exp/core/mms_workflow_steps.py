@@ -172,12 +172,14 @@ else:
 import logging
 import copy
 import traceback
-from typing import Any, Dict
+from typing import Any, Dict, List
+import pandas as pd
 from .workflow_core import WorkflowStep, WorkflowState
 from utils import (
     validate_text_input,
     safe_check_empty,
-    extract_json_objects
+    extract_json_objects,
+    replace_special_chars_with_space
 )
 from utils import PromptManager, validate_extraction_result, detect_schema_response
 
@@ -238,30 +240,37 @@ class InputValidationStep(WorkflowStep):
 
 class EntityExtractionStep(WorkflowStep):
     """
-    엔티티 추출 단계 (Step 2/9)
-    
+    엔티티 추출 단계 (Step 2)
+
     책임:
         - Kiwi 형태소 분석을 통한 NNP 태그 추출
         - 임베딩 기반 유사도 매칭
         - 후보 상품 목록 생성
         - DB 모드 진단 및 데이터 품질 검증
-    
+
     협력 객체:
         - EntityRecognizer: 엔티티 추출 및 매칭 수행
-    
+
     데이터 흐름:
         입력: msg (검증된 메시지)
         출력: entities_from_kiwi (Kiwi 추출 엔티티)
               cand_item_list (후보 상품 리스트)
               extra_item_pdf (매칭된 상품 정보)
-    
+
     특이사항:
+        - skip_entity_extraction=True이면 should_execute() → False로 스킵
         - DB 모드에서는 별칭 데이터 품질 진단 수행
         - 후보 엔티티가 없으면 경고 로그 출력
     """
-    
-    def __init__(self, entity_recognizer):
+
+    def __init__(self, entity_recognizer, skip_entity_extraction: bool = False):
         self.entity_recognizer = entity_recognizer
+        self.skip_entity_extraction = skip_entity_extraction
+
+    def should_execute(self, state: WorkflowState) -> bool:
+        if self.skip_entity_extraction:
+            return False
+        return not state.has_error()
 
     def execute(self, state: WorkflowState) -> WorkflowState:
         if state.has_error():
@@ -600,49 +609,166 @@ class ResponseParsingStep(WorkflowStep):
         return state
 
 
+class EntityMatchingStep(WorkflowStep):
+    """
+    엔티티 매칭 단계 (Step 7)
+
+    책임:
+        - LLM 추출 상품명과 DB 상품을 매칭
+        - logic 모드: fuzzy + sequence 유사도 매칭
+        - llm 모드: LLM 기반 2단계 매칭
+        - alias 타입 필터링 (non-expansion)
+        - 매칭 결과를 state.matched_products에 저장
+
+    데이터 흐름:
+        입력: json_objects, entities_from_kiwi, msg
+        출력: matched_products
+    """
+
+    def __init__(self, entity_recognizer, alias_pdf_raw: pd.DataFrame,
+                 stop_item_names: List[str], entity_extraction_mode: str,
+                 llm_factory=None, llm_model: str = 'ax',
+                 entity_extraction_context_mode: str = 'dag'):
+        self.entity_recognizer = entity_recognizer
+        self.alias_pdf_raw = alias_pdf_raw
+        self.stop_item_names = stop_item_names
+        self.entity_extraction_mode = entity_extraction_mode
+        self.llm_factory = llm_factory
+        self.llm_model = llm_model
+        self.entity_extraction_context_mode = entity_extraction_context_mode
+
+    def should_execute(self, state: WorkflowState) -> bool:
+        if state.has_error() or state.is_fallback:
+            return False
+        json_objects = state.json_objects
+        product_items = json_objects.get('product', [])
+        if isinstance(product_items, dict):
+            product_items = product_items.get('items', [])
+        return len(product_items) > 0 or len(state.entities_from_kiwi) > 0
+
+    def execute(self, state: WorkflowState) -> WorkflowState:
+        json_objects = state.json_objects
+        entities_from_kiwi = state.entities_from_kiwi
+        msg = state.msg
+
+        # Step 7.1: Extract product items from json_objects
+        product_items = json_objects.get('product', [])
+        if isinstance(product_items, dict):
+            product_items = product_items.get('items', [])
+
+        primary_llm_extracted_entities = [x.get('name', '') for x in product_items]
+        logger.debug(f"LLM 추출 엔티티: {primary_llm_extracted_entities}")
+        logger.debug(f"Kiwi 엔티티: {entities_from_kiwi}")
+
+        # Step 7.2: Entity matching based on mode
+        if self.entity_extraction_mode == 'logic':
+            cand_entities = list(set(
+                entities_from_kiwi + [item.get('name', '') for item in product_items if item.get('name')]
+            ))
+            logger.debug(f"로직 모드 cand_entities: {cand_entities}")
+            similarities_fuzzy = self.entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)
+        else:
+            # LLM-based matching
+            if self.llm_factory:
+                default_llm_models = self.llm_factory.create_models([self.llm_model])
+            else:
+                logger.warning("llm_factory가 설정되지 않았습니다. 빈 리스트를 사용합니다.")
+                default_llm_models = []
+
+            llm_result = self.entity_recognizer.extract_entities_with_llm(
+                msg,
+                llm_models=default_llm_models,
+                rank_limit=100,
+                external_cand_entities=list(set(entities_from_kiwi + primary_llm_extracted_entities)),
+                context_mode=self.entity_extraction_context_mode
+            )
+
+            if isinstance(llm_result, dict):
+                similarities_fuzzy = llm_result.get('similarities_df', pd.DataFrame())
+            else:
+                similarities_fuzzy = llm_result
+
+        logger.info(f"similarities_fuzzy 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
+
+        # Step 7.3: Alias type filtering
+        if not similarities_fuzzy.empty:
+            merged_df = similarities_fuzzy.merge(
+                self.alias_pdf_raw[['alias_1', 'type']].drop_duplicates(),
+                left_on='item_name_in_msg',
+                right_on='alias_1',
+                how='left'
+            )
+            filtered_df = merged_df[merged_df.apply(
+                lambda x: (
+                    replace_special_chars_with_space(x['item_nm_alias']) in replace_special_chars_with_space(x['item_name_in_msg']) or
+                    replace_special_chars_with_space(x['item_name_in_msg']) in replace_special_chars_with_space(x['item_nm_alias'])
+                ) if x['type'] != 'expansion' else True,
+                axis=1
+            )]
+            logger.debug(f"alias 필터링 후 크기: {filtered_df.shape}")
+
+        # Step 7.4: Map products to entities
+        if not similarities_fuzzy.empty:
+            matched_products = self.entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)
+            logger.info(f"매칭된 상품 수: {len(matched_products)}개")
+        else:
+            # Fallback: use LLM results directly with item_id='#'
+            filtered_product_items = [
+                d for d in product_items
+                if d.get('name') and d['name'] not in self.stop_item_names
+            ]
+            matched_products = [
+                {
+                    'item_nm': d.get('name', ''),
+                    'item_id': ['#'],
+                    'item_name_in_msg': [d.get('name', '')],
+                    'expected_action': [d.get('action', '기타')]
+                }
+                for d in filtered_product_items
+            ]
+            logger.info(f"폴백 상품 수 (item_id=#): {len(matched_products)}개")
+
+        state.matched_products = matched_products
+        return state
+
+
 class ResultConstructionStep(WorkflowStep):
     """
-    최종 결과 구성 단계 (Step 7/9)
-    
+    최종 결과 구성 단계 (Step 8)
+
     책임:
-        - 엔티티 매칭 및 상품 정보 보강
+        - matched_products를 final_result에 반영
+        - offer 객체 생성 (product/org 타입)
         - 채널 정보 추출 및 매장 정보 매칭
         - 프로그램 분류 매핑
-        - offer 객체 생성 (product/org 타입)
-    
+        - entity_dag 초기화, message_id 추가
+
     협력 객체:
-        - ResultBuilder: 결과 구성 로직 수행
-    
+        - ResultBuilder: 결과 조립 로직 수행
+
     데이터 흐름:
-        입력: json_objects, msg, pgm_info, entities_from_kiwi, message_id
+        입력: json_objects, matched_products, msg, pgm_info, message_id
         출력: final_result (최종 추출 결과)
-    
-    주요 작업:
-        1. 엔티티 매칭 (logic/llm 모드)
-        2. 상품 정보 매핑 (item_id, item_name_in_msg 추가)
-        3. 채널 정보 추출 (대리점 감지 시 store_info 추가)
-        4. offer 객체 생성 (type: product/org)
     """
-    
+
     def __init__(self, result_builder):
         self.result_builder = result_builder
 
     def execute(self, state: WorkflowState) -> WorkflowState:
         if state.has_error():
             return state
-        
-        json_objects = state.get("json_objects")
-        msg = state.get("msg")
-        pgm_info = state.get("pgm_info")
-        entities_from_kiwi = state.get("entities_from_kiwi")
-        extractor = state.get("extractor")
-        message_id = state.get("message_id", "#")  # message_id 가져오기
-        
-        # 최종 결과 구성
-        final_result = self.result_builder.build_extraction_result(json_objects, msg, pgm_info, entities_from_kiwi, message_id)
-        
-        state.set("final_result", final_result)
-        
+
+        json_objects = state.json_objects
+        msg = state.msg
+        pgm_info = state.pgm_info
+        matched_products = state.matched_products
+        message_id = state.message_id
+
+        final_result = self.result_builder.assemble_result(
+            json_objects, matched_products, msg, pgm_info, message_id
+        )
+
+        state.final_result = final_result
         return state
 
 

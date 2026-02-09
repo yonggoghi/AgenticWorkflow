@@ -88,6 +88,8 @@ def main():
                        help='로그 레벨 설정')
     parser.add_argument('--message-id', type=str, default='#',
                        help='메시지 식별자 (기본값: #)')
+    parser.add_argument('--skip-entity-extraction', action='store_true', default=False,
+                       help='Kiwi + fuzzy matching 기반 엔티티 사전추출 스킵 (Step 2)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
     parser.add_argument('--save-to-mongodb', action='store_true', default=True, 
                        help='추출 결과를 MongoDB에 저장 (utils/mongodb_utils.py 필요)')
@@ -133,7 +135,8 @@ def main():
             llm_model=args.llm_model,
             entity_llm_model=args.entity_llm_model,
             extract_entity_dag=args.extract_entity_dag,
-            entity_extraction_context_mode=args.entity_extraction_context_mode
+            entity_extraction_context_mode=args.entity_extraction_context_mode,
+            skip_entity_extraction=args.skip_entity_extraction,
         )
         
         # 배치 처리 또는 단일 메시지 처리

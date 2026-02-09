@@ -202,6 +202,9 @@ class WorkflowState:
     raw_result: Dict[str, Any] = field(default_factory=dict)  # 원시 결과 (set by ResultConstructionStep)
     final_result: Dict[str, Any] = field(default_factory=dict)  # 최종 결과 (set by ResultConstructionStep)
     
+    # Entity matching fields
+    matched_products: List[Dict[str, Any]] = field(default_factory=list)  # 매칭된 상품 목록 (set by EntityMatchingStep)
+
     # Control flags
     is_fallback: bool = False  # 폴백 모드 여부 (set by LLMExtractionStep or ResponseParsingStep)
     
@@ -292,19 +295,31 @@ class WorkflowStep(ABC):
     모든 워크플로우 단계는 이 클래스를 상속받아 execute 메서드를 구현해야 합니다.
     """
     
+    def should_execute(self, state: WorkflowState) -> bool:
+        """
+        단계 실행 여부 결정
+
+        Args:
+            state: 현재 워크플로우 상태
+
+        Returns:
+            True이면 실행, False이면 스킵
+        """
+        return True
+
     @abstractmethod
     def execute(self, state: WorkflowState) -> WorkflowState:
         """
         단계 실행 메서드
-        
+
         Args:
             state: 현재 워크플로우 상태
-            
+
         Returns:
             업데이트된 워크플로우 상태
         """
         pass
-    
+
     def name(self) -> str:
         """단계 이름 반환 (로깅용)"""
         return self.__class__.__name__
@@ -357,11 +372,18 @@ class WorkflowEngine:
             logger.info(f"\n{'='*30} {i}/{len(self.steps)}: {step_name} {'='*30}")
             
             step_start_time = time.time()
-            
+
+            # 조건부 실행: should_execute()가 False이면 스킵
+            if not step.should_execute(state):
+                step_duration = time.time() - step_start_time
+                state.add_history(step_name, step_duration, "skipped")
+                logger.info(f"⏭️ {step_name} 스킵됨 (should_execute=False)")
+                continue
+
             try:
                 state = step.execute(state)
                 step_duration = time.time() - step_start_time
-                
+
                 state.add_history(step_name, step_duration, "success")
                 logger.info(f"✅ {step_name} 완료 ({step_duration:.2f}초)")
                 
@@ -394,7 +416,7 @@ class WorkflowEngine:
         if history:
             logger.info("\n📊 실행 요약:")
             for entry in history:
-                status_icon = "✅" if entry["status"] == "success" else "❌"
+                status_icon = {"success": "✅", "skipped": "⏭️", "failed": "❌"}.get(entry["status"], "❓")
                 logger.info(f"  {status_icon} {entry['step']}: {entry['duration']:.2f}초")
         
         if state.has_error():

@@ -131,6 +131,9 @@ class EntityExtractionTraceData:
         self.similarities_before_2nd_stage: Optional[pd.DataFrame] = None  # Before 2nd stage filter
         self.similarities_after_2nd_stage: Optional[pd.DataFrame] = None   # After 2nd stage filter
 
+        # Sub-step timing for performance analysis
+        self.substep_timings: Dict[str, float] = {}  # substep_name -> duration_seconds
+
         # Final result
         self.final_similarities: Optional[pd.DataFrame] = None
         self.mapped_products: List[Dict] = []
@@ -251,6 +254,15 @@ class ProductExtractionTracer:
                         relationships = parsed.get('relationships', [])
                         dag_text = parsed['dag_text']
 
+                        # Filter by entity type - keep only product/service-relevant types
+                        from services.entity_recognizer import ONT_PRODUCT_RELEVANT_TYPES
+                        removed = [f"{e}({entity_types.get(e, '?')})" for e in cand_entity_list
+                                   if entity_types.get(e, 'Unknown') not in ONT_PRODUCT_RELEVANT_TYPES]
+                        cand_entity_list = [e for e in cand_entity_list
+                                           if entity_types.get(e, 'Unknown') in ONT_PRODUCT_RELEVANT_TYPES]
+                        if removed:
+                            logger.info(f"ONT type filter removed {len(removed)}: {removed}")
+
                         entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
                         rel_lines = []
                         for rel in relationships:
@@ -300,7 +312,11 @@ class ProductExtractionTracer:
                     trace_data.second_stage_responses.append(result.get('response', ''))
                 return result['entities']
 
+            # Initialize LLM sub-step timings
+            llm_timings = {}
+
             # 1. First Stage
+            t0 = time.time()
             batches = []
             for llm_model in llm_models:
                 prompt = f"{first_stage_prompt_template}\n\n## message:\n{msg_text}"
@@ -315,6 +331,7 @@ class ProductExtractionTracer:
             n_jobs = min(len(batches), 3)
             with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
                 batch_results_dicts = parallel(delayed(get_entities_and_context_by_llm)(args) for args in batches)
+            llm_timings['stage1_llm_call'] = time.time() - t0
 
             all_entities = []
             all_contexts = []
@@ -341,12 +358,20 @@ class ProductExtractionTracer:
 
             cand_entity_list = list(set(all_entities))
 
+            # Normalize entity names (strip parenthetical specs, collapse spaces)
+            t0 = time.time()
+            from services.entity_recognizer import normalize_entity_name
+            cand_entity_list = list(set(
+                normalize_entity_name(e) for e in cand_entity_list if normalize_entity_name(e)
+            ))
+
             # N-gram expansion
             cand_entity_list = list(set(sum([
                 [c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split()))
                  if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity]
                 for cand_entity in cand_entity_list
             ], [])))
+            llm_timings['normalization_ngram'] = time.time() - t0
 
             if not cand_entity_list:
                 if context_mode == 'ont':
@@ -361,7 +386,9 @@ class ProductExtractionTracer:
                 return pd.DataFrame()
 
             # Match with products (this calls _match_entities_with_products which we also patch)
+            t0 = time.time()
             cand_entities_sim = recognizer._match_entities_with_products(cand_entity_list, rank_limit)
+            llm_timings['product_matching'] = time.time() - t0
 
             if cand_entities_sim.empty:
                 if context_mode == 'ont':
@@ -379,6 +406,7 @@ class ProductExtractionTracer:
             trace_data.similarities_before_2nd_stage = cand_entities_sim.copy()
 
             # 2. Second Stage: Filtering - THIS IS THE KEY PART
+            t0 = time.time()
             entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
             cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
 
@@ -430,6 +458,7 @@ class ProductExtractionTracer:
                 batch_results = parallel(delayed(get_entities_only_by_llm)(args) for args in batches)
 
             cand_entity_list = list(set(sum(batch_results, [])))
+            llm_timings['stage2_llm_call'] = time.time() - t0
 
             # Capture 2nd stage confirmed entities
             trace_data.second_stage_confirmed_entities = cand_entity_list
@@ -439,6 +468,10 @@ class ProductExtractionTracer:
 
             # *** CAPTURE AFTER 2ND STAGE FILTERING ***
             trace_data.similarities_after_2nd_stage = cand_entities_sim.copy() if not cand_entities_sim.empty else None
+
+            # Merge LLM sub-step timings into trace_data (prefix with 'llm_' to distinguish)
+            for k, v in llm_timings.items():
+                trace_data.substep_timings[f"llm_{k}"] = v
 
             # ONT mode: return with metadata
             if context_mode == 'ont':
@@ -453,8 +486,143 @@ class ProductExtractionTracer:
 
             return cand_entities_sim
 
-        # Apply patch
+        # Apply patch for extract_entities_with_llm
         recognizer.extract_entities_with_llm = traced_extract_entities_with_llm
+
+        # Also patch extract_entities_hybrid for sub-step timing
+        original_extract_entities_hybrid = recognizer.extract_entities_hybrid
+
+        def traced_extract_entities_hybrid(mms_msg):
+            """Wrapped version that captures sub-step timing."""
+            from utils import (validate_text_input, filter_text_by_exc_patterns, filter_specific_terms,
+                              safe_execute, parallel_fuzzy_similarity, parallel_seq_similarity)
+            from services.entity_recognizer import PROCESSING_CONFIG
+            import re
+
+            timings = {}
+            trace_data.substep_timings = timings
+
+            try:
+                mms_msg = validate_text_input(mms_msg)
+
+                if recognizer.item_pdf_all.empty or 'item_nm_alias' not in recognizer.item_pdf_all.columns:
+                    return [], [], pd.DataFrame()
+
+                unique_aliases = recognizer.item_pdf_all['item_nm_alias'].unique()
+
+                # Sub-step 1: Kiwi sentence splitting
+                t0 = time.time()
+                sentences = sum(recognizer.kiwi.split_into_sents(
+                    re.split(r"_+", mms_msg), return_tokens=True, return_sub_sents=True
+                ), [])
+                sentences_all = []
+                for sent in sentences:
+                    if sent.subs:
+                        sentences_all.extend(sent.subs)
+                    else:
+                        sentences_all.append(sent)
+                sentence_list = [
+                    filter_text_by_exc_patterns(sent, recognizer.exc_tag_patterns)
+                    for sent in sentences_all
+                ]
+                timings['kiwi_sentence_split'] = time.time() - t0
+
+                # Sub-step 2: Kiwi tokenization + NNP extraction
+                t0 = time.time()
+                result_msg = recognizer.kiwi.tokenize(mms_msg, normalize_coda=True, z_coda=False, split_complex=False)
+                entities_from_kiwi = [
+                    token.form for token in result_msg
+                    if token.tag == 'NNP' and
+                       token.form not in recognizer.stop_item_names + ['-'] and
+                       len(token.form) >= 2 and
+                       not token.form.lower() in recognizer.stop_item_names
+                ]
+                entities_from_kiwi = [e for e in filter_specific_terms(entities_from_kiwi) if e in unique_aliases]
+                timings['kiwi_tokenization_nnp'] = time.time() - t0
+
+                # Sub-step 3: Fuzzy matching
+                t0 = time.time()
+                similarities_fuzzy = safe_execute(
+                    parallel_fuzzy_similarity,
+                    sentence_list,
+                    unique_aliases,
+                    threshold=getattr(PROCESSING_CONFIG, 'fuzzy_threshold', 0.5),
+                    text_col_nm='sent',
+                    item_col_nm='item_nm_alias',
+                    n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
+                    batch_size=30,
+                    default_return=pd.DataFrame()
+                )
+                timings['fuzzy_matching'] = time.time() - t0
+
+                if similarities_fuzzy.empty:
+                    cand_item_list = list(entities_from_kiwi) if entities_from_kiwi else []
+                    if cand_item_list:
+                        extra_item_pdf = recognizer.item_pdf_all.query("item_nm_alias in @cand_item_list")[
+                            ['item_nm','item_nm_alias','item_id']
+                        ].groupby(["item_nm"])['item_id'].apply(list).reset_index()
+                    else:
+                        extra_item_pdf = pd.DataFrame()
+                    return entities_from_kiwi, cand_item_list, extra_item_pdf
+
+                # Sub-step 4: Sequence similarity
+                t0 = time.time()
+                similarities_seq = safe_execute(
+                    parallel_seq_similarity,
+                    sent_item_pdf=similarities_fuzzy,
+                    text_col_nm='sent',
+                    item_col_nm='item_nm_alias',
+                    n_jobs=getattr(PROCESSING_CONFIG, 'n_jobs', 4),
+                    batch_size=getattr(PROCESSING_CONFIG, 'batch_size', 100),
+                    default_return=pd.DataFrame()
+                )
+                timings['sequence_similarity'] = time.time() - t0
+
+                # Sub-step 5: Threshold filtering + merge
+                t0 = time.time()
+                similarity_threshold = getattr(PROCESSING_CONFIG, 'similarity_threshold', 0.2)
+                cand_items = similarities_seq.query(
+                    "sim >= @similarity_threshold and "
+                    "item_nm_alias.str.contains('', case=False) and "
+                    "item_nm_alias not in @recognizer.stop_item_names"
+                )
+
+                entities_from_kiwi_pdf = recognizer.item_pdf_all.query("item_nm_alias in @entities_from_kiwi")[
+                    ['item_nm','item_nm_alias']
+                ]
+                entities_from_kiwi_pdf['sim'] = 1.0
+
+                cand_item_pdf = pd.concat([cand_items, entities_from_kiwi_pdf])
+
+                if not cand_item_pdf.empty:
+                    cand_item_array = cand_item_pdf.sort_values('sim', ascending=False).groupby([
+                        "item_nm_alias"
+                    ])['sim'].max().reset_index(name='final_sim').sort_values(
+                        'final_sim', ascending=False
+                    ).query("final_sim >= 0.2")['item_nm_alias'].unique()
+
+                    cand_item_list = list(cand_item_array) if hasattr(cand_item_array, '__iter__') else []
+
+                    if cand_item_list:
+                        extra_item_pdf = recognizer.item_pdf_all.query("item_nm_alias in @cand_item_list")[
+                            ['item_nm','item_nm_alias','item_id']
+                        ].groupby(["item_nm"])['item_id'].apply(list).reset_index()
+                    else:
+                        extra_item_pdf = pd.DataFrame()
+                else:
+                    cand_item_list = []
+                    extra_item_pdf = pd.DataFrame()
+                timings['threshold_filter_merge'] = time.time() - t0
+
+                return entities_from_kiwi, cand_item_list, extra_item_pdf
+
+            except Exception as e:
+                logger.error(f"Traced extract_entities_hybrid failed: {e}")
+                import traceback as tb
+                logger.error(tb.format_exc())
+                return [], [], pd.DataFrame()
+
+        recognizer.extract_entities_hybrid = traced_extract_entities_hybrid
 
     def _patch_result_builder_for_tracing(self):
         """
@@ -534,6 +702,9 @@ class ProductExtractionTracer:
                 cand_entities_sim = cand_entities_sim.query(f"(sim_s1>={combined_threshold} and sim_s2>={combined_threshold})")
                 trace_data.similarities_after_combined_filter = cand_entities_sim.copy() if not cand_entities_sim.empty else None
 
+                if cand_entities_sim.empty:
+                    return pd.DataFrame()
+
                 # Step 4: Aggregate and compute combined score
                 cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg', 'item_nm_alias'])[['sim_s1', 'sim_s2']].apply(
                     lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()
@@ -612,23 +783,20 @@ class ProductExtractionTracer:
 
         recognizer.map_products_to_entities = traced_map_products_to_entities
 
-        # Patch build_extraction_result to capture merge with alias_pdf_raw
-        original_build = builder.build_extraction_result
+        # Patch assemble_result to capture alias_pdf_raw merge data from EntityMatchingStep
+        original_assemble = builder.assemble_result
 
-        def traced_build_extraction_result(json_objects, msg, pgm_info, entities_from_kiwi, message_id='#'):
+        def traced_assemble_result(json_objects, matched_products, msg, pgm_info, message_id='#'):
             """Capture merge with alias_pdf_raw and substring filtering."""
             from utils import replace_special_chars_with_space
 
-            # We need to intercept after similarities_fuzzy is computed
-            # This is tricky because we can't easily inject into the middle of the method
-            # Instead, we'll capture what we can from the trace data already collected
-
-            result = original_build(json_objects, msg, pgm_info, entities_from_kiwi, message_id)
+            result = original_assemble(json_objects, matched_products, msg, pgm_info, message_id)
 
             # Try to capture alias_pdf_raw merge (if we have final_similarities)
             if trace_data.final_similarities is not None and not trace_data.final_similarities.empty:
                 try:
-                    alias_pdf_raw = builder.alias_pdf_raw
+                    # alias_pdf_raw is now on EntityMatchingStep, find it from the workflow
+                    alias_pdf_raw = self.extractor.alias_pdf_raw
                     if alias_pdf_raw is not None and not alias_pdf_raw.empty:
                         merged_df = trace_data.final_similarities.merge(
                             alias_pdf_raw[['alias_1', 'type']].drop_duplicates(),
@@ -652,7 +820,7 @@ class ProductExtractionTracer:
 
             return result
 
-        builder.build_extraction_result = traced_build_extraction_result
+        builder.assemble_result = traced_assemble_result
 
     def trace_message(self, message: str, message_id: str = "#") -> TraceResult:
         """
@@ -692,6 +860,7 @@ class ProductExtractionTracer:
             ContextPreparationStep,
             LLMExtractionStep,
             ResponseParsingStep,
+            EntityMatchingStep,
             ResultConstructionStep,
             ValidationStep,
             DAGExtractionStep
@@ -722,6 +891,21 @@ class ProductExtractionTracer:
             # Capture input state (product-focused)
             input_data = self._capture_state_before_step(state, step_name)
 
+            # Check should_execute (conditional step execution)
+            if not step.should_execute(state):
+                step_duration = time.time() - step_start
+                step_trace = StepTrace(
+                    step_name=step_name,
+                    step_number=i,
+                    duration_seconds=step_duration,
+                    status="skipped",
+                    input_data=input_data,
+                    output_data={"skipped": True, "reason": "should_execute returned False"},
+                )
+                trace.step_traces.append(step_trace)
+                state.add_history(step_name, step_duration, "skipped")
+                continue
+
             # Execute step
             try:
                 state = step.execute(state)
@@ -740,6 +924,13 @@ class ProductExtractionTracer:
             # Capture product-specific changes
             product_changes = self._capture_product_changes(state, step_name)
 
+            # Capture sub-step timings for EntityExtractionStep and ResultConstructionStep
+            substep_timings = {}
+            if step_name in ("EntityExtractionStep", "EntityMatchingStep", "ResultConstructionStep") and self._entity_trace.substep_timings:
+                substep_timings = dict(self._entity_trace.substep_timings)
+                # Clear for next step so timings don't bleed across steps
+                self._entity_trace.substep_timings = {}
+
             # Create step trace
             step_trace = StepTrace(
                 step_name=step_name,
@@ -748,7 +939,8 @@ class ProductExtractionTracer:
                 status=status,
                 input_data=input_data,
                 output_data=output_data,
-                product_changes=product_changes
+                product_changes=product_changes,
+                substep_timings=substep_timings
             )
             trace.step_traces.append(step_trace)
 
@@ -759,8 +951,8 @@ class ProductExtractionTracer:
                     trace.llm_prompt = stored_prompts['main_extraction'].get('content', '')
                 trace.llm_response = state.get("result_json_text", "")
 
-            # Capture similarity scores for Step 7
-            if step_name == "ResultConstructionStep":
+            # Capture similarity scores for EntityMatchingStep
+            if step_name == "EntityMatchingStep":
                 trace.similarity_scores = self._entity_trace.final_similarities
 
             if state.has_error():
@@ -806,12 +998,16 @@ class ProductExtractionTracer:
             captured['result_json_text_length'] = len(state.get("result_json_text", ""))
             captured['result_json_text_preview'] = state.get("result_json_text", "")[:500]
 
-        elif step_name == "ResultConstructionStep":
+        elif step_name == "EntityMatchingStep":
             json_objects = state.get("json_objects", {})
             captured['json_objects_product'] = json_objects.get('product', [])
             captured['entities_from_kiwi'] = state.get("entities_from_kiwi", [])
             captured['entity_extraction_mode'] = self.extractor.entity_extraction_mode
             captured['context_mode'] = getattr(self.extractor, 'entity_extraction_context_mode', 'dag')
+
+        elif step_name == "ResultConstructionStep":
+            captured['matched_products_count'] = len(state.matched_products)
+            captured['matched_products'] = state.matched_products[:10]
 
         elif step_name == "ValidationStep":
             final_result = state.get("final_result", {})
@@ -871,11 +1067,9 @@ class ProductExtractionTracer:
             captured['json_objects_product'] = json_objects.get('product', [])
             captured['is_fallback'] = state.get("is_fallback", False)
 
-        elif step_name == "ResultConstructionStep":
-            final_result = state.get("final_result", {})
-            captured['final_result_product'] = final_result.get('product', [])
-            captured['final_result_product_count'] = len(final_result.get('product', []))
-            captured['offer_type'] = final_result.get('offer', {}).get('type', 'N/A')
+        elif step_name == "EntityMatchingStep":
+            captured['matched_products'] = state.matched_products
+            captured['matched_products_count'] = len(state.matched_products)
 
             # ENHANCED: Capture entity extraction trace data
             if self._entity_trace.first_stage_prompt:
@@ -887,6 +1081,12 @@ class ProductExtractionTracer:
                 captured['similarity_scores_sample'] = _dataframe_to_serializable(
                     self._entity_trace.final_similarities, 20
                 )
+
+        elif step_name == "ResultConstructionStep":
+            final_result = state.get("final_result", {})
+            captured['final_result_product'] = final_result.get('product', [])
+            captured['final_result_product_count'] = len(final_result.get('product', []))
+            captured['offer_type'] = final_result.get('offer', {}).get('type', 'N/A')
 
         elif step_name == "ValidationStep":
             final_result = state.get("final_result", {})
@@ -930,11 +1130,10 @@ class ProductExtractionTracer:
                 changes['llm_product_names'] = [p.get('name', '') for p in products if isinstance(p, dict)]
                 changes['llm_product_actions'] = [p.get('action', '') for p in products if isinstance(p, dict)]
 
-        elif step_name == "ResultConstructionStep":
-            # This is the key step where product transformation happens
-            final_result = state.get("final_result", {})
-            products = final_result.get('product', [])
-            changes['final_product_count'] = len(products)
+        elif step_name == "EntityMatchingStep":
+            # This is the key step where product matching happens
+            products = state.matched_products
+            changes['matched_product_count'] = len(products)
 
             if products:
                 changes['product_details'] = []
@@ -1006,11 +1205,24 @@ class ProductExtractionTracer:
 
         # Step-by-step traces
         for step_trace in trace.step_traces:
-            status_icon = "OK" if step_trace.status == "success" else "FAIL"
+            status_icon = {"success": "OK", "skipped": "SKIP", "failed": "FAIL"}.get(step_trace.status, "FAIL")
             lines.append("-" * 80)
             lines.append(f"STEP {step_trace.step_number}: {step_trace.step_name} "
                         f"({step_trace.duration_seconds:.2f}s) [{status_icon}]")
             lines.append("-" * 80)
+
+            # Sub-step timings (if available)
+            if step_trace.substep_timings:
+                lines.append("SUB-STEP TIMINGS:")
+                total_substep = sum(step_trace.substep_timings.values())
+                for substep_name, substep_duration in step_trace.substep_timings.items():
+                    pct = (substep_duration / step_trace.duration_seconds * 100) if step_trace.duration_seconds > 0 else 0
+                    lines.append(f"  {substep_name}: {substep_duration:.3f}s ({pct:.1f}%)")
+                overhead = step_trace.duration_seconds - total_substep
+                if overhead > 0.01:
+                    pct = (overhead / step_trace.duration_seconds * 100) if step_trace.duration_seconds > 0 else 0
+                    lines.append(f"  (overhead/other): {overhead:.3f}s ({pct:.1f}%)")
+                lines.append("")
 
             # Input
             if step_trace.input_data:
@@ -1482,7 +1694,7 @@ Examples:
     parser.add_argument("--message-id", type=str, default="#", help="Message identifier")
     parser.add_argument("--output-format", "-f", choices=["text", "json", "markdown"], default="text")
     parser.add_argument("--output-file", "-o", type=str, help="Save output to file")
-    parser.add_argument("--save-to", type=str, help="Directory to save trace results")
+    parser.add_argument("--save-to", type=str, default="outputs/", help="Directory to save trace results (default: outputs/)")
     parser.add_argument("--analyze-with-llm", action="store_true", help="Perform LLM analysis")
     parser.add_argument("--analysis-model", type=str, default="cld", help="LLM model for analysis")
     parser.add_argument("--llm-model", type=str, default="ax", help="LLM model for extraction")
@@ -1491,6 +1703,8 @@ Examples:
     parser.add_argument("--extract-dag", action="store_true", help="Enable DAG extraction")
     parser.add_argument("--context-mode", type=str, choices=["dag", "pairing", "none", "ont"], default="dag",
                        help="Entity extraction context mode (CRITICAL: dag vs ont produce different results)")
+    parser.add_argument("--skip-entity-extraction", action="store_true",
+                       help="Skip Kiwi + fuzzy matching entity pre-extraction (Step 2)")
 
     args = parser.parse_args()
 
@@ -1500,6 +1714,7 @@ Examples:
         'offer_info_data_src': args.data_source,
         'extract_entity_dag': args.extract_dag,
         'entity_extraction_context_mode': args.context_mode,
+        'skip_entity_extraction': args.skip_entity_extraction,
     }
 
     print("=" * 60)
@@ -1520,14 +1735,18 @@ Examples:
     report = tracer.generate_report(trace, args.output_format)
 
     if args.output_file:
-        with open(args.output_file, 'w', encoding='utf-8') as f:
+        # Insert timestamp before extension: trace.txt -> trace_20260209_123456.txt
+        base, ext = os.path.splitext(args.output_file)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = f"{base}_{timestamp}{ext}"
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(report)
-        print(f"\nReport saved to: {args.output_file}")
+        print(f"\nReport saved to: {output_path}")
     elif args.save_to:
         os.makedirs(args.save_to, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         ext = {'text': 'txt', 'json': 'json', 'markdown': 'md'}[args.output_format]
-        filepath = os.path.join(args.save_to, f"trace_{args.context_mode}_{args.message_id}_{timestamp}.{ext}")
+        filepath = os.path.join(args.save_to, f"trace_{args.context_mode}_{args.llm_model}_{args.message_id}_{timestamp}.{ext}")
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(report)
         print(f"\nReport saved to: {filepath}")

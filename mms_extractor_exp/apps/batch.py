@@ -710,7 +710,9 @@ def main():
                        help='엔티티 추출에 사용할 LLM 모델 (default: ax)')
     parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont'], default='dag',
                        help='엔티티 추출 컨텍스트 모드 (dag: DAG 컨텍스트, pairing: PAIRING 컨텍스트, none: 컨텍스트 없음, ont: 온톨로지 기반 추출, default: dag)')
-    parser.add_argument('--extract-entity-dag', action='store_true', default=False, 
+    parser.add_argument('--skip-entity-extraction', action='store_true', default=False,
+                       help='Kiwi + fuzzy matching 기반 엔티티 사전추출 스킵 (Step 2)')
+    parser.add_argument('--extract-entity-dag', action='store_true', default=False,
                        help='엔티티 DAG 추출 활성화 - 메시지에서 엔티티 간 관계를 그래프로 추출하고 시각화 (default: False)')
     
     # Logging arguments
@@ -760,7 +762,8 @@ def main():
         'llm_model': args.llm_model,
         'entity_llm_model': args.entity_llm_model,
         'extract_entity_dag': args.extract_entity_dag,  # DAG 추출 여부
-        'entity_extraction_context_mode': args.entity_extraction_context_mode  # 컨텍스트 모드
+        'entity_extraction_context_mode': args.entity_extraction_context_mode,  # 컨텍스트 모드
+        'skip_entity_extraction': args.skip_entity_extraction,  # Kiwi+fuzzy 스킵 여부
     }
     
     # 병렬 처리 설정
