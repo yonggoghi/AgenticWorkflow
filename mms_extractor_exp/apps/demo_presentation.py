@@ -40,7 +40,7 @@ st.markdown("""
         margin-bottom: 2rem;
     }
     .main-header h1 { color: white; margin: 0; }
-    .main-header p { color: #e0e7ff; margin: 0.5rem 0 0 0; }
+    .main-header p { color: #e0e7ff; margin: 0.5rem 0 0 0; font-size: 1.3rem; }
     .message-card {
         background: #1e293b;
         color: #e2e8f0;
@@ -48,7 +48,7 @@ st.markdown("""
         border-radius: 8px;
         border-left: 4px solid #4f46e5;
         margin: 0.5rem 0;
-        font-size: 0.9rem;
+        font-size: 1.15rem;
         line-height: 1.8;
         max-height: 300px;
         overflow-y: auto;
@@ -128,18 +128,18 @@ DAG_IMAGES_DIR = PROJECT_ROOT / "dag_images"
 # Pipeline step definitions
 PIPELINE_STEPS = [
     {
-        "num": 1, "name": "InputValidationStep", "kr": "입력 검증",
+        "num": 1, "name": "InputValidationStep", "kr": "메시지 전처리",
         "desc": "메시지 길이 체크, 정제",
         "tech": ["텍스트 strip/정제", "길이 검증 (10~5000자)", "타입 검증"],
         "input_desc": "원본 MMS 메시지 텍스트",
-        "output_desc": "정제된 메시지 텍스트 (whitespace 제거)",
+        "output_desc": "정제된 메시지 텍스트 (whitespace, 특수 문자 제거)",
     },
     {
         "num": 2, "name": "EntityExtractionStep", "kr": "엔티티 추출",
         "desc": "Kiwi NLP로 상품/브랜드 후보 추출",
         "tech": ["Kiwi 형태소 분석기", "Bigram 사전필터링 (45K aliases → 후보 축소)", "Fuzzy String Matching (fuzz.ratio)", "SequenceMatcher 유사도"],
         "input_desc": "정제된 메시지 + 45K 상품 별칭 DB",
-        "output_desc": "Kiwi 엔티티 목록 + 후보 상품 리스트",
+        "output_desc": "NLP 및 ML 추출 후보 상품 리스트",
     },
     {
         "num": 3, "name": "ProgramClassificationStep", "kr": "프로그램 분류",
@@ -163,11 +163,11 @@ PIPELINE_STEPS = [
         "output_desc": "LLM JSON 텍스트 응답",
     },
     {
-        "num": 6, "name": "ResponseParsingStep", "kr": "응답 파싱",
+        "num": 6, "name": "ResponseParsingStep", "kr": "응답 분석",
         "desc": "LLM JSON 응답 파싱 및 검증",
         "tech": ["JSON 파싱 (다중 객체 지원)", "스키마 검증", "스키마 응답 감지/거부"],
         "input_desc": "LLM JSON 텍스트 응답",
-        "output_desc": "파싱된 JSON 객체 (dict)",
+        "output_desc": "추출된 상품명",
     },
     {
         "num": 7, "name": "EntityMatchingStep", "kr": "엔티티 매칭",
@@ -181,7 +181,7 @@ PIPELINE_STEPS = [
         "desc": "최종 결과 JSON 조립",
         "tech": ["결과 필드 조립", "상품/채널/프로그램 통합", "메타데이터 첨부"],
         "input_desc": "매칭된 엔티티 + 메타데이터",
-        "output_desc": "최종 ext_result JSON",
+        "output_desc": "최종 추출 결과 JSON",
     },
     {
         "num": 9, "name": "ValidationStep", "kr": "결과 검증",
@@ -354,28 +354,54 @@ def _show_step_actual_data(demo: dict, step_idx: int):
     step_num = step_idx + 1
 
     if step_num == 1:
-        formatted = msg.replace("__", "\n").replace("_", " ")
-        # st.text_area("입력 메시지", formatted[:500], height=100, disabled=True)
+        pass
+
+    elif step_num == 2:
+        kiwi_entities = demo.get("entities_from_kiwi", [])
+        cand_items = demo.get("cand_item_list", [])
+        # if kiwi_entities:
+        st.markdown('<h4 style="color:#4f46e5; margin-left:1.5rem;">NLP 추출 엔티티</h4>', unsafe_allow_html=True)
+        st.markdown(f'<div style="margin-left:2rem;">{", ".join(str(e) for e in kiwi_entities)}</div>', unsafe_allow_html=True)
+        # if cand_items:
+        st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">Fuzzy Matching 후보 엔티티</h4>', unsafe_allow_html=True)
+        if isinstance(cand_items[0], dict):
+            st.dataframe(pd.DataFrame(cand_items), use_container_width=True, hide_index=True)
+        else:
+            st.markdown(f'<div style="margin-left:2rem;">{", ".join(str(c) for c in cand_items)}</div>', unsafe_allow_html=True)
 
     elif step_num == 3:
         pgm = ext.get("pgm", [])
         if pgm:
-            st.markdown("**프로그램 매칭 결과:**")
+            st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">프로그램 매칭 결과</h4>', unsafe_allow_html=True)
             if isinstance(pgm, list) and all(isinstance(p, dict) for p in pgm):
-                st.dataframe(pd.DataFrame(pgm), width='stretch', hide_index=True)
+                st.dataframe(pd.DataFrame(pgm), use_container_width=True, hide_index=True)
             else:
                 for p in pgm:
                     st.write(f"- {p}")
 
+    elif step_num == 4:
+        rag_context = demo.get("rag_context", "")
+        if rag_context:
+            truncated = rag_context[:1000]
+            if len(rag_context) > 1000:
+                truncated += f"\n\n... (총 {len(rag_context):,}자 중 1,000자 표시)"
+            st.code(truncated, language=None)
+
     elif step_num == 5:
-        st.markdown("**LLM 원본 출력 (raw_result):**")
+        st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">LLM 원본 출력 (raw_result)</h4>', unsafe_allow_html=True)
         if raw:
             st.json(raw)
+
+    elif step_num == 6:
+        raw_products = raw.get("product", [])
+        if raw_products:
+            names = [p.get("name", str(p)) if isinstance(p, dict) else str(p) for p in raw_products]
+            st.markdown(f'<div style="margin-left:2rem;">{", ".join(names)}</div>', unsafe_allow_html=True)
 
     elif step_num == 7:
         products = ext.get("product", [])
         if products:
-            st.markdown("**매칭된 상품:**")
+            st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">매칭된 상품</h4>', unsafe_allow_html=True)
             if isinstance(products, list) and all(isinstance(p, dict) for p in products):
                 rows = []
                 for p in products:
@@ -388,26 +414,27 @@ def _show_step_actual_data(demo: dict, step_idx: int):
                 available = [c for c in preferred if c in df.columns]
                 remaining = [c for c in df.columns if c not in preferred]
                 df = df[available + remaining]
-                st.dataframe(df, width='stretch', hide_index=True)
+                st.dataframe(df, use_container_width=True, hide_index=True)
             else:
                 for p in products:
                     st.write(f"- {p}")
 
     elif step_num == 8:
-        st.markdown("**최종 ext_result:**")
+        # st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">최종 추출 결과</h4>', unsafe_allow_html=True)
         st.json(ext)
 
     elif step_num == 10:
         entity_dag = ext.get("entity_dag", [])
         if entity_dag:
-            st.markdown("**엔티티 DAG 텍스트:**")
+            st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">DAG 텍스트</h4>', unsafe_allow_html=True)
             for line in entity_dag:
                 st.write(f"- {line}")
+        st.markdown('<h4 style="color:#4f46e5; margin-left:1.5rem;">DAG 이미지</h4>', unsafe_allow_html=True)
         dag_filename = demo.get("dag_image_filename")
         if dag_filename:
             dag_path = DAG_IMAGES_DIR / dag_filename
             if dag_path.exists():
-                st.image(str(dag_path), caption=f"DAG ({dag_filename})", width='stretch')
+                st.image(str(dag_path), caption=f"DAG ({dag_filename})", use_container_width=True)
 
 
 # ── Extracted Results ───────────────────────────────────────────────────
@@ -449,7 +476,7 @@ def _display_extracted_info(ext_result: Dict[str, Any]):
                     available = [c for c in preferred if c in df.columns]
                     remaining = [c for c in df.columns if c not in preferred]
                     df = df[available + remaining]
-                st.dataframe(df, width='stretch', hide_index=True)
+                st.dataframe(df, use_container_width=True, hide_index=True)
             else:
                 for item in items:
                     st.write(f"- {item}")
@@ -468,7 +495,7 @@ def _display_dag_image(demo: Dict[str, Any]):
 
     dag_path = DAG_IMAGES_DIR / dag_filename
     if dag_path.exists():
-        st.image(str(dag_path), caption=f"오퍼 관계 DAG ({dag_filename})", width='stretch')
+        st.image(str(dag_path), caption=f"오퍼 관계 DAG ({dag_filename})", use_container_width=True)
         st.caption(f"파일: `{dag_filename}` ({dag_path.stat().st_size:,} bytes)")
     else:
         st.warning(f"DAG 이미지 파일을 찾을 수 없습니다: `{dag_filename}`")
@@ -486,7 +513,7 @@ def page_pipeline(demos: List[Dict[str, Any]]):
     """Main pipeline page (merged overview + demo results)."""
     st.markdown("""
     <div class="main-header">
-        <h1>📊 MMS Extractor 파이프라인 설명</h1>
+        <h1>📊 MMS Extractor 작업 흐름 설명</h1>
         <p>MMS 광고 메시지에서 구조화된 정보를 추출하는 10단계 AI 파이프라인</p>
     </div>
     """, unsafe_allow_html=True)
@@ -595,7 +622,7 @@ def page_live_demo():
             try:
                 response = requests.post(
                     f"{api_url}/extract",
-                    json={"message": message, "llm_model": "ax", "offer_info_data_src": "local", "extract_entity_dag": True},
+                    json={"message": message, "llm_model": "ax", "offer_info_data_src": "local", "extract_entity_dag": False},
                     timeout=120
                 )
                 if response.status_code == 200:

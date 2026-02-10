@@ -111,9 +111,26 @@ def run_pipeline_with_timing(extractor, message: str, message_id: str = '#'):
     final_result['message_id'] = message_id
     raw_result['message_id'] = message_id
 
+    # Capture intermediate data
+    rag_context = state.get("rag_context", "")
+    entities_from_kiwi = state.get("entities_from_kiwi", [])
+    cand_item_list = state.get("cand_item_list", None)
+    if cand_item_list is not None:
+        if hasattr(cand_item_list, 'to_dict'):
+            cand_items_json = cand_item_list.to_dict(orient='records')
+        elif isinstance(cand_item_list, list):
+            cand_items_json = cand_item_list
+        else:
+            cand_items_json = list(cand_item_list)
+    else:
+        cand_items_json = []
+
     return {
         "ext_result": final_result,
         "raw_result": raw_result,
+        "rag_context": rag_context,
+        "entities_from_kiwi": list(entities_from_kiwi) if entities_from_kiwi else [],
+        "cand_item_list": cand_items_json,
     }, step_timings, total_duration
 
 
@@ -178,6 +195,9 @@ def generate_demo_data():
             "title": title,
             "ext_result": result.get("ext_result", {}),
             "raw_result": result.get("raw_result", {}),
+            "rag_context": result.get("rag_context", ""),
+            "entities_from_kiwi": result.get("entities_from_kiwi", []),
+            "cand_item_list": result.get("cand_item_list", []),
             "dag_image_filename": dag_filename if dag_exists else None,
             "step_timings": step_timings,
             "total_duration": total_duration,
