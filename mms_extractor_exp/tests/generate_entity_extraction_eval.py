@@ -635,7 +635,7 @@ Examples:
     parser.add_argument(
         "--context-mode", "-c",
         type=str,
-        choices=['dag', 'pairing', 'none', 'ont'],
+        choices=['dag', 'pairing', 'none', 'ont', 'typed'],
         default='dag',
         help="Entity extraction context mode (default: dag)"
     )
