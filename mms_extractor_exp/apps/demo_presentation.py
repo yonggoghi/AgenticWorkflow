@@ -31,6 +31,21 @@ st.set_page_config(
 # CSS
 st.markdown("""
 <style>
+    /* Force dark mode */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"],
+    [data-testid="stSidebar"], [data-testid="stSidebarContent"],
+    .main, .block-container, section[data-testid="stSidebar"] {
+        background-color: #0e1117 !important;
+        color: #fafafa !important;
+    }
+    [data-testid="stSidebar"], [data-testid="stSidebarContent"] {
+        background-color: #1a1c23 !important;
+    }
+    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stText {
+        color: #fafafa !important;
+    }
+    .main-header h1, .main-header p { color: white !important; }
+    .main-header p { color: #e0e7ff !important; }
     .main-header {
         background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         color: white;
