@@ -1,0 +1,546 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "(광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생..."
+Timestamp: 2026-02-09 14:06:00
+Total Duration: 28.40 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: none <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 5
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (25, 6)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담_- 시니어 전용 요금제로 통신비 절약 가능__■ 다원대리점 분당수내점_- 주소: 경기도 성남시 분당구 불정로 266(수내동) _- 연락처: 031-711-9011_- 찾아오시는 길: 동국대학교 분당한방병원 옆 건물 1층 코너__▶ 매장 홈페이지
+
+OUTPUT:
+  msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100%...
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (16.64s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.587s (3.5%)
+  kiwi_tokenization_nnp: 0.008s (0.1%)
+  fuzzy_matching: 0.510s (3.1%)
+  sequence_similarity: 15.522s (93.3%)
+  threshold_filter_merge: 0.013s (0.1%)
+
+INPUT:
+  msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담_- 시니어 전용 요금제로 통신비 절약 가능__■ 다원대리점 분당수내점_- 주소: 경기도 성남시 분당구 불정로 266(수내동) _- 연락처: 031-711-9011_- 찾아오시는 길: 동국대학교 분당한방병원 옆 건물 1층 코너__▶ 매장 홈페이지
+  context_mode: none
+
+OUTPUT:
+  entities_from_kiwi: []
+  cand_item_list: ['IPCC', 'SK(주)', 'B tv 혜택', 'CU 할인']
+  cand_item_count: 4
+  extra_item_pdf_shape: (4, 2)
+  extra_item_pdf_sample: [{'item_nm': 'B tv 혜택', 'item_id': ['PR00000374']}, {'item_nm': 'CU 할인', 'item_id': ['PR00000344', 'PR00000734']}, {'item_nm': 'IPCC', 'item_id': ['PD00013624']}, {'item_nm': 'SK(주)', 'item_id': ['X000000044']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 0
+  candidate_products_matched: 4
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.15s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰
+	상품및부가서비스가입유도_유선  : 결합, 인터넷, internet, 할인, IPTV, TV, 기가, 초고속, 와이파이, wifi, 약정
+	사용법/혜택/이벤트안내_T멤버십 : 멤버십, Tday, T day, VIP, 등급, 할인, 쿠폰, 이벤트, 혜택, 적립, 무료
+	기변유도및해지방어 : TDS, 기기, 변경, 약정, 할인, 혜택, 업그레이드, 신규단말, 신규 단말, 보상,
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['IPCC', 'SK(주)', 'B tv 혜택', 'CU 할인']
+  extra_item_pdf_shape: (4, 2)
+
+OUTPUT:
+  rag_context_length: 454
+  rag_context_preview: 
+### 광고 분류 기준 정보 ###
+	타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰
+	상품및부가서비스가입유도_유선  : 결합, 인터넷, internet, 할인, IPTV, TV, 기가, 초고속, 와이파이, wifi, 약정
+	사용법/혜택/이벤트안내_T멤버십 : 멤버십, Tday, T day, VIP, 등급, 할인, 쿠폰, 이벤트, 혜택, 적립, 무료
+	기변유도및해지방어 : TDS, 기기, 변경, 약정, 할인, 혜택, 업...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (8.26s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사
+  rag_context_length: 454
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 1204
+  result_json_text_preview: ```json
+{
+    "title": "11월 인터넷/IPTV/휴대폰/시니어 요금제 특별 혜택 안내",
+    "purpose": [
+        "상품 가입 유도",
+        "대리점/매장 방문 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "인터넷/IPTV, 휴대폰 통신사 이동, 시니어 요금제 혜택! 분당수내점 방문 시 상담/가입 안내",
+    "product": [
+        {
+            "name": "인터넷/IPTV",
+            "action"...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 1204
+  result_json_text_preview: ```json
+{
+    "title": "11월 인터넷/IPTV/휴대폰/시니어 요금제 특별 혜택 안내",
+    "purpose": [
+        "상품 가입 유도",
+        "대리점/매장 방문 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "인터넷/IPTV, 휴대폰 통신사 이동, 시니어 요금제 혜택! 분당수내점 방문 시 상담/가입 안내",
+    "product": [
+        {
+            "name": "인터넷/IPTV",
+            "action": "가입"
+        },
+        {
+            "name": "휴대폰",
+            "action": "가입"
+        },
+        {
+            "name": "시니어 전용 요금제",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+  
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '인터넷/IPTV', 'action': '가입'}, {'name': '휴대폰', 'action': '가입'}, {'name': '시니어 전용 요금제', 'action': '가입'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 3
+  llm_product_names: ['인터넷/IPTV', '휴대폰', '시니어 전용 요금제']
+  llm_product_actions: ['가입', '가입', '가입']
+
+--------------------------------------------------------------------------------
+STEP 7: ResultConstructionStep (3.35s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  llm_stage1_llm_call: 1.343s (40.1%)
+  llm_normalization_ngram: 0.000s (0.0%)
+  llm_product_matching: 0.525s (15.7%)
+  llm_stage2_llm_call: 1.312s (39.2%)
+  (overhead/other): 0.171s (5.1%)
+
+INPUT:
+  json_objects_product: [{'name': '인터넷/IPTV', 'action': '가입'}, {'name': '휴대폰', 'action': '가입'}, {'name': '시니어 전용 요금제', 'action': '가입'}]
+  entities_from_kiwi: []
+  entity_extraction_mode: llm
+  context_mode: none
+
+OUTPUT:
+  final_result_product: [{'item_nm': 'USIM 스마트인증', 'item_id': ['NA00004064'], 'item_name_in_msg': ['USIM'], 'expected_action': ['기타']}, {'item_nm': '요즘가족결합', 'item_id': ['NH00000157'], 'item_name_in_msg': ['가족결합'], 'expected_action': ['기타']}]
+  final_result_product_count: 2
+  offer_type: org
+  entity_extraction_prompt: (length=1000)
+    Preview: 
+아래 메시지에서 핵심 개체명들을 추출해라.
+
+(Chain-of-Thought) - 개체명 추출 과정:
+1. 광고/안내 메시지 분류: 첨부된 텍스트는 SK텔레콤의 다양한 광고 및 안내 메시지들을 포함하고 있다.
+2. 핵심 개체 정의: 개체명은 광고의 주제가 되거나, 사용자 행동의 중심이 되는 고유 명사들로 정의한다. (예: 특정 App, Device, Event, Store, Plan 등)
+3. 추출 및 정제: 메시지 전체를 스캔하며 광고의 핵심 주제에 해당하는 개체명을 원문 그대로 추출하고, 중복을 제거하여 최종 목록을 구성한다....
+  candidate_entities_for_matching: ['LG U+', 'USIM', '1. **ENTITY**: SK텔레콤', 'KT', '시니어 전용 요금제', '가족결합', '만 65세 이상', '수능', 'SKT 고객센터', '동국대학교 분당한방병원', 'SK 인터넷', '휴대폰', 'IPTV', '인터넷/IPTV', '다원대리점 분당수내점']
+  similarity_scores_count: 11
+  similarity_scores_sample:
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': 'USIM 스마트인증', 'sim': 1.474, 'rank': 1.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': 'USIM SMART인증', 'sim': 1.4266666666666665, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': 'USIM Smart인증', 'sim': 1.4266666666666665, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': 'USIM smart인증', 'sim': 1.4266666666666665, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': '구축-BLE-USIM', 'sim': 1.4148484848484848, 'rank': 3.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    ... (6 more)
+
+PRODUCT FOCUS:
+  final_product_count: 2
+  product_details:
+    - item_nm: USIM 스마트인증
+      item_id: ['NA00004064']
+      item_name_in_msg: ['USIM']
+      expected_action: ['기타']
+    - item_nm: 요즘가족결합
+      item_id: ['NH00000157']
+      item_name_in_msg: ['가족결합']
+      expected_action: ['기타']
+  similarity_matching:
+    - total_matches: 11
+    - unique_entities_in_msg: 3
+    - unique_aliases_matched: 11
+  top_similarity_matches:
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': 'USIM 스마트인증', 'sim': 1.474}
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 안심결제', 'sim': 1.4562499999999998}
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 인증보호', 'sim': 1.4562499999999998}
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': 'USIM SMART인증', 'sim': 1.4266666666666665}
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': 'USIM Smart인증', 'sim': 1.4266666666666665}
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': 'USIM smart인증', 'sim': 1.4266666666666665}
+    - {'item_name_in_msg': 'USIM', 'item_nm_alias': '구축-BLE-USIM', 'sim': 1.4148484848484848}
+    - {'item_name_in_msg': '휴대폰', 'item_nm_alias': '휴대폰 안SIM결제', 'sim': 1.403}
+    - {'item_name_in_msg': '가족결합', 'item_nm_alias': '요즘가족결합', 'sim': 1.3633333333333333}
+    - {'item_name_in_msg': '가족결합', 'item_nm_alias': '요즘가족결합 (예약)', 'sim': 1.2055555555555555}
+
+--------------------------------------------------------------------------------
+STEP 8: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 2
+
+OUTPUT:
+  validated_product_count: 2
+  has_errors: False
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 11
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg item_nm_alias       sim  rank  item_dmn_nm
+0              USIM    USIM 스마트인증  1.474000   1.0  요금제 및 관련 상품
+8               휴대폰      휴대폰 안심결제  1.456250   1.0  요금제 및 관련 상품
+9               휴대폰      휴대폰 인증보호  1.456250   1.0  요금제 및 관련 상품
+1              USIM  USIM SMART인증  1.426667   2.0  요금제 및 관련 상품
+2              USIM  USIM Smart인증  1.426667   2.0  요금제 및 관련 상품
+3              USIM  USIM smart인증  1.426667   2.0  요금제 및 관련 상품
+4              USIM   구축-BLE-USIM  1.414848   3.0  요금제 및 관련 상품
+10              휴대폰    휴대폰 안SIM결제  1.403000   2.0  요금제 및 관련 상품
+5              가족결합        요즘가족결합  1.363333   1.0  요금제 및 관련 상품
+6              가족결합   요즘가족결합 (예약)  1.205556   2.0  요금제 및 관련 상품
+7              가족결합     요즘가족결합_예약  1.205556   2.0  요금제 및 관련 상품
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 1562
+  Unique item_name_in_msg: 12
+  Unique item_nm_alias: 1535
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 1562
+  sim_s1 range: 0.2000 - 0.9970
+  sim_s2 range: 0.0667 - 0.6333
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 18
+  Filtered OUT at this stage: 1544 rows
+  Sample of filtered items:
+    - LG U+ -> 5GX클럽 LG 윙 R (s1=0.7000, s2=0.2500)
+    - LG U+ -> 5GX클럽 LG 윙 (s1=0.7000, s2=0.3067)
+    - LG U+ -> LGU+밴드비즈(300GB) (s1=0.6000, s2=0.1714)
+    - LG U+ -> LGU+Band비즈(300GB) (s1=0.6000, s2=0.1500)
+    - LG U+ -> LGU+BAND비즈(300GB) (s1=0.6000, s2=0.1500)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 18
+  Combined sim range: 0.9164 - 1.4740
+  All items with combined scores:
+    - USIM -> USIM 스마트인증: sim=1.474000
+    - 휴대폰 -> 휴대폰 인증보호: sim=1.456250
+    - 휴대폰 -> 휴대폰 안심결제: sim=1.456250
+    - USIM -> USIM Smart인증: sim=1.426667
+    - USIM -> USIM smart인증: sim=1.426667
+    - USIM -> USIM SMART인증: sim=1.426667
+    - USIM -> 구축-BLE-USIM: sim=1.414848
+    - 휴대폰 -> 휴대폰 안SIM결제: sim=1.403000
+    - 가족결합 -> 요즘가족결합: sim=1.363333
+    - 가족결합 -> 요즘가족결합 (예약): sim=1.205556
+    - 가족결합 -> 요즘가족결합_예약: sim=1.205556
+    - USIM -> 성SIM당: sim=1.080000
+    - SK 인터넷 -> T_스피드 인터넷: sim=1.055556
+    - SK 인터넷 -> T_광랜인터넷: sim=0.990476
+    - SK 인터넷 -> T_기가인터넷: sim=0.990476
+    - SK 인터넷 -> T_GB인터넷: sim=0.990476
+    - SKT 고객센터 -> SKT 베이스웍스: sim=0.955556
+    - 시니어 전용 요금제 -> 로밍임대폰 전용요금제: sim=0.916364
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 11
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  7 items filtered out:
+    - USIM -> 성SIM당: sim=1.080000 -> FAILED (need 1.1, got 1.080000)
+    - SK 인터넷 -> T_스피드 인터넷: sim=1.055556 -> FAILED (need 1.1, got 1.055556)
+    - SK 인터넷 -> T_GB인터넷: sim=0.990476 -> FAILED (need 1.1, got 0.990476)
+    - SK 인터넷 -> T_광랜인터넷: sim=0.990476 -> FAILED (need 1.1, got 0.990476)
+    - SK 인터넷 -> T_기가인터넷: sim=0.990476 -> FAILED (need 1.1, got 0.990476)
+    - SKT 고객센터 -> SKT 베이스웍스: sim=0.955556 -> FAILED (need 1.1, got 0.955556)
+    - 시니어 전용 요금제 -> 로밍임대폰 전용요금제: sim=0.916364 -> FAILED (need 1.1, got 0.916364)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - USIM -> USIM 스마트인증: sim=1.474000
+    - 휴대폰 -> 휴대폰 안심결제: sim=1.456250
+    - 휴대폰 -> 휴대폰 인증보호: sim=1.456250
+    - USIM -> USIM SMART인증: sim=1.426667
+    - USIM -> USIM Smart인증: sim=1.426667
+    - USIM -> USIM smart인증: sim=1.426667
+    - USIM -> 구축-BLE-USIM: sim=1.414848
+    - 휴대폰 -> 휴대폰 안SIM결제: sim=1.403000
+    - 가족결합 -> 요즘가족결합: sim=1.363333
+    - 가족결합 -> 요즘가족결합 (예약): sim=1.205556
+    - 가족결합 -> 요즘가족결합_예약: sim=1.205556
+
+------------------------------------------------------------
+STAGE 5.5: 2nd STAGE LLM FILTERING *** CRITICAL FOR DAG vs ONT ***
+------------------------------------------------------------
+  Context Mode: none
+
+  Entities in Message (sent to 2nd stage):
+    - USIM
+    - 가족결합
+    - 휴대폰
+
+  Candidate Aliases (vocab sent to 2nd stage): 11
+    - USIM 스마트인증
+    - USIM SMART인증
+    - USIM Smart인증
+    - USIM smart인증
+    - 구축-BLE-USIM
+    - 요즘가족결합
+    - 요즘가족결합 (예약)
+    - 요즘가족결합_예약
+    - 휴대폰 안심결제
+    - 휴대폰 인증보호
+    - 휴대폰 안SIM결제
+
+  2nd Stage Prompts: 2 calls
+  --- Prompt 1 (truncated) ---
+    
+                    Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+    
+    ***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
+    
+    Guidelines:
+    1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+    2. Exclude general concepts not tied to specific offerings
+    3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+    4. Multiple entities in 'entities in message' may combine into one composite entity
+    
+    Return format: Do not use Markdown formatting. Use plain text.
+    REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
+    ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match
+    
+                    ## message:
+                    (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담_- 시니어 전용 요금제로 통신비 절약 가능__■ 다원대리점 분당수내점_- 주소: 경기도 성남시 분당구 불정로 266(수내동) _- 연락처: 03
+    ... (499 more chars)
+  --- Prompt 2 (truncated) ---
+    
+                    Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+    
+    ***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
+    
+    Guidelines:
+    1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+    2. Exclude general concepts not tied to specific offerings
+    3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+    4. Multiple entities in 'entities in message' may combine into one composite entity
+    
+    Return format: Do not use Markdown formatting. Use plain text.
+    REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
+    ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match
+    
+                    ## message:
+                    (광고)[SKT] 다원대리점 분당수내점 11월 혜택 안내__고객님, 안녕하세요._SK텔레콤 공식인증대리점 다원대리점 분당수내점에서 11월 혜택을 만나 보세요.__수능을 마친 수험생과 가족분들을 위한 특별 혜택도 준비했습니다.__■ 인터넷/IPTV 통신사 이동 혜택_- KT/LG U+ 인터넷/IPTV 약정 만료된 고객님께서 SK 인터넷/IPTV로 변경 시 사은품 증정_- 인터넷/IPTV/CCTV 상담 대환영__■ 휴대폰 통신사 이동 혜택_- KT/LG U+/알뜰폰에서 쓰던 폰 그대로 통신사 이동 가능_- 유심(USIM) 비용 100% 지원, 즉시 가족결합 가능, 선택약정 시 월정액 25% 할인__■ 만 65세 이상 시니어 고객님 연금 할인 상담_- 시니어 전용 요금제로 통신비 절약 가능__■ 다원대리점 분당수내점_- 주소: 경기도 성남시 분당구 불정로 266(수내동) _- 연락처: 03
+    ... (392 more chars)
+
+  2nd Stage Responses: 2 responses
+  --- Response 1 ---
+    REASON: 유심 비용 100% 지원 혜택이 있으나, 'candidate entities in vocabulary'에 정확히 일치하는 문자열이 없음.
+ENTITY:
+  --- Response 2 ---
+    REASON: 유심 비용 100% 지원, 가족결합 가능 등 핵심 혜택이 메시지에 언급됨. 'USIM'과 '가족결합'이 Vocabulary에 정확히 일치하는 엔티티로 존재함.
+ENTITY: USIM smart인증, 요즘가족결합
+
+  *** CONFIRMED BY 2nd STAGE LLM: 2 entities ***
+    - USIM smart인증
+    - 요즘가족결합
+
+  *** 2nd STAGE FILTERING EFFECT: ***
+    Before 2nd stage: 11 rows
+    After 2nd stage:  2 rows
+    Filtered out:     9 rows
+
+    *** FILTERED OUT BY 2nd STAGE LLM: ***
+      - USIM -> USIM 스마트인증: sim=1.474000
+      - 휴대폰 -> 휴대폰 안심결제: sim=1.456250
+      - 휴대폰 -> 휴대폰 인증보호: sim=1.456250
+      - USIM -> USIM SMART인증: sim=1.426667
+      - USIM -> USIM Smart인증: sim=1.426667
+      - USIM -> 구축-BLE-USIM: sim=1.414848
+      - 휴대폰 -> 휴대폰 안SIM결제: sim=1.403000
+      - 가족결합 -> 요즘가족결합 (예약): sim=1.205556
+      - 가족결합 -> 요즘가족결합_예약: sim=1.205556
+
+    *** PASSED 2nd STAGE LLM FILTER: ***
+      - USIM -> USIM smart인증: sim=1.426667
+      - 가족결합 -> 요즘가족결합: sim=1.363333
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 2
+  Unique aliases: 2
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 2
+    - USIM smart인증
+    - 요즘가족결합
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 2
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 2
+  Unique item_nm: 2
+  Final product names:
+    - USIM 스마트인증
+    - 요즘가족결합
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 11
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 11
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+    "title": "11월 인터넷/IPTV/휴대폰/시니어 요금제 특별 혜택 안내",
+    "purpose": [
+        "상품 가입 유도",
+        "대리점/매장 방문 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "인터넷/IPTV, 휴대폰 통신사 이동, 시니어 요금제 혜택! 분당수내점 방문 시 상담/가입 안내",
+    "product": [
+        {
+            "name": "인터넷/IPTV",
+            "action": "가입"
+        },
+        {
+            "name": "휴대폰",
+            "action": "가입"
+        },
+        {
+            "name": "시니어 전용 요금제",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+        {
+            "type": "대리점",
+            "value": "다원대리점 분당수내점",
+            "action": "추가 정보"
+        },
+        {
+            "type": "전화번호",
+            "value": "031-711-9011",
+            "action": "문의"
+        },
+        {
+            "type": "URL",
+            "value": "https://t-mms.kr/t.do?m=#61&s=34495&a=&u=http://tworldfriends.co.kr/D146360023",
+            "action": "추가 정보"
+        },
+        {
+            "type": "전화번호",
+            "value": "1558",
+            "action": "문의"
+        },
+        {
+            "type": "전화번호",
+            "value": "1504",
+            "action": "수신 거부"
+        }
+    ],
+    "pgm": [
+        "타사회선(가망)_win-back",
+        "상품및부가서비스가입유도_유선"
+    ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 2
+================================================================================
+1. USIM 스마트인증
+   - item_id: ['NA00004064']
+   - item_name_in_msg: ['USIM']
+   - expected_action: ['기타']
+2. 요즘가족결합
+   - item_id: ['NH00000157']
+   - item_name_in_msg: ['가족결합']
+   - expected_action: ['기타']
+
+================================================================================

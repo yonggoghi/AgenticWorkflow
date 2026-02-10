@@ -1,0 +1,230 @@
+{
+  "metadata": {
+    "extraction_timestamp": "2026-02-02T13:30:36.362265",
+    "msg_id": "unknown",
+    "offer_dt": "",
+    "msg_nm": ""
+  },
+  "original_message": "[SK텔레콤] 반가워요 5G 아이폰17/ 17 Pro 사전예약 안내\\n(광고)[SKT] 아이폰 17/17 Pro 사전예약 안내  #04 고객님, 안녕하세요. 최고의 스마트폰 칩과 카메라, 견고한 세라믹 실드에 5G 기술까지! 이 모든 것을 갖춘 아이폰 17/17 Pro를 만나 보세요.  ▶ 혜택받고 사전예약하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/2HeWcdx   ■ 사전예약 기간 - 2020년 10월 23일(금)~10월 29일(목) * 2020년 10월 30일(금)부터 순서대로 배송 후 개통 진행  ■ 아이폰 17/17 Pro 스펙 - Hi, Speed. 아이폰 최초의 5G 지원 - 스마트폰 사상 가장 빠른 A14 Bionic 칩 - 매끈하고 강화된 내구성을 가진 세라믹 글라스 적용 디자인 - 저조도 사진의 품질을 한 차원 끌어올려 주는 카메라 시스템 - 최초의 Dolby Vision 영상 카메라 탑재   ■ T다이렉트샵 특별 사은품(택1) ① [사죠영] 죠르디 한정판 기프트 ② [프리디] 멀티 무선 충전기 ③ [에이프릴스톤] 보조배터리+멀티백 ④ [크레앙] 3in1 무선 충전 살균기  ※ 이 외에도 더 많은 T기프트가 있습니다. .  ▶ T다이렉트샵 카카오톡 상담하기: http://t-mms.kr/t.do?m=#61&u=https://bit.ly/3o7zOnA  ■ 문의: SKT 고객센터(1558, 무료)   ※ 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.  SKT와 함께해주셔서 감사합니다. 무료 수신거부 1504",
+  "ontology": {
+    "entities": [
+      {
+        "id": "아이폰17",
+        "type": "Product",
+        "properties": {
+          "name": "아이폰 17",
+          "manufacturer": "Apple",
+          "category": "smartphone",
+          "network_type": "5G",
+          "chip": "A14 Bionic",
+          "features": [
+            "5G 지원",
+            "세라믹 실드",
+            "저조도 카메라",
+            "Dolby Vision 영상"
+          ]
+        }
+      },
+      {
+        "id": "아이폰17 Pro",
+        "type": "Product",
+        "properties": {
+          "name": "아이폰 17 Pro",
+          "manufacturer": "Apple",
+          "category": "smartphone",
+          "network_type": "5G",
+          "chip": "A14 Bionic",
+          "features": [
+            "5G 지원",
+            "세라믹 실드",
+            "저조도 카메라",
+            "Dolby Vision 영상"
+          ]
+        }
+      },
+      {
+        "id": "아이폰17_사전예약_캠페인",
+        "type": "Campaign",
+        "properties": {
+          "name": "반가워요 5G 아이폰17/ 17 Pro 사전예약",
+          "period_start": "2020-10-23",
+          "period_end": "2020-10-29",
+          "campaign_type": "사전예약",
+          "delivery_start": "2020-10-30"
+        }
+      },
+      {
+        "id": "죠르디_한정판_기프트",
+        "type": "Benefit",
+        "properties": {
+          "name": "[사죠영] 죠르디 한정판 기프트",
+          "benefit_type": "사은품",
+          "value": "1",
+          "value_unit": "개",
+          "condition_summary": "사전예약 시 택1"
+        }
+      },
+      {
+        "id": "멀티_무선_충전기",
+        "type": "Benefit",
+        "properties": {
+          "name": "[프리디] 멀티 무선 충전기",
+          "benefit_type": "사은품",
+          "value": "1",
+          "value_unit": "개",
+          "condition_summary": "사전예약 시 택1"
+        }
+      },
+      {
+        "id": "보조배터리_멀티백",
+        "type": "Benefit",
+        "properties": {
+          "name": "[에이프릴스톤] 보조배터리+멀티백",
+          "benefit_type": "사은품",
+          "value": "1",
+          "value_unit": "개",
+          "condition_summary": "사전예약 시 택1"
+        }
+      },
+      {
+        "id": "3in1_무선_충전_살균기",
+        "type": "Benefit",
+        "properties": {
+          "name": "[크레앙] 3in1 무선 충전 살균기",
+          "benefit_type": "사은품",
+          "value": "1",
+          "value_unit": "개",
+          "condition_summary": "사전예약 시 택1"
+        }
+      },
+      {
+        "id": "T다이렉트샵",
+        "type": "Channel",
+        "properties": {
+          "name": "T다이렉트샵",
+          "channel_type": "web",
+          "url_pattern": "https://bit.ly/2HeWcdx"
+        }
+      },
+      {
+        "id": "T다이렉트샵_카카오톡",
+        "type": "Channel",
+        "properties": {
+          "name": "T다이렉트샵 카카오톡 상담",
+          "channel_type": "chatbot",
+          "url_pattern": "https://bit.ly/3o7zOnA"
+        }
+      },
+      {
+        "id": "SKT_고객센터",
+        "type": "Channel",
+        "properties": {
+          "name": "SKT 고객센터",
+          "channel_type": "call_center",
+          "phone": "1558"
+        }
+      }
+    ],
+    "relationships": [
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "아이폰17",
+        "type": "PROMOTES",
+        "properties": {}
+      },
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "아이폰17 Pro",
+        "type": "PROMOTES",
+        "properties": {}
+      },
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "죠르디_한정판_기프트",
+        "type": "OFFERS",
+        "properties": {
+          "selection_type": "택1"
+        }
+      },
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "멀티_무선_충전기",
+        "type": "OFFERS",
+        "properties": {
+          "selection_type": "택1"
+        }
+      },
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "보조배터리_멀티백",
+        "type": "OFFERS",
+        "properties": {
+          "selection_type": "택1"
+        }
+      },
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "3in1_무선_충전_살균기",
+        "type": "OFFERS",
+        "properties": {
+          "selection_type": "택1"
+        }
+      },
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "T다이렉트샵",
+        "type": "REACHABLE_VIA",
+        "properties": {}
+      },
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "T다이렉트샵_카카오톡",
+        "type": "REACHABLE_VIA",
+        "properties": {}
+      },
+      {
+        "source": "아이폰17_사전예약_캠페인",
+        "target": "SKT_고객센터",
+        "type": "REACHABLE_VIA",
+        "properties": {}
+      }
+    ],
+    "user_action_path": {
+      "dag": "(Customer) -[접속]-> (T다이렉트샵) -[사전예약]-> (아이폰17 또는 아이폰17 Pro) -[사은품 선택]-> (사은품 4종 중 택1) -> (사전예약 완료 + 사은품 수령)",
+      "logic_summary": "고객이 T다이렉트샵 또는 카카오톡 채널을 통해 아이폰17/17 Pro 사전예약을 진행하고, 4가지 사은품 중 1개를 선택하여 최종 혜택을 받는다. 2020년 10월 30일부터 순차 배송 및 개통이 진행된다.",
+      "branch_conditions": [
+        {
+          "condition": "제품 선택: 아이폰17 vs 아이폰17 Pro",
+          "path_if_true": "선택한 제품으로 사전예약 진행",
+          "path_if_false": null
+        },
+        {
+          "condition": "사은품 선택: 4종 중 택1",
+          "path_if_true": "선택한 사은품 수령",
+          "path_if_false": null
+        }
+      ]
+    },
+    "actions": [
+      {
+        "function": "Pre_Order",
+        "params": {
+          "Product_ID": "아이폰17 또는 아이폰17 Pro",
+          "Campaign_ID": "아이폰17_사전예약_캠페인",
+          "Benefit_ID": "사은품 4종 중 택1"
+        },
+        "effect": "사전예약 객체 생성, 선택한 사은품(Benefit) 연결, 2020년 10월 30일부터 순차 배송 및 개통",
+        "channel": "T다이렉트샵 (https://bit.ly/2HeWcdx)"
+      },
+      {
+        "function": "Store_Visit",
+        "params": {
+          "Channel_ID": "T다이렉트샵_카카오톡",
+          "Customer_ID": "고객"
+        },
+        "effect": "카카오톡 상담을 통한 사전예약 안내 및 진행",
+        "channel": "T다이렉트샵 카카오톡 (https://bit.ly/3o7zOnA)"
+      }
+    ]
+  }
+}

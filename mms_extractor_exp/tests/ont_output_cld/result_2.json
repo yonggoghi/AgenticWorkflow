@@ -1,0 +1,216 @@
+{
+  "metadata": {
+    "extraction_timestamp": "2026-02-02T13:31:04.736037",
+    "msg_id": "unknown",
+    "offer_dt": "",
+    "msg_nm": ""
+  },
+  "original_message": "8월 T Day 혜택 안내 (광고)[SKT] 8월 T Day 혜택 안내   8월 3일(월)~7일(금) 원스토어 북스 인기 도서 10종 무료 대여!  ▶ 자세히 보기: http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob  ★T멤버십만의 5가지 혜택★ ① 매일 찾아오는 행복한 시간 \"해피아워\" ② 매달 첫 주, 매주 수요일 \"T Day\" ③ SKT 5GX 고객님을 위한 부스트 파크 특별 혜택 ④ 착한 소비에 할인까지 \"열린멤버십\" ⑤ 할인 한도는 연간 무제한    무료 수신거부 1504",
+  "ontology": {
+    "entities": [
+      {
+        "id": "8월 T Day",
+        "type": "Campaign",
+        "properties": {
+          "name": "8월 T Day",
+          "period_start": "2020-08-03",
+          "period_end": "2020-08-07",
+          "campaign_type": "월간프로모션",
+          "eligibility_condition": "T멤버십 회원"
+        }
+      },
+      {
+        "id": "T멤버십",
+        "type": "MembershipTier",
+        "properties": {
+          "tier_level": "STANDARD",
+          "benefits_scope": "해피아워, T Day, 부스트 파크, 열린멤버십, 무제한 할인"
+        }
+      },
+      {
+        "id": "원스토어 북스",
+        "type": "PartnerBrand",
+        "properties": {
+          "name": "원스토어 북스",
+          "category": "entertainment",
+          "partnership_type": "무료증정"
+        }
+      },
+      {
+        "id": "인기 도서 10종 무료 대여",
+        "type": "Benefit",
+        "properties": {
+          "name": "인기 도서 10종 무료 대여",
+          "benefit_type": "무료체험",
+          "value": "10",
+          "value_unit": "건",
+          "condition_summary": "8월 3일~7일 기간 한정"
+        }
+      },
+      {
+        "id": "해피아워",
+        "type": "Benefit",
+        "properties": {
+          "name": "해피아워",
+          "benefit_type": "할인",
+          "condition_summary": "매일 특정 시간대 혜택"
+        }
+      },
+      {
+        "id": "T Day 혜택",
+        "type": "Benefit",
+        "properties": {
+          "name": "T Day 혜택",
+          "benefit_type": "할인",
+          "condition_summary": "매달 첫 주, 매주 수요일"
+        }
+      },
+      {
+        "id": "5GX",
+        "type": "RatePlan",
+        "properties": {
+          "name": "5GX",
+          "plan_tier": "premium",
+          "network_type": "5G"
+        }
+      },
+      {
+        "id": "부스트 파크 특별 혜택",
+        "type": "Benefit",
+        "properties": {
+          "name": "부스트 파크 특별 혜택",
+          "benefit_type": "할인",
+          "condition_summary": "5GX 고객 전용"
+        }
+      },
+      {
+        "id": "열린멤버십",
+        "type": "Benefit",
+        "properties": {
+          "name": "열린멤버십",
+          "benefit_type": "할인",
+          "condition_summary": "착한 소비 할인"
+        }
+      },
+      {
+        "id": "연간 무제한 할인",
+        "type": "Benefit",
+        "properties": {
+          "name": "연간 무제한 할인",
+          "benefit_type": "할인",
+          "condition_summary": "할인 한도 무제한"
+        }
+      },
+      {
+        "id": "T멤버십 웹사이트",
+        "type": "Channel",
+        "properties": {
+          "name": "T멤버십 웹사이트",
+          "channel_type": "web",
+          "url_pattern": "http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob"
+        }
+      },
+      {
+        "id": "5GX 고객",
+        "type": "Segment",
+        "properties": {
+          "name": "5GX 고객",
+          "criteria_type": "가입상태",
+          "additional_filter": "5GX 요금제 이용자"
+        }
+      }
+    ],
+    "relationships": [
+      {
+        "source": "8월 T Day",
+        "target": "인기 도서 10종 무료 대여",
+        "type": "OFFERS",
+        "properties": {}
+      },
+      {
+        "source": "8월 T Day",
+        "target": "원스토어 북스",
+        "type": "PARTNERS_WITH",
+        "properties": {}
+      },
+      {
+        "source": "원스토어 북스",
+        "target": "인기 도서 10종 무료 대여",
+        "type": "PROVIDES",
+        "properties": {}
+      },
+      {
+        "source": "T멤버십",
+        "target": "8월 T Day",
+        "type": "QUALIFIES_FOR",
+        "properties": {}
+      },
+      {
+        "source": "T멤버십",
+        "target": "해피아워",
+        "type": "QUALIFIES_FOR",
+        "properties": {}
+      },
+      {
+        "source": "T멤버십",
+        "target": "T Day 혜택",
+        "type": "QUALIFIES_FOR",
+        "properties": {}
+      },
+      {
+        "source": "T멤버십",
+        "target": "열린멤버십",
+        "type": "QUALIFIES_FOR",
+        "properties": {}
+      },
+      {
+        "source": "T멤버십",
+        "target": "연간 무제한 할인",
+        "type": "QUALIFIES_FOR",
+        "properties": {}
+      },
+      {
+        "source": "5GX 고객",
+        "target": "부스트 파크 특별 혜택",
+        "type": "TARGETED_BY",
+        "properties": {}
+      },
+      {
+        "source": "5GX",
+        "target": "부스트 파크 특별 혜택",
+        "type": "ENABLES",
+        "properties": {}
+      },
+      {
+        "source": "8월 T Day",
+        "target": "T멤버십 웹사이트",
+        "type": "REACHABLE_VIA",
+        "properties": {}
+      }
+    ],
+    "user_action_path": {
+      "dag": "(T멤버십 회원 확인) -> (8월 T Day 캠페인 참여) -> (원스토어 북스 접속) -> (인기 도서 10종 무료 대여)",
+      "logic_summary": "T멤버십 회원이 8월 3일~7일 기간 동안 제공된 링크를 통해 원스토어 북스에 접속하여 인기 도서 10종을 무료로 대여할 수 있음. 추가로 T멤버십 회원은 해피아워, T Day, 열린멤버십, 연간 무제한 할인 등 5가지 상시 혜택을 이용 가능하며, 5GX 요금제 이용 고객은 부스트 파크 특별 혜택도 받을 수 있음",
+      "branch_conditions": [
+        {
+          "condition": "5GX 요금제 이용 여부",
+          "path_if_true": "(5GX 고객) -> (부스트 파크 특별 혜택)",
+          "path_if_false": "부스트 파크 혜택 제외, 기본 T멤버십 혜택만 제공"
+        }
+      ]
+    },
+    "actions": [
+      {
+        "function": "Redeem_Coupon",
+        "params": {
+          "Customer_ID": "user_input_required",
+          "PartnerBrand_ID": "원스토어 북스",
+          "Coupon_ID": "인기 도서 10종 무료 대여",
+          "MembershipTier_ID": "T멤버십"
+        },
+        "effect": "8월 3일~7일 기간 동안 원스토어 북스에서 인기 도서 10종 무료 대여 권한 활성화",
+        "channel": "T멤버십 웹사이트 (http://t-mms.kr/t.do?m=#61&u=https://goo.gl/f6p7ob)"
+      }
+    ]
+  }
+}

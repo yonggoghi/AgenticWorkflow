@@ -1,0 +1,907 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "갤럭시 Z 플립7 구매 고객 대상 T 다이렉트샵에서 사전예약 시 5G 프라임 요금제 가입하면 캐시백 지급합니다"
+Timestamp: 2026-02-09 16:12:27
+Total Duration: 10.70 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: dag <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 5
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (25, 6)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: 갤럭시 Z 플립7 구매 고객 대상 T 다이렉트샵에서 사전예약 시 5G 프라임 요금제 가입하면 캐시백 지급합니다
+
+OUTPUT:
+  msg: 갤럭시 Z 플립7 구매 고객 대상 T 다이렉트샵에서 사전예약 시 5G 프라임 요금제 가입하면 캐시백 지급합니다
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (0.97s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.613s (63.5%)
+  kiwi_tokenization_nnp: 0.001s (0.1%)
+  fuzzy_matching: 0.227s (23.5%)
+  sequence_similarity: 0.113s (11.7%)
+  threshold_filter_merge: 0.008s (0.9%)
+
+INPUT:
+  msg: 갤럭시 Z 플립7 구매 고객 대상 T 다이렉트샵에서 사전예약 시 5G 프라임 요금제 가입하면 캐시백 지급합니다
+  context_mode: dag
+
+OUTPUT:
+  entities_from_kiwi: ['갤럭시 Z 플립7']
+  cand_item_list: ['갤럭시 Z 플립7', '갤럭시 Z 플립5 5G', '갤럭시 Z 플립6', '갤럭시 Z 플립7 FE', '5GX 프라임', '갤럭시 Z 플립7/폴드7', '갤럭시 Z 폴드7', '갤럭시 Z 폴드5 5G', 'T_다뷰']
+  cand_item_count: 9
+  extra_item_pdf_shape: (8, 2)
+  extra_item_pdf_sample: [{'item_nm': '5GX 프라임', 'item_id': ['NA00007790']}, {'item_nm': 'T_다뷰', 'item_id': ['NI00000435']}, {'item_nm': '갤럭시 Z 폴드5 5G', 'item_id': ['U000006180']}, {'item_nm': '갤럭시 Z 폴드7', 'item_id': ['U000006916', 'U000006916']}, {'item_nm': '갤럭시 Z 플립5 5G', 'item_id': ['U000006179']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 1
+  candidate_products_matched: 9
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.26s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: 갤럭시 Z 플립7 구매 고객 대상 T 다이렉트샵에서 사전예약 시 5G 프라임 요금제 가입하면 캐시백 지급합니다
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 상품및부가서비스가입유도_단말 : 신규, 출시, 갤럭시, Galaxy, Iphone, 아이폰, 사전, 예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	상품및부가서비스가입유도_요금제 : 데이저, data, 요금제, 5G, 5GX, 요금, 무제한, 선택, 약정, 프라임, 슬림, 할인
+	기변유도및해지방어 : TDS, 기기, 변경, 약정, 할인, 혜택, 업그레이드, 신규단말, 신규 단말, 보상, 프로모션, 교체
+	사용법/혜택/이벤트안내_T멤버십 : 멤버십, Tday, T day, VIP, 등급, 할인, 쿠폰, 이벤트, 혜택, 적립, 무료
+
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['갤럭시 Z 플립7', '갤럭시 Z 플립5 5G', '갤럭시 Z 플립6', '갤럭시 Z 플립7 FE', '5GX 프라임', '갤럭시 Z 플립7/폴드7', '갤럭시 Z 폴드7', '갤럭시 Z 폴드5 5G', 'T_다뷰']
+  extra_item_pdf_shape: (8, 2)
+
+OUTPUT:
+  rag_context_length: 547
+  rag_context_preview: 
+### 광고 분류 기준 정보 ###
+	상품및부가서비스가입유도_단말 : 신규, 출시, 갤럭시, Galaxy, Iphone, 아이폰, 사전, 예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	상품및부가서비스가입유도_요금제 : 데이저, data, 요금제, 5G, 5GX, 요금, 무제한, 선택, 약정, 프라임, 슬림, 할인
+	기변유도및해지방어 : TDS, 기기, 변경, 약정, 할인, 혜택, 업그레이드, 신규단말, 신규 단말, 보상, 프로모션, 교체
+	사용법/혜택/이벤트안내_T멤버십 : 멤버십, Tday, T day, VIP, 등급, 할인...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (5.19s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: 갤럭시 Z 플립7 구매 고객 대상 T 다이렉트샵에서 사전예약 시 5G 프라임 요금제 가입하면 캐시백 지급합니다
+  rag_context_length: 547
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 579
+  result_json_text_preview: ```json
+{
+    "title": "갤럭시 Z 플립7 사전예약 시 5G 프라임 요금제 가입 캐시백",
+    "purpose": [
+        "상품 가입 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "갤럭시 Z 플립7 사전예약 시 5G 프라임 요금제 가입, 캐시백 혜택 안내",
+    "product": [
+        {
+            "name": "갤럭시 Z 플립7",
+            "action": "구매"
+        },
+        {
+      ...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 579
+  result_json_text_preview: ```json
+{
+    "title": "갤럭시 Z 플립7 사전예약 시 5G 프라임 요금제 가입 캐시백",
+    "purpose": [
+        "상품 가입 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "갤럭시 Z 플립7 사전예약 시 5G 프라임 요금제 가입, 캐시백 혜택 안내",
+    "product": [
+        {
+            "name": "갤럭시 Z 플립7",
+            "action": "구매"
+        },
+        {
+            "name": "5G 프라임",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+        {
+            "type": "온라인스토어",
+            "value": "T 다이렉트샵",
+            "action": "가입"
+        }
+    ],
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '갤럭시 Z 플립7', 'action': '구매'}, {'name': '5G 프라임', 'action': '가입'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 2
+  llm_product_names: ['갤럭시 Z 플립7', '5G 프라임']
+  llm_product_actions: ['구매', '가입']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityMatchingStep (4.28s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  llm_stage1_llm_call: 1.620s (37.9%)
+  llm_normalization_ngram: 0.000s (0.0%)
+  llm_product_matching: 0.325s (7.6%)
+  llm_stage2_llm_call: 2.320s (54.2%)
+  (overhead/other): 0.014s (0.3%)
+
+INPUT:
+  json_objects_product: [{'name': '갤럭시 Z 플립7', 'action': '구매'}, {'name': '5G 프라임', 'action': '가입'}]
+  entities_from_kiwi: ['갤럭시 Z 플립7']
+  entity_extraction_mode: llm
+  context_mode: dag
+
+OUTPUT:
+  matched_products: [4 items]
+    First 3: [{'item_nm': '5GX 프라임', 'item_id': ['NA00007790'], 'item_name_in_msg': ['5G 프라임', '5G 프라임 요금제'], 'expected_action': ['가입']}, {'item_nm': 'TDS캐시백', 'item_id': ['NA00008341'], 'item_name_in_msg': ['캐시백'], 'expected_action': ['기타']}, {'item_nm': '갤럭시 Z 폴드7', 'item_id': ['U000006916'], 'item_name_in_msg': ['갤럭시 Z 플립7'], 'expected_action': ['구매']}]
+  matched_products_count: 4
+  entity_extraction_prompt: (length=1000)
+    Preview: 
+Analyze the advertisement to extract **User Action Paths**.
+Output two distinct sections:
+1. **ENTITY**: A list of independent Root Nodes.
+2. **DAG**: A structured graph representing the flow from Root to Benefit.
+
+## Crucial Language Rule
+* **DO NOT TRANSLATE:** Extract entities **exactly as they ...
+  candidate_entities_for_matching: ['T 다이렉트샵', '5G 프라임 요금제', '캐시백', '갤럭시 Z 플립7', '5G 프라임']
+  similarity_scores_count: 67
+  similarity_scores_sample:
+    - {'item_name_in_msg': '5G 프라임', 'item_nm_alias': '5GX 프라임', 'sim': 1.6857142857142855, 'rank': 1.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '5G 프라임', 'item_nm_alias': '5GX 프라임(넷플릭스)', 'sim': 1.3666666666666667, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '5G 프라임', 'item_nm_alias': '5GX프라임', 'sim': 1.3333333333333335, 'rank': 3.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '5G 프라임', 'item_nm_alias': '패스 프라임', 'sim': 1.2666666666666666, 'rank': 4.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '5G 프라임', 'item_nm_alias': 'PASS 프라임', 'sim': 1.1333333333333333, 'rank': 5.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    ... (15 more)
+
+PRODUCT FOCUS:
+  matched_product_count: 4
+  product_details:
+    - item_nm: 5GX 프라임
+      item_id: ['NA00007790']
+      item_name_in_msg: ['5G 프라임', '5G 프라임 요금제']
+      expected_action: ['가입']
+    - item_nm: TDS캐시백
+      item_id: ['NA00008341']
+      item_name_in_msg: ['캐시백']
+      expected_action: ['기타']
+    - item_nm: 갤럭시 Z 폴드7
+      item_id: ['U000006916']
+      item_name_in_msg: ['갤럭시 Z 플립7']
+      expected_action: ['구매']
+    - item_nm: 갤럭시 Z 플립7
+      item_id: ['U000006917']
+      item_name_in_msg: ['갤럭시 Z 플립7']
+      expected_action: ['구매']
+  similarity_matching:
+    - total_matches: 67
+    - unique_entities_in_msg: 5
+    - unique_aliases_matched: 65
+  top_similarity_matches:
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7', 'sim': 2.0}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7 FE', 'sim': 1.7725}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7/폴드7', 'sim': 1.7315384615384615}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립6', 'sim': 1.6888888888888887}
+    - {'item_name_in_msg': '5G 프라임', 'item_nm_alias': '5GX 프라임', 'sim': 1.6857142857142855}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7/FOLD7', 'sim': 1.666}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7/Fold7', 'sim': 1.666}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7/fold7', 'sim': 1.666}
+    - {'item_name_in_msg': 'T 다이렉트샵', 'item_nm_alias': 'T 다이렉트샵_0 day', 'sim': 1.5723076923076922}
+    - {'item_name_in_msg': 'T 다이렉트샵', 'item_nm_alias': 'T 다이렉트샵_T 다이렉트샵', 'sim': 1.5213333333333332}
+
+--------------------------------------------------------------------------------
+STEP 8: ResultConstructionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 4
+  matched_products: [4 items]
+
+OUTPUT:
+  final_result_product: [4 items]
+    First 3: [{'item_nm': '5GX 프라임', 'item_id': ['NA00007790'], 'item_name_in_msg': ['5G 프라임', '5G 프라임 요금제'], 'expected_action': ['가입']}, {'item_nm': 'TDS캐시백', 'item_id': ['NA00008341'], 'item_name_in_msg': ['캐시백'], 'expected_action': ['기타']}, {'item_nm': '갤럭시 Z 폴드7', 'item_id': ['U000006916'], 'item_name_in_msg': ['갤럭시 Z 플립7'], 'expected_action': ['구매']}]
+  final_result_product_count: 4
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 9: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 4
+
+OUTPUT:
+  validated_product_count: 4
+  has_errors: False
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 67
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg    item_nm_alias       sim  rank  item_dmn_nm
+16        갤럭시 Z 플립7        갤럭시 Z 플립7  2.000000   1.0          단말기
+17        갤럭시 Z 플립7     갤럭시 Z 플립7 FE  1.772500   2.0          단말기
+18        갤럭시 Z 플립7    갤럭시 Z 플립7/폴드7  1.731538   3.0          단말기
+19        갤럭시 Z 플립7        갤럭시 Z 플립6  1.688889   4.0          단말기
+0            5G 프라임          5GX 프라임  1.685714   1.0  요금제 및 관련 상품
+20        갤럭시 Z 플립7  갤럭시 Z 플립7/FOLD7  1.666000   5.0          단말기
+21        갤럭시 Z 플립7  갤럭시 Z 플립7/Fold7  1.666000   5.0          단말기
+22        갤럭시 Z 플립7  갤럭시 Z 플립7/fold7  1.666000   5.0          단말기
+10          T 다이렉트샵    T 다이렉트샵_0 day  1.572308   1.0           기타
+11          T 다이렉트샵  T 다이렉트샵_T 다이렉트샵  1.521333   2.0           기타
+23        갤럭시 Z 플립7        갤럭시 Z 폴드7  1.511111   6.0          단말기
+24        갤럭시 Z 플립7     갤럭시 Z 플립5 5G  1.477778   7.0          단말기
+25        갤럭시 Z 플립7      갤럭시 Z FLIP7  1.397980   8.0          단말기
+26        갤럭시 Z 플립7      갤럭시 Z FOLD7  1.397980   8.0          단말기
+27        갤럭시 Z 플립7      갤럭시 Z Flip7  1.397980   8.0          단말기
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 867
+  Unique item_name_in_msg: 5
+  Unique item_nm_alias: 821
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 867
+  sim_s1 range: 0.2400 - 1.0000
+  sim_s2 range: 0.0410 - 1.0000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 140
+  Filtered OUT at this stage: 727 rows
+  Sample of filtered items:
+    - T 다이렉트샵 -> 다이렉트_티빙&네이버웹툰12 (s1=0.4571, s2=0.2133)
+    - T 다이렉트샵 -> 다이렉트_티빙&네이버WEB툰12 (s1=0.4571, s2=0.1882)
+    - T 다이렉트샵 -> 다이렉트_티빙&네이버Web툰12 (s1=0.4571, s2=0.1882)
+    - T 다이렉트샵 -> 다이렉트_티빙&네이버web툰12 (s1=0.4571, s2=0.1882)
+    - T 다이렉트샵 -> 다이렉트_TVING&네이버웹툰12 (s1=0.4571, s2=0.1778)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 140
+  Combined sim range: 0.8970 - 2.0000
+  All items with combined scores:
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7: sim=2.000000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7 FE: sim=1.772500
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/폴드7: sim=1.731538
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립6: sim=1.688889
+    - 5G 프라임 -> 5GX 프라임: sim=1.685714
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/fold7: sim=1.666000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/Fold7: sim=1.666000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/FOLD7: sim=1.666000
+    - T 다이렉트샵 -> T 다이렉트샵_0 day: sim=1.572308
+    - T 다이렉트샵 -> T 다이렉트샵_T 다이렉트샵: sim=1.521333
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드7: sim=1.511111
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립5 5G: sim=1.477778
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold7: sim=1.397980
+    - 5G 프라임 -> 5GX 프라임(넷플릭스): sim=1.366667
+    - 5G 프라임 -> 5GX프라임: sim=1.333333
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드6: sim=1.333333
+    - 5G 프라임 요금제 -> 5GX 프라임: sim=1.332381
+    - 5G 프라임 -> 패스 프라임: sim=1.266667
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7 FE: sim=1.255556
+    - 캐시백 -> TDS캐시백: sim=1.245000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/폴드7: sim=1.228889
+    - T 다이렉트샵 -> T_wifi폰300다이렉트: sim=1.228571
+    - T 다이렉트샵 -> T_와이파이폰300다이렉트: sim=1.228571
+    - T 다이렉트샵 -> T_WIFI폰300다이렉트: sim=1.228571
+    - T 다이렉트샵 -> T_WiFi폰300다이렉트: sim=1.228571
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> galaxy Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 A17: sim=1.182540
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드5 5G: sim=1.166667
+    - 5G 프라임 요금제 -> 5G 비즈 라우터요금제: sim=1.160000
+    - 5G 프라임 요금제 -> 5GX 프라임(넷플릭스): sim=1.160000
+    - 5G 프라임 -> Pass 프라임: sim=1.133333
+    - 5G 프라임 -> PASS 프라임: sim=1.133333
+    - 5G 프라임 -> pass 프라임: sim=1.133333
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7: sim=1.111111
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드7: sim=1.111111
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립7 FE: sim=1.086667
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립7 FE: sim=1.086667
+    - 갤럭시 Z 플립7 -> galaxy Z 플립7 FE: sim=1.086667
+    - 5G 프라임 -> 5G 음성: sim=1.080000
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/폴드7: sim=1.066667
+    - 5G 프라임 요금제 -> 5GX 프라임(Netflix): sim=1.066667
+    - 5G 프라임 -> 패스 프라임 (무료): sim=1.055556
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 A11+: sim=1.022222
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S10+: sim=1.022222
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S11: sim=1.022222
+    - T 다이렉트샵 -> 슬림+다이렉트플랜: sim=1.015873
+    - T 다이렉트샵 -> T다이렉트 플러스: sim=1.015873
+    - 5G 프라임 요금제 -> 태블릿45 요금제: sim=1.011111
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/FOLD7: sim=1.009524
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/Fold7: sim=1.009524
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/fold7: sim=1.009524
+    - 5G 프라임 요금제 -> 5GX 프라임플러스(티빙): sim=0.990769
+    - 갤럭시 Z 플립7 -> 갤럭시 A16: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 A15: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 퀀텀6: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 A24: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 A36: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 S25+: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 퀀텀4: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 S25: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 S24+ 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S24 FE: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 A25 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S24 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S23+ 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 FE: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 엣지: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S23 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 A35 5G: sim=0.977778
+    - 5G 프라임 요금제 -> 뉴태블릿45 요금제: sim=0.966667
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB A11+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 갤럭시 퀀텀6: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 tab S11: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블5 5G: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB S10+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB S11: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab S11: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 갤럭시 퀀텀4: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 tab A11+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 tab S10+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab A11+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7 FE: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 S9(삭제금지): sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 울트라: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab S10+: sim=0.941414
+    - 5G 프라임 요금제 -> LTE 52 요금제: sim=0.933333
+    - 5G 프라임 요금제 -> LTE 85 요금제: sim=0.933333
+    - 5G 프라임 요금제 -> 엘티이 85 요금제: sim=0.933333
+    - 5G 프라임 요금제 -> 엘티이 52 요금제: sim=0.933333
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S9+ 5G: sim=0.924747
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S9 5G: sim=0.924747
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 A9+ 5G: sim=0.924747
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블6: sim=0.922222
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드8: sim=0.922222
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드6: sim=0.922222
+    - 갤럭시 Z 플립7 -> 갤럭시 워치8 44mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치8 40mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치7 44mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치7 40mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치6 44mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치6 40mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> galaxy Z 플립6: sim=0.911111
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립6: sim=0.911111
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립6: sim=0.911111
+    - 5G 프라임 요금제 -> wifi 15 요금제: sim=0.896970
+    - 5G 프라임 요금제 -> 와이파이 15 요금제: sim=0.896970
+    - 5G 프라임 요금제 -> WIFI 15 요금제: sim=0.896970
+    - 5G 프라임 요금제 -> WiFi 15 요금제: sim=0.896970
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 67
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  73 items filtered out:
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립7 FE: sim=1.086667 -> FAILED (need 1.1, got 1.086667)
+    - 갤럭시 Z 플립7 -> galaxy Z 플립7 FE: sim=1.086667 -> FAILED (need 1.1, got 1.086667)
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립7 FE: sim=1.086667 -> FAILED (need 1.1, got 1.086667)
+    - 5G 프라임 -> 5G 음성: sim=1.080000 -> FAILED (need 1.1, got 1.080000)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/폴드7: sim=1.066667 -> FAILED (need 1.1, got 1.066667)
+    - 5G 프라임 요금제 -> 5GX 프라임(Netflix): sim=1.066667 -> FAILED (need 1.1, got 1.066667)
+    - 5G 프라임 -> 패스 프라임 (무료): sim=1.055556 -> FAILED (need 1.1, got 1.055556)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 A11+: sim=1.022222 -> FAILED (need 1.1, got 1.022222)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S10+: sim=1.022222 -> FAILED (need 1.1, got 1.022222)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S11: sim=1.022222 -> FAILED (need 1.1, got 1.022222)
+    - T 다이렉트샵 -> T다이렉트 플러스: sim=1.015873 -> FAILED (need 1.1, got 1.015873)
+    - T 다이렉트샵 -> 슬림+다이렉트플랜: sim=1.015873 -> FAILED (need 1.1, got 1.015873)
+    - 5G 프라임 요금제 -> 태블릿45 요금제: sim=1.011111 -> FAILED (need 1.1, got 1.011111)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/FOLD7: sim=1.009524 -> FAILED (need 1.1, got 1.009524)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/Fold7: sim=1.009524 -> FAILED (need 1.1, got 1.009524)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/fold7: sim=1.009524 -> FAILED (need 1.1, got 1.009524)
+    - 5G 프라임 요금제 -> 5GX 프라임플러스(티빙): sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - 갤럭시 Z 플립7 -> 갤럭시 A16: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25+: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 A36: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 A24: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 A15: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 퀀텀6: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 퀀텀4: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 A25 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 A35 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S23 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S23+ 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S24 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S24 FE: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S24+ 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 FE: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 엣지: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 5G 프라임 요금제 -> 뉴태블릿45 요금제: sim=0.966667 -> FAILED (need 1.1, got 0.966667)
+    - 갤럭시 Z 플립7 -> 갤럭시 갤럭시 퀀텀6: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 갤럭시 퀀텀4: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 tab S11: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 tab S10+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB A11+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab S11: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블5 5G: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7 FE: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 tab A11+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 울트라: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab S10+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 S9(삭제금지): sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB S11: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB S10+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab A11+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 5G 프라임 요금제 -> 엘티이 52 요금제: sim=0.933333 -> FAILED (need 1.1, got 0.933333)
+    - 5G 프라임 요금제 -> 엘티이 85 요금제: sim=0.933333 -> FAILED (need 1.1, got 0.933333)
+    - 5G 프라임 요금제 -> LTE 52 요금제: sim=0.933333 -> FAILED (need 1.1, got 0.933333)
+    - 5G 프라임 요금제 -> LTE 85 요금제: sim=0.933333 -> FAILED (need 1.1, got 0.933333)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S9+ 5G: sim=0.924747 -> FAILED (need 1.1, got 0.924747)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S9 5G: sim=0.924747 -> FAILED (need 1.1, got 0.924747)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 A9+ 5G: sim=0.924747 -> FAILED (need 1.1, got 0.924747)
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드8: sim=0.922222 -> FAILED (need 1.1, got 0.922222)
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드6: sim=0.922222 -> FAILED (need 1.1, got 0.922222)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블6: sim=0.922222 -> FAILED (need 1.1, got 0.922222)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치7 40mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치7 44mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립6: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립6: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치6 40mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치6 44mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치8 44mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치8 40mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> galaxy Z 플립6: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 5G 프라임 요금제 -> 와이파이 15 요금제: sim=0.896970 -> FAILED (need 1.1, got 0.896970)
+    - 5G 프라임 요금제 -> WIFI 15 요금제: sim=0.896970 -> FAILED (need 1.1, got 0.896970)
+    - 5G 프라임 요금제 -> wifi 15 요금제: sim=0.896970 -> FAILED (need 1.1, got 0.896970)
+    - 5G 프라임 요금제 -> WiFi 15 요금제: sim=0.896970 -> FAILED (need 1.1, got 0.896970)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7: sim=2.000000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7 FE: sim=1.772500
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/폴드7: sim=1.731538
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립6: sim=1.688889
+    - 5G 프라임 -> 5GX 프라임: sim=1.685714
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/FOLD7: sim=1.666000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/Fold7: sim=1.666000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/fold7: sim=1.666000
+    - T 다이렉트샵 -> T 다이렉트샵_0 day: sim=1.572308
+    - T 다이렉트샵 -> T 다이렉트샵_T 다이렉트샵: sim=1.521333
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드7: sim=1.511111
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립5 5G: sim=1.477778
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7: sim=1.397980
+    - 5G 프라임 -> 5GX 프라임(넷플릭스): sim=1.366667
+    - 5G 프라임 -> 5GX프라임: sim=1.333333
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드6: sim=1.333333
+    - 5G 프라임 요금제 -> 5GX 프라임: sim=1.332381
+    - 5G 프라임 -> 패스 프라임: sim=1.266667
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7 FE: sim=1.255556
+    - 캐시백 -> TDS캐시백: sim=1.245000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/폴드7: sim=1.228889
+    - T 다이렉트샵 -> T_WiFi폰300다이렉트: sim=1.228571
+    - T 다이렉트샵 -> T_WIFI폰300다이렉트: sim=1.228571
+    - T 다이렉트샵 -> T_wifi폰300다이렉트: sim=1.228571
+    - T 다이렉트샵 -> T_와이파이폰300다이렉트: sim=1.228571
+    - 갤럭시 Z 플립7 -> galaxy Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 A17: sim=1.182540
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드5 5G: sim=1.166667
+    - 5G 프라임 요금제 -> 5GX 프라임(넷플릭스): sim=1.160000
+    - 5G 프라임 요금제 -> 5G 비즈 라우터요금제: sim=1.160000
+    - 5G 프라임 -> PASS 프라임: sim=1.133333
+    - 5G 프라임 -> pass 프라임: sim=1.133333
+    - 5G 프라임 -> Pass 프라임: sim=1.133333
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7: sim=1.111111
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드7: sim=1.111111
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip5 5G: sim=1.109524
+
+------------------------------------------------------------
+STAGE 5.5: 2nd STAGE LLM FILTERING *** CRITICAL FOR DAG vs ONT ***
+------------------------------------------------------------
+  Context Mode: dag
+
+  Entities in Message (sent to 2nd stage):
+    - 5G 프라임
+    - 5G 프라임 요금제
+    - T 다이렉트샵
+    - 갤럭시 Z 플립7
+    - 캐시백
+
+  Candidate Aliases (vocab sent to 2nd stage): 65
+    - 5GX 프라임
+    - 5GX 프라임(넷플릭스)
+    - 5GX프라임
+    - 패스 프라임
+    - PASS 프라임
+    - Pass 프라임
+    - pass 프라임
+    - 5G 비즈 라우터요금제
+    - T 다이렉트샵_0 day
+    - T 다이렉트샵_T 다이렉트샵
+    - T_WIFI폰300다이렉트
+    - T_WiFi폰300다이렉트
+    - T_wifi폰300다이렉트
+    - T_와이파이폰300다이렉트
+    - 갤럭시 Z 플립7
+    - 갤럭시 Z 플립7 FE
+    - 갤럭시 Z 플립7/폴드7
+    - 갤럭시 Z 플립6
+    - 갤럭시 Z 플립7/FOLD7
+    - 갤럭시 Z 플립7/Fold7
+    ... (45 more)
+
+  Context Text (passed to 2nd stage LLM):
+    (갤럭시 Z 플립7:구매) -[대상]-> (T 다이렉트샵:사전예약) -[가입]-> (5G 프라임 요금제:가입) -[지급]-> (캐시백:지급)
+
+  2nd Stage Prompts: 4 calls
+  --- Prompt 1 (truncated) ---
+    
+                    Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+    
+    ***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지나 RAG Context에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
+    
+    Guidelines:
+    1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+    2. Exclude general concepts not tied to specific offerings
+    3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+    4. Multiple entities in 'entities in message' may combine into one composite entity
+    5. Refer to the 'DAG Context' which describes the user action flow. 이를 **사용자의 최종 획득/응모 대상인 핵심 혜택(Core Offering)**을 구별하는 데 사용하십시오. (e.g., 퀴즈 주제인 '아이폰'이 아닌, 최종 혜택인 '올리브영 기프트 카드'와 관련된 개체를 식별)
+    
+    Return format: Do not use Markdown formatting. Use plain text.
+    REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
+    ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match
+    
+                    ## message:
+                    갤럭시 Z 플립7 구매 고객 대상 T 다이렉트샵에서 사전예약 시 5G 프라임 요금제 가입하면 캐시백 지급합니다
+    
+                    
+    ## DAG Context (User Action Paths):
+    (갤럭시 Z 플립7:구매) -[대상]-> (T 다이렉트샵:사전예약) -[가입]-> (5G 프라임 요금제:가입) -[지급]-> (캐시백:지급)
+    
+    
+                    ## entities in message:
+         
+    ... (405 more chars)
+  --- Prompt 2 (truncated) ---
+    
+                    Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+    
+    ***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지나 RAG Context에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
+    
+    Guidelines:
+    1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+    2. Exclude general concepts not tied to specific offerings
+    3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+    4. Multiple entities in 'entities in message' may combine into one composite entity
+    5. Refer to the 'DAG Context' which describes the user action flow. 이를 **사용자의 최종 획득/응모 대상인 핵심 혜택(Core Offering)**을 구별하는 데 사용하십시오. (e.g., 퀴즈 주제인 '아이폰'이 아닌, 최종 혜택인 '올리브영 기프트 카드'와 관련된 개체를 식별)
+    
+    Return format: Do not use Markdown formatting. Use plain text.
+    REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
+    ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match
+    
+                    ## message:
+                    갤럭시 Z 플립7 구매 고객 대상 T 다이렉트샵에서 사전예약 시 5G 프라임 요금제 가입하면 캐시백 지급합니다
+    
+                    
+    ## DAG Context (User Action Paths):
+    (갤럭시 Z 플립7:구매) -[대상]-> (T 다이렉트샵:사전예약) -[가입]-> (5G 프라임 요금제:가입) -[지급]-> (캐시백:지급)
+    
+    
+                    ## entities in message:
+         
+    ... (414 more chars)
+  ... (2 more prompts)
+
+  2nd Stage Responses: 4 responses
+  --- Response 1 ---
+    REASON: 핵심 혜택은 '캐시백'이며, '5G 프라임 요금제'가 '5GX 프라임'과 정확히 일치함.
+ENTITY: 5GX 프라임
+  --- Response 2 ---
+    REASON: 핵심 혜택은 '캐시백'이며, '갤럭시 Z 플립7'이 구매 대상으로 언급됨. Vocabulary에서 정확히 일치하는 'GALAXY Z 플립7'을 찾음.
+ENTITY: GALAXY Z 플립7
+  --- Response 3 ---
+    REASON: 메시지에는 갤럭시 Z 플립7 구매 시 5G 프라임 요금제 가입 시 캐시백 지급 혜택이 명시됨. 해당 혜택과 일치하는 엔티티가 Vocabulary에 존재함.
+ENTITY: 갤럭시 Z 플립7/fold7, 5G 프라임 요금제, 캐시백
+  --- Response 4 ---
+    REASON: 메시지에서 갤럭시 Z 플립7 구매 시 5G 프라임 요금제 가입 시 캐시백을 지급한다고 명시. 'TDS캐시백'이 Vocabulary에 존재함.
+ENTITY: TDS캐시백
+
+  *** CONFIRMED BY 2nd STAGE LLM: 6 entities ***
+    - TDS캐시백
+    - 5GX 프라임
+    - 5G 프라임 요금제
+    - GALAXY Z 플립7
+    - 캐시백
+    - 갤럭시 Z 플립7/fold7
+
+  *** 2nd STAGE FILTERING EFFECT: ***
+    Before 2nd stage: 67 rows
+    After 2nd stage:  5 rows
+    Filtered out:     62 rows
+
+    *** FILTERED OUT BY 2nd STAGE LLM: ***
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7: sim=2.000000
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7 FE: sim=1.772500
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/폴드7: sim=1.731538
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 플립6: sim=1.688889
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/Fold7: sim=1.666000
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/FOLD7: sim=1.666000
+      - T 다이렉트샵 -> T 다이렉트샵_0 day: sim=1.572308
+      - T 다이렉트샵 -> T 다이렉트샵_T 다이렉트샵: sim=1.521333
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드7: sim=1.511111
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 플립5 5G: sim=1.477778
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7: sim=1.397980
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD7: sim=1.397980
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Fold7: sim=1.397980
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7: sim=1.397980
+      - 갤럭시 Z 플립7 -> 갤럭시 Z flip7: sim=1.397980
+      - 갤럭시 Z 플립7 -> 갤럭시 Z fold7: sim=1.397980
+      - 5G 프라임 -> 5GX 프라임(넷플릭스): sim=1.366667
+      - 5G 프라임 -> 5GX프라임: sim=1.333333
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드6: sim=1.333333
+      - 5G 프라임 -> 패스 프라임: sim=1.266667
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7 FE: sim=1.255556
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7 FE: sim=1.255556
+      - 갤럭시 Z 플립7 -> 갤럭시 Z flip7 FE: sim=1.255556
+      - 갤럭시 Z 플립7 -> 갤럭시 Z fold6: sim=1.236364
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP6: sim=1.236364
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD6: sim=1.236364
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Flip6: sim=1.236364
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Fold6: sim=1.236364
+      - 갤럭시 Z 플립7 -> 갤럭시 Z flip6: sim=1.236364
+      - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/폴드7: sim=1.228889
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/폴드7: sim=1.228889
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/폴드7: sim=1.228889
+      - T 다이렉트샵 -> T_와이파이폰300다이렉트: sim=1.228571
+      - T 다이렉트샵 -> T_WiFi폰300다이렉트: sim=1.228571
+      - T 다이렉트샵 -> T_WIFI폰300다이렉트: sim=1.228571
+      - T 다이렉트샵 -> T_wifi폰300다이렉트: sim=1.228571
+      - 갤럭시 Z 플립7 -> Galaxy Z 플립7: sim=1.200000
+      - 갤럭시 Z 플립7 -> galaxy Z 플립7: sim=1.200000
+      - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/Fold7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/fold7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/FOLD7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/Fold7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/fold7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/FOLD7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/Fold7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/fold7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/FOLD7: sim=1.184967
+      - 갤럭시 Z 플립7 -> 갤럭시 A17: sim=1.182540
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드5 5G: sim=1.166667
+      - 5G 프라임 요금제 -> 5G 비즈 라우터요금제: sim=1.160000
+      - 5G 프라임 요금제 -> 5GX 프라임(넷플릭스): sim=1.160000
+      - 5G 프라임 -> PASS 프라임: sim=1.133333
+      - 5G 프라임 -> Pass 프라임: sim=1.133333
+      - 5G 프라임 -> pass 프라임: sim=1.133333
+      - 갤럭시 Z 플립7 -> 갤럭시 와이드7: sim=1.111111
+      - 갤럭시 Z 플립7 -> 갤럭시 폴더블7: sim=1.111111
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP5 5G: sim=1.109524
+      - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD5 5G: sim=1.109524
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Flip5 5G: sim=1.109524
+      - 갤럭시 Z 플립7 -> 갤럭시 Z Fold5 5G: sim=1.109524
+      - 갤럭시 Z 플립7 -> 갤럭시 Z flip5 5G: sim=1.109524
+      - 갤럭시 Z 플립7 -> 갤럭시 Z fold5 5G: sim=1.109524
+
+    *** PASSED 2nd STAGE LLM FILTER: ***
+      - 5G 프라임 -> 5GX 프라임: sim=1.685714
+      - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/fold7: sim=1.666000
+      - 5G 프라임 요금제 -> 5GX 프라임: sim=1.332381
+      - 캐시백 -> TDS캐시백: sim=1.245000
+      - 갤럭시 Z 플립7 -> GALAXY Z 플립7: sim=1.200000
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 5
+  Unique aliases: 4
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 4
+    - 5GX 프라임
+    - 갤럭시 Z 플립7/fold7
+    - GALAXY Z 플립7
+    - TDS캐시백
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 5
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 6
+  Unique item_nm: 4
+  Final product names:
+    - TDS캐시백
+    - 5GX 프라임
+    - 갤럭시 Z 폴드7
+    - 갤럭시 Z 플립7
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 67
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 9
+  Filtered out: 58 rows
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+    "title": "갤럭시 Z 플립7 사전예약 시 5G 프라임 요금제 가입 캐시백",
+    "purpose": [
+        "상품 가입 유도",
+        "혜택 안내"
+    ],
+    "sales_script": "갤럭시 Z 플립7 사전예약 시 5G 프라임 요금제 가입, 캐시백 혜택 안내",
+    "product": [
+        {
+            "name": "갤럭시 Z 플립7",
+            "action": "구매"
+        },
+        {
+            "name": "5G 프라임",
+            "action": "가입"
+        }
+    ],
+    "channel": [
+        {
+            "type": "온라인스토어",
+            "value": "T 다이렉트샵",
+            "action": "가입"
+        }
+    ],
+    "pgm": [
+        "상품및부가서비스가입유도_단말",
+        "상품및부가서비스가입유도_요금제"
+    ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 4
+================================================================================
+1. 5GX 프라임
+   - item_id: ['NA00007790']
+   - item_name_in_msg: ['5G 프라임', '5G 프라임 요금제']
+   - expected_action: ['가입']
+2. TDS캐시백
+   - item_id: ['NA00008341']
+   - item_name_in_msg: ['캐시백']
+   - expected_action: ['기타']
+3. 갤럭시 Z 폴드7
+   - item_id: ['U000006916']
+   - item_name_in_msg: ['갤럭시 Z 플립7']
+   - expected_action: ['구매']
+4. 갤럭시 Z 플립7
+   - item_id: ['U000006917']
+   - item_name_in_msg: ['갤럭시 Z 플립7']
+   - expected_action: ['구매']
+
+================================================================================

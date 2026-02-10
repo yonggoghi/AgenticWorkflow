@@ -1,0 +1,426 @@
+
+=== Row 1 ===
+AX entities: 6
+CLD entities: 6
+Correct entities: 2
+  AX FP [Other]: A. (에이닷)
+  AX FP [Other]: CU 빙그레 바나나우유 기프티콘
+  AX FP [Other]: CU
+  AX FP [Other]: A. 알람 챌린지
+  AX FP [Other]: 이든앤앨리스
+  CLD FP [Other]: CU 빙그레 바나나우유 기프티콘
+  CLD FP [Channel]: 에이닷 앱
+  CLD FP [Other]: CU
+  CLD FP [Other]: A. 알람 챌린지
+  CLD FP [Benefit]: 알람 설정 권한 이벤트
+  AX FN [Completely missed]: A.(에이닷)
+  CLD FN [Completely missed]: A.(에이닷)
+
+=== Row 2 ===
+AX entities: 10
+CLD entities: 14
+Correct entities: 1
+  AX FP [Generic/Vague]: 5G
+  AX FP [Other]: 아이폰 17
+  AX FP [Benefit]: [사죠영] 죠르디 한정판 기프트
+  AX FP [Other]: [에이프릴스톤] 보조배터리+멀티백
+  AX FP [Other]: 아이폰 17 Pro
+  AX FP [Benefit]: T다이렉트샵 특별 사은품
+  AX FP [Benefit]: SKT 고객센터(1558, 무료)
+  AX FP [Other]: [크레앙] 3in1 무선 충전 살균기
+  AX FP [Other]: T다이렉트샵
+  AX FP [Other]: [프리디] 멀티 무선 충전기
+  CLD FP [Other]: T다이렉트샵
+  CLD FP [Other]: 아이폰 17
+  CLD FP [Other]: 에이프릴스톤
+  CLD FP [Benefit]: [사죠영] 죠르디 한정판 기프트
+  CLD FP [Other]: 사죠영
+  CLD FP [Other]: 크레앙
+  CLD FP [Other]: [에이프릴스톤] 보조배터리+멀티백
+  CLD FP [Other]: 프리디
+  CLD FP [Other]: 아이폰 17 Pro
+  CLD FP [Other]: 아이폰17/ 17 Pro 사전예약
+  CLD FP [Channel]: 카카오톡 상담
+  CLD FP [Other]: [크레앙] 3in1 무선 충전 살균기
+  CLD FP [Other]: [프리디] 멀티 무선 충전기
+  CLD FP [Channel]: SKT 고객센터
+  AX FN [Entity partially captured (variant form)]: 아이폰 17/17 Pro
+  CLD FN [Entity partially captured (variant form)]: 아이폰 17/17 Pro
+
+=== Row 3 ===
+AX entities: 9
+CLD entities: 9
+Correct entities: 2
+  AX FP [Benefit]: 무료 대여
+  AX FP [Other]: 인기 도서 10종
+  AX FP [Other]: 5GX
+  AX FP [Other]: T Day
+  AX FP [Other]: 열린멤버십
+  AX FP [Other]: 해피아워
+  AX FP [Other]: 8월 T Day
+  CLD FP [Benefit]: 할인 한도 연간 무제한
+  CLD FP [Benefit]: 인기 도서 10종 무료 대여
+  CLD FP [Other]: 5GX
+  CLD FP [Other]: 열린멤버십
+  CLD FP [Other]: T Day
+  CLD FP [Other]: 해피아워
+  CLD FP [Other]: 8월 T Day
+  CLD FP [Benefit]: 부스트 파크 특별 혜택
+  CLD FN [Entity partially captured (variant form)]: 부스트 파크
+
+=== Row 4 ===
+AX entities: 3
+CLD entities: 8
+Correct entities: 1
+  AX FP [Benefit]: SKT 구독상품 전담 고객센터(1505, 무료)
+  AX FP [Other]: 30만편의 콘텐츠 무제한 감상
+  CLD FP [Channel]: SKT 구독상품 전담 고객센터(1505)
+  CLD FP [Other]: wavve
+  CLD FP [Other]: 인기 예능
+  CLD FP [Channel]: wavve 앱
+  CLD FP [Other]: 30만편의 콘텐츠 무제한 감상
+  CLD FP [Other]: 인기 드라마
+  CLD FP [Other]: 인기 해외시리즈
+
+=== Row 5 ===
+AX entities: 15
+CLD entities: 19
+Correct entities: 7
+  AX FP [Benefit]: 월정액 25% 추가 할인
+  AX FP [Benefit]: 최대 보상
+  AX FP [Benefit]: 10월 혜택
+  AX FP [Other]: 갤럭시 Z 플립7(512GB)
+  AX FP [Other]: 5GX 프리미엄
+  AX FP [Other]: 180개 고화질 TV 채널
+  AX FP [Benefit]: 기가라이트 인터넷(최대 500Mbps)
+  AX FP [Benefit]: 풍성한 사은품
+  AX FP [Pricing/Amount]: 월 이용요금 3만 원대
+  AX FP [Benefit]: 선택약정 24개월(25% 할인)
+  AX FP [Benefit]: 최대 할인
+  CLD FP [Other]: 갤럭시 Z 플립7(512GB 용량 업그레이드)
+  CLD FP [Benefit]: 최대 보상
+  CLD FP [Benefit]: 월정액 25% 추가 할인
+  CLD FP [Benefit]: 10월 혜택
+  CLD FP [Benefit]: 선택약정 가입 시 월정액 25% 추가 할인
+  CLD FP [Other]: 180개 고화질 TV 채널 제공
+  CLD FP [Other]: 5GX 프리미엄
+  CLD FP [Channel]: 매장 홈페이지
+  CLD FP [Benefit]: 풍성한 사은품
+  CLD FP [Channel]: SKT 고객센터(1558)
+  CLD FP [Pricing/Amount]: 월 이용요금 3만 원대
+  CLD FP [Other]: IPTV
+  CLD FP [Benefit]: 최대 할인
+  CLD FP [Benefit]: 스마트폰 할인
+  AX FN [Entity partially captured (variant form)]: 갤럭시 Z 플립7
+  AX FN [Entity partially captured (variant form)]: 5GX 프리미엄 요금제
+  AX FN [Entity partially captured (variant form)]: 기가라이트 인터넷
+  CLD FN [Entity partially captured (variant form)]: 갤럭시 Z 플립7
+  CLD FN [Entity partially captured (variant form)]: 5GX 프리미엄 요금제
+
+=== Row 6 ===
+AX entities: 13
+CLD entities: 15
+Correct entities: 6
+  AX FP [Benefit]: T 즉시보상 최대 70% 혜택
+  AX FP [Benefit]: 액정 보호 필름 무료 교체
+  AX FP [Benefit]: 키친타월 증정
+  AX FP [Other]: 아이폰 신제품 출시 기념 이벤트
+  AX FP [Benefit]: 제휴 카드 추가 할인
+  AX FP [Other]: 단골이라서 더 드림
+  AX FP [Benefit]: SKT 고객센터(1558, 무료)
+  CLD FP [Benefit]: 최대 할인 제공
+  CLD FP [Benefit]: T 즉시보상 최대 70% 혜택
+  CLD FP [Benefit]: 액정 보호 필름 무료 교체
+  CLD FP [Benefit]: 키친타월 증정
+  CLD FP [Other]: 아이폰 신제품 출시 기념 이벤트
+  CLD FP [Benefit]: 제휴 카드 추가 할인
+  CLD FP [Other]: 단골이라서 더 드림
+  CLD FP [Channel]: 대리점 공식 홈페이지
+  CLD FP [Other]: 아이폰
+  CLD FP [Channel]: SKT 고객센터
+  CLD FN [Entity partially captured (variant form)]: 아이폰 신제품
+
+=== Row 7 ===
+AX entities: 6
+CLD entities: 7
+Correct entities: 2
+  AX FP [Benefit]: 20% 할인
+  AX FP [Other]: 투썸플레이스
+  AX FP [Pricing/Amount]: 월 1,900원
+  AX FP [Benefit]: T 우주 고객센터(1505, 무료)
+  AX FP [Channel]: https://t-mms.kr/aL9/#74
+  CLD FP [Benefit]: 20% 할인
+  CLD FP [Benefit]: 최대 2만 원 할인
+  CLD FP [Other]: 투썸플레이스
+  CLD FP [Channel]: T 우주 고객센터(1505)
+  CLD FP [Channel]: https://t-mms.kr/aL9/#74
+  AX FN [Entity partially captured (variant form)]: 투썸플레이스 20% 할인
+
+=== Row 8 ===
+AX entities: 12
+CLD entities: 15
+Correct entities: 10
+  AX FP [Channel]: SKT 고객센터(1558)
+  AX FP [Channel]: 매장 홈페이지
+  AX FP [Benefit]: 10월 혜택
+  AX FP [Other]: 공신폰/부모님폰
+  CLD FP [Benefit]: 최대 보상
+  CLD FP [Benefit]: 10월 혜택
+  CLD FP [Channel]: 매장 홈페이지
+  CLD FP [Channel]: SKT 고객센터(1558)
+  CLD FP [Benefit]: 최대 할인
+  CLD FP [Benefit]: 공신폰/부모님폰 한정 수량 특별 할인
+  CLD FP [Other]: 에어팟 증정
+  CLD FP [Other]: 갤럭시 워치 무료 증정
+  AX FN [Entity partially captured (variant form)]: 공신폰
+  AX FN [Entity partially captured (variant form)]: 부모님폰
+  CLD FN [Completely missed]: 아이폰 신제품
+  CLD FN [Entity partially captured (variant form)]: 공신폰
+  CLD FN [Entity partially captured (variant form)]: 부모님폰
+
+=== Row 9 ===
+AX entities: 11
+CLD entities: 11
+Correct entities: 8
+  AX FP [Channel]: T 월드 매장
+  AX FP [Other]: 갤럭시 폴더블/퀀텀
+  AX FP [Benefit]: 통신 요금 최대 55% 할인
+  AX FP [Other]: 2025년 12월까지
+  AX FP [Channel]: SKT 고객센터(1558)
+  AX FP [Other]: SK텔레콤 공식인증대리점
+  AX FP [Benefit]: 기기 할인 상담
+  CLD FP [Channel]: T 월드 매장
+  CLD FP [Benefit]: 통신 요금 최대 55% 할인
+  CLD FP [Other]: 갤럭시 퀀텀
+  CLD FP [Other]: SK텔레콤 공식인증대리점
+  CLD FP [Benefit]: 기기 할인
+  CLD FP [Channel]: SKT 고객센터
+  AX FN [Entity partially captured (variant form)]: 갤럭시 폴더블
+  AX FN [Entity partially captured (variant form)]: 공식인증대리점
+  AX FN [Entity partially captured (variant form)]: T 월드
+  AX FN [Entity partially captured (variant form)]: 퀀텀
+  CLD FN [Entity partially captured (variant form)]: 공식인증대리점
+  CLD FN [Entity partially captured (variant form)]: T 월드
+  CLD FN [Entity partially captured (variant form)]: 퀀텀
+
+=== Row 10 ===
+AX entities: 6
+CLD entities: 7
+Correct entities: 3
+  AX FP [Other]: 1504
+  AX FP [Other]: 올리브영
+  AX FP [Other]: 9월 T day
+  AX FP [Benefit]: SKT 고객센터(1558, 무료)
+  CLD FP [Other]: 럭키찬스
+  CLD FP [Channel]: https://bit.ly/467rn3q
+  CLD FP [Channel]: SKT 고객센터(1558)
+  CLD FP [Other]: 올리브영
+  CLD FP [Other]: 9월 T day
+  CLD FP [Other]: 아이폰 출시 기념 퀴즈
+  AX FN [Entity partially captured (variant form)]: T day
+  CLD FN [Entity partially captured (variant form)]: T day
+  CLD FN [Entity partially captured (variant form)]: 아이폰
+
+=== Row 11 ===
+AX entities: 7
+CLD entities: 8
+Correct entities: 4
+  AX FP [Benefit]: 2만 원 상당 쿠폰팩
+  AX FP [Benefit]: 이모션캐슬 시네마 20% 할인 쿠폰
+  AX FP [Benefit]: T 우주 고객센터(1505, 무료)
+  AX FP [Benefit]: T 우주 이모션캐슬 쿠폰팩
+  CLD FP [Benefit]: 2만 원 상당 쿠폰팩
+  CLD FP [Benefit]: 21,700원 상당의 혜택
+  CLD FP [Benefit]: T 우주 이모션캐슬 쿠폰팩
+  CLD FP [Benefit]: 20% 할인 쿠폰
+  CLD FP [Other]: 티니핑
+  CLD FP [Channel]: T 우주 고객센터(1505)
+  AX FN [Entity partially captured (variant form)]: 이모션캐슬 쿠폰팩
+  CLD FN [Entity partially captured (variant form)]: 티니핑 캐릭터 상품
+  CLD FN [Entity partially captured (variant form)]: 이모션캐슬 쿠폰팩
+
+=== Row 12 ===
+AX entities: 9
+CLD entities: 9
+Correct entities: 3
+  AX FP [Other]: 애플 페이
+  AX FP [Benefit]: 최대 22만 원 캐시백
+  AX FP [Benefit]: 티머니 충전 쿠폰 96만 원
+  AX FP [Other]: 샌프란시스코 왕복 항공권
+  AX FP [Benefit]: SKT 고객센터(1558, 무료)
+  AX FP [Segment/Condition]: 애플 액세서리 팩
+  CLD FP [Benefit]: 애플 페이 티머니 충전 쿠폰 96만 원
+  CLD FP [Benefit]: 최대 22만 원 캐시백 이벤트
+  CLD FP [Channel]: SKT 고객센터(1558)
+  CLD FP [Other]: 샌프란시스코 왕복 항공권
+  CLD FP [Benefit]: 최대 22만 원 캐시백
+  CLD FP [Segment/Condition]: 애플 액세서리 팩
+
+=== Row 13 ===
+AX entities: 8
+CLD entities: 10
+Correct entities: 3
+  AX FP [Other]: 갤럭시 Z 폴드7
+  AX FP [Benefit]: 액세서리 특가전
+  AX FP [Channel]: 티다문구점 고객센터(1599-1932)
+  AX FP [Other]: 갤럭시 Z 플립7
+  AX FP [Other]: T 다이렉트샵
+  AX FP [Benefit]: 무료 배송
+  CLD FP [Other]: 갤럭시 Z 폴드7
+  CLD FP [Benefit]: 최대 73% 할인
+  CLD FP [Channel]: 티다문구점 고객센터
+  CLD FP [Segment/Condition]: 갤럭시 Z 폴드7|Z 플립7 액세서리 특가전
+  CLD FP [Other]: 갤럭시 Z 플립7
+  CLD FP [Segment/Condition]: 신규가입 고객
+  CLD FP [Other]: T 다이렉트샵
+  CLD FP [Benefit]: 무료 배송
+  AX FN [Entity partially captured (variant form)]: 갤럭시 Z 폴드7|Z 플립7 액세서리
+  CLD FN [Entity partially captured (variant form)]: 갤럭시 Z 폴드7|Z 플립7 액세서리
+
+=== Row 14 ===
+AX entities: 5
+CLD entities: 7
+Correct entities: 2
+  AX FP [Other]: 이용정지
+  AX FP [Other]: 해지
+  AX FP [Channel]: SKT 고객센터(114)
+  AX FP [Channel]: T 월드 매장
+  CLD FP [Channel]: T 월드 매장
+  CLD FP [Channel]: SKT 고객센터(114)
+  CLD FP [Other]: 통신서비스 이용계약
+  CLD FP [Segment/Condition]: 신분증 정보 불일치 회선 고객
+  CLD FP [Other]: 안전한 통신 생활
+  CLD FP [Other]: 휴대폰 발신 정지 해제
+  CLD FP [Other]: 신분증 진위확인 절차
+  AX FN [Entity partially captured (variant form)]: T 월드 매장 방문
+  CLD FN [Entity partially captured (variant form)]: T 월드 매장 방문
+  CLD FN [Entity partially captured (variant form)]: 신분증 진위확인
+
+=== Row 15 ===
+AX entities: 8
+CLD entities: 9
+Correct entities: 5
+  AX FP [Segment/Condition]: 만 13~34세
+  AX FP [Benefit]: 베어유 모든 강의 14일 무료 수강 쿠폰
+  AX FP [Other]: 2월 0 day
+  AX FP [Benefit]: SKT 고객센터(1558, 무료)
+  AX FP [Benefit]: 에이닷 X T 멤버십 시크릿코드 이벤트
+  CLD FP [Segment/Condition]: 만 13~34세
+  CLD FP [Channel]: 에이닷 앱
+  CLD FP [Benefit]: 베어유 모든 강의 14일 무료 수강 쿠폰
+  CLD FP [Other]: 2월 0 day
+  CLD FP [Other]: 뚜레쥬르
+  CLD FP [Channel]: SKT 고객센터(1558)
+  CLD FP [Benefit]: 에이닷 X T 멤버십 시크릿코드 이벤트
+  AX FN [Entity partially captured (variant form)]: 시크릿코드
+  AX FN [Entity partially captured (variant form)]: 0 day
+  CLD FN [Entity partially captured (variant form)]: 시크릿코드
+  CLD FN [Entity partially captured (variant form)]: 에이닷
+  CLD FN [Entity partially captured (variant form)]: 0 day
+
+================================================================================
+FALSE POSITIVE SUMMARY
+================================================================================
+
+### AX False Positives ###
+Benefit: 35
+  - Row 2: [사죠영] 죠르디 한정판 기프트
+  - Row 2: T다이렉트샵 특별 사은품
+  - Row 2: SKT 고객센터(1558, 무료)
+  ... and 32 more
+Channel: 8
+  - Row 7: https://t-mms.kr/aL9/#74
+  - Row 8: SKT 고객센터(1558)
+  - Row 8: 매장 홈페이지
+  ... and 5 more
+Pricing/Amount: 2
+  - Row 5: 월 이용요금 3만 원대
+  - Row 7: 월 1,900원
+Segment/Condition: 2
+  - Row 12: 애플 액세서리 팩
+  - Row 15: 만 13~34세
+Generic/Vague: 1
+  - Row 2: 5G
+Correct but format mismatch: 0
+Other: 39
+  - Row 1: A. (에이닷)
+  - Row 1: CU 빙그레 바나나우유 기프티콘
+  - Row 1: CU
+  ... and 36 more
+
+### CLD False Positives ###
+Benefit: 36
+  - Row 1: 알람 설정 권한 이벤트
+  - Row 2: [사죠영] 죠르디 한정판 기프트
+  - Row 3: 할인 한도 연간 무제한
+  ... and 33 more
+Channel: 24
+  - Row 1: 에이닷 앱
+  - Row 2: 카카오톡 상담
+  - Row 2: SKT 고객센터
+  ... and 21 more
+Pricing/Amount: 1
+  - Row 5: 월 이용요금 3만 원대
+Segment/Condition: 5
+  - Row 12: 애플 액세서리 팩
+  - Row 13: 갤럭시 Z 폴드7|Z 플립7 액세서리 특가전
+  - Row 13: 신규가입 고객
+  ... and 2 more
+Generic/Vague: 0
+Correct but format mismatch: 0
+Other: 51
+  - Row 1: CU 빙그레 바나나우유 기프티콘
+  - Row 1: CU
+  - Row 1: A. 알람 챌린지
+  ... and 48 more
+
+================================================================================
+FALSE NEGATIVE SUMMARY
+================================================================================
+
+### AX False Negatives ###
+Exact entity name not captured: 0
+Entity partially captured (variant form): 17
+  - Row 2: 아이폰 17/17 Pro
+  - Row 5: 갤럭시 Z 플립7
+  - Row 5: 5GX 프리미엄 요금제
+  ... and 14 more
+Completely missed: 1
+  - Row 1: A.(에이닷)
+
+### CLD False Negatives ###
+Exact entity name not captured: 0
+Entity partially captured (variant form): 20
+  - Row 2: 아이폰 17/17 Pro
+  - Row 3: 부스트 파크
+  - Row 5: 갤럭시 Z 플립7
+  ... and 17 more
+Completely missed: 2
+  - Row 1: A.(에이닷)
+  - Row 8: 아이폰 신제품
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+
+### False Positive Categories ###
+Category                       AX Count   CLD Count 
+--------------------------------------------------
+Benefit                        35         36        
+Channel                        8          24        
+Pricing/Amount                 2          1         
+Segment/Condition              2          5         
+Generic/Vague                  1          0         
+Correct but format mismatch    0          0         
+Other                          39         51        
+
+TOTAL FALSE POSITIVES          87         117       
+
+### False Negative Categories ###
+Category                                      AX Count   CLD Count 
+-----------------------------------------------------------------
+Exact entity name not captured                0          0         
+Entity partially captured (variant form)      17         20        
+Completely missed                             1          2         
+
+TOTAL FALSE NEGATIVES                         18         22        

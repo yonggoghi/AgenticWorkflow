@@ -1,0 +1,248 @@
+{
+  "metadata": {
+    "extraction_timestamp": "2026-02-02T13:31:36.419660",
+    "msg_id": "unknown",
+    "offer_dt": "",
+    "msg_nm": ""
+  },
+  "original_message": "[SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지!_30만편의 콘텐츠를 무제한 감상해보세요!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가하고 있습니다. 고객센터와 전화 연결이 원활하지 않을 수 있으니 양해 바랍니다.__SKT와 함께해주셔서 감사합니다.__무료 수신거부 1504",
+  "ontology": {
+    "entities": [
+      {
+        "id": "T우주 wavve",
+        "type": "Subscription",
+        "properties": {
+          "name": "T우주 wavve",
+          "subscription_category": "OTT",
+          "included_benefits": [
+            "드라마 무제한 감상",
+            "예능 무제한 감상",
+            "해외시리즈 무제한 감상",
+            "영화 무제한 감상"
+          ]
+        }
+      },
+      {
+        "id": "wavve 콘텐츠 30만편",
+        "type": "Benefit",
+        "properties": {
+          "name": "wavve 콘텐츠 30만편 무제한 감상",
+          "benefit_type": "무료체험",
+          "value": "30",
+          "value_unit": "만편",
+          "condition_summary": "T우주 wavve 가입 고객"
+        }
+      },
+      {
+        "id": "인기 드라마",
+        "type": "Benefit",
+        "properties": {
+          "name": "인기 드라마 무제한 감상",
+          "benefit_type": "무료체험",
+          "condition_summary": "T우주 wavve 가입 고객"
+        }
+      },
+      {
+        "id": "인기 예능",
+        "type": "Benefit",
+        "properties": {
+          "name": "인기 예능 무제한 감상",
+          "benefit_type": "무료체험",
+          "condition_summary": "T우주 wavve 가입 고객"
+        }
+      },
+      {
+        "id": "인기 해외시리즈",
+        "type": "Benefit",
+        "properties": {
+          "name": "인기 해외시리즈 무제한 감상",
+          "benefit_type": "무료체험",
+          "condition_summary": "T우주 wavve 가입 고객"
+        }
+      },
+      {
+        "id": "wavve",
+        "type": "PartnerBrand",
+        "properties": {
+          "name": "wavve",
+          "category": "OTT",
+          "partnership_type": "구독포함"
+        }
+      },
+      {
+        "id": "wavve 앱",
+        "type": "Channel",
+        "properties": {
+          "name": "wavve 앱",
+          "channel_type": "app",
+          "url_pattern": "link.wavve.com"
+        }
+      },
+      {
+        "id": "SKT 구독상품 전담 고객센터",
+        "type": "Channel",
+        "properties": {
+          "name": "SKT 구독상품 전담 고객센터",
+          "channel_type": "call_center",
+          "phone": "1505"
+        }
+      },
+      {
+        "id": "T우주 wavve 가입 고객",
+        "type": "Segment",
+        "properties": {
+          "name": "T우주 wavve 가입 고객",
+          "criteria_type": "가입상태",
+          "additional_filter": "T우주 wavve 구독 중"
+        }
+      },
+      {
+        "id": "T우주 wavve 혜택 활용 캠페인",
+        "type": "Campaign",
+        "properties": {
+          "name": "T우주 wavve 혜택 활용 캠페인",
+          "campaign_type": "상시",
+          "eligibility_condition": "T우주 wavve 가입 고객"
+        }
+      }
+    ],
+    "relationships": [
+      {
+        "source": "T우주 wavve 혜택 활용 캠페인",
+        "target": "T우주 wavve",
+        "type": "PROMOTES",
+        "properties": {}
+      },
+      {
+        "source": "T우주 wavve 가입 고객",
+        "target": "T우주 wavve 혜택 활용 캠페인",
+        "type": "TARGETED_BY",
+        "properties": {}
+      },
+      {
+        "source": "T우주 wavve",
+        "target": "wavve 콘텐츠 30만편",
+        "type": "INCLUDES",
+        "properties": {}
+      },
+      {
+        "source": "T우주 wavve",
+        "target": "인기 드라마",
+        "type": "INCLUDES",
+        "properties": {}
+      },
+      {
+        "source": "T우주 wavve",
+        "target": "인기 예능",
+        "type": "INCLUDES",
+        "properties": {}
+      },
+      {
+        "source": "T우주 wavve",
+        "target": "인기 해외시리즈",
+        "type": "INCLUDES",
+        "properties": {}
+      },
+      {
+        "source": "T우주 wavve 혜택 활용 캠페인",
+        "target": "wavve",
+        "type": "PARTNERS_WITH",
+        "properties": {}
+      },
+      {
+        "source": "wavve",
+        "target": "wavve 콘텐츠 30만편",
+        "type": "PROVIDES",
+        "properties": {}
+      },
+      {
+        "source": "wavve",
+        "target": "인기 드라마",
+        "type": "PROVIDES",
+        "properties": {}
+      },
+      {
+        "source": "wavve",
+        "target": "인기 예능",
+        "type": "PROVIDES",
+        "properties": {}
+      },
+      {
+        "source": "wavve",
+        "target": "인기 해외시리즈",
+        "type": "PROVIDES",
+        "properties": {}
+      },
+      {
+        "source": "T우주 wavve 혜택 활용 캠페인",
+        "target": "wavve 앱",
+        "type": "REACHABLE_VIA",
+        "properties": {}
+      },
+      {
+        "source": "T우주 wavve 혜택 활용 캠페인",
+        "target": "SKT 구독상품 전담 고객센터",
+        "type": "REACHABLE_VIA",
+        "properties": {}
+      }
+    ],
+    "user_action_path": {
+      "dag": "(Customer:T우주 wavve 가입 고객) -[이미 가입]-> (Subscription:T우주 wavve) -[앱 접속]-> (Channel:wavve 앱) -[콘텐츠 선택]-> (Benefit:드라마/예능/해외시리즈 무제한 감상)",
+      "logic_summary": "T우주 wavve에 이미 가입한 고객이 wavve 앱에 접속하여 30만편의 콘텐츠(드라마, 예능, 해외시리즈, 영화)를 무제한으로 감상할 수 있다. 별도의 추가 가입이나 결제 없이 기존 구독 혜택을 활용하는 구조.",
+      "branch_conditions": [
+        {
+          "condition": "T우주 wavve 가입 여부",
+          "path_if_true": "wavve 앱 접속 -> 콘텐츠 무제한 감상",
+          "path_if_false": "구독 가입 필요 (메시지에 명시되지 않음)"
+        },
+        {
+          "condition": "콘텐츠 카테고리 선택 (드라마/예능/해외시리즈)",
+          "path_if_true": "각 카테고리별 URL 링크를 통해 해당 콘텐츠 목록 접근",
+          "path_if_false": null
+        }
+      ]
+    },
+    "actions": [
+      {
+        "function": "Activate_Feature",
+        "params": {
+          "Customer_ID": "T우주 wavve 가입 고객",
+          "Subscription_ID": "T우주 wavve",
+          "Channel_ID": "wavve 앱"
+        },
+        "effect": "wavve 앱에서 30만편의 콘텐츠 무제한 감상 기능 활성화",
+        "channel": "wavve 앱 (link.wavve.com)"
+      },
+      {
+        "function": "Redeem_Coupon",
+        "params": {
+          "Customer_ID": "T우주 wavve 가입 고객",
+          "PartnerBrand_ID": "wavve",
+          "Coupon_ID": "인기 드라마"
+        },
+        "effect": "인기 드라마 카테고리 콘텐츠 무제한 감상",
+        "channel": "http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home"
+      },
+      {
+        "function": "Redeem_Coupon",
+        "params": {
+          "Customer_ID": "T우주 wavve 가입 고객",
+          "PartnerBrand_ID": "wavve",
+          "Coupon_ID": "인기 예능"
+        },
+        "effect": "인기 예능 카테고리 콘텐츠 무제한 감상",
+        "channel": "http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home"
+      },
+      {
+        "function": "Redeem_Coupon",
+        "params": {
+          "Customer_ID": "T우주 wavve 가입 고객",
+          "PartnerBrand_ID": "wavve",
+          "Coupon_ID": "인기 해외시리즈"
+        },
+        "effect": "인기 해외시리즈 카테고리 콘텐츠 무제한 감상",
+        "channel": "http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME"
+      }
+    ]
+  }
+}
