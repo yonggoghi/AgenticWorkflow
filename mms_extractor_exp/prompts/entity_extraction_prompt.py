@@ -232,20 +232,20 @@ Return format: Do not use Markdown formatting. Use plain text.
 REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을 언급하고, 해당 혜택과 일치하는 엔티티를 Vocabulary에서 찾았는지 여부를 명시하십시오.**
 ENTITY: comma-separated list from 'candidate entities in vocabulary', or empty if none match"""
     
-    # ONT mode uses a different base prompt focused on PartnerBrand, Benefit, and Product matching
+    # ONT mode uses a focused prompt for core offering entities
     if context_keyword == 'ONT':
-        base_prompt = """Select entities from 'candidate entities in vocabulary' that match the PartnerBrand, Benefit, or Product entities extracted from the message.
+        base_prompt = """Select product/service names from 'candidate entities in vocabulary' that match the core offerings (Product, Subscription, RatePlan, Store, Campaign, PartnerBrand) extracted from the message.
 
 ***핵심 지침 (Critical Constraint):
 1. ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다.
 2. 'entities in message'의 개체명(예: 올리브영)이 'candidate entities in vocabulary'의 개체명(예: 올리브영_올리브영)과 **부분 일치**하면 해당 vocabulary 개체를 선택하세요.
-3. 메시지의 핵심 혜택(예: 올리브영 기프트 카드)을 제공하는 **제휴 브랜드(PartnerBrand)**가 vocabulary에 있으면 반드시 선택하세요.***
+3. 확신이 없으면 제외하세요 (When in doubt, exclude).***
 
 Guidelines:
-1. **PartnerBrand 매칭**: 'entities in message'에 제휴 브랜드(예: 올리브영, 스타벅스)가 있고, vocabulary에 해당 브랜드를 포함하는 개체(예: 올리브영_올리브영)가 있으면 선택
-2. **Benefit 매칭**: 혜택 관련 개체(예: 기프트카드, 쿠폰)가 vocabulary에 있으면 선택
-3. **Product 매칭**: 상품/요금제 개체가 vocabulary에 있으면 선택
-4. ONT Context의 entity type을 참고하여 PartnerBrand, Benefit, Product 타입 개체를 우선 선택"""
+1. **핵심 오퍼링만 선택**: 메시지가 홍보하는 핵심 상품/서비스/요금제/매장/캠페인과 직접 관련된 vocabulary 개체만 선택
+2. **PartnerBrand 매칭**: 'entities in message'에 제휴 브랜드(예: 올리브영, 스타벅스)가 있고, vocabulary에 해당 브랜드를 포함하는 개체가 있으면 선택
+3. **Product/RatePlan 매칭**: 상품/요금제 개체가 vocabulary에 있으면 선택
+4. **제외 대상**: 할인 금액/비율 단독, 고객센터, URL, 사은품 브랜드명, 일반 기술 용어(5G, LTE)는 선택하지 마세요"""
     else:
         # For DAG/PAIRING modes, use detailed prompt with context reference
         base_prompt = """Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
@@ -260,8 +260,19 @@ Guidelines:
 
     # Add context-specific guideline
     if context_keyword == 'DAG':
-        context_guideline = f"""
-5. Refer to the '{context_keyword} Context' which describes the user action flow. 이를 **사용자의 최종 획득/응모 대상인 핵심 혜택(Core Offering)**을 구별하는 데 사용하십시오. (e.g., 퀴즈 주제인 '아이폰'이 아닌, 최종 혜택인 '올리브영 기프트 카드'와 관련된 개체를 식별)"""
+        context_guideline = """
+5. **DAG Context 활용**: 'DAG Context'의 사용자 행동 경로를 분석하여 핵심 오퍼링을 식별하세요.
+   - **PROMOTES 대상 = 핵심 오퍼링**: DAG에서 (Root:Action) -[구매/가입/사용]-> (Core:...) 관계의 Core가 핵심 오퍼링
+   - **OFFERS 대상 = 제외**: DAG에서 최종 Value 노드(캐시백, 기프티콘, 할인)는 혜택이므로 제외
+   - **이벤트 참여 수단 제외**: 퀴즈 주제(예: '아이폰')가 아닌 최종 혜택(예: '올리브영 기프트 카드')과 관련된 개체를 식별
+6. **Vocabulary 매칭 가이드**:
+   - **복합 V-domain 아이템**: vocabulary의 "올리브영_올리브영", "투썸플레이스 20% 할인" 등은 'entities in message'의 "올리브영", "투썸플레이스"와 **부분 일치**하면 선택
+   - **특정 모델만 선택**: 메시지에 언급된 정확한 모델명과 일치하는 vocabulary 개체만 선택. 메시지에 없는 파생 모델/구세대 모델은 선택하지 마세요
+   - **"아이폰 신제품" 등 포괄적 표현**: 메시지가 특정 모델을 명시하지 않으면 현행 세대 모델(예: iPhone 17 시리즈)을 선택하되, 구세대 모델은 제외
+7. **Anti-noise 규칙**:
+   - 일반 카테고리 단어 하나만 일치한다고 vocabulary 개체를 선택하지 마세요 (예: "갤럭시 폴더블" → vocabulary의 모든 갤럭시 폴더블 모델을 선택하지 말 것)
+   - 할인 금액/비율 단독(예: "20% 할인", "900원", "최대 2만 원 할인")은 vocabulary에서 선택하지 마세요
+   - 행동/설명 구절(예: "매장 방문", "쓰던 아이폰 반납")은 제외"""
     elif context_keyword == 'PAIRING':
         context_guideline = f"""
 5. Refer to the '{context_keyword} Context' which maps each offering to its primary benefit. 이를 **사용자의 최종 획득 대상인 핵심 혜택(Primary Benefit)**을 구별하는 데 사용하십시오. (e.g., 가입 대상이 아닌, 최종 혜택인 '캐시백'이나 '기프티콘'과 관련된 개체를 식별)"""
@@ -280,13 +291,14 @@ Guidelines:
    | 타입 | 포함 여부 | 근거 |
    |------|----------|------|
    | Product, Subscription, RatePlan | **포함** | 핵심 오퍼링 (PROMOTES 타겟) |
-   | PartnerBrand | **포함** | 제휴 브랜드 - 핵심 혜택 제공자 (PROVIDES 소스) |
-   | Benefit | **포함** | 사용자가 실제로 받는 혜택 (OFFERS 타겟) |
-   | Store | 제외 | 접점이지만 entity로 불필요 |
-   | Campaign, Event | 제외 | 마케팅 맥락 |
-   | Channel | 제외 | 접점 채널 |
+   | Store | 제외 | 매장/채널 브랜드 (T다이렉트샵, T월드 등) |
+   | Campaign, Event | 제외 | 특정 캠페인/이벤트명 (T멤버십 위크 등) |
+   | ContentOffer, WiredService | **포함** | 콘텐츠/유선 서비스 |
+   | PartnerBrand | **포함** | 제휴 브랜드 (올리브영, 스타벅스 등) |
+   | Benefit | 제외 | 혜택 설명이지 상품명이 아님 (할인, 캐시백 등) |
+   | Channel, Segment, Contract, MembershipTier | 제외 | 부가 정보 |
 
-   **중요**: ONT 모드에서는 Product/Subscription/RatePlan, PartnerBrand(예: 올리브영, 스타벅스), Benefit(예: 기프트카드, 쿠폰, 캐시백)을 선택하세요."""
+   **중요**: ONT 모드에서는 메시지가 홍보하는 핵심 상품/서비스/요금제/파트너브랜드와 직접 관련된 vocabulary 개체만 선택하세요. 확신이 없으면 제외하세요."""
     else:
         context_guideline = ""
     
@@ -315,28 +327,46 @@ SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 """
 
 HYBRID_DAG_EXTRACTION_PROMPT = """
-Analyze the advertisement to extract **User Action Paths**.
+Analyze the SKT advertisement to extract **Core Offering Entities** and **User Action Paths**.
 Output two distinct sections:
-1. **ENTITY**: A list of independent Root Nodes.
+1. **ENTITY**: A list of Core Offering entities (product/service names only).
 2. **DAG**: A structured graph representing the flow from Root to Benefit.
 
 ## Crucial Language Rule
 * **DO NOT TRANSLATE:** Extract entities **exactly as they appear** in the source text.
 * **Preserve Original Script:** If the text says "아이폰 17", output "아이폰 17" (NOT "iPhone 17"). If it says "T Day", output "T Day".
 
+## Entity Type Categories
+Classify each entity into one of these types to guide extraction:
+
+- **Product (단말기)**: Hardware devices and models.
+  예: "아이폰 17 Pro", "갤럭시 Z 플립7", "갤럭시 S25 울트라", "에어팟"
+- **RatePlan (요금제)**: Telecom rate plans.
+  예: "5GX 프리미엄", "컴팩트 요금제", "다이렉트5G 69", "프라임플러스 요금제"
+- **Subscription (구독)**: Monthly subscription services.
+  예: "T 우주패스 올리브영&스타벅스&이마트24", "보이스피싱 보험", "V컬러링"
+- **Store (매장)**: Physical stores and branches.
+  예: "새샘대리점 역곡점", "에스알대리점 지행역점"
+- **PartnerBrand (제휴 브랜드)**: Partner brands when they are the subject of promotion.
+  예: "올리브영", "투썸플레이스", "스타벅스" (when promotion centers on the brand, not just a gift coupon)
+- **WiredService (유선)**: Wired/broadband services.
+  예: "기가인터넷(1G)", "B tv", "IPTV"
+- **Campaign (캠페인)**: Marketing campaigns and events.
+  예: "T Day", "0 day", "special T", "Lucky 1717 이벤트"
+
 ## Part 1: Root Node Selection Hierarchy (Extract ALL Distinct Roots)
 Identify logical starting points based on this priority. If multiple independent offers exist, extract all.
 
-1.  **Physical Store (Highest):** Specific branch names.
+1.  **Store (Highest):** Specific branch names.
     * *Match:* "새샘대리점 역곡점", "백색대리점 수성직영점"
-2.  **Core Service (Plans/VAS):** Rate plans, Value-Added Services, Internet/IPTV.
-    * *Match:* "5GX 프라임 요금제", "V컬러링", "로밍 baro 요금제"
-3.  **Subscription/Event:** Membership signups or specific campaigns.
-    * *Match:* "T 우주", "T Day", "0 day", "골드번호 프로모션"
-4.  **App/Platform:** Apps requiring action.
-    * *Match:* "A.(에이닷)", "PASS 앱", "T world"
-5.  **Product (Hardware):** Device launches without a specific store focus.
-    * *Match:* "iPhone 17", "갤럭시 Z 플립7"
+2.  **RatePlan / WiredService:** Rate plans, Internet/IPTV.
+    * *Match:* "5GX 프라임 요금제", "로밍 baro 요금제", "기가인터넷(1G)"
+3.  **Subscription / Campaign:** Monthly subscriptions or specific campaigns.
+    * *Match:* "T 우주패스 올리브영&스타벅스&이마트24", "T Day", "0 day"
+4.  **PartnerBrand:** Partner brands when the promotion centers on them.
+    * *Match:* "올리브영" (in "올리브영 20% 할인 쿠폰 제공")
+5.  **Product (Hardware):** Device launches.
+    * *Match:* "아이폰 17 Pro", "갤럭시 Z 플립7"
 
 ## Part 2: DAG Construction Rules
 Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
@@ -345,22 +375,24 @@ Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
     * **Root:** The entry point identified above (Original Text).
     * **Core:** The product/service being used or bought (Original Text).
     * **Value:** The final reward or benefit (Original Text).
-* **Edges:**
-    * **Definition:** A verb describing the relationship between two nodes.
-    * **Purpose:** Represents the action or transition from one node to the next.
-    * **Examples:**
-        * `가입` (subscribe), `구매` (purchase), `사용` (use)
-        * `획득` (obtain), `제공` (provide), `지급` (grant)
-        * `방문` (visit), `다운로드` (download), `신청` (apply)
-    * **Guidelines:** Use concise action verbs that clearly describe how the user moves from one step to the next in the flow.
+* **Edges:** Use concise Korean action verbs: 가입, 구매, 사용, 획득, 제공, 지급, 방문, 다운로드, 신청
 * **Logic:** Represent the shortest path from the Root action to the Final Benefit.
 
-## Strict Exclusions
-* Ignore navigational labels ('바로 가기', '링크', 'Shortcut').
-* Ignore generic partners ('스타벅스', 'CU') unless they are the main subscription target.
+## Specificity Rule
+* Extract **specific model/plan names**, not generic categories: "갤럭시 Z 플립7" ✅, "갤럭시 폴더블" ❌, "5GX 프리미엄" ✅, "5G 요금제" ❌
+* When only a generic term exists in the message (e.g., "아이폰 신제품"), extract that generic term as-is — do NOT invent specific model names.
+
+## Strict Exclusions (DO NOT extract as entities)
+* **Standalone discount amounts/rates**: "20% 할인", "최대 22만 원 캐시백", "900원", "50% 할인 쿠폰", "최대 2만 원 할인"
+* **Generic tech terms alone**: "5G", "LTE", "IPTV" (but "5GX 프리미엄", "B tv" are OK as named services)
+* **Gift brand names**: "[사죠영]", "[크레앙]", "[프리디]" (gift manufacturer names in brackets)
+* **Customer service / URLs**: "SKT 고객센터(1558)", "고객센터(114)", URLs, "무료 수신거부 1504"
+* **Navigational labels**: "바로 가기", "자세히 보기", "링크", "Shortcut"
+* **Action/benefit descriptions** (not product names): "매장 방문", "쓰던 아이폰 반납", "제휴 신용카드", "액정 보호 필름 무료 교체", "180개 고화질 TV 채널"
+* **Generic partners** unless they are the main promotion subject: "스타벅스 기프티콘" → extract "스타벅스" only if the ad promotes 스타벅스 itself, not if it's just a gift
 
 ## Output Format: Do not use Markdown formatting. Use plain text.
-ENTITY: <comma-separated list of all Nodes in original text>
+ENTITY: <comma-separated list of Core Offering entities only, in original text>
 DAG: <DAG representation line by line in original text>
 """
 
