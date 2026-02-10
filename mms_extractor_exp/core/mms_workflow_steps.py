@@ -628,7 +628,8 @@ class EntityMatchingStep(WorkflowStep):
     def __init__(self, entity_recognizer, alias_pdf_raw: pd.DataFrame,
                  stop_item_names: List[str], entity_extraction_mode: str,
                  llm_factory=None, llm_model: str = 'ax',
-                 entity_extraction_context_mode: str = 'dag'):
+                 entity_extraction_context_mode: str = 'dag',
+                 use_external_candidates: bool = True):
         self.entity_recognizer = entity_recognizer
         self.alias_pdf_raw = alias_pdf_raw
         self.stop_item_names = stop_item_names
@@ -636,6 +637,7 @@ class EntityMatchingStep(WorkflowStep):
         self.llm_factory = llm_factory
         self.llm_model = llm_model
         self.entity_extraction_context_mode = entity_extraction_context_mode
+        self.use_external_candidates = use_external_candidates
 
     def should_execute(self, state: WorkflowState) -> bool:
         if state.has_error() or state.is_fallback:
@@ -660,11 +662,18 @@ class EntityMatchingStep(WorkflowStep):
         logger.debug(f"LLM 추출 엔티티: {primary_llm_extracted_entities}")
         logger.debug(f"Kiwi 엔티티: {entities_from_kiwi}")
 
+        # Build external candidate list
+        if self.use_external_candidates:
+            external_cand = list(set(entities_from_kiwi + primary_llm_extracted_entities))
+        else:
+            external_cand = []
+            logger.info("외부 후보 엔티티 비활성화 (use_external_candidates=False)")
+
         # Step 7.2: Entity matching based on mode
         if self.entity_extraction_mode == 'logic':
             cand_entities = list(set(
                 entities_from_kiwi + [item.get('name', '') for item in product_items if item.get('name')]
-            ))
+            )) if self.use_external_candidates else []
             logger.debug(f"로직 모드 cand_entities: {cand_entities}")
             similarities_fuzzy = self.entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)
         else:
@@ -679,7 +688,7 @@ class EntityMatchingStep(WorkflowStep):
                 msg,
                 llm_models=default_llm_models,
                 rank_limit=100,
-                external_cand_entities=list(set(entities_from_kiwi + primary_llm_extracted_entities)),
+                external_cand_entities=external_cand,
                 context_mode=self.entity_extraction_context_mode
             )
 

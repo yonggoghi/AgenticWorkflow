@@ -348,7 +348,7 @@ class MMSExtractor(MMSExtractorDataMixin):
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None,
                  entity_extraction_mode=None, offer_info_data_src='db', llm_model='ax',
                  entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='dag',
-                 skip_entity_extraction=False):
+                 skip_entity_extraction=False, use_external_candidates=True):
         """
         MMSExtractor 초기화 메소드
         
@@ -388,7 +388,7 @@ class MMSExtractor(MMSExtractorDataMixin):
             self._set_default_config(model_path, data_dir, product_info_extraction_mode,
                                    entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model,
                                    extract_entity_dag, entity_extraction_context_mode,
-                                   skip_entity_extraction)
+                                   skip_entity_extraction, use_external_candidates)
             
             # 2단계: 환경변수 로드 (API 키 등)
             logger.info("🔑 환경변수 로드 중...")
@@ -459,6 +459,7 @@ class MMSExtractor(MMSExtractorDataMixin):
                 llm_factory=self.llm_factory,
                 llm_model=self.entity_llm_model_name,
                 entity_extraction_context_mode=self.entity_extraction_context_mode,
+                use_external_candidates=self.use_external_candidates,
             ))
             self.workflow_engine.add_step(ResultConstructionStep(self.result_builder))
             self.workflow_engine.add_step(ValidationStep())
@@ -481,7 +482,7 @@ class MMSExtractor(MMSExtractorDataMixin):
     def _set_default_config(self, model_path, data_dir, product_info_extraction_mode,
                           entity_extraction_mode, offer_info_data_src, llm_model, entity_llm_model,
                           extract_entity_dag, entity_extraction_context_mode,
-                          skip_entity_extraction):
+                          skip_entity_extraction, use_external_candidates):
         """기본 설정값 적용"""
         self.data_dir = data_dir if data_dir is not None else './data/'
         self.model_path = model_path if model_path is not None else getattr(EMBEDDING_CONFIG, 'ko_sbert_model_path', 'jhgan/ko-sroberta-multitask')
@@ -494,6 +495,7 @@ class MMSExtractor(MMSExtractorDataMixin):
         self.extract_entity_dag = extract_entity_dag
         self.entity_extraction_context_mode = entity_extraction_context_mode
         self.skip_entity_extraction = skip_entity_extraction
+        self.use_external_candidates = use_external_candidates
 
         # DAG 추출 설정 로깅
         # extract_entity_dag: 엔티티 간 관계를 DAG(Directed Acyclic Graph)로 추출

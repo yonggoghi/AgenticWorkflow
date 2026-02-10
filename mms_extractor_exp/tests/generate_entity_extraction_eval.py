@@ -288,8 +288,8 @@ def generate_evaluation_csv(
 
         results.append({
             'mms': mms_text,
-            f'extracted_entities_{llm_model}': extracted_str,
-            f'linked_entities_{llm_model}': linked_str,
+            f'extracted_entities_{llm_model}_{context_mode}': extracted_str,
+            f'linked_entities_{llm_model}_{context_mode}': linked_str,
             'correct_extracted_entities': '',  # Empty for human annotator
             'correct_linked_entities': ''  # Empty for human annotator
         })
@@ -300,7 +300,7 @@ def generate_evaluation_csv(
 
     # Generate output filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = output_path / f"entity_extraction_eval_{context_mode}_{timestamp}.csv"
+    output_file = output_path / f"entity_extraction_eval_{timestamp}.csv"
 
     # Save to CSV with UTF-8 BOM for Excel compatibility
     result_df = pd.DataFrame(results)
@@ -370,8 +370,8 @@ def generate_evaluation_from_text(
 
         results.append({
             'mms': mms_text,
-            f'extracted_entities_{llm_model}': extracted_str,
-            f'linked_entities_{llm_model}': linked_str,
+            f'extracted_entities_{llm_model}_{context_mode}': extracted_str,
+            f'linked_entities_{llm_model}_{context_mode}': linked_str,
             'correct_extracted_entities': '',  # Empty for human annotator
             'correct_linked_entities': ''  # Empty for human annotator
         })
@@ -382,7 +382,7 @@ def generate_evaluation_from_text(
 
     # Generate output filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = output_path / f"entity_extraction_eval_{context_mode}_{timestamp}.csv"
+    output_file = output_path / f"entity_extraction_eval_{timestamp}.csv"
 
     # Save to CSV with UTF-8 BOM for Excel compatibility
     result_df = pd.DataFrame(results)
@@ -393,22 +393,23 @@ def generate_evaluation_from_text(
     return str(output_file)
 
 
-def get_next_column_name(df: pd.DataFrame, llm_model: str, col_type: str = 'extracted') -> str:
+def get_next_column_name(df: pd.DataFrame, llm_model: str, context_mode: str, col_type: str = 'extracted') -> str:
     """
     Determine the column name for new results.
 
-    If model hasn't been used before: {col_type}_entities_{model}
-    If model was used before: {col_type}_entities_{model}_v{n+1}
+    If model+context hasn't been used before: {col_type}_entities_{model}_{context_mode}
+    If used before: {col_type}_entities_{model}_{context_mode}_v{n+1}
 
     Args:
         df: DataFrame with existing columns
         llm_model: LLM model name
+        context_mode: Entity extraction context mode
         col_type: 'extracted' or 'linked'
 
     Returns:
         Column name to use for new results
     """
-    base_col = f'{col_type}_entities_{llm_model}'
+    base_col = f'{col_type}_entities_{llm_model}_{context_mode}'
 
     # Find all existing columns for this model
     existing = [col for col in df.columns if col.startswith(base_col)]
@@ -464,8 +465,8 @@ def re_evaluate_csv(
         raise ValueError("Input file must have 'mms' column")
 
     # Determine the new column names (with version suffix if needed)
-    new_extracted_col = get_next_column_name(df, llm_model, 'extracted')
-    new_linked_col = get_next_column_name(df, llm_model, 'linked')
+    new_extracted_col = get_next_column_name(df, llm_model, context_mode, 'extracted')
+    new_linked_col = get_next_column_name(df, llm_model, context_mode, 'linked')
     logger.info(f"New columns: '{new_extracted_col}', '{new_linked_col}'")
 
     # Find all existing extracted_entities and linked_entities columns to preserve
@@ -556,7 +557,7 @@ def re_evaluate_csv(
 
     # Generate output filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = output_path / f"entity_extraction_eval_{context_mode}_{timestamp}.csv"
+    output_file = output_path / f"entity_extraction_eval_{timestamp}.csv"
 
     # Save to CSV with UTF-8 BOM for Excel compatibility
     result_df = pd.DataFrame(results)
@@ -616,7 +617,7 @@ Examples:
     parser.add_argument(
         "--llm-model", "-m",
         type=str,
-        choices=['gem', 'ax', 'cld', 'gen', 'gpt'],
+        choices=['gem', 'ax', 'cld', 'gen', 'gpt', 'opus'],
         default='ax',
         help="LLM model for extraction (default: ax)"
     )

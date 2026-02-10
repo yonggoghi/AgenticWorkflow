@@ -35,10 +35,11 @@ LLM Factory - LLM 모델 초기화 전담 클래스
 | **gen** | gcp/gemini-2.5-flash | Google | 빠른 처리 |
 | **cld** | amazon/anthropic/claude-sonnet-4 | Anthropic | 복잡한 추론 |
 | **gem** | gemma-7b | Google | 경량 모델 |
+| **opus** | claude-opus-4-6 | Anthropic (직접) | 최고 정확도 |
 
 ### 모델 선택 가이드
 - **빠른 처리**: ax, gen
-- **높은 정확도**: gpt, cld
+- **높은 정확도**: gpt, cld, opus
 - **비용 효율**: gem, gen
 - **멀티모델 앙상블**: [ax, gpt, gen]
 
@@ -90,8 +91,9 @@ llm = factory.create_model('ax')  # 환경변수에서 API 키 로드
 
 import logging
 import os
-from typing import List, Optional
+from typing import List, Optional, Union
 from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +147,7 @@ class LLMFactory:
             "gpt": self._get_config_value('gpt_model', 'azure/openai/gpt-4o-2024-08-06'),
             "gen": self._get_config_value('gemini_model', 'gcp/gemini-2.5-flash'),
             "gem": self._get_config_value('gemma_model', 'gemma-7b'),
+            "opus": "claude-opus-4-6",
         }
     
     def _get_config_value(self, attr_name: str, default_value: str) -> str:
@@ -152,8 +155,18 @@ class LLMFactory:
         if self.model_config:
             return getattr(self.model_config, attr_name, default_value)
         return default_value
-    
-    def create_model(self, model_name: str) -> ChatOpenAI:
+
+    # Gateway 경유 모델은 제외 (amazon/, azure/, gcp/, skt/ 접두사)
+    _GATEWAY_PREFIXES = ('amazon/', 'azure/', 'gcp/', 'skt/')
+
+    def _is_anthropic_model(self, model_name: str) -> bool:
+        """Anthropic API 직접 호출 모델 여부 확인 (gateway 경유 모델 제외)"""
+        lower = model_name.lower()
+        if any(lower.startswith(p) for p in self._GATEWAY_PREFIXES):
+            return False
+        return 'claude' in lower or 'anthropic' in lower
+
+    def create_model(self, model_name: str) -> Union[ChatOpenAI, ChatAnthropic]:
         """
         단일 LLM 모델 생성
         
@@ -184,20 +197,34 @@ class LLMFactory:
             max_tokens = 4000
             seed = 42
         
-        model_kwargs = {
-            "temperature": 0.0,
-            "openai_api_key": api_key,
-            "openai_api_base": api_base,
-            "model": actual_model_name,
-            "max_tokens": max_tokens,
-            "seed": seed
-        }
-        
-        llm_model = ChatOpenAI(**model_kwargs)
+        if self._is_anthropic_model(actual_model_name):
+            # Anthropic API 직접 호출 (ChatAnthropic)
+            anthropic_api_key = os.getenv('ANTHROPIC_API_KEY')
+            if not anthropic_api_key:
+                raise ValueError("ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다.")
+
+            llm_model = ChatAnthropic(
+                model=actual_model_name,
+                anthropic_api_key=anthropic_api_key,
+                max_tokens=max_tokens,
+                temperature=0.0,
+            )
+        else:
+            # Gateway 모델 (ChatOpenAI)
+            model_kwargs = {
+                "temperature": 0.0,
+                "openai_api_key": api_key,
+                "openai_api_base": api_base,
+                "model": actual_model_name,
+                "max_tokens": max_tokens,
+                "seed": seed
+            }
+            llm_model = ChatOpenAI(**model_kwargs)
+
         logger.info(f"✅ LLM 모델 생성 완료: {model_name} ({actual_model_name})")
         return llm_model
     
-    def create_models(self, model_names: List[str]) -> List[ChatOpenAI]:
+    def create_models(self, model_names: List[str]) -> List[Union[ChatOpenAI, ChatAnthropic]]:
         """
         복수의 LLM 모델 생성
         

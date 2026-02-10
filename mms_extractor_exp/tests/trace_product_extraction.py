@@ -1740,6 +1740,8 @@ Examples:
                        help="Entity extraction context mode (CRITICAL: dag vs ont vs typed produce different results)")
     parser.add_argument("--skip-entity-extraction", action="store_true",
                        help="Skip Kiwi + fuzzy matching entity pre-extraction (Step 2)")
+    parser.add_argument("--no-external-candidates", action="store_true",
+                       help="Disable external candidate injection in Step 7 matching")
 
     args = parser.parse_args()
 
@@ -1750,6 +1752,7 @@ Examples:
         'extract_entity_dag': args.extract_dag,
         'entity_extraction_context_mode': args.context_mode,
         'skip_entity_extraction': args.skip_entity_extraction,
+        'use_external_candidates': not args.no_external_candidates,
     }
 
     print("=" * 60)
