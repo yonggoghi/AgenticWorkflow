@@ -6,7 +6,7 @@ ONTOLOGY_PROMPT = """# Role
 1. **Zero-Translation Rule:** 모든 개체명(상품명, 매장명, 요금제, 제휴 브랜드명 등)은 원문 그대로 추출하라. (예: "T 우주패스 올리브영&스타벅스&이마트24", "에스알대리점 지행역점", "5GX 프리미엄" 등)
 2. **DAG-Based Logic:** 메시지가 유도하는 최종 혜택까지의 흐름을 $G = (V, E)$ 구조로 파악하라. 분기 조건(약정 유형, 멤버십 등급 등)을 노드로 명시하라.
 3. **Functional Action:** Action은 단순한 텍스트가 아닌, 입력(Input), 조건(Logic), 결과(Effect)를 가진 **'Strongly Typed Function'**으로 모델링하라.
-4. **Exhaustive Extraction:** 하나의 MMS에 여러 엔티티가 포함될 수 있다. 모든 식별 가능한 엔티티와 관계를 빠짐없이 추출하라.
+4. **Focused Extraction:** 상품(Product), 서비스(Subscription/RatePlan), 매장(Store), 캠페인(Campaign) 등 핵심 오퍼링 엔티티를 중심으로 추출하라. Benefit, Channel, Segment, Contract, MembershipTier는 관계(Relationship)에서 참조하되, 핵심 오퍼링이 아닌 부가 정보는 최소한으로 추출하라.
 
 # 1. Object Schema (14 Entity Types)
 
@@ -109,9 +109,20 @@ ONTOLOGY_PROMPT = """# Role
 - `[Store] -(SELLS)→ [Product]` : 매장에서 판매하는 단말기
 - `[Store] -(SELLS)→ [WiredService]` : 매장에서 판매하는 유선 서비스
 
-# 3. Action Logic (Strongly Typed Functions)
+# 3. Strict Exclusions
 
-메시지 내의 Call-to-Action을 함수형으로 정의하라. 아래는 표준 함수 목록이며, MMS 내용에 따라 해당하는 함수만 추출한다.
+다음 항목은 엔티티로 추출하지 말라:
+- **고객센터/연락처**: "SKT 고객센터(1558)", "고객센터(114)", 전화번호
+- **URL/링크**: "https://...", "http://..."
+- **네비게이션 라벨**: "바로 가기", "자세히 보기", "링크", "Shortcut"
+- **단독 할인 금액/비율**: "20% 할인", "최대 22만 원 캐시백", "50% 할인 쿠폰" (Benefit으로만 분류하고, 상품명 일부가 아닌 한 별도 엔티티로 추출하지 말라)
+- **일반 기술 용어 단독**: "5G", "LTE" (요금제명의 일부인 "5GX 프리미엄"은 추출)
+- **수신거부 문구**: "무료 수신거부 1504"
+- **사은품 브랜드명 단독**: "[사죠영]", "[크레앙]", "[프리디]" 등 사은품 제조사명 (사은품 자체는 Benefit으로 분류)
+
+# 4. Action Logic (Core Functions)
+
+메시지 내의 Call-to-Action을 함수형으로 정의하라. MMS 내용에 따라 해당하는 함수만 추출한다.
 
 - **Function: `Pre_Order`**
   Input: Store_ID, Product_ID, Contract_ID
@@ -128,37 +139,7 @@ ONTOLOGY_PROMPT = """# Role
   Logic: 매장 영업시간 대조 + 재고/이벤트 상태 확인
   Effect: 상담 예약 생성 또는 방문 혜택(Benefit) 지급
 
-- **Function: `Redeem_Coupon`** ★ 신규
-  Input: Customer_ID, PartnerBrand_ID, Coupon_ID, MembershipTier_ID(optional)
-  Logic: 멤버십 등급 확인 + 쿠폰 유효기간/사용 조건 대조
-  Effect: 할인 코드 발급 또는 적립 처리
-
-- **Function: `Bundle_Subscribe`** ★ 신규
-  Input: Customer_ID, RatePlan_ID, WiredService_ID, Contract_ID
-  Logic: 결합 자격 확인(동일 명의, 기존 서비스 여부) + 할인율 계산
-  Effect: 유무선 결합 할인 활성화 + 사은품(Benefit) 지급
-
-- **Function: `Enter_Lottery`** ★ 신규
-  Input: Customer_ID, Event_ID, MembershipTier_ID
-  Logic: 응모 자격(멤버십 등급, 기간) + 중복 응모 확인
-  Effect: 응모 객체 생성, 당첨 시 Benefit 연결
-
-- **Function: `Change_Plan`** ★ 신규
-  Input: Customer_ID, RatePlan_ID(new), Contract_ID(new)
-  Logic: 기존 약정 잔여 기간 + 위약금 계산 + 신규 요금제 자격 확인
-  Effect: 요금제 변경 + 계약 갱신 + 관련 Benefit 활성화
-
-- **Function: `Book_Content`** ★ 신규
-  Input: Customer_ID, ContentOffer_ID, MembershipTier_ID
-  Logic: 할인 대상 등급 확인 + 공연 잔여 좌석/기간 확인
-  Effect: 할인 예매 URL 연결 + 할인(Benefit) 적용
-
-- **Function: `Activate_Feature`** ★ 신규
-  Input: Customer_ID, Subscription_ID, Channel_ID
-  Logic: 서비스 가입 여부 + 디바이스 호환성 확인
-  Effect: 기능 설정 활성화 (예: AI 스팸 차단, 착신전환 등)
-
-# 4. Output Structure (JSON)
+# 5. Output Structure (JSON)
 
 추출 결과는 반드시 아래 형식을 유지하라:
 
@@ -199,7 +180,7 @@ ONTOLOGY_PROMPT = """# Role
   ]
 }
 
-# 5. Entity Extraction Guide
+# 6. Entity Extraction Guide
 
 ## 판별 기준표
 | 원문 패턴 | Entity Type | 판별 근거 |
@@ -235,7 +216,8 @@ ONTOLOGY_PROMPT = """# Role
 - 추가 설명이나 마크다운 코드 블록 없이 순수 JSON만 반환하라
 - 응답의 첫 문자는 반드시 '{'로 시작하고 마지막 문자는 '}'로 끝나야 한다
 - JSON 외에 다른 텍스트를 포함하지 말라
-- 하나의 MMS에서 식별 가능한 모든 엔티티를 빠짐없이 추출하라
+- 핵심 오퍼링(Store, Product, Subscription, RatePlan, Campaign, Event, WiredService, PartnerBrand) 중심으로 추출하라
+- Strict Exclusions에 해당하는 항목은 엔티티로 추출하지 말라
 - 동일 엔티티가 여러 관계에 참여할 수 있다
 - 메시지에 명시되지 않은 정보는 추론하지 말고, 명시된 정보만 추출하라
 """
