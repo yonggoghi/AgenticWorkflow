@@ -278,6 +278,25 @@ Guidelines:
     elif context_keyword == 'PAIRING':
         context_guideline = f"""
 5. Refer to the '{context_keyword} Context' which maps each offering to its primary benefit. 이를 **사용자의 최종 획득 대상인 핵심 혜택(Primary Benefit)**을 구별하는 데 사용하십시오. (e.g., 가입 대상이 아닌, 최종 혜택인 '캐시백'이나 '기프티콘'과 관련된 개체를 식별)"""
+    elif context_keyword == 'TYPED':
+        context_guideline = """
+5. **TYPED Context 활용** — Stage 1에서 추출된 엔티티의 타입 정보를 활용하여 vocabulary 매칭을 수행:
+   - R(Store): 매장/대리점 → vocabulary의 매장 관련 아이템 매칭
+   - E(Equipment): 단말기 → vocabulary의 디바이스 아이템 매칭. 정확한 모델명만 선택 (접미사 FE/Plus/Max 불일치 시 제외)
+   - P(Product): 요금제/부가서비스 → vocabulary의 요금제/서비스 아이템 매칭
+   - S(Subscription): 구독 상품 → vocabulary의 구독 관련 아이템 매칭
+   - V(Voucher): 제휴 혜택 → vocabulary의 제휴 브랜드 아이템 매칭 (예: "올리브영" → "올리브영_올리브영")
+   - X(Campaign): 캠페인/이벤트 → vocabulary의 캠페인 아이템 매칭
+6. **Vocabulary 매칭 가이드**:
+   a) 복합 V-domain 아이템: "올리브영_올리브영" ← "올리브영" 부분 일치 선택
+   b) 정확한 모델명만 선택: 접미사(FE, Plus, Max, Pro 등) 불일치 시 제외. 예: "갤럭시 Z 플립7" ✅, "갤럭시 Z 플립7 FE" ❌
+   c) "신제품" 포괄 표현: 최신 세대만 선택, 구세대 제외
+   d) 부가서비스/보험/케어 제외: T 아이폰케어, 분실파손, T ALL케어, T 즉시보상 등 — 메시지의 핵심 오퍼링이 아닌 한 제외
+7. **Anti-noise 규칙**:
+   - 일반 카테고리 단어 일치만으로 선택하지 않음
+   - 할인 금액/비율 단독 제외
+   - 행동/설명 구절 제외
+   - 확신이 없으면 제외 (When in doubt, exclude)"""
     elif context_keyword == 'ONT':
         context_guideline = """
 5. **Ontology Context 활용**: 'ONT Context'에 제공된 Entities, Relationships, DAG를 참고하세요.
@@ -325,6 +344,58 @@ SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 
 출력 결과 형식:
 1. **ENTITY**: A list of entities separated by commas.
+"""
+
+TYPED_ENTITY_EXTRACTION_PROMPT = """\
+# Task
+SK텔레콤 MMS 광고 메시지에서 **핵심 오퍼링 엔티티**(Core Offering Entities)를 추출하라.
+핵심 오퍼링이란 광고가 고객에게 제안하는 구체적인 상품·서비스·매장·이벤트를 의미한다.
+
+# Entity Type Definitions (6 types)
+아래 6개 타입 중 해당하는 것만 추출한다.
+
+| Type | Code | 설명 | 예시 |
+|------|------|------|------|
+| **Store** | R | 물리적 대리점·매장 (지점명 포함) | CD대리점 동탄목동점, 유엔대리점 배곧사거리직영점, PS&M 동탄타임테라스점 |
+| **Equipment** | E | 단말기·디바이스 모델명 | 아이폰 17, 갤럭시 Z 폴드7, iPad Air 13, 갤럭시 워치6 |
+| **Product** | P | 요금제·부가서비스·유선상품 | 5GX 프라임 요금제, T끼리 온가족할인, 인터넷+IPTV, 로밍 baro 요금제 |
+| **Subscription** | S | 월정액 구독 상품 | T 우주패스 올리브영&스타벅스&이마트24, T 우주패스 Netflix |
+| **Voucher** | V | 제휴 할인·쿠폰·기프티콘 (브랜드+혜택 조합) | 도미노피자 50% 할인, 올리브영 3천 원 기프트카드, CGV 청년할인 |
+| **Campaign** | X | 마케팅 캠페인·프로모션·이벤트명 | T Day, 0 day, special T, 고객 감사 패키지 |
+
+# Extraction Rules
+
+1. **Zero-Translation:** 원문에 등장하는 그대로 추출하라. 번역하지 말라.
+   - 원문이 "아이폰 17 Pro"이면 → "아이폰 17 Pro" (NOT "iPhone 17 Pro")
+   - 원문이 "T Day"이면 → "T Day" (NOT "티데이")
+
+2. **Specificity:** 구체적인 고유명사만 추출하라. 포괄적 카테고리명은 제외한다.
+   - ✅ "갤럭시 S25", "5GX 프라임 요금제", "CD대리점 동탄목동점"
+   - ❌ "휴대폰", "요금제", "대리점", "인터넷"(단독), "할인"(단독)
+
+3. **Store 추출:** 대리점명 + 지점명을 하나의 엔티티로 추출한다.
+   - "유엔대리점 배곧사거리직영점" → 하나의 Store 엔티티
+
+4. **Voucher 추출:** 제휴 브랜드 + 혜택 설명을 결합하여 추출한다.
+   - "도미노피자 배달/방문 포장 50% 할인" → 하나의 Voucher 엔티티
+   - 단, 브랜드만 언급되고 구체적 혜택이 없으면 추출하지 않는다.
+
+5. **Strict Exclusions — 다음은 절대 추출하지 않는다:**
+   - 할인 금액/비율 단독: "최대 22만원", "50% 할인", "25% 할인"
+   - 일반 행위/설명: "매장 방문", "사전예약", "통신사 이동", "번호이동"
+   - URL/연락처: "skt.sh/...", "1558", "1504"
+   - 네비게이션: "바로 가기", "자세히 보기", "혜택받으러 가기"
+   - 경쟁사 단독 언급: "KT", "LG U+", "알뜰폰" (비교 대상일 뿐)
+   - 일반 용어: "5G", "LTE", "USIM" (단독, 상품명 아닌 경우)
+
+# Output Format
+반드시 아래 JSON 형식으로만 응답하라. JSON 외에 다른 텍스트를 포함하지 말라.
+
+{
+  "entities": [
+    {"name": "엔티티명(원문 그대로)", "type": "R|E|P|S|V|X"}
+  ]
+}
 """
 
 HYBRID_DAG_EXTRACTION_PROMPT = """

@@ -202,6 +202,7 @@ class ProductExtractionTracer:
                 HYBRID_DAG_EXTRACTION_PROMPT,
                 HYBRID_PAIRING_EXTRACTION_PROMPT,
                 ONTOLOGY_PROMPT,
+                TYPED_ENTITY_EXTRACTION_PROMPT,
                 build_context_based_entity_extraction_prompt
             )
             from utils import extract_ngram_candidates, validate_text_input
@@ -221,6 +222,9 @@ class ProductExtractionTracer:
             elif context_mode == 'ont':
                 first_stage_prompt_template = ONTOLOGY_PROMPT
                 context_keyword = 'ONT'
+            elif context_mode == 'typed':
+                first_stage_prompt_template = TYPED_ENTITY_EXTRACTION_PROMPT
+                context_keyword = 'TYPED'
             else:
                 first_stage_prompt_template = SIMPLE_ENTITY_EXTRACTION_PROMPT
                 context_keyword = None
@@ -242,6 +246,7 @@ class ProductExtractionTracer:
                 extract_context = args_dict.get('extract_context', True)
                 context_kw = args_dict.get('context_keyword', None)
                 is_ontology_mode = args_dict.get('is_ontology_mode', False)
+                is_typed_mode = args_dict.get('is_typed_mode', False)
 
                 try:
                     response = llm_model.invoke(prompt).content
@@ -290,6 +295,30 @@ class ProductExtractionTracer:
                             "response": response
                         }
 
+                    # Typed mode: JSON parsing
+                    if is_typed_mode:
+                        import json as _json
+                        json_str = response.strip()
+                        if json_str.startswith('```'):
+                            json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
+                            json_str = re.sub(r'\n?```$', '', json_str)
+                        try:
+                            data = _json.loads(json_str)
+                            entities_raw = data.get('entities', [])
+                        except _json.JSONDecodeError:
+                            entities_raw = []
+
+                        cand_entity_list = [
+                            e.get('name', '') for e in entities_raw
+                            if e.get('name') and e['name'] not in recognizer.stop_item_names and len(e['name']) >= 2
+                        ]
+                        type_pairs = [
+                            f"{e['name']}({e['type']})" for e in entities_raw
+                            if e.get('name') and e.get('type')
+                        ]
+                        context_text = ", ".join(type_pairs)
+                        return {"entities": cand_entity_list, "context_text": context_text, "response": response}
+
                     cand_entity_list_raw = recognizer._parse_entity_response(response)
                     cand_entity_list = [e for e in cand_entity_list_raw
                                        if e not in recognizer.stop_item_names and len(e) >= 2]
@@ -325,7 +354,8 @@ class ProductExtractionTracer:
                     "llm_model": llm_model,
                     "extract_context": (context_mode != 'none'),
                     "context_keyword": context_keyword,
-                    "is_ontology_mode": (context_mode == 'ont')
+                    "is_ontology_mode": (context_mode == 'ont'),
+                    "is_typed_mode": (context_mode == 'typed')
                 })
 
             n_jobs = min(len(batches), 3)
@@ -425,7 +455,12 @@ class ProductExtractionTracer:
                 if context_mode == 'none' or not combined_context:
                     context_section = ""
                 else:
-                    context_label = f"{context_keyword} Context (User Action Paths)" if context_keyword else "Context"
+                    if context_keyword == 'TYPED':
+                        context_label = "TYPED Context (Entity Types)"
+                    elif context_keyword:
+                        context_label = f"{context_keyword} Context (User Action Paths)"
+                    else:
+                        context_label = "Context"
                     context_section = f"\n## {context_label}:\n{combined_context}\n"
 
                 second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
@@ -1701,8 +1736,8 @@ Examples:
     parser.add_argument("--entity-mode", type=str, choices=["llm", "logic", "nlp"], default="llm")
     parser.add_argument("--data-source", type=str, choices=["local", "db"], default="local")
     parser.add_argument("--extract-dag", action="store_true", help="Enable DAG extraction")
-    parser.add_argument("--context-mode", type=str, choices=["dag", "pairing", "none", "ont"], default="dag",
-                       help="Entity extraction context mode (CRITICAL: dag vs ont produce different results)")
+    parser.add_argument("--context-mode", type=str, choices=["dag", "pairing", "none", "ont", "typed"], default="dag",
+                       help="Entity extraction context mode (CRITICAL: dag vs ont vs typed produce different results)")
     parser.add_argument("--skip-entity-extraction", action="store_true",
                        help="Skip Kiwi + fuzzy matching entity pre-extraction (Step 2)")
 

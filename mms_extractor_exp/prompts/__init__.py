@@ -73,7 +73,8 @@ from .entity_extraction_prompt import (
     build_context_based_entity_extraction_prompt,
     HYBRID_DAG_EXTRACTION_PROMPT,
     HYBRID_PAIRING_EXTRACTION_PROMPT,
-    SIMPLE_ENTITY_EXTRACTION_PROMPT
+    SIMPLE_ENTITY_EXTRACTION_PROMPT,
+    TYPED_ENTITY_EXTRACTION_PROMPT
 )
 
 from .ontology_prompt import ONTOLOGY_PROMPT
@@ -104,6 +105,7 @@ __all__ = [
     'build_context_based_entity_extraction_prompt',  # 동적 컨텍스트 기반 프롬프트 빌더
     'HYBRID_DAG_EXTRACTION_PROMPT',     # DAG-Entity 하이브리드 추출 프롬프트
     'HYBRID_PAIRING_EXTRACTION_PROMPT', # PAIRING-Entity 하이브리드 추출 프롬프트
+    'TYPED_ENTITY_EXTRACTION_PROMPT',   # Typed 엔티티 추출 프롬프트 (6-type JSON 출력)
 
     # 온톨로지 프롬프트
     'ONTOLOGY_PROMPT',                  # 팔란티어 온톨로지 기반 추출 프롬프트

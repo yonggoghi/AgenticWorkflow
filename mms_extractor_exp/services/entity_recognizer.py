@@ -146,7 +146,8 @@ from prompts import (
     CONTEXT_BASED_ENTITY_EXTRACTION_PROMPT,
     build_context_based_entity_extraction_prompt,
     HYBRID_PAIRING_EXTRACTION_PROMPT,
-    ONTOLOGY_PROMPT
+    ONTOLOGY_PROMPT,
+    TYPED_ENTITY_EXTRACTION_PROMPT
 )
 
 # Config imports
@@ -619,7 +620,7 @@ class EntityRecognizer:
                 llm_models = [self.llm_model]
             
             # Validate context_mode
-            if context_mode not in ['dag', 'pairing', 'none', 'ont']:
+            if context_mode not in ['dag', 'pairing', 'none', 'ont', 'typed']:
                 logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'dag'")
                 context_mode = 'dag'
             
@@ -633,6 +634,9 @@ class EntityRecognizer:
             elif context_mode == 'ont':
                 first_stage_prompt = ONTOLOGY_PROMPT
                 context_keyword = 'ONT'
+            elif context_mode == 'typed':
+                first_stage_prompt = TYPED_ENTITY_EXTRACTION_PROMPT
+                context_keyword = 'TYPED'
             else:  # 'none'
                 first_stage_prompt = SIMPLE_ENTITY_EXTRACTION_PROMPT
                 context_keyword = None
@@ -643,6 +647,7 @@ class EntityRecognizer:
                 extract_context = args_dict.get('extract_context', True)
                 context_kw = args_dict.get('context_keyword', None)
                 is_ontology_mode = args_dict.get('is_ontology_mode', False)
+                is_typed_mode = args_dict.get('is_typed_mode', False)
                 model_name = getattr(llm_model, 'model_name', 'Unknown')
 
                 try:
@@ -719,6 +724,35 @@ class EntityRecognizer:
                             "relationships": relationships
                         }
 
+                    # Typed mode: use JSON parsing (similar to ONT but simpler)
+                    if is_typed_mode:
+                        json_str = response.strip()
+                        if json_str.startswith('```'):
+                            json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
+                            json_str = re.sub(r'\n?```$', '', json_str)
+                        try:
+                            data = json.loads(json_str)
+                            entities_raw = data.get('entities', [])
+                        except json.JSONDecodeError:
+                            logger.warning(f"[{model_name}] Typed JSON parsing failed, falling back to regex")
+                            entities_raw = []
+
+                        cand_entity_list = [
+                            e.get('name', '') for e in entities_raw
+                            if e.get('name') and e['name'] not in self.stop_item_names and len(e['name']) >= 2
+                        ]
+
+                        # Build context_text as "Name(Type), ..." for Stage 2
+                        type_pairs = [
+                            f"{e['name']}({e['type']})" for e in entities_raw
+                            if e.get('name') and e.get('type')
+                        ]
+                        context_text = ", ".join(type_pairs)
+
+                        logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (typed mode): {cand_entity_list}")
+                        logger.info(f"[{model_name}] Entity types: {context_text}")
+                        return {"entities": cand_entity_list, "context_text": context_text}
+
                     # Standard mode: use regex parsing
                     cand_entity_list_raw = self._parse_entity_response(response)
                     cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
@@ -752,7 +786,8 @@ class EntityRecognizer:
                     "llm_model": llm_model,
                     "extract_context": (context_mode != 'none'),
                     "context_keyword": context_keyword,
-                    "is_ontology_mode": (context_mode == 'ont')
+                    "is_ontology_mode": (context_mode == 'ont'),
+                    "is_typed_mode": (context_mode == 'typed')
                 })
             
             n_jobs = min(len(batches), 3)
@@ -832,7 +867,12 @@ class EntityRecognizer:
                 if context_mode == 'none' or not combined_context:
                     context_section = ""
                 else:
-                    context_label = f"{context_keyword} Context (User Action Paths)" if context_keyword else "Context"
+                    if context_keyword == 'TYPED':
+                        context_label = "TYPED Context (Entity Types)"
+                    elif context_keyword:
+                        context_label = f"{context_keyword} Context (User Action Paths)"
+                    else:
+                        context_label = "Context"
                     context_section = f"\n## {context_label}:\n{combined_context}\n"
                 
                 # Build dynamic prompt based on context_keyword
@@ -936,7 +976,10 @@ class EntityRecognizer:
                 return pd.DataFrame()
             
             cand_entities_sim = cand_entities_sim.query("(sim_s1>=@PROCESSING_CONFIG.combined_similarity_threshold and sim_s2>=@PROCESSING_CONFIG.combined_similarity_threshold)")
-            
+
+            if cand_entities_sim.empty:
+                return pd.DataFrame()
+
             cand_entities_sim = cand_entities_sim.groupby(['item_name_in_msg', 'item_nm_alias'])[['sim_s1', 'sim_s2']].apply(
                 lambda x: x['sim_s1'].sum() + x['sim_s2'].sum()
             ).reset_index(name='sim')
