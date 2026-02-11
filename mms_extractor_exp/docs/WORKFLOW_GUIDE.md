@@ -287,7 +287,9 @@ RAG 컨텍스트: 참조 정보
 
 **목적**: 메시지에서 엔티티와 컨텍스트 추출 (Stage 1)
 
-**조건부 스킵**: `should_execute()` → `has_error`이면 스킵
+**조건부 스킵**: `should_execute()` → `has_error` 또는 `entity_matching_mode='logic'`이면 스킵
+
+**⚠️ 중요**: `--entity-matching-mode logic` 사용 시 이 단계는 **완전히 건너뜁니다** (`--extraction-engine` 설정 무시)
 
 **입력**:
 - `state.msg`: 원본 메시지
@@ -344,15 +346,22 @@ RAG 컨텍스트: 참조 정보
 
 **CLI 옵션**:
 ```bash
-# Default engine
-python apps/cli.py --message "광고 메시지"
+# Default engine + LLM mode (Step 7 runs)
+python apps/cli.py --message "광고 메시지" --entity-matching-mode llm
 
-# LangExtract engine (typed mode auto-enabled)
-python apps/cli.py --extraction-engine langextract --message "광고 메시지"
+# LangExtract engine + LLM mode (Step 7 runs with langextract)
+python apps/cli.py --extraction-engine langextract --entity-matching-mode llm --message "광고 메시지"
+
+# Logic mode (Step 7 SKIPPED - extraction-engine ignored!)
+python apps/cli.py --entity-matching-mode logic --message "광고 메시지"
 
 # Disable external candidates
 python apps/cli.py --no-external-candidates --message "광고 메시지"
 ```
+
+**파라미터 우선순위**:
+- `--entity-matching-mode=logic` → Step 7 스킵, `--extraction-engine` 무시됨
+- `--entity-matching-mode=llm` → Step 7 실행, `--extraction-engine`에 따라 langextract/default 선택
 
 ---
 
