@@ -545,7 +545,7 @@ python apps/cli.py --extraction-engine langextract --message "테스트"
 # DAG 모드 (기본)
 python apps/cli.py --entity-extraction-context-mode dag --message "테스트"
 
-# ONT 모드 (온톨로지 기반, DAG LLM 호출 최적화)
+# ONT 모드 (온톨로지 기반)
 python apps/cli.py --entity-extraction-context-mode ont --extract-entity-dag --message "테스트"
 
 # TYPED 모드 (6-type 엔티티 추출)
@@ -556,7 +556,7 @@ python apps/cli.py --entity-extraction-context-mode typed --message "테스트"
 - `dag`: DAG 기반 관계 추출 (기본)
 - `pairing`: 엔티티 페어링
 - `none`: 컨텍스트 없음
-- `ont`: 온톨로지 기반 (Step 10에서 DAG LLM 재호출 없이 기존 결과 재사용)
+- `ont`: 온톨로지 기반 (Step 7에서 entity_types + relationships 추출)
 - `typed`: 6-type 엔티티 추출 (langextract와 함께 사용 권장)
 
 ---

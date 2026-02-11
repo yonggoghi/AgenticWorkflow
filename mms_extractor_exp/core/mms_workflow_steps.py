@@ -1043,13 +1043,8 @@ class DAGExtractionStep(WorkflowStep):
         msg = state.get("msg")
         message_id = state.get("message_id", "#")
 
-        # ONT 모드 확인: 이미 추출된 결과가 있으면 재사용 (LLM 재호출 없음)
-        if hasattr(extractor, 'entity_extraction_context_mode') and extractor.entity_extraction_context_mode == 'ont':
-            ont_result = state.get("ont_extraction_result")
-            if ont_result and (ont_result.get('dag_text') or ont_result.get('relationships')):
-                logger.info("🔗 ONT 모드: 기존 추출 결과로 DAG 생성 (LLM 재호출 없음)")
-                return self._execute_from_ont(state, ont_result, msg, message_id)
-
+        # NOTE: ONT 최적화 제거 - 모든 context mode에서 동일하게 fresh LLM call로 DAG 추출
+        # (이전: ONT 모드에서 ont_extraction_result 재사용으로 LLM 재호출 방지)
         logger.info("🔗 DAG 추출 시작...")
 
         try:

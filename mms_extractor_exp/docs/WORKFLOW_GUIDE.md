@@ -520,7 +520,7 @@ if extract_entity_dag:
 **성능**:
 - 평균 처리 시간: 5-10초
 - 선택적 기능이므로 비활성화 가능
-- **ONT 모드 최적화**: `entity_extraction_context_mode='ont'` 사용 시 LLM 재호출 없이 기존 온톨로지 결과 재사용
+- 모든 context mode에서 동일하게 fresh LLM call로 DAG 추출
 
 ---
 
