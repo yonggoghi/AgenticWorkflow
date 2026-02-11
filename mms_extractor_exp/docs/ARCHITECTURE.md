@@ -15,10 +15,10 @@
 MMS Extractor는 MMS 광고 메시지에서 구조화된 정보를 추출하는 AI 기반 시스템입니다.
 
 ### 핵심 특징
-- **Workflow 기반 아키텍처**: 10단계 처리 파이프라인 (조건부 스킵 지원)
+- **Workflow 기반 아키텍처**: 11단계 처리 파이프라인 (조건부 스킵 지원)
 - **서비스 레이어 분리**: 독립적인 비즈니스 로직 서비스
 - **다중 LLM 지원**: OpenAI, Anthropic (Claude Sonnet/Opus), Gemini, AX 등
-- **이중 추출 엔진**: Default (10-step pipeline) 및 LangExtract (Google langextract 기반)
+- **이중 추출 엔진**: Default (11-step pipeline) 및 LangExtract (Google langextract 기반)
 - **유연한 데이터 소스**: 로컬 CSV 또는 Oracle DB
 - **다양한 추출 모드**: DAG, PAIRING, SIMPLE, ONT, TYPED 컨텍스트 모드 지원
 
@@ -391,7 +391,7 @@ graph TD
 
 | 엔진 | 설명 | 통합 위치 | 사용 시기 |
 |------|------|----------|----------|
-| **default** | 10-step pipeline | 전체 워크플로우 | 범용 추출 작업 |
+| **default** | 11-step pipeline | 전체 워크플로우 | 범용 추출 작업 |
 | **langextract** | Google langextract 기반 | Step 7 Stage 1 | 타입 분류가 중요한 경우 |
 
 **LangExtract 통합 세부사항**:
@@ -467,4 +467,4 @@ Step 2 (EntityExtractionStep)의 Fuzzy Matching 병목을 해결하기 위해 bi
 
 *작성일: 2025-12-16*
 *최종 업데이트: 2026-02-11*
-*버전: 1.3*
+*버전: 1.4*

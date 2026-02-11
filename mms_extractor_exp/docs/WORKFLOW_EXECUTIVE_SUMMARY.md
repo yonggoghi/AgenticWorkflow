@@ -5,7 +5,7 @@
 MMS 광고 메시지에서 **상품, 매장 정보를 자동 추출**하고 **데이터베이스 ID와 연결**하는 AI 기반 정보 추출 시스템
 
 **주요 특징**:
-- **이중 추출 엔진**: Default (10-step pipeline) 및 LangExtract (Google langextract 기반)
+- **이중 추출 엔진**: Default (11-step pipeline) 및 LangExtract (Google langextract 기반)
 - **다중 LLM 모델**: Claude Opus/Sonnet, GPT-4, Gemini 등 지원
 - **유연한 컨텍스트 모드**: DAG, ONT, TYPED 등 5가지 모드
 
@@ -409,5 +409,5 @@ ENTITY: 아이폰17
 *작성일: 2025-01-27*
 *최종 업데이트: 2026-02-11*
 *대상: 임원진*
-*버전: 2.6*
+*버전: 2.7*
 *참고: 이 문서는 간소화된 개념적 흐름을 설명하며, 실제 구현은 10단계 Workflow로 구성됨*

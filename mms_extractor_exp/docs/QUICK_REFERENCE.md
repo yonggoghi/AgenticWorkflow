@@ -2,7 +2,7 @@
 
 > **사용 목적**: Agent가 수정/개선/확장 작업 시 첫 번째로 참조하는 문서
 > **업데이트**: 2026-02-11
-> **버전**: 1.2
+> **버전**: 1.3
 
 ---
 
@@ -33,7 +33,7 @@
     ↓
 [MMSExtractor.process_message()]
     ↓
-[WorkflowEngine.run()] ← 10단계 순차 실행 (각 단계 should_execute()로 조건부 스킵 가능)
+[WorkflowEngine.run()] ← 11단계 순차 실행 (각 단계 should_execute()로 조건부 스킵 가능)
     ↓
     ├─ 1. InputValidationStep
     ├─ 2. EntityExtractionStep ← EntityRecognizer (--skip-entity-extraction 시 스킵)
@@ -521,7 +521,7 @@ class ModelConfig:
 #### D-3. 추출 엔진 선택
 
 ```bash
-# Default engine (10-step pipeline)
+# Default engine (11-step pipeline)
 python apps/cli.py --extraction-engine default --message "테스트"
 
 # LangExtract engine (Google langextract 기반)

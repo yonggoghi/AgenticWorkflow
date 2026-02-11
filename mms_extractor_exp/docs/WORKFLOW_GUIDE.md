@@ -12,7 +12,7 @@
 
 ## Workflow 개요
 
-MMS Extractor는 10단계의 Workflow로 구성되어 있으며, 각 단계는 독립적으로 실행되고 `WorkflowState`를 통해 데이터를 주고받습니다. 각 단계는 `should_execute()` 메서드를 통해 조건부로 스킵될 수 있습니다.
+MMS Extractor는 11단계의 Workflow로 구성되어 있으며, 각 단계는 독립적으로 실행되고 `WorkflowState`를 통해 데이터를 주고받습니다. 각 단계는 `should_execute()` 메서드를 통해 조건부로 스킵될 수 있습니다.
 
 ### Workflow 순서도
 
@@ -44,9 +44,9 @@ graph TD
 | 1-3단계 | 1-2초 | 로컬 처리 (bigram 최적화 적용) |
 | 4단계 | 1-2초 | RAG 컨텍스트 구성 |
 | 5단계 | 5-15초 | **LLM API 호출 (병목)** |
-| 6-7단계 | 1-5초 | 응답 파싱 + 엔티티 매칭 |
-| 8-9단계 | 1-2초 | 결과 구성 + 검증 |
-| 10단계 | 5-10초 | LLM API 호출 (선택적) |
+| 6-8단계 | 1-5초 | 응답 파싱 + 엔티티 추출 + 매칭 |
+| 9-10단계 | 1-2초 | 결과 구성 + 검증 |
+| 11단계 | 5-10초 | LLM API 호출 (선택적) |
 | **전체** | **10-25초** | DAG 포함 시 |
 
 ---
@@ -283,52 +283,111 @@ RAG 컨텍스트: 참조 정보
 
 ---
 
-### 7. EntityMatchingStep
+### 7. EntityContextExtractionStep
 
-**목적**: LLM 파싱 결과의 상품명을 DB 엔티티와 매칭하여 item_id 부여
+**목적**: 메시지에서 엔티티와 컨텍스트 추출 (Stage 1)
 
-**조건부 스킵**: `should_execute()` → `has_error`, `is_fallback` (langextract 제외), 또는 상품/Kiwi 엔티티 없으면 스킵
+**조건부 스킵**: `should_execute()` → `has_error`이면 스킵
 
 **입력**:
-- `state.json_objects`: 파싱된 JSON 객체 (product items)
-- `state.entities_from_kiwi`: Kiwi 추출 엔티티
 - `state.msg`: 원본 메시지
+- `state.entities_from_kiwi`: Kiwi 추출 엔티티
+- `state.json_objects`: 파싱된 JSON 객체 (product items)
 - `extraction_engine`: 추출 엔진 ('default' 또는 'langextract')
 - `use_external_candidates`: 외부 후보 엔티티 사용 여부
 
-**처리 로직**:
+**처리 로직 (두 가지 방식)**:
+
+**A. langextract 방식** (extraction_engine='langextract'):
 ```python
-1. json_objects에서 product items 추출
-2. 외부 후보 구성 (use_external_candidates=True일 때):
-   - external_cand = entities_from_kiwi + primary_llm_extracted_entities
-3. [Stage 1: LangExtract] extraction_engine='langextract'일 경우:
-   - extract_mms_entities(msg) 호출
-   - 6-type 엔티티 추출 (Product, Store, Program, Channel, Purpose, Other)
-   - pre_extracted = {'entities': [...], 'context_text': "..."}
-4. [Stage 2: 매칭] entity_extraction_mode에 따라 분기:
-   - logic: entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)
-   - llm: entity_recognizer.extract_entities_with_llm(msg, ..., pre_extracted=pre_extracted)
-5. alias type 필터링 (non-expansion 타입 제거)
-6. entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)
-7. 매칭 결과가 없으면 fallback (item_id='#')
+1. extract_mms_entities(msg) 호출
+2. 6-type 엔티티 추출 (Product, Store, Program, Channel, Purpose, Other)
+3. Channel/Purpose 제외, 2글자 이상만 포함
+4. state.extracted_entities 설정:
+   {
+       'entities': [...],
+       'context_text': "product1(Product), store1(Store), ..."
+       'entity_types': {},
+       'relationships': []
+   }
 ```
 
-**LangExtract 통합 (Stage 1)**:
+**B. default 방식** (extraction_engine='default'):
 ```python
-if self.extraction_engine == 'langextract':
-    from core.lx_extractor import extract_mms_entities
-    doc = extract_mms_entities(msg, model_id=self.llm_model)
-    entities = []
-    type_pairs = []
-    for ext in doc.extractions:
-        if ext.extraction_class not in ('Channel', 'Purpose'):
-            if len(ext.extraction_text) >= 2:
-                entities.append(ext.extraction_text)
-                type_pairs.append(f"{ext.extraction_text}({ext.extraction_class})")
-    pre_extracted = {
-        'entities': entities,
-        'context_text': ", ".join(type_pairs)
-    }
+1. 외부 후보 구성 (use_external_candidates=True일 때):
+   - external_cand = entities_from_kiwi + primary_llm_extracted_entities
+2. entity_recognizer._extract_entities_stage1() 호출
+   - context_mode에 따라 다른 프롬프트 사용 (dag, ont, typed, pairing, none)
+3. state.extracted_entities 설정:
+   {
+       'entities': [...],
+       'context_text': "...",
+       'entity_types': {...},  # ont/typed 모드만
+       'relationships': [...]  # ont 모드만
+   }
+```
+
+**출력**:
+- `state.extracted_entities`: 추출된 엔티티 및 컨텍스트
+  ```python
+  {
+      'entities': ['아이폰17', '갤럭시S25'],
+      'context_text': "아이폰17(Product), 갤럭시S25(Product)",
+      'entity_types': {...},  # ont/typed 모드만
+      'relationships': [...]  # ont 모드만
+  }
+  ```
+
+**협력 객체**:
+- `lx_extractor.extract_mms_entities`: LangExtract 기반 추출 (langextract 엔진)
+- `entity_recognizer._extract_entities_stage1`: LLM 기반 추출 (default 엔진)
+
+**CLI 옵션**:
+```bash
+# Default engine
+python apps/cli.py --message "광고 메시지"
+
+# LangExtract engine (typed mode auto-enabled)
+python apps/cli.py --extraction-engine langextract --message "광고 메시지"
+
+# Disable external candidates
+python apps/cli.py --no-external-candidates --message "광고 메시지"
+```
+
+---
+
+### 8. VocabularyFilteringStep
+
+**목적**: Stage 1에서 추출한 엔티티를 상품 DB와 매칭하여 item_id 부여 (Stage 2)
+
+**조건부 스킵**: `should_execute()` → `has_error`, `is_fallback`, 또는 추출된 엔티티 없으면 스킵
+
+**입력**:
+- `state.extracted_entities`: Step 7에서 추출한 엔티티 및 컨텍스트
+- `state.msg`: 원본 메시지
+- `state.json_objects`: 파싱된 JSON 객체
+- `entity_extraction_mode`: 매칭 모드 ('logic' 또는 'llm')
+
+**처리 로직 (두 가지 모드)**:
+
+**A. logic 모드**:
+```python
+1. Kiwi 엔티티 + product items 결합
+2. entity_recognizer.extract_entities_with_fuzzy_matching() 호출
+3. fuzzy + sequence 유사도 계산
+4. 상위 매칭 결과 반환
+```
+
+**B. llm 모드**:
+```python
+1. extracted_entities에서 entities, context_text 추출
+2. entity_recognizer._filter_with_vocabulary() 호출
+   - 상품 DB와 유사도 매칭
+   - 어휘 필터링 프롬프트 생성
+   - LLM으로 최종 필터링
+3. alias type 필터링 (non-expansion 타입 제거)
+4. entity_recognizer.map_products_to_entities() 호출
+5. 매칭 결과가 없으면 fallback (item_id='#')
 ```
 
 **출력**:
@@ -345,24 +404,13 @@ if self.extraction_engine == 'langextract':
   ```
 
 **협력 객체**:
-- `EntityRecognizer`: 엔티티 매칭 수행
-- `lx_extractor.extract_mms_entities`: LangExtract 기반 엔티티 추출 (선택적)
-
-**CLI 옵션**:
-```bash
-# Default engine
-python apps/cli.py --message "광고 메시지"
-
-# LangExtract engine (typed mode auto-enabled)
-python apps/cli.py --extraction-engine langextract --message "광고 메시지"
-
-# Disable external candidates
-python apps/cli.py --no-external-candidates --message "광고 메시지"
-```
+- `entity_recognizer._filter_with_vocabulary`: LLM 기반 필터링 (llm 모드)
+- `entity_recognizer.extract_entities_with_fuzzy_matching`: 유사도 기반 매칭 (logic 모드)
+- `entity_recognizer.map_products_to_entities`: 상품-엔티티 매핑
 
 ---
 
-### 8. ResultConstructionStep
+### 9. ResultConstructionStep
 
 **목적**: 매칭된 상품 기반으로 최종 결과 조립
 
@@ -404,7 +452,7 @@ python apps/cli.py --no-external-candidates --message "광고 메시지"
 
 ---
 
-### 9. ValidationStep
+### 10. ValidationStep
 
 **목적**: 추출 결과 검증
 
@@ -429,7 +477,7 @@ python apps/cli.py --no-external-candidates --message "광고 메시지"
 
 ---
 
-### 10. DAGExtractionStep (선택적)
+### 11. DAGExtractionStep (선택적)
 
 **목적**: 엔티티 간 관계를 DAG (Directed Acyclic Graph)로 추출
 
@@ -721,5 +769,5 @@ def execute(self, state: WorkflowState) -> WorkflowState:
 
 *작성일: 2025-12-16*
 *최종 업데이트: 2026-02-11*
-*버전: 1.3*
+*버전: 1.4*
 *작성자: 신용욱 with Google Antigravity*

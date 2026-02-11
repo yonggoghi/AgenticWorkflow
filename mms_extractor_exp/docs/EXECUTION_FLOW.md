@@ -153,7 +153,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 - **파일**: [core/workflow_core.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/workflow_core.py)
 - **입력**: `name` = "MMS Extraction Workflow"
 - **출력**: `WorkflowEngine` 인스턴스
-- **주요 작업**: 10개 워크플로우 단계 등록 (각 단계는 `should_execute()`로 조건부 스킵 가능)
+- **주요 작업**: 11개 워크플로우 단계 등록 (각 단계는 `should_execute()`로 조건부 스킵 가능)
   1. `InputValidationStep`
   2. `EntityExtractionStep` (`--skip-entity-extraction` 시 스킵)
   3. `ProgramClassificationStep`
@@ -181,7 +181,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 #### 3.1.1 [`MMSExtractor.process_message()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_extractor.py#L968)
 - **입력**: `message`, `message_id`
 - **출력**: `result` - 처리 결과 딕셔너리
-- **주요 작업**: 워크플로우 엔진을 통한 10단계 처리 실행
+- **주요 작업**: 워크플로우 엔진을 통한 11단계 처리 실행
 
 ##### 3.1.1.1 워크플로우 실행: [`WorkflowEngine.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/workflow_core.py)
 - **파일**: [core/workflow_core.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/workflow_core.py)
@@ -319,7 +319,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 - **출력**: `is_valid` - 검증 결과 (bool)
 - **주요 작업**: 결과 스키마 및 데이터 유효성 검증
 
-### Step 10: [`DAGExtractionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
+### Step 11: [`DAGExtractionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
 - **입력**: `state`
 - **출력**: 없음 (state의 `final_result`에 `entity_dag` 추가)
 - **주요 작업**:
