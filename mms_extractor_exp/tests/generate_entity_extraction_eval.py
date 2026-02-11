@@ -437,7 +437,8 @@ def re_evaluate_csv(
     eval_file: str,
     output_dir: str,
     llm_model: str,
-    context_mode: str = 'dag'
+    context_mode: str = 'dag',
+    extraction_engine: str = 'default'
 ) -> str:
     """
     Re-evaluate an existing evaluation CSV file.
@@ -464,9 +465,17 @@ def re_evaluate_csv(
     if 'mms' not in df.columns:
         raise ValueError("Input file must have 'mms' column")
 
+    # Force context_mode when using langextract engine
+    if extraction_engine == 'langextract':
+        context_mode = 'typed'
+        logger.info("langextract engine: forcing context_mode='typed'")
+
+    # Column name suffix includes engine when not default
+    col_mode = f"langextract" if extraction_engine == 'langextract' else context_mode
+
     # Determine the new column names (with version suffix if needed)
-    new_extracted_col = get_next_column_name(df, llm_model, context_mode, 'extracted')
-    new_linked_col = get_next_column_name(df, llm_model, context_mode, 'linked')
+    new_extracted_col = get_next_column_name(df, llm_model, col_mode, 'extracted')
+    new_linked_col = get_next_column_name(df, llm_model, col_mode, 'linked')
     logger.info(f"New columns: '{new_extracted_col}', '{new_linked_col}'")
 
     # Find all existing extracted_entities and linked_entities columns to preserve
@@ -489,6 +498,7 @@ def re_evaluate_csv(
         'product_info_extraction_mode': 'llm',
         'extract_entity_dag': False,
         'entity_extraction_context_mode': context_mode,
+        'extraction_engine': extraction_engine,
     }
 
     logger.info(f"Initializing ProductExtractionTracer with config: {extractor_kwargs}")
@@ -640,6 +650,13 @@ Examples:
         default='dag',
         help="Entity extraction context mode (default: dag)"
     )
+    parser.add_argument(
+        "--extraction-engine",
+        type=str,
+        choices=['default', 'langextract'],
+        default='default',
+        help="Extraction engine for Step 7 Stage 1 (default: default)"
+    )
 
     args = parser.parse_args()
 
@@ -654,13 +671,15 @@ Examples:
         print(f"Output dir: {args.output_dir}")
         print(f"LLM model: {args.llm_model}")
         print(f"Context mode: {args.context_mode}")
+        print(f"Extraction engine: {args.extraction_engine}")
         print("=" * 60)
 
         output_file = re_evaluate_csv(
             eval_file=args.re_evaluate,
             output_dir=args.output_dir,
             llm_model=args.llm_model,
-            context_mode=args.context_mode
+            context_mode=args.context_mode,
+            extraction_engine=args.extraction_engine
         )
     else:
         # New evaluation mode - detect file type

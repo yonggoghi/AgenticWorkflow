@@ -629,7 +629,8 @@ class EntityMatchingStep(WorkflowStep):
                  stop_item_names: List[str], entity_extraction_mode: str,
                  llm_factory=None, llm_model: str = 'ax',
                  entity_extraction_context_mode: str = 'dag',
-                 use_external_candidates: bool = True):
+                 use_external_candidates: bool = True,
+                 extraction_engine: str = 'default'):
         self.entity_recognizer = entity_recognizer
         self.alias_pdf_raw = alias_pdf_raw
         self.stop_item_names = stop_item_names
@@ -638,15 +639,21 @@ class EntityMatchingStep(WorkflowStep):
         self.llm_model = llm_model
         self.entity_extraction_context_mode = entity_extraction_context_mode
         self.use_external_candidates = use_external_candidates
+        self.extraction_engine = extraction_engine
 
     def should_execute(self, state: WorkflowState) -> bool:
-        if state.has_error() or state.is_fallback:
+        if state.has_error():
+            return False
+        # langextract extracts entities independently of the main prompt,
+        # so it should run even when is_fallback (main JSON parse failed)
+        if state.is_fallback and self.extraction_engine != 'langextract':
             return False
         json_objects = state.json_objects
         product_items = json_objects.get('product', [])
         if isinstance(product_items, dict):
             product_items = product_items.get('items', [])
-        return len(product_items) > 0 or len(state.entities_from_kiwi) > 0
+        has_entities = len(product_items) > 0 or len(state.entities_from_kiwi) > 0
+        return has_entities or self.extraction_engine == 'langextract'
 
     def execute(self, state: WorkflowState) -> WorkflowState:
         json_objects = state.json_objects
@@ -669,6 +676,33 @@ class EntityMatchingStep(WorkflowStep):
             external_cand = []
             logger.info("외부 후보 엔티티 비활성화 (use_external_candidates=False)")
 
+        # Step 7.1b: Pre-extract entities with langextract if configured
+        pre_extracted = None
+        if self.extraction_engine == 'langextract':
+            try:
+                from core.lx_extractor import extract_mms_entities
+                logger.info("🔗 langextract 엔진으로 Stage 1 엔티티 추출 시작...")
+                doc = extract_mms_entities(msg, model_id=self.llm_model)
+                entities = []
+                type_pairs = []
+                for ext in (doc.extractions or []):
+                    name = ext.extraction_text
+                    if ext.extraction_class in ('Channel', 'Purpose'):
+                        continue
+                    if name not in self.stop_item_names and len(name) >= 2:
+                        entities.append(name)
+                        type_pairs.append(f"{name}({ext.extraction_class})")
+                pre_extracted = {
+                    'entities': entities,
+                    'context_text': ", ".join(type_pairs)
+                }
+                logger.info(f"✅ langextract Stage 1 완료: {len(entities)}개 엔티티 추출")
+                logger.info(f"   엔티티: {entities}")
+                logger.info(f"   컨텍스트: {pre_extracted['context_text']}")
+            except Exception as e:
+                logger.error(f"❌ langextract 추출 실패, 기본 모드로 폴백: {e}")
+                pre_extracted = None
+
         # Step 7.2: Entity matching based on mode
         if self.entity_extraction_mode == 'logic':
             cand_entities = list(set(
@@ -689,7 +723,8 @@ class EntityMatchingStep(WorkflowStep):
                 llm_models=default_llm_models,
                 rank_limit=100,
                 external_cand_entities=external_cand,
-                context_mode=self.entity_extraction_context_mode
+                context_mode=self.entity_extraction_context_mode,
+                pre_extracted=pre_extracted,
             )
 
             if isinstance(llm_result, dict):

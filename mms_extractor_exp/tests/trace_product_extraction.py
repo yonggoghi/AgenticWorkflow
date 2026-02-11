@@ -195,7 +195,8 @@ class ProductExtractionTracer:
         trace_data = self._entity_trace
 
         def traced_extract_entities_with_llm(msg_text, rank_limit=50, llm_models=None,
-                                             external_cand_entities=[], context_mode='dag'):
+                                             external_cand_entities=[], context_mode='dag',
+                                             pre_extracted=None):
             """Wrapped version that captures all intermediate data including 2nd stage filtering."""
             from prompts import (
                 SIMPLE_ENTITY_EXTRACTION_PROMPT,
@@ -343,6 +344,109 @@ class ProductExtractionTracer:
 
             # Initialize LLM sub-step timings
             llm_timings = {}
+
+            # --- Pre-extracted entities: skip Stage 1 entirely (langextract) ---
+            if pre_extracted:
+                logger.info("=== Traced: Using pre-extracted entities (Stage 1 skipped) ===")
+                from services.entity_recognizer import normalize_entity_name
+
+                cand_entity_list = list(pre_extracted['entities'])
+                combined_context = pre_extracted.get('context_text', '')
+                context_keyword = 'TYPED'
+
+                # Capture trace data
+                trace_data.first_stage_prompt = "(pre-extracted by langextract)"
+                trace_data.first_stage_response = f"langextract entities: {cand_entity_list}"
+                trace_data.first_stage_entities = list(cand_entity_list)
+                trace_data.second_stage_context_text = combined_context
+
+                if external_cand_entities:
+                    cand_entity_list = list(set(cand_entity_list + external_cand_entities))
+
+                # Normalize + N-gram expansion
+                t0 = time.time()
+                cand_entity_list = list(set(
+                    normalize_entity_name(e) for e in cand_entity_list if normalize_entity_name(e)
+                ))
+                cand_entity_list = list(set(sum([
+                    [c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split()))
+                     if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity]
+                    for cand_entity in cand_entity_list
+                ], [])))
+                llm_timings['normalization_ngram'] = time.time() - t0
+
+                if not cand_entity_list:
+                    trace_data.substep_timings.update({f"llm_{k}": v for k, v in llm_timings.items()})
+                    return pd.DataFrame()
+
+                # Match with products
+                t0 = time.time()
+                cand_entities_sim = recognizer._match_entities_with_products(cand_entity_list, rank_limit)
+                llm_timings['product_matching'] = time.time() - t0
+
+                if cand_entities_sim.empty:
+                    trace_data.substep_timings.update({f"llm_{k}": v for k, v in llm_timings.items()})
+                    return pd.DataFrame()
+
+                # *** CAPTURE BEFORE 2ND STAGE FILTERING ***
+                trace_data.similarities_before_2nd_stage = cand_entities_sim.copy()
+
+                # Stage 2: vocabulary filtering (same as standard path)
+                t0 = time.time()
+                entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
+                cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
+
+                trace_data.second_stage_entities_in_message = list(entities_in_message)
+                trace_data.second_stage_candidate_aliases = list(cand_entities_voca_all)
+
+                optimal_batch_size = recognizer._calculate_optimal_batch_size(msg_text, base_size=10)
+                second_stage_llm = llm_models[0] if llm_models else recognizer.llm_model
+
+                batches = []
+                for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
+                    cand_entities_voca = cand_entities_voca_all[i:i+optimal_batch_size]
+
+                    context_section = f"\n## TYPED Context (Entity Types):\n{combined_context}\n" if combined_context else ""
+                    second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
+
+                    prompt = f"""
+                    {second_stage_prompt}
+
+                    ## message:
+                    {msg_text}
+
+                    {context_section}
+
+                    ## entities in message:
+                    {', '.join(entities_in_message)}
+
+                    ## candidate entities in vocabulary:
+                    {', '.join(cand_entities_voca)}
+                    """
+                    batches.append({
+                        "prompt": prompt,
+                        "llm_model": second_stage_llm,
+                        "extract_context": False,
+                        "context_keyword": None
+                    })
+                    trace_data.second_stage_prompts.append(prompt)
+
+                n_jobs = min(len(batches), 3)
+                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                    batch_results = parallel(delayed(get_entities_only_by_llm)(args) for args in batches)
+
+                cand_entity_list_2nd = list(set(sum(batch_results, [])))
+                llm_timings['stage2_llm_call'] = time.time() - t0
+
+                trace_data.second_stage_confirmed_entities = cand_entity_list_2nd
+
+                cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list_2nd")
+                trace_data.similarities_after_2nd_stage = cand_entities_sim.copy() if not cand_entities_sim.empty else None
+
+                for k, v in llm_timings.items():
+                    trace_data.substep_timings[f"llm_{k}"] = v
+
+                return cand_entities_sim
 
             # 1. First Stage
             t0 = time.time()

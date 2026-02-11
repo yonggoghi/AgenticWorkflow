@@ -99,6 +99,8 @@ def main():
                        help='배치 처리 결과를 JSON 파일로 저장 (results/ 디렉토리에 저장)')
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')
+    parser.add_argument('--extraction-engine', choices=['default', 'langextract'], default='default',
+                       help='추출 엔진 선택 (default: 10-step pipeline, langextract: Google langextract 기반)')
 
     args = parser.parse_args()
     
@@ -127,6 +129,12 @@ def main():
             print("MongoDB 서버가 실행 중인지 확인하세요.")
             exit(1)
     
+    # When using langextract engine, force entity_extraction_context_mode to 'typed'
+    entity_extraction_context_mode = args.entity_extraction_context_mode
+    if args.extraction_engine == 'langextract':
+        entity_extraction_context_mode = 'typed'
+        logger.info("langextract 엔진 선택: entity_extraction_context_mode를 'typed'로 강제 설정")
+
     try:
                 # 추출기 초기화
         logger.info("MMS 추출기 초기화 중...")
@@ -137,9 +145,10 @@ def main():
             llm_model=args.llm_model,
             entity_llm_model=args.entity_llm_model,
             extract_entity_dag=args.extract_entity_dag,
-            entity_extraction_context_mode=args.entity_extraction_context_mode,
+            entity_extraction_context_mode=entity_extraction_context_mode,
             skip_entity_extraction=args.skip_entity_extraction,
             use_external_candidates=not args.no_external_candidates,
+            extraction_engine=args.extraction_engine,
         )
         
         # 배치 처리 또는 단일 메시지 처리

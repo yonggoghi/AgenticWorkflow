@@ -591,8 +591,9 @@ class EntityRecognizer:
             return max(base_size // 2, 25)
 
     @log_performance
-    def extract_entities_with_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None, 
-                                external_cand_entities: List[str] = [], context_mode: str = 'dag') -> pd.DataFrame:
+    def extract_entities_with_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None,
+                                external_cand_entities: List[str] = [], context_mode: str = 'dag',
+                                pre_extracted: dict = None) -> pd.DataFrame:
         """
         LLM-based entity extraction with multi-model support and configurable context mode.
 
@@ -623,7 +624,91 @@ class EntityRecognizer:
             if context_mode not in ['dag', 'pairing', 'none', 'ont', 'typed']:
                 logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'dag'")
                 context_mode = 'dag'
-            
+
+            # --- Pre-extracted entities: skip Stage 1 entirely ---
+            if pre_extracted:
+                logger.info("=== Using pre-extracted entities (Stage 1 skipped) ===")
+                cand_entity_list = list(pre_extracted['entities'])
+                combined_context = pre_extracted.get('context_text', '')
+                context_keyword = 'TYPED'  # langextract always uses typed context
+
+                if external_cand_entities:
+                    cand_entity_list = list(set(cand_entity_list + external_cand_entities))
+
+                # Normalize + N-gram expansion (same as standard path)
+                cand_entity_list = list(set(
+                    normalize_entity_name(e) for e in cand_entity_list if normalize_entity_name(e)
+                ))
+                cand_entity_list = list(set(sum(
+                    [[c['text'] for c in extract_ngram_candidates(ce, min_n=2, max_n=len(ce.split())) if c['start_idx'] <= 0]
+                     if len(ce.split()) >= 4 else [ce]
+                     for ce in cand_entity_list], []
+                )))
+
+                logger.info(f"Pre-extracted candidates after normalization: {len(cand_entity_list)}")
+                logger.info(f"Candidates: {cand_entity_list}")
+
+                if not cand_entity_list:
+                    return pd.DataFrame()
+
+                # Match with products (same as standard path)
+                cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
+
+                if cand_entities_sim.empty:
+                    return pd.DataFrame()
+
+                # Stage 2: vocabulary filtering (same as standard path)
+                entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
+                cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
+                optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=10)
+
+                second_stage_llm = llm_models[0] if llm_models else self.llm_model
+
+                # Need inner functions for Stage 2 — define minimal versions
+                def _stage2_get_entities(args_dict):
+                    llm_model_inner = args_dict['llm_model']
+                    prompt_inner = args_dict['prompt']
+                    try:
+                        response = llm_model_inner.invoke(f"\n{prompt_inner}\n").content
+                        return self._parse_entity_response(response)
+                    except Exception as e:
+                        logger.error(f"Stage 2 extraction failed: {e}")
+                        return []
+
+                batches = []
+                for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
+                    cand_entities_voca = cand_entities_voca_all[i:i + optimal_batch_size]
+
+                    context_section = f"\n## TYPED Context (Entity Types):\n{combined_context}\n" if combined_context else ""
+                    second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
+
+                    prompt = f"""
+                    {second_stage_prompt}
+
+                    ## message:
+                    {msg_text}
+
+                    {context_section}
+
+                    ## entities in message:
+                    {', '.join(entities_in_message)}
+
+                    ## candidate entities in vocabulary:
+                    {', '.join(cand_entities_voca)}
+                    """
+                    batches.append({"prompt": prompt, "llm_model": second_stage_llm})
+
+                n_jobs = min(len(batches), 3)
+                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+                    batch_results = parallel(delayed(_stage2_get_entities)(args) for args in batches)
+
+                cand_entity_list_filtered = list(set(sum(batch_results, [])))
+                cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list_filtered")
+
+                logger.info(f"Pre-extracted final matched entities: {cand_entities_sim.shape}")
+                return cand_entities_sim
+            # --- End pre-extracted path ---
+
             # Select prompt based on context_mode
             if context_mode == 'dag':
                 first_stage_prompt = HYBRID_DAG_EXTRACTION_PROMPT
