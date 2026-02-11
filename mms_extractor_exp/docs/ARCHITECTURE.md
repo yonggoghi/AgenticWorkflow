@@ -17,9 +17,10 @@ MMS Extractor는 MMS 광고 메시지에서 구조화된 정보를 추출하는 
 ### 핵심 특징
 - **Workflow 기반 아키텍처**: 10단계 처리 파이프라인 (조건부 스킵 지원)
 - **서비스 레이어 분리**: 독립적인 비즈니스 로직 서비스
-- **다중 LLM 지원**: OpenAI, Anthropic, Gemini, AX 등
+- **다중 LLM 지원**: OpenAI, Anthropic (Claude Sonnet/Opus), Gemini, AX 등
+- **이중 추출 엔진**: Default (10-step pipeline) 및 LangExtract (Google langextract 기반)
 - **유연한 데이터 소스**: 로컬 CSV 또는 Oracle DB
-- **다양한 추출 모드**: DAG, PAIRING, SIMPLE, ONT 컨텍스트 모드 지원
+- **다양한 추출 모드**: DAG, PAIRING, SIMPLE, ONT, TYPED 컨텍스트 모드 지원
 
 ---
 
@@ -364,21 +365,50 @@ graph TD
 
 ### 7. 엔티티 추출 컨텍스트 모드
 
-**결정**: 다양한 컨텍스트 모드 지원 (dag, pairing, simple, ont)
+**결정**: 다양한 컨텍스트 모드 지원 (dag, pairing, simple, ont, typed)
 
 **모드별 특징**:
 
 | 모드 | 설명 | LLM 호출 | 특징 |
 |------|------|---------|------|
-| **dag** | DAG 기반 관계 추출 | Step 2 + Step 9 | 기본 모드 |
+| **dag** | DAG 기반 관계 추출 | Step 2 + Step 10 | 기본 모드 |
 | **pairing** | 엔티티 페어링 | Step 2 | 관계 중심 |
-| **simple** | 단순 엔티티 추출 | Step 2 | 빠른 처리 |
-| **ont** | 온톨로지 기반 | Step 2 (Step 9 재사용) | LLM 호출 최적화 |
+| **none** | 컨텍스트 없음 | Step 2 | 최소 모드 |
+| **ont** | 온톨로지 기반 | Step 2 (Step 10 재사용) | LLM 호출 최적화 |
+| **typed** | 6-type 엔티티 추출 | Step 7 (langextract) | 타입별 분류 |
 
-**ONT 모드 장점**:
-- ✅ Step 9에서 별도 LLM 호출 불필요 (기존 결과 재사용)
+**ONT/TYPED 모드 장점**:
+- ✅ Step 10에서 별도 LLM 호출 불필요 (기존 결과 재사용)
 - ✅ 엔티티 타입, 관계 정보 풍부
 - ✅ 일관된 추출 결과
+- ✅ TYPED: langextract 엔진과 함께 사용 시 6개 타입으로 분류 (Product, Store, Program, Channel, Purpose, Other)
+
+### 8. 추출 엔진 선택
+
+**결정**: 두 가지 추출 엔진 지원 (default, langextract)
+
+**엔진별 특징**:
+
+| 엔진 | 설명 | 통합 위치 | 사용 시기 |
+|------|------|----------|----------|
+| **default** | 10-step pipeline | 전체 워크플로우 | 범용 추출 작업 |
+| **langextract** | Google langextract 기반 | Step 7 Stage 1 | 타입 분류가 중요한 경우 |
+
+**LangExtract 통합 세부사항**:
+- **위치**: EntityMatchingStep (Step 7) Stage 1 사전 추출
+- **동작**: `extract_mms_entities(msg)` 호출 → 6개 타입별 엔티티 추출
+- **출력**: `pre_extracted` 딕셔너리 (entities, context_text)
+- **자동 설정**: langextract 선택 시 `entity_extraction_context_mode`를 'typed'로 강제 설정
+- **폴백**: langextract 실패 시 자동으로 default 모드로 전환
+
+**CLI 사용 예시**:
+```bash
+# Default engine
+python apps/cli.py --message "광고 메시지"
+
+# LangExtract engine (typed mode auto-enabled)
+python apps/cli.py --extraction-engine langextract --message "광고 메시지"
+```
 
 ---
 
@@ -436,5 +466,5 @@ Step 2 (EntityExtractionStep)의 Fuzzy Matching 병목을 해결하기 위해 bi
 ---
 
 *작성일: 2025-12-16*
-*최종 업데이트: 2026-02-09*
-*버전: 1.2*
+*최종 업데이트: 2026-02-11*
+*버전: 1.3*

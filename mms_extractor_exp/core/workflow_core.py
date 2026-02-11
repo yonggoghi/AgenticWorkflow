@@ -202,8 +202,9 @@ class WorkflowState:
     raw_result: Dict[str, Any] = field(default_factory=dict)  # 원시 결과 (set by ResultConstructionStep)
     final_result: Dict[str, Any] = field(default_factory=dict)  # 최종 결과 (set by ResultConstructionStep)
     
-    # Entity matching fields
-    matched_products: List[Dict[str, Any]] = field(default_factory=list)  # 매칭된 상품 목록 (set by EntityMatchingStep)
+    # Entity extraction and matching fields
+    extracted_entities: Optional[Dict[str, Any]] = None  # Entity + Context (set by EntityContextExtractionStep)
+    matched_products: List[Dict[str, Any]] = field(default_factory=list)  # 매칭된 상품 목록 (set by VocabularyFilteringStep)
 
     # Control flags
     is_fallback: bool = False  # 폴백 모드 여부 (set by LLMExtractionStep or ResponseParsingStep)

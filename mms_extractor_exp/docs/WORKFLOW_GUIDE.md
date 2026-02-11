@@ -203,8 +203,9 @@ elif entity_extraction_mode == 'llm':
 **컨텍스트 모드**:
 - `dag`: DAG 형식 컨텍스트 (기본)
 - `pairing`: 페어링 형식 컨텍스트
-- `simple`: 단순 엔티티 리스트
+- `none`: 컨텍스트 없음
 - `ont`: 온톨로지 기반 컨텍스트 (엔티티 타입, 관계 포함)
+- `typed`: 6-type 엔티티 추출 (Product, Store, Program, Channel, Purpose, Other)
 
 ---
 
@@ -286,23 +287,48 @@ RAG 컨텍스트: 참조 정보
 
 **목적**: LLM 파싱 결과의 상품명을 DB 엔티티와 매칭하여 item_id 부여
 
-**조건부 스킵**: `should_execute()` → `has_error`, `is_fallback`, 또는 상품/Kiwi 엔티티 없으면 스킵
+**조건부 스킵**: `should_execute()` → `has_error`, `is_fallback` (langextract 제외), 또는 상품/Kiwi 엔티티 없으면 스킵
 
 **입력**:
 - `state.json_objects`: 파싱된 JSON 객체 (product items)
 - `state.entities_from_kiwi`: Kiwi 추출 엔티티
 - `state.msg`: 원본 메시지
+- `extraction_engine`: 추출 엔진 ('default' 또는 'langextract')
+- `use_external_candidates`: 외부 후보 엔티티 사용 여부
 
 **처리 로직**:
 ```python
 1. json_objects에서 product items 추출
-2. entities_from_kiwi + product names로 cand_entities 구성
-3. entity_extraction_mode에 따라 분기:
+2. 외부 후보 구성 (use_external_candidates=True일 때):
+   - external_cand = entities_from_kiwi + primary_llm_extracted_entities
+3. [Stage 1: LangExtract] extraction_engine='langextract'일 경우:
+   - extract_mms_entities(msg) 호출
+   - 6-type 엔티티 추출 (Product, Store, Program, Channel, Purpose, Other)
+   - pre_extracted = {'entities': [...], 'context_text': "..."}
+4. [Stage 2: 매칭] entity_extraction_mode에 따라 분기:
    - logic: entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)
-   - llm: entity_recognizer.extract_entities_with_llm(msg, ...)
-4. alias type 필터링 (non-expansion 타입 제거)
-5. entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)
-6. 매칭 결과가 없으면 fallback (item_id='#')
+   - llm: entity_recognizer.extract_entities_with_llm(msg, ..., pre_extracted=pre_extracted)
+5. alias type 필터링 (non-expansion 타입 제거)
+6. entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)
+7. 매칭 결과가 없으면 fallback (item_id='#')
+```
+
+**LangExtract 통합 (Stage 1)**:
+```python
+if self.extraction_engine == 'langextract':
+    from core.lx_extractor import extract_mms_entities
+    doc = extract_mms_entities(msg, model_id=self.llm_model)
+    entities = []
+    type_pairs = []
+    for ext in doc.extractions:
+        if ext.extraction_class not in ('Channel', 'Purpose'):
+            if len(ext.extraction_text) >= 2:
+                entities.append(ext.extraction_text)
+                type_pairs.append(f"{ext.extraction_text}({ext.extraction_class})")
+    pre_extracted = {
+        'entities': entities,
+        'context_text': ", ".join(type_pairs)
+    }
 ```
 
 **출력**:
@@ -320,6 +346,19 @@ RAG 컨텍스트: 참조 정보
 
 **협력 객체**:
 - `EntityRecognizer`: 엔티티 매칭 수행
+- `lx_extractor.extract_mms_entities`: LangExtract 기반 엔티티 추출 (선택적)
+
+**CLI 옵션**:
+```bash
+# Default engine
+python apps/cli.py --message "광고 메시지"
+
+# LangExtract engine (typed mode auto-enabled)
+python apps/cli.py --extraction-engine langextract --message "광고 메시지"
+
+# Disable external candidates
+python apps/cli.py --no-external-candidates --message "광고 메시지"
+```
 
 ---
 
@@ -681,6 +720,6 @@ def execute(self, state: WorkflowState) -> WorkflowState:
 ---
 
 *작성일: 2025-12-16*
-*최종 업데이트: 2026-02-09*
-*버전: 1.2*
+*최종 업데이트: 2026-02-11*
+*버전: 1.3*
 *작성자: 신용욱 with Google Antigravity*

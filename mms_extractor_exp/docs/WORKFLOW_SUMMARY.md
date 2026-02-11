@@ -10,7 +10,13 @@
 
 MMS 광고 메시지에서 **상품, 매장 정보를 자동 추출**하고 **데이터베이스 ID와 연결**하는 AI 기반 정보 추출 시스템
 
-*최종 업데이트: 2026-02-09*
+**주요 특징** (2026-02 업데이트):
+- **이중 추출 엔진**: Default (10-step pipeline) 및 LangExtract (Google langextract 기반 6-type 분류)
+- **다중 LLM 지원**: Claude Opus/Sonnet, GPT-4, Gemini, AX 등
+- **유연한 컨텍스트 모드**: DAG, PAIRING, ONT, TYPED 등 5가지 모드
+- **조건부 스킵**: 각 단계가 `should_execute()`로 조건부 실행 가능
+
+*최종 업데이트: 2026-02-11*
 
 ---
 

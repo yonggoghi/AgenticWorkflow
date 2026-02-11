@@ -590,420 +590,488 @@ class EntityRecognizer:
         else:
             return max(base_size // 2, 25)
 
+    def _extract_entities_stage1(self, msg_text: str, context_mode: str = 'dag',
+                                 llm_models: List = None, external_cand_entities: List[str] = None) -> dict:
+        """
+        Stage 1: Entity + Context 추출
+
+        LLM을 사용하여 메시지에서 엔티티와 컨텍스트를 추출합니다.
+        context_mode에 따라 다른 프롬프트를 사용합니다.
+
+        Args:
+            msg_text: 메시지 텍스트
+            context_mode: 컨텍스트 모드 ('dag', 'pairing', 'ont', 'typed', 'none')
+            llm_models: LLM 모델 리스트 (None이면 self.llm_model 사용)
+            external_cand_entities: 외부 후보 엔티티 리스트
+
+        Returns:
+            {
+                'entities': [...],  # 추출된 엔티티 리스트
+                'context_text': "...",  # 컨텍스트 텍스트 (DAG, ONT 등)
+                'entity_types': {...},  # ONT 모드일 때만 (엔티티별 타입)
+                'relationships': [...]  # ONT 모드일 때만 (관계 리스트)
+            }
+        """
+        from prompts.entity_extraction_prompt import (
+            HYBRID_DAG_EXTRACTION_PROMPT,
+            HYBRID_PAIRING_EXTRACTION_PROMPT,
+            SIMPLE_ENTITY_EXTRACTION_PROMPT,
+            ONTOLOGY_PROMPT,
+            TYPED_ENTITY_EXTRACTION_PROMPT,
+            ONT_PRODUCT_RELEVANT_TYPES
+        )
+
+        if llm_models is None:
+            llm_models = [self.llm_model]
+
+        if external_cand_entities is None:
+            external_cand_entities = []
+
+        # Select prompt based on context_mode
+        if context_mode == 'dag':
+            first_stage_prompt = HYBRID_DAG_EXTRACTION_PROMPT
+            context_keyword = 'DAG'
+        elif context_mode == 'pairing':
+            first_stage_prompt = HYBRID_PAIRING_EXTRACTION_PROMPT
+            context_keyword = 'PAIRING'
+        elif context_mode == 'ont':
+            first_stage_prompt = ONTOLOGY_PROMPT
+            context_keyword = 'ONT'
+        elif context_mode == 'typed':
+            first_stage_prompt = TYPED_ENTITY_EXTRACTION_PROMPT
+            context_keyword = 'TYPED'
+        else:  # 'none'
+            first_stage_prompt = SIMPLE_ENTITY_EXTRACTION_PROMPT
+            context_keyword = None
+
+        # Internal function for parallel execution
+        def get_entities_and_context_by_llm(args_dict):
+            llm_model, prompt = args_dict['llm_model'], args_dict['prompt']
+            extract_context = args_dict.get('extract_context', True)
+            context_kw = args_dict.get('context_keyword', None)
+            is_ontology_mode = args_dict.get('is_ontology_mode', False)
+            is_typed_mode = args_dict.get('is_typed_mode', False)
+            model_name = getattr(llm_model, 'model_name', 'Unknown')
+
+            try:
+                # Log the prompt being sent to LLM
+                prompt_res_log_list = []
+                prompt_res_log_list.append(f"[{model_name}] Sending prompt to LLM:")
+                prompt_res_log_list.append("="*100)
+                prompt_res_log_list.append(prompt)
+                prompt_res_log_list.append("="*100)
+
+                response = llm_model.invoke(f"""
+
+                {prompt}
+
+                """).content
+
+                # Log the response received from LLM
+                prompt_res_log_list.append(f"[{model_name}] Received response from LLM:")
+                prompt_res_log_list.append("-"*100)
+                prompt_res_log_list.append(response)
+                prompt_res_log_list.append("-"*100)
+
+                logger.debug("\n".join(prompt_res_log_list))
+
+                # Ontology mode: use JSON parsing
+                if is_ontology_mode:
+                    parsed = self._parse_ontology_response(response)
+                    cand_entity_list = [e for e in parsed['entities']
+                                      if e not in self.stop_item_names and len(e) >= 2]
+
+                    # Build rich context with Entity Types, Relationships, and DAG
+                    entity_types = parsed.get('entity_types', {})
+                    relationships = parsed.get('relationships', [])
+                    dag_text = parsed['dag_text']
+
+                    # Filter by entity type - keep only product/service-relevant types
+                    removed = [f"{e}({entity_types.get(e, '?')})" for e in cand_entity_list
+                               if entity_types.get(e, 'Unknown') not in ONT_PRODUCT_RELEVANT_TYPES]
+                    cand_entity_list = [e for e in cand_entity_list
+                                       if entity_types.get(e, 'Unknown') in ONT_PRODUCT_RELEVANT_TYPES]
+                    if removed:
+                        logger.info(f"[{model_name}] ONT type filter removed {len(removed)}: {removed}")
+
+                    # Format entity types: Name(Type), ...
+                    entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
+
+                    # Format relationships: Source -[TYPE]-> Target
+                    rel_lines = []
+                    for rel in relationships:
+                        src = rel.get('source', '')
+                        tgt = rel.get('target', '')
+                        rel_type = rel.get('type', '')
+                        if src and tgt and rel_type:
+                            rel_lines.append(f"  - {src} -[{rel_type}]-> {tgt}")
+                    relationships_str = "\n".join(rel_lines) if rel_lines else ""
+
+                    # Combine all parts into context_text
+                    context_parts = []
+                    if entity_type_str:
+                        context_parts.append(f"Entities: {entity_type_str}")
+                    if relationships_str:
+                        context_parts.append(f"Relationships:\n{relationships_str}")
+                    if dag_text:
+                        context_parts.append(f"DAG: {dag_text}")
+                    context_text = "\n".join(context_parts)
+
+                    logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (ONT mode): {cand_entity_list}")
+                    logger.info(f"[{model_name}] Entity types: {entity_types}")
+                    logger.info(f"[{model_name}] Relationships: {len(relationships)} found")
+                    return {
+                        "entities": cand_entity_list,
+                        "context_text": context_text,
+                        "entity_types": entity_types,
+                        "relationships": relationships
+                    }
+
+                # Typed mode: use JSON parsing (similar to ONT but simpler)
+                if is_typed_mode:
+                    json_str = response.strip()
+                    if json_str.startswith('```'):
+                        json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
+                        json_str = re.sub(r'\n?```$', '', json_str)
+                    try:
+                        data = json.loads(json_str)
+                        entities_raw = data.get('entities', [])
+                    except json.JSONDecodeError:
+                        logger.warning(f"[{model_name}] Typed JSON parsing failed, falling back to regex")
+                        entities_raw = []
+
+                    cand_entity_list = [
+                        e.get('name', '') for e in entities_raw
+                        if e.get('name') and e['name'] not in self.stop_item_names and len(e['name']) >= 2
+                    ]
+
+                    # Build context_text as "Name(Type), ..." for Stage 2
+                    type_pairs = [
+                        f"{e['name']}({e['type']})" for e in entities_raw
+                        if e.get('name') and e.get('type')
+                    ]
+                    context_text = ", ".join(type_pairs)
+
+                    logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (typed mode): {cand_entity_list}")
+                    logger.info(f"[{model_name}] Entity types: {context_text}")
+                    return {"entities": cand_entity_list, "context_text": context_text}
+
+                # Standard mode: use regex parsing
+                cand_entity_list_raw = self._parse_entity_response(response)
+                cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
+
+                logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities: {cand_entity_list}")
+
+                context_text = ""
+                if extract_context and context_kw:
+                    context_match = re.search(rf'{context_kw}:\s*(.*)', response, re.DOTALL | re.IGNORECASE)
+                    if context_match:
+                        context_text = context_match.group(1).strip()
+                        logger.info(f"[{model_name}] Extracted {context_kw} text ({len(context_text)} chars)")
+                    else:
+                        logger.debug(f"[{model_name}] No {context_kw} found in response")
+
+                return {"entities": cand_entity_list, "context_text": context_text}
+            except Exception as e:
+                logger.error(f"LLM extraction failed for {model_name}: {e}")
+                return {"entities": [], "context_text": ""}
+
+        # 1. First Stage: Extract entities and context
+        batches = []
+        for llm_model in llm_models:
+            prompt = f"{first_stage_prompt}\n\n## message:\n{msg_text}"
+            batches.append({
+                "prompt": prompt,
+                "llm_model": llm_model,
+                "extract_context": (context_mode != 'none'),
+                "context_keyword": context_keyword,
+                "is_ontology_mode": (context_mode == 'ont'),
+                "is_typed_mode": (context_mode == 'typed')
+            })
+
+        n_jobs = min(len(batches), 3)
+        with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+            batch_results_dicts = parallel(delayed(get_entities_and_context_by_llm)(args) for args in batches)
+
+        all_entities = []
+        all_contexts = []
+        all_entity_types = {}
+        all_relationships = []
+
+        for result_dict in batch_results_dicts:
+            all_entities.extend(result_dict['entities'])
+            if result_dict['context_text']:
+                all_contexts.append(result_dict['context_text'])
+            # ONT 모드에서 entity_types와 relationships 수집
+            if context_mode == 'ont':
+                if 'entity_types' in result_dict:
+                    all_entity_types.update(result_dict.get('entity_types', {}))
+                if 'relationships' in result_dict:
+                    all_relationships.extend(result_dict.get('relationships', []))
+
+        combined_context = "\n".join(all_contexts)
+
+        if external_cand_entities:
+            all_entities.extend(external_cand_entities)
+
+        cand_entity_list = list(set(all_entities))
+
+        # Normalize entity names (strip parenthetical specs, collapse spaces)
+        cand_entity_list = list(set(
+            normalize_entity_name(e) for e in cand_entity_list if normalize_entity_name(e)
+        ))
+
+        # N-gram expansion
+        cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
+
+        logger.info(f"Stage 1 complete: {len(cand_entity_list)} entities extracted")
+
+        # Return result
+        result = {
+            'entities': cand_entity_list,
+            'context_text': combined_context
+        }
+
+        if context_mode == 'ont':
+            result['entity_types'] = all_entity_types
+            result['relationships'] = all_relationships
+
+        return result
+
+    def _filter_with_vocabulary(self, entities: list, context_text: str, context_mode: str,
+                                msg_text: str, rank_limit: int = 50, llm_model=None) -> pd.DataFrame:
+        """
+        Stage 2: Vocabulary Filtering
+
+        Stage 1에서 추출한 엔티티들을 DB vocabulary와 비교하여 최종 선택합니다.
+
+        Args:
+            entities: Stage 1에서 추출한 엔티티 리스트
+            context_text: Stage 1에서 생성한 컨텍스트 텍스트
+            context_mode: 컨텍스트 모드 ('dag', 'ont', 'typed', 'pairing', 'none')
+            msg_text: 원본 메시지 텍스트
+            rank_limit: 최대 rank 제한
+            llm_model: LLM 모델 (None이면 self.llm_model 사용)
+
+        Returns:
+            pd.DataFrame: 필터링된 엔티티 DataFrame
+            또는 (ont 모드) {'similarities_df': DataFrame, 'ont_metadata': {...}}
+        """
+        from prompts.entity_extraction_prompt import build_context_based_entity_extraction_prompt
+
+        if llm_model is None:
+            llm_model = self.llm_model
+
+        if not entities:
+            if context_mode == 'ont':
+                return {
+                    'similarities_df': pd.DataFrame(),
+                    'ont_metadata': None
+                }
+            return pd.DataFrame()
+
+        # Match with products
+        cand_entities_sim = self._match_entities_with_products(entities, rank_limit)
+
+        if cand_entities_sim.empty:
+            if context_mode == 'ont':
+                return {
+                    'similarities_df': pd.DataFrame(),
+                    'ont_metadata': None
+                }
+            return pd.DataFrame()
+
+        # 2. Second Stage: Filtering
+        entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
+        cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
+        optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=10)
+
+        # Determine context_keyword
+        if context_mode == 'dag':
+            context_keyword = 'DAG'
+        elif context_mode == 'pairing':
+            context_keyword = 'PAIRING'
+        elif context_mode == 'ont':
+            context_keyword = 'ONT'
+        elif context_mode == 'typed':
+            context_keyword = 'TYPED'
+        else:
+            context_keyword = None
+
+        # Internal function for LLM filtering
+        def get_entities_only_by_llm(args_dict):
+            llm_m = args_dict['llm_model']
+            prompt_inner = args_dict['prompt']
+            try:
+                response = llm_m.invoke(f"\n{prompt_inner}\n").content
+                return self._parse_entity_response(response)
+            except Exception as e:
+                logger.error(f"Stage 2 filtering failed: {e}")
+                return []
+
+        batches = []
+        for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
+            cand_entities_voca = cand_entities_voca_all[i:i+optimal_batch_size]
+
+            # Build context section based on mode
+            if context_mode == 'none' or not context_text:
+                context_section = ""
+            else:
+                if context_keyword == 'TYPED':
+                    context_label = "TYPED Context (Entity Types)"
+                elif context_keyword:
+                    context_label = f"{context_keyword} Context (User Action Paths)"
+                else:
+                    context_label = "Context"
+                context_section = f"\n## {context_label}:\n{context_text}\n"
+
+            # Build dynamic prompt based on context_keyword
+            second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
+
+            prompt = f"""
+            {second_stage_prompt}
+
+            ## message:
+            {msg_text}
+
+            {context_section}
+
+            ## entities in message:
+            {', '.join(entities_in_message)}
+
+            ## candidate entities in vocabulary:
+            {', '.join(cand_entities_voca)}
+            """
+            batches.append({
+                "prompt": prompt,
+                "llm_model": llm_model,
+                "extract_context": False,
+                "context_keyword": None
+            })
+
+        n_jobs = min(len(batches), 3)
+        with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
+            batch_results = parallel(delayed(get_entities_only_by_llm)(args) for args in batches)
+
+        cand_entity_list_filtered = list(set(sum(batch_results, [])))
+
+        cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list_filtered")
+
+        logger.info(f"Stage 2 complete: {len(cand_entities_sim)} entities matched")
+
+        # ONT 모드일 경우 메타데이터 포함하여 반환
+        # Note: ont_metadata는 Stage 1에서 생성되므로 여기서는 None
+        if context_mode == 'ont':
+            return {
+                'similarities_df': cand_entities_sim,
+                'ont_metadata': {
+                    'dag_text': context_text,
+                    'entity_types': {},  # Stage 1에서 전달받아야 함
+                    'relationships': []  # Stage 1에서 전달받아야 함
+                }
+            }
+
+        return cand_entities_sim
+
     @log_performance
     def extract_entities_with_llm(self, msg_text: str, rank_limit: int = 50, llm_models: List = None,
                                 external_cand_entities: List[str] = [], context_mode: str = 'dag',
                                 pre_extracted: dict = None) -> pd.DataFrame:
         """
-        LLM-based entity extraction with multi-model support and configurable context mode.
+        LLM-based entity extraction (Backward compatibility wrapper).
+
+        This method now wraps the two-stage extraction process:
+        - Stage 1: Entity + Context extraction (_extract_entities_stage1)
+        - Stage 2: Vocabulary filtering (_filter_with_vocabulary)
 
         Args:
             msg_text: Message text to extract entities from
             rank_limit: Maximum rank for entity candidates
             llm_models: List of LLM models to use (defaults to self.llm_model)
             external_cand_entities: External candidate entities to include
-            context_mode: Context extraction mode - 'dag', 'pairing', 'ont', or 'none' (default: 'dag')
-                - 'dag': HYBRID_DAG_EXTRACTION_PROMPT (사용자 행동 경로)
-                - 'pairing': HYBRID_PAIRING_EXTRACTION_PROMPT (혜택 매핑)
-                - 'ont': ONTOLOGY_PROMPT (팔란티어 온톨로지 기반 JSON 추출)
-                - 'none': SIMPLE_ENTITY_EXTRACTION_PROMPT (단순 추출)
+            context_mode: Context extraction mode - 'dag', 'pairing', 'ont', 'typed', or 'none' (default: 'dag')
+            pre_extracted: Pre-extracted entities from langextract (skips Stage 1 if provided)
 
         Returns:
             DataFrame with extracted entities and similarity scores
+            또는 (ont 모드) {'similarities_df': DataFrame, 'ont_metadata': {...}}
         """
 
         try:
             logger.info("=== LLM Entity Extraction Started ===")
             logger.info(f"Context mode: {context_mode}")
             msg_text = validate_text_input(msg_text)
-            
+
             if llm_models is None:
                 llm_models = [self.llm_model]
-            
+
             # Validate context_mode
             if context_mode not in ['dag', 'pairing', 'none', 'ont', 'typed']:
                 logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'dag'")
                 context_mode = 'dag'
 
-            # --- Pre-extracted entities: skip Stage 1 entirely ---
+            # --- Two paths: with/without pre_extracted ---
             if pre_extracted:
+                # Path 1: Use pre-extracted entities (Stage 1 skipped)
                 logger.info("=== Using pre-extracted entities (Stage 1 skipped) ===")
-                cand_entity_list = list(pre_extracted['entities'])
-                combined_context = pre_extracted.get('context_text', '')
-                context_keyword = 'TYPED'  # langextract always uses typed context
+                entities = list(pre_extracted['entities'])
+                context_text = pre_extracted.get('context_text', '')
 
                 if external_cand_entities:
-                    cand_entity_list = list(set(cand_entity_list + external_cand_entities))
+                    entities.extend(external_cand_entities)
+                    entities = list(set(entities))
 
-                # Normalize + N-gram expansion (same as standard path)
-                cand_entity_list = list(set(
-                    normalize_entity_name(e) for e in cand_entity_list if normalize_entity_name(e)
+                # Normalize + N-gram expansion
+                entities = list(set(
+                    normalize_entity_name(e) for e in entities if normalize_entity_name(e)
                 ))
-                cand_entity_list = list(set(sum(
+                entities = list(set(sum(
                     [[c['text'] for c in extract_ngram_candidates(ce, min_n=2, max_n=len(ce.split())) if c['start_idx'] <= 0]
                      if len(ce.split()) >= 4 else [ce]
-                     for ce in cand_entity_list], []
+                     for ce in entities], []
                 )))
 
-                logger.info(f"Pre-extracted candidates after normalization: {len(cand_entity_list)}")
-                logger.info(f"Candidates: {cand_entity_list}")
+                logger.info(f"Pre-extracted candidates after normalization: {len(entities)}")
 
-                if not cand_entity_list:
-                    return pd.DataFrame()
-
-                # Match with products (same as standard path)
-                cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
-
-                if cand_entities_sim.empty:
-                    return pd.DataFrame()
-
-                # Stage 2: vocabulary filtering (same as standard path)
-                entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
-                cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
-                optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=10)
-
+                # Stage 2: Vocabulary filtering
                 second_stage_llm = llm_models[0] if llm_models else self.llm_model
+                result = self._filter_with_vocabulary(
+                    entities, context_text, 'typed',  # langextract always uses typed mode
+                    msg_text, rank_limit, second_stage_llm
+                )
 
-                # Need inner functions for Stage 2 — define minimal versions
-                def _stage2_get_entities(args_dict):
-                    llm_model_inner = args_dict['llm_model']
-                    prompt_inner = args_dict['prompt']
-                    try:
-                        response = llm_model_inner.invoke(f"\n{prompt_inner}\n").content
-                        return self._parse_entity_response(response)
-                    except Exception as e:
-                        logger.error(f"Stage 2 extraction failed: {e}")
-                        return []
+                logger.info(f"Pre-extracted final matched entities: {len(result) if isinstance(result, pd.DataFrame) else result.get('similarities_df').shape}")
+                return result
 
-                batches = []
-                for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
-                    cand_entities_voca = cand_entities_voca_all[i:i + optimal_batch_size]
+            else:
+                # Path 2: Standard extraction (Stage 1 + Stage 2)
+                logger.info("=== Standard LLM extraction (Stage 1 + Stage 2) ===")
 
-                    context_section = f"\n## TYPED Context (Entity Types):\n{combined_context}\n" if combined_context else ""
-                    second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
+                # Stage 1: Extract entities + context
+                stage1_result = self._extract_entities_stage1(
+                    msg_text, context_mode, llm_models, external_cand_entities
+                )
 
-                    prompt = f"""
-                    {second_stage_prompt}
+                entities = stage1_result['entities']
+                context_text = stage1_result['context_text']
+                entity_types = stage1_result.get('entity_types', {})
+                relationships = stage1_result.get('relationships', [])
 
-                    ## message:
-                    {msg_text}
+                logger.info(f"Stage 1 extracted: {len(entities)} entities")
 
-                    {context_section}
+                # Stage 2: Vocabulary filtering
+                second_stage_llm = llm_models[0] if llm_models else self.llm_model
+                result = self._filter_with_vocabulary(
+                    entities, context_text, context_mode,
+                    msg_text, rank_limit, second_stage_llm
+                )
 
-                    ## entities in message:
-                    {', '.join(entities_in_message)}
+                # ONT mode: update metadata with Stage 1 results
+                if context_mode == 'ont' and isinstance(result, dict):
+                    result['ont_metadata']['entity_types'] = entity_types
+                    result['ont_metadata']['relationships'] = relationships
 
-                    ## candidate entities in vocabulary:
-                    {', '.join(cand_entities_voca)}
-                    """
-                    batches.append({"prompt": prompt, "llm_model": second_stage_llm})
-
-                n_jobs = min(len(batches), 3)
-                with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                    batch_results = parallel(delayed(_stage2_get_entities)(args) for args in batches)
-
-                cand_entity_list_filtered = list(set(sum(batch_results, [])))
-                cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list_filtered")
-
-                logger.info(f"Pre-extracted final matched entities: {cand_entities_sim.shape}")
-                return cand_entities_sim
-            # --- End pre-extracted path ---
-
-            # Select prompt based on context_mode
-            if context_mode == 'dag':
-                first_stage_prompt = HYBRID_DAG_EXTRACTION_PROMPT
-                context_keyword = 'DAG'
-            elif context_mode == 'pairing':
-                first_stage_prompt = HYBRID_PAIRING_EXTRACTION_PROMPT
-                context_keyword = 'PAIRING'
-            elif context_mode == 'ont':
-                first_stage_prompt = ONTOLOGY_PROMPT
-                context_keyword = 'ONT'
-            elif context_mode == 'typed':
-                first_stage_prompt = TYPED_ENTITY_EXTRACTION_PROMPT
-                context_keyword = 'TYPED'
-            else:  # 'none'
-                first_stage_prompt = SIMPLE_ENTITY_EXTRACTION_PROMPT
-                context_keyword = None
-            
-            # Internal function for parallel execution
-            def get_entities_and_context_by_llm(args_dict):
-                llm_model, prompt = args_dict['llm_model'], args_dict['prompt']
-                extract_context = args_dict.get('extract_context', True)
-                context_kw = args_dict.get('context_keyword', None)
-                is_ontology_mode = args_dict.get('is_ontology_mode', False)
-                is_typed_mode = args_dict.get('is_typed_mode', False)
-                model_name = getattr(llm_model, 'model_name', 'Unknown')
-
-                try:
-                    # Log the prompt being sent to LLM
-                    prompt_res_log_list = []
-                    prompt_res_log_list.append(f"[{model_name}] Sending prompt to LLM:")
-                    prompt_res_log_list.append("="*100)
-                    prompt_res_log_list.append(prompt)
-                    prompt_res_log_list.append("="*100)
-
-                    response = llm_model.invoke(f"""
-
-                    {prompt}
-
-                    """).content
-
-                    # Log the response received from LLM
-                    prompt_res_log_list.append(f"[{model_name}] Received response from LLM:")
-                    prompt_res_log_list.append("-"*100)
-                    prompt_res_log_list.append(response)
-                    prompt_res_log_list.append("-"*100)
-
-                    logger.debug("\n".join(prompt_res_log_list))
-
-                    # Ontology mode: use JSON parsing
-                    if is_ontology_mode:
-                        parsed = self._parse_ontology_response(response)
-                        cand_entity_list = [e for e in parsed['entities']
-                                          if e not in self.stop_item_names and len(e) >= 2]
-
-                        # Build rich context with Entity Types, Relationships, and DAG
-                        entity_types = parsed.get('entity_types', {})
-                        relationships = parsed.get('relationships', [])
-                        dag_text = parsed['dag_text']
-
-                        # Filter by entity type - keep only product/service-relevant types
-                        removed = [f"{e}({entity_types.get(e, '?')})" for e in cand_entity_list
-                                   if entity_types.get(e, 'Unknown') not in ONT_PRODUCT_RELEVANT_TYPES]
-                        cand_entity_list = [e for e in cand_entity_list
-                                           if entity_types.get(e, 'Unknown') in ONT_PRODUCT_RELEVANT_TYPES]
-                        if removed:
-                            logger.info(f"[{model_name}] ONT type filter removed {len(removed)}: {removed}")
-
-                        # Format entity types: Name(Type), ...
-                        entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
-
-                        # Format relationships: Source -[TYPE]-> Target
-                        rel_lines = []
-                        for rel in relationships:
-                            src = rel.get('source', '')
-                            tgt = rel.get('target', '')
-                            rel_type = rel.get('type', '')
-                            if src and tgt and rel_type:
-                                rel_lines.append(f"  - {src} -[{rel_type}]-> {tgt}")
-                        relationships_str = "\n".join(rel_lines) if rel_lines else ""
-
-                        # Combine all parts into context_text
-                        context_parts = []
-                        if entity_type_str:
-                            context_parts.append(f"Entities: {entity_type_str}")
-                        if relationships_str:
-                            context_parts.append(f"Relationships:\n{relationships_str}")
-                        if dag_text:
-                            context_parts.append(f"DAG: {dag_text}")
-                        context_text = "\n".join(context_parts)
-
-                        logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (ONT mode): {cand_entity_list}")
-                        logger.info(f"[{model_name}] Entity types: {entity_types}")
-                        logger.info(f"[{model_name}] Relationships: {len(relationships)} found")
-                        return {
-                            "entities": cand_entity_list,
-                            "context_text": context_text,
-                            "entity_types": entity_types,
-                            "relationships": relationships
-                        }
-
-                    # Typed mode: use JSON parsing (similar to ONT but simpler)
-                    if is_typed_mode:
-                        json_str = response.strip()
-                        if json_str.startswith('```'):
-                            json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
-                            json_str = re.sub(r'\n?```$', '', json_str)
-                        try:
-                            data = json.loads(json_str)
-                            entities_raw = data.get('entities', [])
-                        except json.JSONDecodeError:
-                            logger.warning(f"[{model_name}] Typed JSON parsing failed, falling back to regex")
-                            entities_raw = []
-
-                        cand_entity_list = [
-                            e.get('name', '') for e in entities_raw
-                            if e.get('name') and e['name'] not in self.stop_item_names and len(e['name']) >= 2
-                        ]
-
-                        # Build context_text as "Name(Type), ..." for Stage 2
-                        type_pairs = [
-                            f"{e['name']}({e['type']})" for e in entities_raw
-                            if e.get('name') and e.get('type')
-                        ]
-                        context_text = ", ".join(type_pairs)
-
-                        logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (typed mode): {cand_entity_list}")
-                        logger.info(f"[{model_name}] Entity types: {context_text}")
-                        return {"entities": cand_entity_list, "context_text": context_text}
-
-                    # Standard mode: use regex parsing
-                    cand_entity_list_raw = self._parse_entity_response(response)
-                    cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
-
-                    logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities: {cand_entity_list}")
-
-                    context_text = ""
-                    if extract_context and context_kw:
-                        context_match = re.search(rf'{context_kw}:\s*(.*)', response, re.DOTALL | re.IGNORECASE)
-                        if context_match:
-                            context_text = context_match.group(1).strip()
-                            logger.info(f"[{model_name}] Extracted {context_kw} text ({len(context_text)} chars)")
-                        else:
-                            logger.debug(f"[{model_name}] No {context_kw} found in response")
-
-                    return {"entities": cand_entity_list, "context_text": context_text}
-                except Exception as e:
-                    logger.error(f"LLM extraction failed for {model_name}: {e}")
-                    return {"entities": [], "context_text": ""}
-
-            def get_entities_only_by_llm(args_dict):
-                result = get_entities_and_context_by_llm(args_dict)
-                return result['entities']
-
-            # 1. First Stage: Extract entities and context
-            batches = []
-            for llm_model in llm_models:
-                prompt = f"{first_stage_prompt}\n\n## message:\n{msg_text}"
-                batches.append({
-                    "prompt": prompt,
-                    "llm_model": llm_model,
-                    "extract_context": (context_mode != 'none'),
-                    "context_keyword": context_keyword,
-                    "is_ontology_mode": (context_mode == 'ont'),
-                    "is_typed_mode": (context_mode == 'typed')
-                })
-            
-            n_jobs = min(len(batches), 3)
-            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                batch_results_dicts = parallel(delayed(get_entities_and_context_by_llm)(args) for args in batches)
-            
-            all_entities = []
-            all_contexts = []
-            all_entity_types = {}
-            all_relationships = []
-
-            for result_dict in batch_results_dicts:
-                all_entities.extend(result_dict['entities'])
-                if result_dict['context_text']:
-                    all_contexts.append(result_dict['context_text'])
-                # ONT 모드에서 entity_types와 relationships 수집
-                if context_mode == 'ont':
-                    if 'entity_types' in result_dict:
-                        all_entity_types.update(result_dict.get('entity_types', {}))
-                    if 'relationships' in result_dict:
-                        all_relationships.extend(result_dict.get('relationships', []))
-
-            combined_context = "\n".join(all_contexts)
-            
-            if external_cand_entities:
-                all_entities.extend(external_cand_entities)
-            
-            cand_entity_list = list(set(all_entities))
-
-            # Normalize entity names (strip parenthetical specs, collapse spaces)
-            cand_entity_list = list(set(
-                normalize_entity_name(e) for e in cand_entity_list if normalize_entity_name(e)
-            ))
-
-            # N-gram expansion
-            cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
-            
-            if not cand_entity_list:
-                if context_mode == 'ont':
-                    return {
-                        'similarities_df': pd.DataFrame(),
-                        'ont_metadata': {
-                            'dag_text': combined_context,
-                            'entity_types': all_entity_types,
-                            'relationships': all_relationships
-                        }
-                    }
-                return pd.DataFrame()
-
-            # Match with products
-            cand_entities_sim = self._match_entities_with_products(cand_entity_list, rank_limit)
-
-            if cand_entities_sim.empty:
-                if context_mode == 'ont':
-                    return {
-                        'similarities_df': pd.DataFrame(),
-                        'ont_metadata': {
-                            'dag_text': combined_context,
-                            'entity_types': all_entity_types,
-                            'relationships': all_relationships
-                        }
-                    }
-                return pd.DataFrame()
-            
-            # 2. Second Stage: Filtering
-            entities_in_message = cand_entities_sim['item_name_in_msg'].unique()
-            cand_entities_voca_all = cand_entities_sim['item_nm_alias'].unique()
-            optimal_batch_size = self._calculate_optimal_batch_size(msg_text, base_size=10)
-            
-            second_stage_llm = llm_models[0] if llm_models else self.llm_model
-            
-            batches = []
-            for i in range(0, len(cand_entities_voca_all), optimal_batch_size):
-                cand_entities_voca = cand_entities_voca_all[i:i+optimal_batch_size]
-                
-                # Build context section based on mode
-                if context_mode == 'none' or not combined_context:
-                    context_section = ""
-                else:
-                    if context_keyword == 'TYPED':
-                        context_label = "TYPED Context (Entity Types)"
-                    elif context_keyword:
-                        context_label = f"{context_keyword} Context (User Action Paths)"
-                    else:
-                        context_label = "Context"
-                    context_section = f"\n## {context_label}:\n{combined_context}\n"
-                
-                # Build dynamic prompt based on context_keyword
-                second_stage_prompt = build_context_based_entity_extraction_prompt(context_keyword)
-                
-                prompt = f"""
-                {second_stage_prompt}
-                
-                ## message:                
-                {msg_text}
-                
-                {context_section}
-                
-                ## entities in message:
-                {', '.join(entities_in_message)}
-
-                ## candidate entities in vocabulary:
-                {', '.join(cand_entities_voca)}
-                """
-                batches.append({
-                    "prompt": prompt, 
-                    "llm_model": second_stage_llm, 
-                    "extract_context": False,
-                    "context_keyword": None
-                })
-            
-            n_jobs = min(len(batches), 3)
-            with Parallel(n_jobs=n_jobs, backend='threading') as parallel:
-                batch_results = parallel(delayed(get_entities_only_by_llm)(args) for args in batches)
-            
-            cand_entity_list = list(set(sum(batch_results, [])))
-
-            cand_entities_sim = cand_entities_sim.query("item_nm_alias in @cand_entity_list")
-
-            # ONT 모드일 경우 메타데이터 포함하여 반환
-            if context_mode == 'ont':
-                return {
-                    'similarities_df': cand_entities_sim,
-                    'ont_metadata': {
-                        'dag_text': combined_context,
-                        'entity_types': all_entity_types,
-                        'relationships': all_relationships
-                    }
-                }
-
-            return cand_entities_sim
+                return result
 
         except Exception as e:
             logger.error(f"LLM entity extraction failed: {e}")

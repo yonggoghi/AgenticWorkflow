@@ -264,18 +264,29 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 - **주요 작업**: LLM 응답에서 JSON 추출 및 파싱
 
 ### Step 7: [`EntityMatchingStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
-- **입력**: `state`
+- **입력**: `state`, `extraction_engine`, `use_external_candidates`
 - **출력**: 없음 (state에 `matched_products` 추가)
-- **조건부 스킵**: `should_execute()` → `has_error`, `is_fallback`, 또는 상품/Kiwi 엔티티 없으면 스킵
+- **조건부 스킵**: `should_execute()` → `has_error`, `is_fallback` (langextract 제외), 또는 상품/Kiwi 엔티티 없으면 스킵
 - **주요 작업**:
+  - **Stage 1: LangExtract 사전 추출** (extraction_engine='langextract'일 경우):
+    - [`extract_mms_entities(msg, model_id)`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/lx_extractor.py) 호출
+    - 6-type 엔티티 추출: Product, Store, Program, Channel, Purpose, Other
+    - `pre_extracted = {'entities': [...], 'context_text': "..."}`
   - LLM 파싱 결과에서 product items 추출
-  - `entities_from_kiwi` + product names로 `cand_entities` 구성
-  - `entity_extraction_mode`에 따라 분기:
+  - 외부 후보 구성 (`use_external_candidates=True`일 때):
+    - `external_cand = entities_from_kiwi + primary_llm_extracted_entities`
+  - **Stage 2: 엔티티 매칭** - `entity_extraction_mode`에 따라 분기:
     - `logic`: `entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)`
-    - `llm`: `entity_recognizer.extract_entities_with_llm(msg, ...)`
+    - `llm`: `entity_recognizer.extract_entities_with_llm(msg, ..., pre_extracted=pre_extracted)`
   - alias type 필터링 (non-expansion 타입 제거)
   - `entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)` 호출
   - 결과를 `state.matched_products`에 저장
+
+#### 7.1 [`extract_mms_entities()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/lx_extractor.py) (LangExtract 모드)
+- **파일**: [core/lx_extractor.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/lx_extractor.py)
+- **입력**: `msg`, `model_id`
+- **출력**: `ExtractionDocument` (entities with types)
+- **주요 작업**: Google langextract 기반 6-type 엔티티 추출
 
 ### Step 8: [`ResultConstructionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
 - **입력**: `state`
@@ -878,4 +889,4 @@ msg_001,"(광고)[SKT] ...","{...}","2025-12-18 14:00:00","T day 혜택","[\"프
 
 ---
 
-*최종 업데이트: 2026-02-09*
+*최종 업데이트: 2026-02-11*

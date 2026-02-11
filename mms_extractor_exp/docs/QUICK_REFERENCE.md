@@ -1,8 +1,8 @@
 # MMS Extractor - Agent Quick Reference
 
-> **사용 목적**: Agent가 수정/개선/확장 작업 시 첫 번째로 참조하는 문서  
-> **업데이트**: 2026-02-09
-> **버전**: 1.1
+> **사용 목적**: Agent가 수정/개선/확장 작업 시 첫 번째로 참조하는 문서
+> **업데이트**: 2026-02-11
+> **버전**: 1.2
 
 ---
 
@@ -41,7 +41,7 @@
     ├─ 4. ContextPreparationStep
     ├─ 5. LLMExtractionStep ← LLM (via LLMFactory)
     ├─ 6. ResponseParsingStep
-    ├─ 7. EntityMatchingStep ← EntityRecognizer (에러/폴백/상품없음 시 스킵)
+    ├─ 7. EntityMatchingStep ← EntityRecognizer + LangExtract (선택적) (에러/폴백/상품없음 시 스킵)
     ├─ 8. ResultConstructionStep ← ResultBuilder
     ├─ 9. ValidationStep
     └─ 10. DAGExtractionStep (선택적)
@@ -215,6 +215,12 @@ python apps/cli.py --message "테스트 메시지" --entity-matching-mode llm
 
 # ONT 모드 테스트 (엔티티 추출 + DAG 최적화)
 python apps/cli.py --message "테스트 메시지" --entity-extraction-context-mode ont --extract-entity-dag
+
+# LangExtract 엔진 테스트 (typed mode auto-enabled)
+python apps/cli.py --message "테스트 메시지" --extraction-engine langextract
+
+# 외부 후보 엔티티 비활성화
+python apps/cli.py --message "테스트 메시지" --no-external-candidates
 
 # 배치 테스트
 python apps/cli.py --batch-file test_messages.txt
@@ -495,15 +501,63 @@ class ProcessingConfig:
 @dataclass
 class ModelConfig:
     # LLM 모델
-    default_llm_model: str = "ax"  # ax, gpt, gen, cld
-    
+    default_llm_model: str = "ax"  # ax, gpt, gen, cld, opus
+
     # 임베딩 모델
     embedding_model_path: str = "./models/embedding_model"
-    
+
     # Temperature 설정
     llm_temperature: float = 0.0
     llm_max_tokens: int = 4096
 ```
+
+**사용 가능한 LLM 모델**:
+- `ax`: AX model (default)
+- `gpt`: GPT-4o
+- `gen`: Gemini 1.5 Pro
+- `cld`: Claude Sonnet
+- `opus`: Claude Opus 4.6 (강력한 성능, 높은 비용)
+
+#### D-3. 추출 엔진 선택
+
+```bash
+# Default engine (10-step pipeline)
+python apps/cli.py --extraction-engine default --message "테스트"
+
+# LangExtract engine (Google langextract 기반)
+python apps/cli.py --extraction-engine langextract --message "테스트"
+```
+
+**엔진 비교**:
+| 엔진 | 통합 위치 | 특징 | 사용 시기 |
+|------|----------|------|----------|
+| **default** | 전체 워크플로우 | 범용 추출 | 일반적인 경우 |
+| **langextract** | Step 7 Stage 1 | 6-type 분류 (Product, Store, Program, Channel, Purpose, Other) | 타입 분류가 중요한 경우 |
+
+**주요 차이점**:
+- langextract 선택 시 `entity_extraction_context_mode`가 자동으로 'typed'로 설정됨
+- langextract는 Step 7에서 사전 추출 단계로 실행됨
+- 실패 시 자동으로 default 모드로 폴백
+
+#### D-4. 엔티티 추출 컨텍스트 모드
+
+```bash
+# DAG 모드 (기본)
+python apps/cli.py --entity-extraction-context-mode dag --message "테스트"
+
+# ONT 모드 (온톨로지 기반, DAG LLM 호출 최적화)
+python apps/cli.py --entity-extraction-context-mode ont --extract-entity-dag --message "테스트"
+
+# TYPED 모드 (6-type 엔티티 추출)
+python apps/cli.py --entity-extraction-context-mode typed --message "테스트"
+```
+
+**모드 비교**:
+- `dag`: DAG 기반 관계 추출 (기본)
+- `pairing`: 엔티티 페어링
+- `none`: 컨텍스트 없음
+- `ont`: 온톨로지 기반 (Step 10에서 DAG LLM 재호출 없이 기존 결과 재사용)
+- `typed`: 6-type 엔티티 추출 (langextract와 함께 사용 권장)
 
 ---
 
@@ -667,6 +721,13 @@ python apps/cli.py \
     --llm-model gen \
     --entity-matching-mode llm \
     --extract-entity-dag
+
+# 5. LangExtract 엔진 사용
+python apps/cli.py \
+    --message "테스트" \
+    --extraction-engine langextract \
+    --llm-model opus \
+    --no-external-candidates
 ```
 
 ### 코드 수정 후 검증
@@ -711,5 +772,5 @@ python -m pytest tests/
 
 ---
 
-*최종 업데이트: 2026-02-09*
+*최종 업데이트: 2026-02-11*
 *다음 업데이트 예정: 주요 구조 변경 시*
