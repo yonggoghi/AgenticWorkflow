@@ -306,7 +306,7 @@ def initialize_global_extractor(offer_info_data_src='db'):
             model_path='./models/ko-sbert-nli',      # 임베딩 모델 경로
             data_dir='./data',                       # 데이터 디렉토리
             offer_info_data_src=offer_info_data_src, # 상품 정보 소스
-            llm_model='gemini',                      # 기본 LLM: Gemini (CLI와 동일)
+            llm_model='ax',                          # 기본 LLM: A.X (CLI와 동일)
             product_info_extraction_mode='llm',      # 기본 상품 추출 모드: LLM (CLI와 동일)
             entity_extraction_mode='llm',            # 기본 엔티티 매칭 모드: LLM (CLI와 동일)
             extract_entity_dag=True,
@@ -365,7 +365,7 @@ def get_configured_quick_extractor(use_llm=False, llm_model='ax'):
     
     return global_quick_extractor
 
-def get_configured_extractor(llm_model='gemini', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=True, entity_extraction_context_mode='dag'):
+def get_configured_extractor(llm_model='ax', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=True, entity_extraction_context_mode='dag'):
     """
     런타임 설정으로 전역 추출기 구성
     
@@ -527,7 +527,7 @@ def extract_message():
         # 선택적 파라미터 추출 (기본값 사용)
         data_source = data.get('data_source', CLI_DATA_SOURCE)
         offer_info_data_src = data.get('offer_info_data_src', CLI_DATA_SOURCE)
-        llm_model = data.get('llm_model', settings.ModelConfig.llm_model)
+        llm_model = data.get('llm_model', 'ax')
         entity_llm_model = data.get('entity_llm_model', 'ax')
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
@@ -719,7 +719,7 @@ def extract_batch():
         
         # 선택적 파라미터 추출
         offer_info_data_src = data.get('offer_info_data_src', CLI_DATA_SOURCE)
-        llm_model = data.get('llm_model', settings.ModelConfig.llm_model)
+        llm_model = data.get('llm_model', 'ax')
         entity_llm_model = data.get('entity_llm_model', 'ax')
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
