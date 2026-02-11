@@ -478,10 +478,15 @@ def extract_message():
     
     Request Body (JSON):
         - message (required): 추출할 MMS 메시지 텍스트
-        - llm_model (optional): 사용할 LLM 모델 (기본값: 'ax')
+        - llm_model (optional): 사용할 LLM 모델 (기본값: 'ax', 선택: ax, gpt, cld, gen, opus, gem)
+        - entity_llm_model (optional): 엔티티 추출 전용 LLM 모델 (기본값: 'ax')
         - offer_info_data_src (optional): 데이터 소스 (기본값: CLI 설정값)
-        - product_info_extraction_mode (optional): 상품 추출 모드 (기본값: 'nlp')
-        - entity_matching_mode (optional): 엔티티 매칭 모드 (기본값: 'logic')
+        - product_info_extraction_mode (optional): 상품 추출 모드 (기본값: 'llm')
+        - entity_matching_mode (optional): 엔티티 매칭 모드 (기본값: 'llm')
+        - entity_extraction_context_mode (optional): 엔티티 추출 컨텍스트 모드 (기본값: 'dag')
+        - extraction_engine (optional): 추출 엔진 (기본값: 'default', 선택: default, langextract)
+        - skip_entity_extraction (optional): 엔티티 추출 건너뛰기 (기본값: False)
+        - no_external_candidates (optional): 외부 후보 비활성화 (기본값: False)
         - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: True)
                                          True일 경우 메시지에서 엔티티 간 관계를 DAG 형태로 추출하고
                                          시각적 다이어그램도 함께 생성합니다.
@@ -528,6 +533,9 @@ def extract_message():
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', True)
         entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'dag')
+        extraction_engine = data.get('extraction_engine', 'default')
+        skip_entity_extraction = data.get('skip_entity_extraction', False)
+        no_external_candidates = data.get('no_external_candidates', False)
         save_to_mongodb = data.get('save_to_mongodb', True)
         result_type = data.get('result_type', 'ext')
         message_id = data.get('message_id', '#')  # 메시지 ID (기본값: '#')
@@ -549,7 +557,7 @@ def extract_message():
         if offer_info_data_src not in valid_sources:
             return jsonify({"error": f"잘못된 offer_info_data_src입니다. 사용 가능: {valid_sources}"}), 400
             
-        valid_llm_models = ['gemma', 'ax', 'claude', 'gemini']
+        valid_llm_models = ['gem', 'ax', 'cld', 'gen', 'gpt', 'opus']
         if llm_model not in valid_llm_models:
             return jsonify({"error": f"잘못된 llm_model입니다. 사용 가능: {valid_llm_models}"}), 400
             
@@ -730,7 +738,7 @@ def extract_batch():
         if offer_info_data_src not in valid_sources:
             return jsonify({"error": f"잘못된 offer_info_data_src입니다. 사용 가능: {valid_sources}"}), 400
             
-        valid_llm_models = ['gemma', 'ax', 'claude', 'gemini']
+        valid_llm_models = ['gem', 'ax', 'cld', 'gen', 'gpt', 'opus']
         if llm_model not in valid_llm_models:
             return jsonify({"error": f"잘못된 llm_model입니다. 사용 가능: {valid_llm_models}"}), 400
             
@@ -1608,15 +1616,25 @@ def main():
     parser.add_argument('--message', type=str, help='테스트할 메시지')
     parser.add_argument('--offer-data-source', choices=['local', 'db'], default='db',
                        help='데이터 소스 (local: CSV 파일, db: 데이터베이스)')
-    parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm' ,'rag'], default='nlp',
+    parser.add_argument('--product-info-extraction-mode', choices=['nlp', 'llm' ,'rag'], default='llm',
                        help='상품 정보 추출 모드 (nlp: 형태소분석, llm: LLM 기반, rag: 검색증강생성)')
     parser.add_argument('--entity-matching-mode', choices=['logic', 'llm'], default='llm',
                        help='엔티티 매칭 모드 (logic: 로직 기반, llm: LLM 기반)')
-    parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
-                       help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT)')
+    parser.add_argument('--llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt', 'opus'], default='ax',
+                       help='사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT, opus: Claude Opus)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정 (DEBUG: 상세, INFO: 일반, WARNING: 경고, ERROR: 오류만)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
+    parser.add_argument('--entity-llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt', 'opus'], default='ax',
+                       help='엔티티 추출 전용 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT, opus: Claude Opus)')
+    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont', 'typed'], default='dag',
+                       help='엔티티 추출 컨텍스트 모드 (dag: DAG 기반, pairing: 페어링, none: 컨텍스트 없음, ont: 온톨로지, typed: 타입 지정)')
+    parser.add_argument('--skip-entity-extraction', action='store_true', default=False,
+                       help='엔티티 추출 단계 건너뛰기 (Steps 7-8 스킵)')
+    parser.add_argument('--no-external-candidates', action='store_true', default=False,
+                       help='외부 후보 소스 비활성화 (Kiwi NLP 후보만 사용)')
+    parser.add_argument('--extraction-engine', choices=['default', 'langextract'], default='default',
+                       help='추출 엔진 선택 (default: 11-step pipeline, langextract: Google langextract 기반)')
     parser.add_argument('--storage', choices=['local', 'nas'], default='local',
                        help='DAG 이미지 저장 위치 (local: 로컬 디스크, nas: NAS 서버)')
     
@@ -1671,8 +1689,8 @@ def main():
         """
         
         try:
-            logger.info(f"추출기 설정: llm_model={args.llm_model}, product_mode={args.product_info_extraction_mode}, entity_mode={args.entity_matching_mode}, dag_extract={args.extract_entity_dag}")
-            extractor = get_configured_extractor(args.llm_model, args.product_info_extraction_mode, args.entity_matching_mode, args.extract_entity_dag)
+            logger.info(f"추출기 설정: llm_model={args.llm_model}, product_mode={args.product_info_extraction_mode}, entity_mode={args.entity_matching_mode}, entity_llm={args.entity_llm_model}, context_mode={args.entity_extraction_context_mode}, dag_extract={args.extract_entity_dag}")
+            extractor = get_configured_extractor(args.llm_model, args.product_info_extraction_mode, args.entity_matching_mode, args.entity_llm_model, args.extract_entity_dag, args.entity_extraction_context_mode)
             
             if not message.strip():
                 logger.info("텍스트가 제공되지 않아 샘플 메시지를 사용합니다...")
