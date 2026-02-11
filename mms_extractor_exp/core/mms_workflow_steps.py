@@ -1103,6 +1103,10 @@ class DAGExtractionStep(WorkflowStep):
 
     def _execute_from_ont(self, state: WorkflowState, ont_result: dict, msg: str, message_id: str) -> WorkflowState:
         """
+        ⚠️ DEPRECATED: No longer called since commit a4e1ef0.
+        DAGExtractionStep now always makes fresh LLM call for consistent behavior.
+        This method is kept for potential future use or rollback.
+
         ONT 결과에서 DAG 생성 (LLM 호출 없음)
 
         Args:

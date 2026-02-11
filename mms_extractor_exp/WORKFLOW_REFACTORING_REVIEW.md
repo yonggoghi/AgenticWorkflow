@@ -202,14 +202,13 @@ This refactoring improves:
 - ✅ Updated timing table with breakdown for Steps 6-8
 - ✅ Removed ONT optimization mentions (now uses fresh LLM call)
 
-#### 2. **Unused Code** - MINOR (Low Priority)
-**Issue**: `_execute_from_ont()` method still exists but is no longer called (since commit a4e1ef0)
+#### 2. ~~**Unused Code**~~ - ✅ **FIXED** (2026-02-11)
+~~**Issue**: `_execute_from_ont()` method still exists but is no longer called (since commit a4e1ef0)~~
 
-**Location**: [mms_workflow_steps.py:1109-1169](core/mms_workflow_steps.py#L1109-L1169)
-
-**Recommendation**: Remove dead code or add comment marking it as unused
-
-**Status**: Non-blocking, can be cleaned up in future refactoring
+**Fixed**:
+- ✅ Added deprecation notice to `_execute_from_ont()` in [mms_workflow_steps.py:1104](core/mms_workflow_steps.py#L1104)
+- ✅ Added deprecation notice to `build_dag_from_ontology()` in [entity_dag_extractor.py:600](core/entity_dag_extractor.py#L600)
+- ✅ Both methods now clearly marked as deprecated with explanation
 
 #### 3. **Step Numbering Comments** - MINOR (Low Priority)
 **Issue**: Some inline comments may still reference old step numbers
@@ -237,12 +236,12 @@ This refactoring improves:
 - [x] Add STEP11 for DAG extraction in diagram
 - [x] Update all 4 documentation files with diagrams
 
-### Priority 2: Code Cleanup (Optional)
-- [ ] Remove or comment `_execute_from_ont()` method
-- [ ] Search and fix outdated step number comments
-- [ ] Update or deprecate PLAN_ONT_DAG_INTEGRATION.md
+### Priority 2: Code Cleanup
+- [x] ~~Remove or comment `_execute_from_ont()` method~~ - ✅ Deprecation notices added
+- [ ] Search and fix outdated step number comments (optional)
+- [ ] Update or deprecate PLAN_ONT_DAG_INTEGRATION.md (optional)
 
-**Status**: Low priority, non-blocking issues. Can be addressed in future cleanup.
+**Status**: Main cleanup completed. Remaining items are optional cosmetic improvements.
 
 ### Priority 3: Testing (Ongoing)
 - [x] Manual testing of all modes (LLM, logic, langextract, ONT)
@@ -303,6 +302,10 @@ The workflow refactoring was **successfully completed** with:
 9. [a4e1ef0](a4e1ef0) - Remove ONT optimization
 10. [16bb9fa](16bb9fa) - Fix documentation diagrams for 11-step workflow
 
+### Code Review Documents
+- [STEP7_11_CODE_REVIEW.md](STEP7_11_CODE_REVIEW.md) - Workflow orchestration layer review (Steps 7-11)
+- [STEP7_11_SERVICE_FILES_REVIEW.md](STEP7_11_SERVICE_FILES_REVIEW.md) - Supporting service files review (business logic) ⭐ **NEW**
+
 ### Documentation Files
 - [WORKFLOW_GUIDE.md](docs/WORKFLOW_GUIDE.md) - Main workflow documentation
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture
@@ -314,6 +317,8 @@ The workflow refactoring was **successfully completed** with:
 
 ### Key Files
 - [mms_workflow_steps.py](core/mms_workflow_steps.py) - Step implementations
-- [entity_recognizer.py](services/entity_recognizer.py) - Entity extraction logic
+- [entity_recognizer.py](services/entity_recognizer.py) - Entity extraction logic (Stage 1/2)
+- [entity_dag_extractor.py](core/entity_dag_extractor.py) - DAG extraction logic
+- [result_builder.py](services/result_builder.py) - Result assembly logic
 - [mms_extractor.py](core/mms_extractor.py) - Main extractor and workflow registration
 - [trace_product_extraction.py](tests/trace_product_extraction.py) - Tracing tool for debugging

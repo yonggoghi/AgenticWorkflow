@@ -599,6 +599,10 @@ class DAGParser:
 
 def build_dag_from_ontology(ont_result: dict) -> nx.DiGraph:
     """
+    ⚠️ DEPRECATED: No longer used since commit a4e1ef0.
+    DAGExtractionStep now always makes fresh LLM call, even in ONT mode.
+    This function is kept for potential future use or rollback.
+
     ONT 결과에서 NetworkX DiGraph 생성 (LLM 호출 없음)
 
     Args:
