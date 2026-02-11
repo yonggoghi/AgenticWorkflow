@@ -182,31 +182,38 @@ PIPELINE_STEPS = [
         "desc": "LLM JSON 응답 파싱 및 검증",
         "tech": ["JSON 파싱 (다중 객체 지원)", "스키마 검증", "스키마 응답 감지/거부"],
         "input_desc": "LLM JSON 텍스트 응답",
-        "output_desc": "추출된 상품명",
+        "output_desc": "추출된 상품명 + 원본 JSON",
     },
     {
-        "num": 7, "name": "EntityMatchingStep", "kr": "엔티티 매칭",
-        "desc": "추출된 상품명 → DB 상품 매칭",
-        "tech": ["Bigram 사전필터링", "Fuzzy Matching (fuzz.ratio)", "item_id DB 매칭", "조건부 실행 (skip 가능)"],
-        "input_desc": "LLM 추출 상품명 + 45K 상품 DB",
+        "num": 7, "name": "EntityContextExtractionStep", "kr": "엔티티+컨텍스트 추출",
+        "desc": "LLM으로 1차 엔티티 및 컨텍스트 추출 (Stage 1)",
+        "tech": ["LLM 기반 엔티티 추출", "관계 정보 추출", "엔티티 타입 분류", "조건부 실행 (llm 모드만)"],
+        "input_desc": "메시지 텍스트 + LLM",
+        "output_desc": "1차 추출 엔티티명 + 컨텍스트 정보",
+    },
+    {
+        "num": 8, "name": "VocabularyFilteringStep", "kr": "어휘 필터링",
+        "desc": "상품 어휘 DB와 매칭하여 필터링 (Stage 2)",
+        "tech": ["Bigram 사전필터링", "Fuzzy Matching (fuzz.ratio)", "item_id DB 매칭", "조건부 실행 (llm 모드만)"],
+        "input_desc": "Stage 1 엔티티 + 45K 상품 DB",
         "output_desc": "매칭된 상품 (item_nm, item_id, 유사도)",
     },
     {
-        "num": 8, "name": "ResultConstructionStep", "kr": "결과 구성",
+        "num": 9, "name": "ResultConstructionStep", "kr": "결과 구성",
         "desc": "최종 결과 JSON 조립",
         "tech": ["결과 필드 조립", "상품/채널/프로그램 통합", "메타데이터 첨부"],
         "input_desc": "매칭된 엔티티 + 메타데이터",
         "output_desc": "최종 추출 결과 JSON",
     },
     {
-        "num": 9, "name": "ValidationStep", "kr": "결과 검증",
+        "num": 10, "name": "ValidationStep", "kr": "결과 검증",
         "desc": "필수 필드 확인 및 품질 체크",
         "tech": ["필수 키 검증 (title, product, channel)", "빈 결과 감지", "Fallback 트리거"],
         "input_desc": "ext_result JSON",
         "output_desc": "검증된 최종 결과",
     },
     {
-        "num": 10, "name": "DAGExtractionStep", "kr": "DAG 추출",
+        "num": 11, "name": "DAGExtractionStep", "kr": "DAG 추출",
         "desc": "엔티티 관계 그래프 생성",
         "tech": ["LLM 기반 관계 추출 (CoT 프롬프트)", "NetworkX 방향 그래프", "Graphviz 시각화", "조건부 실행"],
         "input_desc": "메시지 텍스트 + LLM",
@@ -255,9 +262,9 @@ def _build_pipeline_html(step_timings_map: dict, selected_step: int = None) -> s
         status = timing.get("status", "")
         icon = {"success": "✅", "skipped": "⏭️", "failed": "❌"}.get(status, "")
 
-        if idx == 9:
+        if idx == 10:
             bg = color_last
-        elif idx >= 5:
+        elif idx >= 6:
             bg = colors_row2
         else:
             bg = colors_row1
@@ -275,15 +282,15 @@ def _build_pipeline_html(step_timings_map: dict, selected_step: int = None) -> s
     arrow = '<span class="pipeline-arrow">→</span>'
 
     row1_items = []
-    for i in range(5):
+    for i in range(6):
         row1_items.append(step_box(i))
-        if i < 4:
+        if i < 5:
             row1_items.append(arrow)
 
     row2_items = []
-    for i in range(5, 10):
+    for i in range(6, 11):
         row2_items.append(step_box(i))
-        if i < 9:
+        if i < 10:
             row2_items.append(arrow)
 
     html = f"""
@@ -332,8 +339,8 @@ def _render_step_buttons(demo: dict):
                     )
                 col_i += 1
 
-    render_row(0, 5)
-    render_row(5, 10)
+    render_row(0, 6)
+    render_row(6, 11)
 
 
 # ── Step Detail ─────────────────────────────────────────────────────────
@@ -414,6 +421,20 @@ def _show_step_actual_data(demo: dict, step_idx: int):
             st.markdown(f'<div style="margin-left:2rem;">{", ".join(names)}</div>', unsafe_allow_html=True)
 
     elif step_num == 7:
+        # EntityContextExtractionStep (Stage 1 entities)
+        extracted_entities = demo.get("extracted_entities", {})
+        if extracted_entities:
+            st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">Stage 1 추출 엔티티</h4>', unsafe_allow_html=True)
+            entities_list = extracted_entities.get("entities", [])
+            if entities_list:
+                st.markdown(f'<div style="margin-left:2rem;">{", ".join(str(e) for e in entities_list)}</div>', unsafe_allow_html=True)
+            context = extracted_entities.get("context_text", "")
+            if context:
+                st.markdown('<h4 style="color:#4f46e5; margin-left:1.5rem;">추출 컨텍스트</h4>', unsafe_allow_html=True)
+                st.text(context[:500] + ("..." if len(context) > 500 else ""))
+
+    elif step_num == 8:
+        # VocabularyFilteringStep (matched products)
         products = ext.get("product", [])
         if products:
             st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">매칭된 상품</h4>', unsafe_allow_html=True)
@@ -434,11 +455,12 @@ def _show_step_actual_data(demo: dict, step_idx: int):
                 for p in products:
                     st.write(f"- {p}")
 
-    elif step_num == 8:
+    elif step_num == 9:
+        # ResultConstructionStep (final result JSON)
         # st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">최종 추출 결과</h4>', unsafe_allow_html=True)
         st.json(ext)
 
-    elif step_num == 10:
+    elif step_num == 11:
         entity_dag = ext.get("entity_dag", [])
         if entity_dag:
             st.markdown('<h4 style="color:#7c3aed; margin-left:1.5rem;">DAG 텍스트</h4>', unsafe_allow_html=True)
@@ -529,7 +551,7 @@ def page_pipeline(demos: List[Dict[str, Any]]):
     st.markdown("""
     <div class="main-header">
         <h1>📊 MMS Extractor 작업 흐름 설명</h1>
-        <p>MMS 광고 메시지에서 구조화된 정보를 추출하는 10단계 AI 파이프라인</p>
+        <p>MMS 광고 메시지에서 구조화된 정보를 추출하는 11단계 AI 파이프라인</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -558,7 +580,7 @@ def page_pipeline(demos: List[Dict[str, Any]]):
     st.divider()
 
     # ── 2. Pipeline Diagram ──
-    st.subheader("10-Step Workflow Pipeline")
+    st.subheader("11-Step Workflow Pipeline")
 
     # Initialize session state
     if "selected_step" not in st.session_state:

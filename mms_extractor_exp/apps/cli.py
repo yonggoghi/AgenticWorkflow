@@ -100,7 +100,7 @@ def main():
     parser.add_argument('--test-mongodb', action='store_true', default=False,
                        help='MongoDB 연결 테스트만 수행하고 종료')
     parser.add_argument('--extraction-engine', choices=['default', 'langextract'], default='default',
-                       help='추출 엔진 선택 (default: 10-step pipeline, langextract: Google langextract 기반)')
+                       help='추출 엔진 선택 (default: 11-step pipeline, langextract: Google langextract 기반)')
 
     args = parser.parse_args()
     
