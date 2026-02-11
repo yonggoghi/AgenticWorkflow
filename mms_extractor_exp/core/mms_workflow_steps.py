@@ -630,7 +630,8 @@ class EntityContextExtractionStep(WorkflowStep):
                  entity_extraction_context_mode: str = 'dag',
                  use_external_candidates: bool = True,
                  extraction_engine: str = 'default',
-                 stop_item_names: List[str] = None):
+                 stop_item_names: List[str] = None,
+                 entity_extraction_mode: str = 'llm'):
         self.entity_recognizer = entity_recognizer
         self.llm_factory = llm_factory
         self.llm_model = llm_model
@@ -638,10 +639,16 @@ class EntityContextExtractionStep(WorkflowStep):
         self.use_external_candidates = use_external_candidates
         self.extraction_engine = extraction_engine
         self.stop_item_names = stop_item_names or []
+        self.entity_extraction_mode = entity_extraction_mode
 
     def should_execute(self, state: WorkflowState) -> bool:
-        """Skip if there's an error"""
-        return not state.has_error()
+        """Skip if there's an error or in logic mode (logic mode doesn't use Stage 1 output)"""
+        if state.has_error():
+            return False
+        # Skip in logic mode - VocabularyFilteringStep doesn't use extracted_entities in logic mode
+        if self.entity_extraction_mode == 'logic':
+            return False
+        return True
 
     def execute(self, state: WorkflowState) -> WorkflowState:
         msg = state.msg

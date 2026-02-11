@@ -463,6 +463,7 @@ class MMSExtractor(MMSExtractorDataMixin):
                 use_external_candidates=self.use_external_candidates,
                 extraction_engine=self.extraction_engine,
                 stop_item_names=self.stop_item_names,
+                entity_extraction_mode=self.entity_extraction_mode,
             ))
             # Step 8: Vocabulary Filtering
             self.workflow_engine.add_step(VocabularyFilteringStep(
