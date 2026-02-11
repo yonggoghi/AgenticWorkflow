@@ -160,10 +160,11 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   4. `ContextPreparationStep`
   5. `LLMExtractionStep`
   6. `ResponseParsingStep`
-  7. `EntityMatchingStep` (에러/폴백/상품 없음 시 스킵)
-  8. `ResultConstructionStep`
-  9. `ValidationStep`
-  10. `DAGExtractionStep` (extract_entity_dag=True일 때만)
+  7. `EntityContextExtractionStep` (logic 모드 시 스킵)
+  8. `VocabularyFilteringStep`
+  9. `ResultConstructionStep`
+  10. `ValidationStep`
+  11. `DAGExtractionStep` (extract_entity_dag=True일 때만)
 
 ---
 
@@ -263,32 +264,49 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
 - **출력**: `parsed_json` - 파싱된 JSON 객체
 - **주요 작업**: LLM 응답에서 JSON 추출 및 파싱
 
-### Step 7: [`EntityMatchingStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
-- **입력**: `state`, `extraction_engine`, `use_external_candidates`
-- **출력**: 없음 (state에 `matched_products` 추가)
-- **조건부 스킵**: `should_execute()` → `has_error`, `is_fallback` (langextract 제외), 또는 상품/Kiwi 엔티티 없으면 스킵
-- **주요 작업**:
-  - **Stage 1: LangExtract 사전 추출** (extraction_engine='langextract'일 경우):
+### Step 7: [`EntityContextExtractionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
+- **입력**: `state`, `extraction_engine`, `entity_extraction_mode`
+- **출력**: `state.extracted_entities` (dict with keys: entities, context_text, entity_types, relationships)
+- **조건부 스킵**: `should_execute()` → `has_error` 또는 `entity_extraction_mode='logic'`이면 스킵
+- **주요 작업 (Stage 1: 엔티티 및 컨텍스트 추출)**:
+  - **LangExtract 엔진** (`extraction_engine='langextract'`):
     - [`extract_mms_entities(msg, model_id)`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/lx_extractor.py) 호출
     - 6-type 엔티티 추출: Product, Store, Program, Channel, Purpose, Other
-    - `pre_extracted = {'entities': [...], 'context_text': "..."}`
-  - LLM 파싱 결과에서 product items 추출
-  - 외부 후보 구성 (`use_external_candidates=True`일 때):
-    - `external_cand = entities_from_kiwi + primary_llm_extracted_entities`
-  - **Stage 2: 엔티티 매칭** - `entity_extraction_mode`에 따라 분기:
-    - `logic`: `entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)`
-    - `llm`: `entity_recognizer.extract_entities_with_llm(msg, ..., pre_extracted=pre_extracted)`
-  - alias type 필터링 (non-expansion 타입 제거)
-  - `entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)` 호출
-  - 결과를 `state.matched_products`에 저장
+    - 결과: `{'entities': [...], 'context_text': "...", 'entity_types': {}, 'relationships': []}`
+  - **Default 엔진** (`extraction_engine='default'`):
+    - [`entity_recognizer._extract_entities_stage1(msg, context_mode, llm_models)`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/entity_recognizer.py) 호출
+    - DAG/ONT/TYPED 프롬프트 기반 LLM 엔티티 추출
+    - 결과: `{'entities': [...], 'context_text': "...", 'entity_types': {...}, 'relationships': [...]}`
 
-#### 7.1 [`extract_mms_entities()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/lx_extractor.py) (LangExtract 모드)
+#### 7.1 [`extract_mms_entities()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/lx_extractor.py) (LangExtract)
 - **파일**: [core/lx_extractor.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/lx_extractor.py)
 - **입력**: `msg`, `model_id`
 - **출력**: `ExtractionDocument` (entities with types)
 - **주요 작업**: Google langextract 기반 6-type 엔티티 추출
 
-### Step 8: [`ResultConstructionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
+#### 7.2 [`_extract_entities_stage1()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/entity_recognizer.py) (Default)
+- **파일**: [services/entity_recognizer.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/entity_recognizer.py)
+- **입력**: `msg`, `context_mode`, `llm_models`, `external_cand_entities`
+- **출력**: dict with entities, context_text, entity_types, relationships
+- **주요 작업**: DAG/ONT/TYPED 프롬프트 기반 LLM 엔티티 추출
+
+### Step 8: [`VocabularyFilteringStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
+- **입력**: `state`, `entity_extraction_mode`
+- **출력**: `state.matched_products` (매칭된 상품 리스트)
+- **주요 작업 (Stage 2: 어휘 매칭 및 필터링)**:
+  - **Logic 모드** (`entity_extraction_mode='logic'`):
+    - Kiwi 추출 엔티티 + LLM 파싱 상품으로 후보 구성
+    - `entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)` 호출
+    - Fuzzy/sequence 유사도 기반 매칭
+  - **LLM 모드** (`entity_extraction_mode='llm'`):
+    - Step 7의 extracted_entities 사용
+    - `entity_recognizer._filter_entities_stage2(msg, extracted_entities, context_mode)` 호출
+    - LLM 기반 vocabulary 필터링
+  - alias type 필터링 (non-expansion 타입 제거)
+  - `entity_recognizer.map_products_to_entities(similarities, json_objects)` 호출
+  - 결과를 `state.matched_products`에 저장
+
+### Step 9: [`ResultConstructionStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
 - **입력**: `state`
 - **출력**: 없음 (state에 `final_result` 추가)
 - **주요 작업**:
@@ -296,7 +314,7 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   - ResultBuilder.assemble_result() 호출로 최종 결과 조립
   - 채널 정보 추출, 프로그램 매핑, Offer 객체 생성
 
-#### 8.1 [`ResultBuilder.assemble_result()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/result_builder.py)
+#### 9.1 [`ResultBuilder.assemble_result()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/result_builder.py)
 - **파일**: [services/result_builder.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/services/result_builder.py)
 - **입력**: `json_objects`, `matched_products`, `msg`, `pgm_info`, `message_id`
 - **출력**: `final_result` - 최종 결과 딕셔너리
@@ -306,14 +324,14 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   - Offer 객체 생성
   - entity_dag, message_id 첨부
 
-### Step 9: [`ValidationStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
+### Step 10: [`ValidationStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py)
 - **입력**: `state`
 - **출력**: 없음 (state 검증)
 - **주요 작업**:
   - 결과 유효성 검증
   - 최종 결과 요약 로깅
 
-#### 9.1 [`validate_extraction_result()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/utils/__init__.py)
+#### 10.1 [`validate_extraction_result()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/utils/__init__.py)
 - **파일**: [utils/\_\_init\_\_.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/utils/__init__.py)
 - **입력**: `final_result`
 - **출력**: `is_valid` - 검증 결과 (bool)
@@ -385,17 +403,18 @@ graph TB
     F --> G[WorkflowEngine.execute]
     
     G --> H1[Step 1: 입력 검증]
-    H1 --> H2[Step 2: 엔티티 추출]
+    H1 --> H2[Step 2: 엔티티 사전추출]
     H2 --> H3[Step 3: 프로그램 분류]
     H3 --> H4[Step 4: 컨텍스트 준비]
     H4 --> H5[Step 5: LLM 추출]
     H5 --> H6[Step 6: 응답 파싱]
-    H6 --> H7[Step 7: 엔티티 매칭]
-    H7 --> H8[Step 8: 결과 구성]
-    H8 --> H9[Step 9: 검증]
-    H9 --> H10[Step 10: DAG 추출]
+    H6 --> H7[Step 7: 엔티티+컨텍스트 추출]
+    H7 --> H8[Step 8: 어휘 필터링]
+    H8 --> H9[Step 9: 결과 구성]
+    H9 --> H10[Step 10: 검증]
+    H10 --> H11[Step 11: DAG 추출]
 
-    H10 --> I[결과 반환]
+    H11 --> I[결과 반환]
     I --> J[콘솔 출력]
     
     style A fill:#e1f5ff
@@ -879,9 +898,8 @@ msg_001,"(광고)[SKT] ...","{...}","2025-12-18 14:00:00","T day 혜택","[\"프
 
 ## 참고사항
 
-- **DAG 추출**: `--extract-entity-dag` 플래그가 활성화되면 Step 10 (DAGExtractionStep)이 실행됩니다.
-- **ONT 모드 최적화**: `--entity-extraction-context-mode ont` 사용 시 Step 10에서 별도 LLM 호출 없이 기존 온톨로지 결과를 재사용합니다.
-- **조건부 스킵**: 각 Step의 `should_execute()` 메서드가 False를 반환하면 해당 단계가 스킵되고 워크플로우 히스토리에 "skipped"로 기록됩니다.
+- **DAG 추출**: `--extract-entity-dag` 플래그가 활성화되면 Step 11 (DAGExtractionStep)이 실행됩니다. 모든 context mode에서 동일하게 fresh LLM call로 DAG를 추출합니다.
+- **조건부 스킵**: 각 Step의 `should_execute()` 메서드가 False를 반환하면 해당 단계가 스킵되고 워크플로우 히스토리에 "skipped"로 기록됩니다 (예: Step 7은 logic 모드 시 스킵).
 - **엔티티 사전추출 스킵**: `--skip-entity-extraction` 옵션으로 Step 2 (EntityExtractionStep)를 스킵할 수 있습니다.
 - **데이터 소스**: `--offer-data-source local` 옵션으로 로컬 CSV 파일에서 데이터를 로드합니다.
 - **워크플로우 엔진**: [core/workflow_core.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/workflow_core.py)에서 정의된 `WorkflowEngine`이 모든 단계를 순차적으로 실행합니다.

@@ -41,10 +41,11 @@
     ├─ 4. ContextPreparationStep
     ├─ 5. LLMExtractionStep ← LLM (via LLMFactory)
     ├─ 6. ResponseParsingStep
-    ├─ 7. EntityMatchingStep ← EntityRecognizer + LangExtract (선택적) (에러/폴백/상품없음 시 스킵)
-    ├─ 8. ResultConstructionStep ← ResultBuilder
-    ├─ 9. ValidationStep
-    └─ 10. DAGExtractionStep (선택적)
+    ├─ 7. EntityContextExtractionStep ← EntityRecognizer + LangExtract (선택적) (logic 모드 시 스킵)
+    ├─ 8. VocabularyFilteringStep ← 어휘 매칭 (fuzzy/LLM)
+    ├─ 9. ResultConstructionStep ← ResultBuilder
+    ├─ 10. ValidationStep
+    └─ 11. DAGExtractionStep (선택적)
     ↓
 [결과 반환: ext_result, raw_result, prompts]
 ```

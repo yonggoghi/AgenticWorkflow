@@ -49,10 +49,11 @@ graph TB
         STEP4[ContextPreparationStep]
         STEP5[LLMExtractionStep]
         STEP6[ResponseParsingStep]
-        STEP7[EntityMatchingStep]
-        STEP8[ResultConstructionStep]
-        STEP9[ValidationStep]
-        STEP10[DAGExtractionStep]
+        STEP7[EntityContextExtractionStep]
+        STEP8[VocabularyFilteringStep]
+        STEP9[ResultConstructionStep]
+        STEP10[ValidationStep]
+        STEP11[DAGExtractionStep]
     end
     
     subgraph ServiceLayer["Service Layer"]
@@ -395,9 +396,9 @@ graph TD
 | **langextract** | Google langextract 기반 | Step 7 Stage 1 | 타입 분류가 중요한 경우 |
 
 **LangExtract 통합 세부사항**:
-- **위치**: EntityMatchingStep (Step 7) Stage 1 사전 추출
+- **위치**: EntityContextExtractionStep (Step 7)
 - **동작**: `extract_mms_entities(msg)` 호출 → 6개 타입별 엔티티 추출
-- **출력**: `pre_extracted` 딕셔너리 (entities, context_text)
+- **출력**: `extracted_entities` 딕셔너리 (entities, context_text, entity_types, relationships)
 - **자동 설정**: langextract 선택 시 `entity_extraction_context_mode`를 'typed'로 강제 설정
 - **폴백**: langextract 실패 시 자동으로 default 모드로 전환
 

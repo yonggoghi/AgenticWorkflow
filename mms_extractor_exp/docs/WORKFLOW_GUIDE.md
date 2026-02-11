@@ -19,22 +19,25 @@ MMS Extractor는 11단계의 Workflow로 구성되어 있으며, 각 단계는 �
 ```mermaid
 graph TD
     START([메시지 입력]) --> STEP1[1. InputValidation<br/>입력 검증]
-    STEP1 --> STEP2[2. EntityExtraction<br/>엔티티 추출]
+    STEP1 --> STEP2[2. EntityExtraction<br/>엔티티 사전추출]
     STEP2 --> STEP3[3. ProgramClassification<br/>프로그램 분류]
     STEP3 --> STEP4[4. ContextPreparation<br/>컨텍스트 준비]
     STEP4 --> STEP5[5. LLMExtraction<br/>LLM 추출]
     STEP5 --> STEP6[6. ResponseParsing<br/>응답 파싱]
-    STEP6 --> STEP7[7. EntityMatching<br/>엔티티 매칭]
-    STEP7 --> STEP8[8. ResultConstruction<br/>결과 구성]
-    STEP8 --> STEP9[9. Validation<br/>결과 검증]
-    STEP9 --> DECISION{DAG 추출<br/>활성화?}
-    DECISION -->|Yes| STEP10[10. DAGExtraction<br/>DAG 추출]
+    STEP6 --> STEP7[7. EntityContextExtraction<br/>엔티티+컨텍스트 추출]
+    STEP7 --> STEP8[8. VocabularyFiltering<br/>어휘 필터링]
+    STEP8 --> STEP9[9. ResultConstruction<br/>결과 구성]
+    STEP9 --> STEP10[10. Validation<br/>결과 검증]
+    STEP10 --> DECISION{DAG 추출<br/>활성화?}
+    DECISION -->|Yes| STEP11[11. DAGExtraction<br/>DAG 추출]
     DECISION -->|No| END([추출 완료])
-    STEP10 --> END
+    STEP11 --> END
 
     style START fill:#f9f,stroke:#333
     style END fill:#9f9,stroke:#333
     style DECISION fill:#ff9,stroke:#333
+    style STEP7 fill:#ffd,stroke:#333
+    style STEP8 fill:#ffd,stroke:#333
 ```
 
 ### 전체 처리 시간
@@ -44,10 +47,12 @@ graph TD
 | 1-3단계 | 1-2초 | 로컬 처리 (bigram 최적화 적용) |
 | 4단계 | 1-2초 | RAG 컨텍스트 구성 |
 | 5단계 | 5-15초 | **LLM API 호출 (병목)** |
-| 6-8단계 | 1-5초 | 응답 파싱 + 엔티티 추출 + 매칭 |
+| 6단계 | 0.5-1초 | 응답 파싱 |
+| 7단계 | 3-8초 | LLM/langextract 엔티티 추출 (logic 모드 시 스킵) |
+| 8단계 | 1-2초 | 어휘 매칭 (fuzzy/sequence 유사도) |
 | 9-10단계 | 1-2초 | 결과 구성 + 검증 |
-| 11단계 | 5-10초 | LLM API 호출 (선택적) |
-| **전체** | **10-25초** | DAG 포함 시 |
+| 11단계 | 5-10초 | DAG 추출 (선택적, LLM 호출) |
+| **전체** | **10-30초** | DAG 포함 시 |
 
 ---
 
