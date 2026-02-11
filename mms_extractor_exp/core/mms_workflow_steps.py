@@ -609,58 +609,46 @@ class ResponseParsingStep(WorkflowStep):
         return state
 
 
-class EntityMatchingStep(WorkflowStep):
+class EntityContextExtractionStep(WorkflowStep):
     """
-    엔티티 매칭 단계 (Step 7)
+    엔티티 + 컨텍스트 추출 단계 (Step 7)
 
     책임:
-        - LLM 추출 상품명과 DB 상품을 매칭
-        - logic 모드: fuzzy + sequence 유사도 매칭
-        - llm 모드: LLM 기반 2단계 매칭
-        - alias 타입 필터링 (non-expansion)
-        - 매칭 결과를 state.matched_products에 저장
+        - 메시지에서 엔티티와 컨텍스트 추출 (Stage 1)
+        - 두 가지 추출 방식 지원:
+          1. langextract: Google langextract 기반 6-type 분류
+          2. default: entity_recognizer._extract_entities_stage1() 호출
+        - 추출 결과를 state.extracted_entities에 저장
 
     데이터 흐름:
-        입력: json_objects, entities_from_kiwi, msg
-        출력: matched_products
+        입력: msg, entities_from_kiwi, json_objects
+        출력: extracted_entities (entities, context_text, entity_types, relationships)
     """
 
-    def __init__(self, entity_recognizer, alias_pdf_raw: pd.DataFrame,
-                 stop_item_names: List[str], entity_extraction_mode: str,
+    def __init__(self, entity_recognizer,
                  llm_factory=None, llm_model: str = 'ax',
                  entity_extraction_context_mode: str = 'dag',
                  use_external_candidates: bool = True,
-                 extraction_engine: str = 'default'):
+                 extraction_engine: str = 'default',
+                 stop_item_names: List[str] = None):
         self.entity_recognizer = entity_recognizer
-        self.alias_pdf_raw = alias_pdf_raw
-        self.stop_item_names = stop_item_names
-        self.entity_extraction_mode = entity_extraction_mode
         self.llm_factory = llm_factory
         self.llm_model = llm_model
         self.entity_extraction_context_mode = entity_extraction_context_mode
         self.use_external_candidates = use_external_candidates
         self.extraction_engine = extraction_engine
+        self.stop_item_names = stop_item_names or []
 
     def should_execute(self, state: WorkflowState) -> bool:
-        if state.has_error():
-            return False
-        # langextract extracts entities independently of the main prompt,
-        # so it should run even when is_fallback (main JSON parse failed)
-        if state.is_fallback and self.extraction_engine != 'langextract':
-            return False
-        json_objects = state.json_objects
-        product_items = json_objects.get('product', [])
-        if isinstance(product_items, dict):
-            product_items = product_items.get('items', [])
-        has_entities = len(product_items) > 0 or len(state.entities_from_kiwi) > 0
-        return has_entities or self.extraction_engine == 'langextract'
+        """Skip if there's an error"""
+        return not state.has_error()
 
     def execute(self, state: WorkflowState) -> WorkflowState:
-        json_objects = state.json_objects
-        entities_from_kiwi = state.entities_from_kiwi
         msg = state.msg
+        entities_from_kiwi = state.entities_from_kiwi
+        json_objects = state.json_objects
 
-        # Step 7.1: Extract product items from json_objects
+        # Extract product items from json_objects
         product_items = json_objects.get('product', [])
         if isinstance(product_items, dict):
             product_items = product_items.get('items', [])
@@ -676,9 +664,9 @@ class EntityMatchingStep(WorkflowStep):
             external_cand = []
             logger.info("외부 후보 엔티티 비활성화 (use_external_candidates=False)")
 
-        # Step 7.1b: Pre-extract entities with langextract if configured
-        pre_extracted = None
+        # Stage 1: Entity + Context Extraction
         if self.extraction_engine == 'langextract':
+            # Method A: LangExtract-based extraction
             try:
                 from core.lx_extractor import extract_mms_entities
                 logger.info("🔗 langextract 엔진으로 Stage 1 엔티티 추출 시작...")
@@ -692,49 +680,155 @@ class EntityMatchingStep(WorkflowStep):
                     if name not in self.stop_item_names and len(name) >= 2:
                         entities.append(name)
                         type_pairs.append(f"{name}({ext.extraction_class})")
-                pre_extracted = {
+
+                state.extracted_entities = {
                     'entities': entities,
-                    'context_text': ", ".join(type_pairs)
+                    'context_text': ", ".join(type_pairs),
+                    'entity_types': {},  # langextract doesn't provide this
+                    'relationships': []  # langextract doesn't provide this
                 }
                 logger.info(f"✅ langextract Stage 1 완료: {len(entities)}개 엔티티 추출")
                 logger.info(f"   엔티티: {entities}")
-                logger.info(f"   컨텍스트: {pre_extracted['context_text']}")
+                logger.info(f"   컨텍스트: {state.extracted_entities['context_text']}")
             except Exception as e:
                 logger.error(f"❌ langextract 추출 실패, 기본 모드로 폴백: {e}")
-                pre_extracted = None
+                state.extracted_entities = None
+        else:
+            # Method B: Standard LLM-based extraction
+            if self.llm_factory:
+                llm_models = self.llm_factory.create_models([self.llm_model])
+            else:
+                logger.warning("llm_factory가 설정되지 않았습니다. 빈 리스트를 사용합니다.")
+                llm_models = []
 
-        # Step 7.2: Entity matching based on mode
+            try:
+                logger.info(f"🔍 entity_recognizer로 Stage 1 추출 시작 (context_mode={self.entity_extraction_context_mode})...")
+                stage1_result = self.entity_recognizer._extract_entities_stage1(
+                    msg_text=msg,
+                    context_mode=self.entity_extraction_context_mode,
+                    llm_models=llm_models,
+                    external_cand_entities=external_cand
+                )
+                state.extracted_entities = stage1_result
+                logger.info(f"✅ Stage 1 완료: {len(stage1_result.get('entities', []))}개 엔티티 추출")
+                logger.info(f"   엔티티: {stage1_result.get('entities', [])}")
+            except Exception as e:
+                logger.error(f"❌ Stage 1 추출 실패: {e}")
+                state.extracted_entities = None
+
+        return state
+
+
+class VocabularyFilteringStep(WorkflowStep):
+    """
+    어휘 기반 필터링 단계 (Step 8)
+
+    책임:
+        - Stage 1에서 추출한 엔티티를 상품 DB와 매칭
+        - logic 모드: fuzzy + sequence 유사도 매칭
+        - llm 모드: LLM 기반 어휘 필터링
+        - alias 타입 필터링 (non-expansion)
+        - 매칭 결과를 state.matched_products에 저장
+
+    데이터 흐름:
+        입력: extracted_entities, msg, json_objects
+        출력: matched_products
+    """
+
+    def __init__(self, entity_recognizer, alias_pdf_raw: pd.DataFrame,
+                 stop_item_names: List[str], entity_extraction_mode: str,
+                 llm_factory=None, llm_model: str = 'ax',
+                 entity_extraction_context_mode: str = 'dag'):
+        self.entity_recognizer = entity_recognizer
+        self.alias_pdf_raw = alias_pdf_raw
+        self.stop_item_names = stop_item_names
+        self.entity_extraction_mode = entity_extraction_mode
+        self.llm_factory = llm_factory
+        self.llm_model = llm_model
+        self.entity_extraction_context_mode = entity_extraction_context_mode
+
+    def should_execute(self, state: WorkflowState) -> bool:
+        """Skip if error, fallback, or no entities"""
+        if state.has_error():
+            return False
+        if state.is_fallback:
+            return False
+
+        # Check if we have extracted entities from Stage 1
+        extracted_entities = state.extracted_entities
+        if extracted_entities and len(extracted_entities.get('entities', [])) > 0:
+            return True
+
+        # Fallback: check if we have product items or kiwi entities
+        json_objects = state.json_objects
+        product_items = json_objects.get('product', [])
+        if isinstance(product_items, dict):
+            product_items = product_items.get('items', [])
+        has_entities = len(product_items) > 0 or len(state.entities_from_kiwi) > 0
+        return has_entities
+
+    def execute(self, state: WorkflowState) -> WorkflowState:
+        msg = state.msg
+        json_objects = state.json_objects
+        extracted_entities = state.extracted_entities
+
+        # Get product items for fallback logic
+        product_items = json_objects.get('product', [])
+        if isinstance(product_items, dict):
+            product_items = product_items.get('items', [])
+
+        # Stage 2: Vocabulary Filtering
         if self.entity_extraction_mode == 'logic':
+            # Logic mode: fuzzy matching
+            entities_from_kiwi = state.entities_from_kiwi
             cand_entities = list(set(
                 entities_from_kiwi + [item.get('name', '') for item in product_items if item.get('name')]
-            )) if self.use_external_candidates else []
+            ))
             logger.debug(f"로직 모드 cand_entities: {cand_entities}")
             similarities_fuzzy = self.entity_recognizer.extract_entities_with_fuzzy_matching(cand_entities)
         else:
-            # LLM-based matching
+            # LLM mode: vocabulary filtering
             if self.llm_factory:
-                default_llm_models = self.llm_factory.create_models([self.llm_model])
+                llm_models = self.llm_factory.create_models([self.llm_model])
             else:
                 logger.warning("llm_factory가 설정되지 않았습니다. 빈 리스트를 사용합니다.")
-                default_llm_models = []
+                llm_models = []
 
-            llm_result = self.entity_recognizer.extract_entities_with_llm(
-                msg,
-                llm_models=default_llm_models,
-                rank_limit=100,
-                external_cand_entities=external_cand,
-                context_mode=self.entity_extraction_context_mode,
-                pre_extracted=pre_extracted,
-            )
+            if extracted_entities:
+                # Use extracted entities from Stage 1
+                entities = extracted_entities.get('entities', [])
+                context_text = extracted_entities.get('context_text', '')
+                logger.info(f"🔍 Stage 2 시작: {len(entities)}개 엔티티 필터링 (context_mode={self.entity_extraction_context_mode})")
 
-            if isinstance(llm_result, dict):
-                similarities_fuzzy = llm_result.get('similarities_df', pd.DataFrame())
+                similarities_fuzzy = self.entity_recognizer._filter_with_vocabulary(
+                    entities=entities,
+                    context_text=context_text,
+                    context_mode=self.entity_extraction_context_mode,
+                    msg_text=msg,
+                    rank_limit=100,
+                    llm_model=llm_models[0] if llm_models else None
+                )
+                logger.info(f"✅ Stage 2 완료: {similarities_fuzzy.shape[0] if not similarities_fuzzy.empty else 0}개 엔티티 필터링됨")
             else:
-                similarities_fuzzy = llm_result
+                # Fallback: no extracted entities, use wrapper
+                logger.warning("extracted_entities가 없습니다. wrapper를 사용합니다.")
+                llm_result = self.entity_recognizer.extract_entities_with_llm(
+                    msg,
+                    llm_models=llm_models,
+                    rank_limit=100,
+                    external_cand_entities=[],
+                    context_mode=self.entity_extraction_context_mode,
+                    pre_extracted=None,
+                )
+
+                if isinstance(llm_result, dict):
+                    similarities_fuzzy = llm_result.get('similarities_df', pd.DataFrame())
+                else:
+                    similarities_fuzzy = llm_result
 
         logger.info(f"similarities_fuzzy 크기: {similarities_fuzzy.shape if not similarities_fuzzy.empty else '비어있음'}")
 
-        # Step 7.3: Alias type filtering
+        # Alias type filtering
         if not similarities_fuzzy.empty:
             merged_df = similarities_fuzzy.merge(
                 self.alias_pdf_raw[['alias_1', 'type']].drop_duplicates(),
@@ -751,7 +845,7 @@ class EntityMatchingStep(WorkflowStep):
             )]
             logger.debug(f"alias 필터링 후 크기: {filtered_df.shape}")
 
-        # Step 7.4: Map products to entities
+        # Map products to entities
         if not similarities_fuzzy.empty:
             matched_products = self.entity_recognizer.map_products_to_entities(similarities_fuzzy, json_objects)
             logger.info(f"매칭된 상품 수: {len(matched_products)}개")
@@ -778,7 +872,7 @@ class EntityMatchingStep(WorkflowStep):
 
 class ResultConstructionStep(WorkflowStep):
     """
-    최종 결과 구성 단계 (Step 8)
+    최종 결과 구성 단계 (Step 9)
 
     책임:
         - matched_products를 final_result에 반영
@@ -818,8 +912,8 @@ class ResultConstructionStep(WorkflowStep):
 
 class ValidationStep(WorkflowStep):
     """
-    결과 검증 단계 (Step 8/9)
-    
+    결과 검증 단계 (Step 10)
+
     책임:
         - 최종 결과 유효성 검증
         - 필수 필드 존재 여부 확인
@@ -879,8 +973,8 @@ class ValidationStep(WorkflowStep):
 
 class DAGExtractionStep(WorkflowStep):
     """
-    DAG 추출 단계 (Step 9/9, 선택적)
-    
+    DAG 추출 단계 (Step 11, 선택적)
+
     책임:
         - LLM 기반 엔티티 간 관계 분석
         - DAG(Directed Acyclic Graph) 생성

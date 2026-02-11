@@ -113,7 +113,8 @@ from .mms_workflow_steps import (
     ContextPreparationStep,
     LLMExtractionStep,
     ResponseParsingStep,
-    EntityMatchingStep,
+    EntityContextExtractionStep,
+    VocabularyFilteringStep,
     ResultConstructionStep,
     ValidationStep,
     DAGExtractionStep
@@ -453,7 +454,18 @@ class MMSExtractor(MMSExtractorDataMixin):
             self.workflow_engine.add_step(ContextPreparationStep())
             self.workflow_engine.add_step(LLMExtractionStep())
             self.workflow_engine.add_step(ResponseParsingStep())
-            self.workflow_engine.add_step(EntityMatchingStep(
+            # Step 7: Entity + Context Extraction
+            self.workflow_engine.add_step(EntityContextExtractionStep(
+                entity_recognizer=self.entity_recognizer,
+                llm_factory=self.llm_factory,
+                llm_model=self.entity_llm_model_name,
+                entity_extraction_context_mode=self.entity_extraction_context_mode,
+                use_external_candidates=self.use_external_candidates,
+                extraction_engine=self.extraction_engine,
+                stop_item_names=self.stop_item_names,
+            ))
+            # Step 8: Vocabulary Filtering
+            self.workflow_engine.add_step(VocabularyFilteringStep(
                 entity_recognizer=self.entity_recognizer,
                 alias_pdf_raw=self.alias_pdf_raw,
                 stop_item_names=self.stop_item_names,
@@ -461,8 +473,6 @@ class MMSExtractor(MMSExtractorDataMixin):
                 llm_factory=self.llm_factory,
                 llm_model=self.entity_llm_model_name,
                 entity_extraction_context_mode=self.entity_extraction_context_mode,
-                use_external_candidates=self.use_external_candidates,
-                extraction_engine=self.extraction_engine,
             ))
             self.workflow_engine.add_step(ResultConstructionStep(self.result_builder))
             self.workflow_engine.add_step(ValidationStep())
