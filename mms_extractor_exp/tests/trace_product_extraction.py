@@ -628,6 +628,24 @@ class ProductExtractionTracer:
         # Apply patch for extract_entities_with_llm
         recognizer.extract_entities_with_llm = traced_extract_entities_with_llm
 
+        # Patch _extract_entities_stage1 (new workflow Step 7)
+        original_extract_stage1 = recognizer._extract_entities_stage1
+
+        def traced_extract_entities_stage1(msg_text, context_mode='dag', llm_models=None, external_cand_entities=None):
+            """Trace wrapper for _extract_entities_stage1 (Stage 1 of new workflow)"""
+            result = original_extract_stage1(msg_text, context_mode, llm_models, external_cand_entities)
+
+            # Capture first stage entities from result dict
+            if result and isinstance(result, dict):
+                entities = result.get('entities', [])
+                trace_data.first_stage_entities = list(entities)
+                trace_data.second_stage_context_text = result.get('context_text', '')
+                logger.info(f"=== Traced Stage 1: {len(entities)} entities extracted ===")
+
+            return result
+
+        recognizer._extract_entities_stage1 = traced_extract_entities_stage1
+
         # Also patch extract_entities_hybrid for sub-step timing
         original_extract_entities_hybrid = recognizer.extract_entities_hybrid
 
@@ -1215,6 +1233,14 @@ class ProductExtractionTracer:
             if isinstance(extracted_entities, dict):
                 captured['extracted_entities'] = extracted_entities.get('entities', [])
                 captured['context_text'] = extracted_entities.get('context_text', "")[:500]
+
+                # Also capture first_stage_entities for evaluation
+                # CRITICAL: Always overwrite to support both default engine (via _extract_entities_stage1 patch)
+                # and langextract engine (which directly sets state.extracted_entities)
+                entities = extracted_entities.get('entities', [])
+                if entities:
+                    self._entity_trace.first_stage_entities = list(entities)
+                    logger.info(f"=== Captured Stage 1 from state: {len(entities)} entities ===")
             else:
                 captured['extracted_entities'] = []
                 captured['context_text'] = ""
