@@ -616,10 +616,9 @@ class EntityRecognizer:
             HYBRID_DAG_EXTRACTION_PROMPT,
             HYBRID_PAIRING_EXTRACTION_PROMPT,
             SIMPLE_ENTITY_EXTRACTION_PROMPT,
-            ONTOLOGY_PROMPT,
-            TYPED_ENTITY_EXTRACTION_PROMPT,
-            ONT_PRODUCT_RELEVANT_TYPES
+            TYPED_ENTITY_EXTRACTION_PROMPT
         )
+        from prompts.ontology_prompt import ONTOLOGY_PROMPT
 
         if llm_models is None:
             llm_models = [self.llm_model]

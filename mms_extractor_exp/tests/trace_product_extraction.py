@@ -922,7 +922,7 @@ class ProductExtractionTracer:
 
         recognizer.map_products_to_entities = traced_map_products_to_entities
 
-        # Patch assemble_result to capture alias_pdf_raw merge data from EntityMatchingStep
+        # Patch assemble_result to capture alias_pdf_raw merge data from VocabularyFilteringStep
         original_assemble = builder.assemble_result
 
         def traced_assemble_result(json_objects, matched_products, msg, pgm_info, message_id='#'):
@@ -934,7 +934,7 @@ class ProductExtractionTracer:
             # Try to capture alias_pdf_raw merge (if we have final_similarities)
             if trace_data.final_similarities is not None and not trace_data.final_similarities.empty:
                 try:
-                    # alias_pdf_raw is now on EntityMatchingStep, find it from the workflow
+                    # alias_pdf_raw is now on VocabularyFilteringStep, find it from the workflow
                     alias_pdf_raw = self.extractor.alias_pdf_raw
                     if alias_pdf_raw is not None and not alias_pdf_raw.empty:
                         merged_df = trace_data.final_similarities.merge(
@@ -999,7 +999,8 @@ class ProductExtractionTracer:
             ContextPreparationStep,
             LLMExtractionStep,
             ResponseParsingStep,
-            EntityMatchingStep,
+            EntityContextExtractionStep,
+            VocabularyFilteringStep,
             ResultConstructionStep,
             ValidationStep,
             DAGExtractionStep
@@ -1063,9 +1064,9 @@ class ProductExtractionTracer:
             # Capture product-specific changes
             product_changes = self._capture_product_changes(state, step_name)
 
-            # Capture sub-step timings for EntityExtractionStep and ResultConstructionStep
+            # Capture sub-step timings for EntityExtractionStep, EntityContextExtractionStep, VocabularyFilteringStep and ResultConstructionStep
             substep_timings = {}
-            if step_name in ("EntityExtractionStep", "EntityMatchingStep", "ResultConstructionStep") and self._entity_trace.substep_timings:
+            if step_name in ("EntityExtractionStep", "EntityContextExtractionStep", "VocabularyFilteringStep", "ResultConstructionStep") and self._entity_trace.substep_timings:
                 substep_timings = dict(self._entity_trace.substep_timings)
                 # Clear for next step so timings don't bleed across steps
                 self._entity_trace.substep_timings = {}
@@ -1090,8 +1091,8 @@ class ProductExtractionTracer:
                     trace.llm_prompt = stored_prompts['main_extraction'].get('content', '')
                 trace.llm_response = state.get("result_json_text", "")
 
-            # Capture similarity scores for EntityMatchingStep
-            if step_name == "EntityMatchingStep":
+            # Capture similarity scores for VocabularyFilteringStep
+            if step_name == "VocabularyFilteringStep":
                 trace.similarity_scores = self._entity_trace.final_similarities
 
             if state.has_error():
@@ -1137,12 +1138,15 @@ class ProductExtractionTracer:
             captured['result_json_text_length'] = len(state.get("result_json_text", ""))
             captured['result_json_text_preview'] = state.get("result_json_text", "")[:500]
 
-        elif step_name == "EntityMatchingStep":
-            json_objects = state.get("json_objects", {})
-            captured['json_objects_product'] = json_objects.get('product', [])
+        elif step_name == "EntityContextExtractionStep":
             captured['entities_from_kiwi'] = state.get("entities_from_kiwi", [])
             captured['entity_extraction_mode'] = self.extractor.entity_extraction_mode
             captured['context_mode'] = getattr(self.extractor, 'entity_extraction_context_mode', 'dag')
+
+        elif step_name == "VocabularyFilteringStep":
+            json_objects = state.get("json_objects", {})
+            captured['json_objects_product'] = json_objects.get('product', [])
+            captured['extracted_entities'] = state.get("extracted_entities", [])
 
         elif step_name == "ResultConstructionStep":
             captured['matched_products_count'] = len(state.matched_products)
@@ -1206,15 +1210,20 @@ class ProductExtractionTracer:
             captured['json_objects_product'] = json_objects.get('product', [])
             captured['is_fallback'] = state.get("is_fallback", False)
 
-        elif step_name == "EntityMatchingStep":
-            captured['matched_products'] = state.matched_products
-            captured['matched_products_count'] = len(state.matched_products)
+        elif step_name == "EntityContextExtractionStep":
+            captured['extracted_entities'] = state.get("extracted_entities", [])
+            captured['context_text'] = state.get("context_text", "")[:500]
 
             # ENHANCED: Capture entity extraction trace data
             if self._entity_trace.first_stage_prompt:
                 captured['entity_extraction_prompt'] = self._entity_trace.first_stage_prompt[:1000]
             if self._entity_trace.entities_after_ngram:
                 captured['candidate_entities_for_matching'] = self._entity_trace.entities_after_ngram[:50]
+
+        elif step_name == "VocabularyFilteringStep":
+            captured['matched_products'] = state.matched_products
+            captured['matched_products_count'] = len(state.matched_products)
+
             if self._entity_trace.final_similarities is not None and not self._entity_trace.final_similarities.empty:
                 captured['similarity_scores_count'] = len(self._entity_trace.final_similarities)
                 captured['similarity_scores_sample'] = _dataframe_to_serializable(
@@ -1269,8 +1278,17 @@ class ProductExtractionTracer:
                 changes['llm_product_names'] = [p.get('name', '') for p in products if isinstance(p, dict)]
                 changes['llm_product_actions'] = [p.get('action', '') for p in products if isinstance(p, dict)]
 
-        elif step_name == "EntityMatchingStep":
-            # This is the key step where product matching happens
+        elif step_name == "EntityContextExtractionStep":
+            # Stage 1: Entity and context extraction
+            extracted_entities = state.get("extracted_entities", [])
+            if extracted_entities:
+                changes['extracted_entities_count'] = len(extracted_entities)
+                changes['extracted_entities'] = extracted_entities[:10]
+            else:
+                changes['extracted_entities_count'] = 0
+
+        elif step_name == "VocabularyFilteringStep":
+            # Stage 2: Vocabulary filtering - this is where product matching happens
             products = state.matched_products
             changes['matched_product_count'] = len(products)
 
