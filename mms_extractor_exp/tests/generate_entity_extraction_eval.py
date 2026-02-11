@@ -214,7 +214,9 @@ def extract_entities(
         return extracted_str, sorted_extracted, linked_str, sorted_linked
 
     except Exception as e:
+        import traceback
         logger.error(f"Error extracting entities for {message_id}: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return "", [], "", []
 
 

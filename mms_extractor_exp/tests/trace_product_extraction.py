@@ -1211,8 +1211,13 @@ class ProductExtractionTracer:
             captured['is_fallback'] = state.get("is_fallback", False)
 
         elif step_name == "EntityContextExtractionStep":
-            captured['extracted_entities'] = state.get("extracted_entities", [])
-            captured['context_text'] = state.get("context_text", "")[:500]
+            extracted_entities = state.get("extracted_entities", {})
+            if isinstance(extracted_entities, dict):
+                captured['extracted_entities'] = extracted_entities.get('entities', [])
+                captured['context_text'] = extracted_entities.get('context_text', "")[:500]
+            else:
+                captured['extracted_entities'] = []
+                captured['context_text'] = ""
 
             # ENHANCED: Capture entity extraction trace data
             if self._entity_trace.first_stage_prompt:
@@ -1280,10 +1285,11 @@ class ProductExtractionTracer:
 
         elif step_name == "EntityContextExtractionStep":
             # Stage 1: Entity and context extraction
-            extracted_entities = state.get("extracted_entities", [])
-            if extracted_entities:
-                changes['extracted_entities_count'] = len(extracted_entities)
-                changes['extracted_entities'] = extracted_entities[:10]
+            extracted_entities = state.get("extracted_entities", {})
+            if extracted_entities and isinstance(extracted_entities, dict):
+                entities_list = extracted_entities.get('entities', [])
+                changes['extracted_entities_count'] = len(entities_list)
+                changes['extracted_entities'] = entities_list[:10]
             else:
                 changes['extracted_entities_count'] = 0
 
