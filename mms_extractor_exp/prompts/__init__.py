@@ -48,6 +48,7 @@ dag_prompt = build_dag_extraction_prompt(message)
 from .main_extraction_prompt import (
     build_extraction_prompt,
     JSON_SCHEMA,
+    OUTPUT_SCHEMA_REFERENCE,
     CHAIN_OF_THOUGHT_LLM_MODE,
     CHAIN_OF_THOUGHT_DEFAULT_MODE,
     CHAIN_OF_THOUGHT_NLP_MODE
@@ -83,7 +84,8 @@ from .ontology_prompt import ONTOLOGY_PROMPT
 __all__ = [
     # 메인 정보 추출 관련
     'build_extraction_prompt',           # 주요 추출 프롬프트 생성
-    'JSON_SCHEMA',                      # JSON 스키마 정의
+    'JSON_SCHEMA',                      # JSON 스키마 정의 (backward compat alias)
+    'OUTPUT_SCHEMA_REFERENCE',          # 출력 스키마 참조 (검증/문서용)
     'CHAIN_OF_THOUGHT_LLM_MODE',        # LLM 모드 CoT 프롬프트
     'CHAIN_OF_THOUGHT_DEFAULT_MODE',    # 기본 모드 CoT 프롬프트
     'CHAIN_OF_THOUGHT_NLP_MODE',        # NLP 모드 CoT 프롬프트

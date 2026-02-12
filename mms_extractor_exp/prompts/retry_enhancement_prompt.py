@@ -5,26 +5,15 @@ LLM 호출 실패 시 사용되는 강화된 프롬프트와 fallback 로직
 
 # 스키마 응답 방지를 위한 강화 지시사항
 SCHEMA_PREVENTION_INSTRUCTION = """
-🚨 CRITICAL INSTRUCTION 🚨
-You MUST return actual extracted data, NOT the schema definition.
+You returned a schema definition instead of actual data. Return extracted data only.
 
-DO NOT return:
-- Schema structures like {"type": "array", "items": {...}}
-- Template definitions
-- Example formats
-
-DO return:
-- Real extracted values from the advertisement
-- Actual product names, purposes, channels found in the text
-- Concrete data only
-
-For example:
 WRONG: {"purpose": {"type": "array", "items": {"type": "string"}}}
 CORRECT: {"purpose": ["상품 가입 유도", "혜택 안내"]}
 
 WRONG: {"product": {"type": "array", "items": {"type": "object"}}}
 CORRECT: {"product": [{"name": "ZEM폰", "action": "가입"}]}
 
+Extract real values from the advertisement and return a JSON object with keys: title, purpose, sales_script, product, channel, pgm.
 """
 
 # Fallback 결과 템플릿
