@@ -337,7 +337,7 @@ class METADATAConfig:
     org_info_path: str = os.getenv("ORG_INFO_PATH", "./data/offer_master_data.csv")  # CSV file with organization/store details (Korean encoding)
     
     # Program classification information
-    pgm_info_path: str = os.getenv("PGM_INFO_PATH", "./data/pgm_info.csv")  # CSV file with program classification tags and clues
+    pgm_info_path: str = os.getenv("PGM_INFO_PATH", "./data/pgm_tag_ext_250516.csv")  # CSV file with program classification tags and clues
     
     # MMS message samples for testing
     mms_msg_path: str = os.getenv("MMS_MSG_PATH", "./data/mms_data_250408.csv")  # CSV file with sample MMS messages for testing
@@ -474,6 +474,9 @@ class DatabaseConfig:
     oracle_offer_mst_table: str = os.getenv("ORACLE_OFFER_TABLE", "TCIC.TCIC_RC_OFER_MST")  # Offer/Item master table (상품/조직 정보)
     oracle_offer_rel_table: str = os.getenv("ORACLE_OFFER_REL_TABLE", "TCIC.TCIC_RC_OFER_REL")  # Offer/Item relationship table (상품/조직 정보)
     oracle_program_table: str = os.getenv("ORACLE_PROGRAM_TABLE", "TCAM.TCAM_CMPGN_PGM_INFO")  # Program information table (프로그램 분류 정보)
+    # Added by P099870, 2026.01.13
+    oracle_mms_scrpt_table: str = os.getenv("ORACLE_MMS_SCRPT_TABLE", "TMSG.TMSG_MMS_SCRPT")  # MMS Script information table (MMS 스크립트 정보)
+    oracle_msg_anals_rslt_table: str = os.getenv("ORACLE_MSG_ANALS_RSLT_TABLE", "TCAM.TCAM_MSG_ANALS_RSLT")  # Message extract result table (MMS 분석 결과 정보)
     
     def get_offer_table_query(self, where_clause: str = "") -> str:
         """Get SQL query for offer table with optional WHERE clause.
@@ -502,6 +505,109 @@ class DatabaseConfig:
         if where_clause:
             return f"{base_query} WHERE {where_clause}"
         return base_query
+
+    # Added by P099870, 2026.01.13
+    def get_message_by_messageid_query(self, where_clause: str = "") -> str:
+        """Get SQL query for program table with optional WHERE clause.
+        
+        Args:
+            where_clause: Optional WHERE clause
+            
+        Returns:
+            str: Complete SQL query
+        """
+        base_query = f"SELECT MMS_PHRS FROM {self.oracle_mms_scrpt_table}"
+        if where_clause:
+            return f"{base_query} WHERE {where_clause}"
+        return base_query
+
+    # Addes by P099870, 2026.01.19
+    def get_message_list_query(self, message_ids: List) -> str:
+
+        ids = ",".join(f"'{id}'" for id in message_ids)
+
+        query = f"""
+        SELECT MSG_ID, MMS_PHRS FROM  TMSG_MMS_SCRPT
+        WHERE MSG_ID IN
+        ({ids})
+        """
+        return query
+
+    # Added by P099870, 2026.01.13
+    def insert_extract_result(self, result, message_id, saved_id) -> str:
+        """Get SQL query for program table with optional WHERE clause.
+        
+        Args:
+            where_clause: Optional WHERE clause
+            
+        Returns:
+            str: Complete SQL query
+        """
+        db_result = result.get("ext_result")
+        from pprint import pprint
+        print("SETTINGS====================================================")
+        pprint(db_result)
+        print("SETTINGS====================================================")
+
+        cmpgn_nm = db_result.get("title")
+        inb_cmpgn_nm = db_result.get("sales_script") #inbound_title
+        cmpgn_pgm_num = None
+        pgms = db_result.get("pgm")
+        if pgms: #if pgms is not None and len(pgms) > 0:
+            cmpgn_pgm_num = pgms[0].get("pgm_id")
+
+        print(f"cmpgn_nm(title) = {cmpgn_nm}")
+        print(f"inb_cmpgn_nm = {inb_cmpgn_nm}")
+        print(f"cmpgn_pgm_num = {cmpgn_pgm_num}")
+
+        offer = db_result.get("offer",[])
+        item_ids = []
+        if offer:
+            item_ids = [
+                None if item_id == "#" else item_id
+                for value in offer.get("value", [])
+                for item_id in value.get("item_id", [])
+            ]
+        item_ids = (item_ids + [None] * 5)[:5]
+        item_ids = ['' if v is None else v.replace("_","") for v in item_ids]
+
+        ofer_cd_01,ofer_cd_02,ofer_cd_03,ofer_cd_04,ofer_cd_05 = item_ids
+        print(ofer_cd_01,ofer_cd_02,ofer_cd_03,ofer_cd_04,ofer_cd_05)
+        
+        query = f"""
+        INSERT INTO {self.oracle_msg_anals_rslt_table}
+        (
+            MSG_ID,
+            ANALS_SEQ,
+            AUDIT_ID,
+            AUDIT_DTM,
+            CMPGN_NM,
+            INB_CMPGN_NM,
+            CMPGN_PGM_NUM,
+            OFER_CD_01,
+            OFER_CD_02,
+            OFER_CD_03,
+            OFER_CD_04,
+            OFER_CD_05,
+            OBJECT_ID
+        )
+        SELECT '{message_id}',
+            NVL(MAX(ANALS_SEQ), 0) + 1 AS ANALS_SEQ,
+            'mms-extractor',
+            sysdate,
+            '{cmpgn_nm}',
+            SUBSTRB('{inb_cmpgn_nm}',1,80),
+            SUBSTRB('{cmpgn_pgm_num}',1,80),
+            '{ofer_cd_01}',
+            '{ofer_cd_02}',
+            '{ofer_cd_03}',
+            '{ofer_cd_04}',
+            '{ofer_cd_05}',
+            '{saved_id}'
+        FROM {self.oracle_msg_anals_rslt_table}
+        WHERE MSG_ID = '{message_id}'
+        """
+        return query
 
 @dataclass
 class ProcessingConfig:

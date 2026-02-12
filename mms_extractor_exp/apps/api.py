@@ -283,24 +283,26 @@ global_quick_extractor = None
 # CLI에서 설정된 데이터 소스 (전역 변수)
 CLI_DATA_SOURCE = 'local'
 
-def initialize_global_extractor(offer_info_data_src='db'):
+def initialize_global_extractor(offer_info_data_src='db', num_cand_pgms=None, num_select_pgms=None):
     """
     전역 추출기 인스턴스를 서버 시작 시 한 번만 초기화
-    
-    이 함수는 무거운 데이터 로딩 작업(상품 정보, 임베딩 모델 등)을 
+
+    이 함수는 무거운 데이터 로딩 작업(상품 정보, 임베딩 모델 등)을
     서버 시작 시 미리 수행하여 API 요청 처리 시간을 단축합니다.
-    
+
     Args:
         offer_info_data_src: 상품 정보 데이터 소스 ('local' 또는 'db')
-    
+        num_cand_pgms: 프로그램 후보 개수 (None이면 config 기본값 사용)
+        num_select_pgms: LLM이 최종 선정할 프로그램 수 (None이면 config 기본값 사용)
+
     Returns:
         MMSExtractor: 초기화된 추출기 인스턴스
     """
     global global_extractor
-    
+
     if global_extractor is None:
         logger.info(f"데이터 소스로 전역 추출기 초기화 중: {offer_info_data_src}")
-        
+
         # 기본 설정으로 추출기 초기화 (CLI와 동일한 기본값 사용)
         global_extractor = MMSExtractor(
             model_path='./models/ko-sbert-nli',      # 임베딩 모델 경로
@@ -310,7 +312,9 @@ def initialize_global_extractor(offer_info_data_src='db'):
             product_info_extraction_mode='llm',      # 기본 상품 추출 모드: LLM (CLI와 동일)
             entity_extraction_mode='llm',            # 기본 엔티티 매칭 모드: LLM (CLI와 동일)
             extract_entity_dag=True,
-            entity_extraction_context_mode='dag'     # 기본 컨텍스트 모드: DAG
+            entity_extraction_context_mode='dag',    # 기본 컨텍스트 모드: DAG
+            num_cand_pgms=num_cand_pgms,
+            num_select_pgms=num_select_pgms,
         )
         
         logger.info("전역 추출기 초기화 완료")
@@ -1637,7 +1641,11 @@ def main():
                        help='추출 엔진 선택 (default: 11-step pipeline, langextract: Google langextract 기반)')
     parser.add_argument('--storage', choices=['local', 'nas'], default='local',
                        help='DAG 이미지 저장 위치 (local: 로컬 디스크, nas: NAS 서버)')
-    
+    parser.add_argument('--num-cand-pgms', type=int, default=None,
+                       help='프로그램 후보 개수 (기본값: config의 num_candidate_programs=15)')
+    parser.add_argument('--num-select-pgms', type=int, default=None,
+                       help='LLM이 최종 선정할 프로그램 수 (기본값: config의 num_select_programs=1)')
+
     args = parser.parse_args()
     
     # 로그 레벨 설정 - 루트 로거와 모든 핸들러에 적용
@@ -1674,7 +1682,7 @@ def main():
     
     # 지정된 데이터 소스로 전역 추출기 초기화
     logger.info("전역 추출기 초기화 중...")
-    initialize_global_extractor(CLI_DATA_SOURCE)
+    initialize_global_extractor(CLI_DATA_SOURCE, num_cand_pgms=args.num_cand_pgms, num_select_pgms=args.num_select_pgms)
     
     if args.test:
         # 테스트 모드 실행

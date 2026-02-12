@@ -378,29 +378,15 @@ class ProgramClassificationStep(WorkflowStep):
     def execute(self, state: WorkflowState) -> WorkflowState:
         if state.has_error():
             return state
-
+        
         msg = state.get("msg")
         extractor = state.get("extractor")
-
+        
         pgm_info = self.program_classifier.classify(msg)
         logger.info(f"프로그램 분류 결과 키: {list(pgm_info.keys())}")
-
-        # 후보 프로그램 상세 로깅
-        if pgm_info.get("pgm_cand_info"):
-            logger.info(f"후보 프로그램 목록:\n\t{pgm_info['pgm_cand_info']}")
-        else:
-            logger.info("후보 프로그램 없음 (빈 결과)")
-
-        # 유사도 상위 N개 로깅
-        pgm_pdf_tmp = pgm_info.get("pgm_pdf_tmp")
-        if pgm_pdf_tmp is not None and not pgm_pdf_tmp.empty:
-            num_cand = self.program_classifier.num_cand_pgms
-            top_rows = pgm_pdf_tmp.head(num_cand)
-            for _, row in top_rows.iterrows():
-                logger.info(f"  pgm: {row.get('pgm_nm', 'N/A')} | sim: {row.get('sim', 0):.4f}")
-
+        
         state.set("pgm_info", pgm_info)
-
+        
         return state
 
 

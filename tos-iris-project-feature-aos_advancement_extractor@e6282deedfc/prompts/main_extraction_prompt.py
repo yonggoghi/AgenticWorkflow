@@ -170,7 +170,7 @@ EXTRACTION_GUIDELINES_BASE = """
 * For channel type, select from: URL, 전화번호, 앱, 대리점, 온라인스토어. For channel action, select from: 가입, 추가 정보, 문의, 수신, 수신 거부.
 * For pgm: Select up to {num_select_pgms} most relevant pgm_nm from the "광고 분류 기준 정보" section provided below. Pay close attention to the message's opening section (sender name, subject line, first sentence) as it often reveals the core campaign intent (e.g., device upgrade promotion, plan subscription, store visit campaign). Match this intent against each candidate's clue_tag to choose the best-fitting programs. You MUST copy the exact pgm_nm string as-is — do NOT shorten, paraphrase, or generate your own program names. If no "광고 분류 기준 정보" section is provided, return an empty array.
   - pgm selection hints (apply when the pattern is present in the message):
-    - A specific store/agency name (e.g., "***대리점", "***직영점") with address or visit info → include a store-visit/opening pgm ('매장오픈안내 및 방문유도') if available in the candidate list.
+    - A specific store/agency name (e.g., "○○대리점", "○○직영점") with address or visit info → include a store-visit/opening pgm (매장오픈안내 및 방문유도) if available in the candidate list.
     - A new device name with purchase/pre-order keywords (e.g., "사전예약", "출시") → include a device upgrade pgm (기변유도) if available.
     - A rate plan or subscription service with sign-up keywords (e.g., "가입", "구독") → include a subscription pgm (가입유도) if available.
 """
