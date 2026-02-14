@@ -61,7 +61,7 @@ class MMSExtractorDataMixin:
         self.product_info_extraction_mode = product_info_extraction_mode if product_info_extraction_mode is not None else getattr(PROCESSING_CONFIG, 'product_info_extraction_mode', 'nlp')
         self.entity_extraction_mode = entity_extraction_mode if entity_extraction_mode is not None else getattr(PROCESSING_CONFIG, 'entity_extraction_mode', 'llm')
         self.llm_model_name = llm_model
-        self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 15)
+        self.num_cand_pgms = getattr(PROCESSING_CONFIG, 'num_candidate_programs', 20)
         self.num_select_pgms = getattr(PROCESSING_CONFIG, 'num_select_programs', 1)
 
     @log_performance

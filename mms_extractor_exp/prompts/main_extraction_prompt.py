@@ -245,7 +245,7 @@ def build_extraction_prompt(message: str,
                            rag_context: str,
                            product_element=None,
                            product_info_extraction_mode: str = 'nlp',
-                           num_select_pgms: int = 2) -> str:
+                           num_select_pgms: int = 1) -> str:
     """
     추출용 프롬프트를 구성합니다.
 

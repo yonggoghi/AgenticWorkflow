@@ -24,7 +24,7 @@ class ProgramClassifier:
     출력: 상위 N개 후보 프로그램 정보
     """
 
-    def __init__(self, emb_model, pgm_pdf: pd.DataFrame, clue_embeddings: torch.Tensor, num_cand_pgms: int = 5):
+    def __init__(self, emb_model, pgm_pdf: pd.DataFrame, clue_embeddings: torch.Tensor, num_cand_pgms: int = 20):
         self.emb_model = emb_model
         self.pgm_pdf = pgm_pdf
         self.clue_embeddings = clue_embeddings

@@ -74,7 +74,7 @@ def print_section(title: str, width: int = 70):
     print(f"{'─' * width}")
 
 
-def trace_program_classification(message: str, num_cand_pgms: int = 5,
+def trace_program_classification(message: str, num_cand_pgms: int = 20,
                                   num_select_pgms: int = None,
                                   show_all: bool = False,
                                   data_source: str = 'local'):
@@ -276,8 +276,8 @@ def main():
     parser = argparse.ArgumentParser(description='Trace Program Classification Step')
     parser.add_argument('--message', '-m', type=str, default=None,
                         help='MMS message to trace (default: hardcoded test message)')
-    parser.add_argument('--num-cand-pgms', '-n', type=int, default=5,
-                        help='Number of candidate programs (default: 5)')
+    parser.add_argument('--num-cand-pgms', '-n', type=int, default=20,
+                        help='Number of candidate programs (default: 20)')
     parser.add_argument('--num-select-pgms', '-s', type=int, default=None,
                         help='Number of programs LLM should select (default: config value, typically 2)')
     parser.add_argument('--show-all', action='store_true',
