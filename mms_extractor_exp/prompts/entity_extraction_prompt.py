@@ -319,6 +319,29 @@ Guidelines:
    | Channel | 제외 | 접점 채널 |
 
    **중요**: ONT 모드에서는 Product/Subscription/RatePlan, PartnerBrand(예: 올리브영, 스타벅스), Benefit(예: 기프트카드, 쿠폰, 캐시백)을 선택하세요."""
+    elif context_keyword == 'KG':
+        context_guideline = """
+5. **Knowledge Graph Context 활용**: 'KG Context'에 제공된 Entities(역할 포함), Relationships, DAG를 참고하세요.
+   - **Entities**: EntityName(Type:Role) 형식 — Role이 핵심
+     - `offer`: 핵심 오퍼링 → vocabulary 매칭 **최우선**
+     - `benefit`: 혜택/보상 → vocabulary 매칭 대상
+     - `prerequisite`: 이미 보유/가입 → vocabulary 매칭 **제외**
+     - `context`: 부가 정보 → vocabulary 매칭 **제외**
+   - **Relationships**: 엔티티 간 관계 — ALREADY_USES, ENABLES 관계 주의
+     - PROMOTES/OFFERS 타겟 = 핵심 오퍼링
+     - ALREADY_USES 타겟 = **제외** (타겟 고객이 이미 가입/설치)
+     - ENABLES 소스 = **제외** (전제 조건 개체)
+   - **DAG**: 사용자 행동 경로
+6. **Vocabulary 매칭 가이드**:
+   a) 복합 V-domain 아이템: "올리브영_올리브영" ← "올리브영" 부분 일치 선택
+   b) 정확한 모델명만 선택: 접미사(FE, Plus, Max, Pro 등) 불일치 시 제외
+   c) "신제품" 포괄 표현: 최신 세대만 선택, 구세대 제외
+   d) 부가서비스/보험/케어 제외: 메시지의 핵심 오퍼링이 아닌 한 제외
+7. **Anti-noise 규칙**:
+   - 일반 카테고리 단어 일치만으로 선택하지 않음
+   - 할인 금액/비율 단독 제외
+   - 행동/설명 구절 제외
+   - 확신이 없으면 제외 (When in doubt, exclude)"""
     else:
         context_guideline = ""
     
@@ -363,6 +386,23 @@ SK텔레콤 MMS 광고 메시지에서 **핵심 오퍼링 엔티티**(Core Offer
 | **Voucher** | V | 제휴 할인·쿠폰·기프티콘 (브랜드+혜택 조합) | 도미노피자 50% 할인, 올리브영 3천 원 기프트카드, CGV 청년할인 |
 | **Campaign** | X | 마케팅 캠페인·프로모션·이벤트명 | T Day, 0 day, special T, 고객 감사 패키지 |
 
+# Entity Role Classification
+각 개체의 역할을 반드시 판별하라.
+- `prerequisite`: 타겟 고객이 **이미** 보유/가입/설치한 개체 (MMS 발송 대상 조건)
+- `offer`: 메시지가 **새로 제안/안내/유도**하는 핵심 오퍼링
+- `benefit`: 고객이 **얻게 되는** 혜택/보상 (금전적 가치, 무료 이용 등)
+- `context`: 접점 채널, 캠페인명 등 부가 정보
+
+## prerequisite vs offer 핵심 구분
+- "~**이용** 안내" → 이미 보유한 것의 사용법 안내 → prerequisite
+- "~**구매 혜택** 안내", "~**사전예약** 안내" → 구매/가입을 유도 → **offer**
+- 핵심 테스트: **"이 메시지가 해당 개체의 구매/가입/설치를 유도하는가?"** → YES=offer / NO=prerequisite
+
+## prerequisite 전이 규칙
+prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 prerequisite이다.
+- "T우주 wavve"=prerequisite → "wavve"도 prerequisite
+- 주의: 이름이 유사해도 독립적인 상품은 해당하지 않음 (예: "에이닷 전화" ≠ "에이닷")
+
 # Extraction Rules
 
 1. **Zero-Translation:** 원문에 등장하는 그대로 추출하라. 번역하지 말라.
@@ -393,16 +433,17 @@ SK텔레콤 MMS 광고 메시지에서 **핵심 오퍼링 엔티티**(Core Offer
 
 {
   "entities": [
-    {"name": "엔티티명(원문 그대로)", "type": "R|E|P|S|V|X"}
+    {"name": "엔티티명(원문 그대로)", "type": "R|E|P|S|V|X", "role": "prerequisite|offer|benefit|context"}
   ]
 }
 """
 
 HYBRID_DAG_EXTRACTION_PROMPT = """
 Analyze the advertisement to extract **User Action Paths**.
-Output two distinct sections:
+Output three distinct sections:
 1. **ENTITY**: A list of Core Offering entities.
-2. **DAG**: A structured graph representing the flow from Root to Benefit.
+2. **ROLE**: The role of each entity (prerequisite, offer, or benefit).
+3. **DAG**: A structured graph representing the flow from Root to Benefit.
 
 ## Crucial Language Rule
 * **DO NOT TRANSLATE:** Extract entities **exactly as they appear** in the source text.
@@ -417,6 +458,45 @@ Classify entities into these types while extracting:
 * **PartnerBrand (제휴 브랜드):** Partner brands in promotions — 올리브영, CGV, 스타벅스
 * **WiredService (유선):** Internet/IPTV/home — 인터넷+IPTV, B tv, T 인터넷
 * **Campaign (캠페인):** Named events/campaigns — T Day, 0 day, Lucky 1717 이벤트
+
+## Entity Role Classification (Critical)
+Each entity plays a role in the message. Classify every entity:
+- `prerequisite`: Target customer **already** has/uses this (precondition for receiving this MMS)
+- `offer`: Message **promotes** customer to purchase/subscribe/install/switch to this
+- `benefit`: Reward/value customer **receives** (monetary value, free usage, etc.)
+
+### prerequisite vs offer Key Distinction
+"안내" does NOT automatically mean prerequisite. What matters is **what** is being guided:
+- "~**이용** 안내" → already owned, usage tips → prerequisite
+- "~**구매 혜택** 안내", "~**가입 혜택** 안내" → promotes purchase/subscription → **offer**
+- "~**사전예약** 안내", "~**출시** 안내" → promotes purchase → **offer**
+- "~**설치** 안내" → promotes installation → **offer**
+
+Core test: **"Does this message promote purchase/subscription/installation/switch to customers who don't yet have it?"**
+→ YES → offer / NO (already owned) → prerequisite
+
+### Transitive prerequisite Rule
+A service whose access is already granted through a prerequisite subscription/bundle is also prerequisite.
+- "T우주 wavve"=prerequisite → "wavve" is also prerequisite (wavve access is included in the T우주 wavve subscription)
+- "T우주패스 Netflix"=prerequisite → "Netflix" is also prerequisite
+- Note: This does NOT apply when two entities share a name fragment but are independent products (e.g., "에이닷 전화" ≠ "에이닷" — different apps)
+
+### offer Signals (6 Categories)
+1. **구매/획득**: "~구매하면", "~사전예약", "~출시 기념", "~개통"
+2. **가입/구독**: "~가입", "~구독", "~신규가입", "~재가입"
+3. **설치/다운로드**: "~설치", "~다운로드", "~앱을 설치해 주세요"
+4. **전환/변경**: "~환승", "~기기변경", "~교체", "~변경", "~번호이동"
+5. **신청/등록**: "~신청", "~등록", "~응모"
+6. **설정/활성화**: "~설정하세요", "~이용해 보세요", "~해 보세요"
+
+### Examples
+| Message Pattern | Entity | Role | Reason |
+|----------------|--------|------|--------|
+| "에이닷 전화 이용 안내... AI 안심 차단 설정하면" | 에이닷 전화 | prerequisite | Already installed app |
+| same | AI 안심 차단 | offer | Promotes new setting |
+| "5GX 요금제 혜택 안내... 스마트워치 무료 이용" | 5GX 요금제 | prerequisite | Already subscribed plan |
+| "iPhone 신제품 구매 혜택 안내... 구매하면 캐시백" | iPhone 신제품 | offer | Promotes purchase |
+| "갤럭시 Z 플립7 사전예약 안내" | 갤럭시 Z 플립7 | offer | Promotes pre-order |
 
 ## Part 1: Root Node Selection Hierarchy (Extract ALL Distinct Roots)
 Identify logical starting points based on this priority. If multiple independent offers exist, extract all.
@@ -457,6 +537,7 @@ Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
 
 ## Output Format: Do not use Markdown formatting. Use plain text.
 ENTITY: <comma-separated list of Core Offering entities only in original text>
+ROLE: <entity1>=<role>, <entity2>=<role>, ... (role is one of: prerequisite, offer, benefit)
 DAG: <DAG representation line by line in original text>
 """
 

@@ -525,6 +525,62 @@ class EntityRecognizer:
             logger.error(f"Entity parsing failed: {e}")
             return []
 
+    def classify_entity_roles(self, msg_text: str, entities: List[str], llm_model=None) -> dict:
+        """
+        Classify entity roles (prerequisite/offer/benefit/context) using a lightweight LLM call.
+        Used as post-processing for modes that don't natively support role classification (e.g., langextract).
+
+        Args:
+            msg_text: Original message text
+            entities: List of entity names to classify
+            llm_model: LLM model to use (defaults to self.llm_model)
+
+        Returns:
+            dict mapping entity_name -> role
+        """
+        if not entities:
+            return {}
+
+        if llm_model is None:
+            llm_model = self.llm_model
+
+        entity_list_str = ", ".join(entities)
+        prompt = f"""아래 MMS 메시지에서 추출된 각 엔티티의 역할을 분류하라.
+
+역할 정의:
+- prerequisite: 타겟 고객이 이미 보유/가입/설치한 개체
+- offer: 메시지가 새로 제안/유도하는 핵심 오퍼링
+- benefit: 고객이 얻게 되는 혜택/보상
+- context: 접점 채널, 캠페인명 등 부가 정보
+
+핵심 구분: "~이용 안내" → prerequisite / "~구매/가입/사전예약 안내" → offer
+전이 규칙: prerequisite 구독을 통해 접근이 부여된 서비스도 prerequisite (예: T우주 wavve→wavve)
+
+## message:
+{msg_text}
+
+## entities:
+{entity_list_str}
+
+반드시 아래 형식으로만 응답하라. 다른 텍스트 없이 JSON만 반환하라.
+{{"roles": {{"엔티티명": "role", ...}}}}"""
+
+        try:
+            response = llm_model.invoke(prompt)
+            response_text = response.content if hasattr(response, 'content') else str(response)
+            json_str = response_text.strip()
+            if json_str.startswith('```'):
+                json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
+                json_str = re.sub(r'\n?```$', '', json_str)
+            data = json.loads(json_str)
+            roles = data.get('roles', {})
+            # Validate roles
+            valid_roles = ('prerequisite', 'offer', 'benefit', 'context')
+            return {k: v for k, v in roles.items() if v in valid_roles}
+        except Exception as e:
+            logger.warning(f"Entity role classification failed: {e}")
+            return {}
+
     def _parse_ontology_response(self, response: str) -> dict:
         """
         Parse ontology JSON response from LLM.
@@ -556,6 +612,10 @@ class EntityRecognizer:
             entity_types = {e.get('id'): e.get('type', 'Unknown')
                            for e in data.get('entities', []) if e.get('id')}
 
+            # entity_roles 매핑 (role 필드가 있는 경우)
+            entity_roles = {e.get('id'): e.get('role', 'unknown')
+                           for e in data.get('entities', []) if e.get('id') and e.get('role')}
+
             # relationships 추출
             relationships = data.get('relationships', [])
 
@@ -565,6 +625,7 @@ class EntityRecognizer:
             return {
                 'entities': entities,
                 'entity_types': entity_types,
+                'entity_roles': entity_roles,
                 'relationships': relationships,
                 'dag_text': dag_text,
                 'raw_json': data
@@ -579,6 +640,63 @@ class EntityRecognizer:
                 'dag_text': '',
                 'raw_json': {}
             }
+
+    def _parse_kg_response(self, response: str) -> dict:
+        """
+        Parse Knowledge Graph JSON response from LLM.
+
+        KG 응답은 ONT 응답과 유사하지만 entity에 'role' 필드가 추가됨.
+
+        Args:
+            response: LLM response (expected JSON format)
+
+        Returns:
+            dict with keys:
+              - 'entities': List[str] - entity IDs
+              - 'entity_types': Dict[str, str] - {id: type} mapping
+              - 'entity_roles': Dict[str, str] - {id: role} mapping (prerequisite/offer/benefit/context)
+              - 'relationships': List[dict] - [{source, target, type}, ...]
+              - 'dag_text': str - user_action_path.dag
+              - 'raw_json': dict - original parsed JSON
+        """
+        try:
+            json_str = response.strip()
+            if json_str.startswith('```'):
+                json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
+                json_str = re.sub(r'\n?```$', '', json_str)
+
+            data = json.loads(json_str)
+
+            entities = [e.get('id', '') for e in data.get('entities', []) if e.get('id')]
+
+            entity_types = {e.get('id'): e.get('type', 'Unknown')
+                           for e in data.get('entities', []) if e.get('id')}
+
+            entity_roles = {e.get('id'): e.get('role', 'unknown')
+                           for e in data.get('entities', []) if e.get('id')}
+
+            relationships = data.get('relationships', [])
+
+            dag_text = data.get('user_action_path', {}).get('dag', '')
+
+            logger.info(f"KG JSON parsed: {len(entities)} entities, "
+                       f"{len(relationships)} relationships, "
+                       f"roles: {entity_roles}")
+
+            return {
+                'entities': entities,
+                'entity_types': entity_types,
+                'entity_roles': entity_roles,
+                'relationships': relationships,
+                'dag_text': dag_text,
+                'raw_json': data
+            }
+        except json.JSONDecodeError as e:
+            logger.warning(f"KG JSON parsing failed: {e}, falling back to ONT parser")
+            # Fallback: ONT 파서 사용
+            result = self._parse_ontology_response(response)
+            result['entity_roles'] = {}
+            return result
 
     def _calculate_optimal_batch_size(self, msg_text: str, base_size: int = 50) -> int:
         """Calculate optimal batch size based on message length"""
@@ -619,6 +737,7 @@ class EntityRecognizer:
             TYPED_ENTITY_EXTRACTION_PROMPT
         )
         from prompts.ontology_prompt import ONTOLOGY_PROMPT
+        from prompts.kg_extraction_prompt import KG_EXTRACTION_PROMPT
 
         if llm_models is None:
             llm_models = [self.llm_model]
@@ -636,6 +755,9 @@ class EntityRecognizer:
         elif context_mode == 'ont':
             first_stage_prompt = ONTOLOGY_PROMPT
             context_keyword = 'ONT'
+        elif context_mode == 'kg':
+            first_stage_prompt = KG_EXTRACTION_PROMPT
+            context_keyword = 'KG'
         elif context_mode == 'typed':
             first_stage_prompt = TYPED_ENTITY_EXTRACTION_PROMPT
             context_keyword = 'TYPED'
@@ -674,27 +796,43 @@ class EntityRecognizer:
 
                 logger.debug("\n".join(prompt_res_log_list))
 
-                # Ontology mode: use JSON parsing
+                # Ontology / KG mode: use JSON parsing
                 if is_ontology_mode:
-                    parsed = self._parse_ontology_response(response)
+                    is_kg = args_dict.get('is_kg_mode', False)
+                    parsed = self._parse_kg_response(response) if is_kg else self._parse_ontology_response(response)
                     cand_entity_list = [e for e in parsed['entities']
                                       if e not in self.stop_item_names and len(e) >= 2]
 
                     # Build rich context with Entity Types, Relationships, and DAG
                     entity_types = parsed.get('entity_types', {})
+                    entity_roles = parsed.get('entity_roles', {})
                     relationships = parsed.get('relationships', [])
                     dag_text = parsed['dag_text']
 
-                    # Filter by entity type - keep only product/service-relevant types
-                    removed = [f"{e}({entity_types.get(e, '?')})" for e in cand_entity_list
-                               if entity_types.get(e, 'Unknown') not in ONT_PRODUCT_RELEVANT_TYPES]
-                    cand_entity_list = [e for e in cand_entity_list
-                                       if entity_types.get(e, 'Unknown') in ONT_PRODUCT_RELEVANT_TYPES]
-                    if removed:
-                        logger.info(f"[{model_name}] ONT type filter removed {len(removed)}: {removed}")
+                    # Role-based filter: exclude prerequisite and context entities (KG and ONT modes)
+                    if entity_roles:
+                        prereq_removed = [f"{e}({entity_roles.get(e, '?')})" for e in cand_entity_list
+                                         if entity_roles.get(e) in ('prerequisite', 'context')]
+                        cand_entity_list = [e for e in cand_entity_list
+                                           if entity_roles.get(e) not in ('prerequisite', 'context')]
+                        if prereq_removed:
+                            mode_label = "KG" if is_kg else "ONT"
+                            logger.info(f"[{model_name}] {mode_label} role filter removed {len(prereq_removed)}: {prereq_removed}")
 
-                    # Format entity types: Name(Type), ...
-                    entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
+                    if not is_kg:
+                        # ONT mode: additional filter by entity type — keep only product/service-relevant types
+                        removed = [f"{e}({entity_types.get(e, '?')})" for e in cand_entity_list
+                                   if entity_types.get(e, 'Unknown') not in ONT_PRODUCT_RELEVANT_TYPES]
+                        cand_entity_list = [e for e in cand_entity_list
+                                           if entity_types.get(e, 'Unknown') in ONT_PRODUCT_RELEVANT_TYPES]
+                        if removed:
+                            logger.info(f"[{model_name}] ONT type filter removed {len(removed)}: {removed}")
+
+                    # Format entity types: Name(Type:Role) when roles available, else Name(Type)
+                    if entity_roles:
+                        entity_type_str = ", ".join([f"{k}({v}:{entity_roles.get(k, '?')})" for k, v in entity_types.items()]) if entity_types else ""
+                    else:
+                        entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
 
                     # Format relationships: Source -[TYPE]-> Target
                     rel_lines = []
@@ -716,15 +854,24 @@ class EntityRecognizer:
                         context_parts.append(f"DAG: {dag_text}")
                     context_text = "\n".join(context_parts)
 
-                    logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (ONT mode): {cand_entity_list}")
+                    mode_label = "KG" if is_kg else "ONT"
+                    logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities ({mode_label} mode): {cand_entity_list}")
                     logger.info(f"[{model_name}] Entity types: {entity_types}")
+                    if entity_roles:
+                        logger.info(f"[{model_name}] Entity roles: {entity_roles}")
                     logger.info(f"[{model_name}] Relationships: {len(relationships)} found")
-                    return {
+
+                    result = {
                         "entities": cand_entity_list,
                         "context_text": context_text,
                         "entity_types": entity_types,
                         "relationships": relationships
                     }
+                    if entity_roles:
+                        result["entity_roles"] = entity_roles
+                    if is_kg:
+                        result["kg_metadata"] = parsed.get('raw_json', {})
+                    return result
 
                 # Typed mode: use JSON parsing (similar to ONT but simpler)
                 if is_typed_mode:
@@ -744,22 +891,71 @@ class EntityRecognizer:
                         if e.get('name') and e['name'] not in self.stop_item_names and len(e['name']) >= 2
                     ]
 
-                    # Build context_text as "Name(Type), ..." for Stage 2
-                    type_pairs = [
-                        f"{e['name']}({e['type']})" for e in entities_raw
-                        if e.get('name') and e.get('type')
-                    ]
+                    # Extract entity_roles (role field)
+                    entity_roles = {e.get('name'): e.get('role', 'unknown')
+                                   for e in entities_raw if e.get('name') and e.get('role')}
+
+                    # Role-based filter: exclude prerequisite and context entities
+                    if entity_roles:
+                        prereq_removed = [f"{e}({entity_roles.get(e, '?')})" for e in cand_entity_list
+                                         if entity_roles.get(e) in ('prerequisite', 'context')]
+                        cand_entity_list = [e for e in cand_entity_list
+                                           if entity_roles.get(e) not in ('prerequisite', 'context')]
+                        if prereq_removed:
+                            logger.info(f"[{model_name}] Typed role filter removed {len(prereq_removed)}: {prereq_removed}")
+
+                    # Build context_text as "Name(Type:Role), ..." for Stage 2
+                    if entity_roles:
+                        type_pairs = [
+                            f"{e['name']}({e.get('type', '?')}:{entity_roles.get(e['name'], '?')})" for e in entities_raw
+                            if e.get('name') and e.get('type')
+                        ]
+                    else:
+                        type_pairs = [
+                            f"{e['name']}({e['type']})" for e in entities_raw
+                            if e.get('name') and e.get('type')
+                        ]
                     context_text = ", ".join(type_pairs)
 
                     logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities (typed mode): {cand_entity_list}")
                     logger.info(f"[{model_name}] Entity types: {context_text}")
-                    return {"entities": cand_entity_list, "context_text": context_text}
+                    if entity_roles:
+                        logger.info(f"[{model_name}] Entity roles: {entity_roles}")
+
+                    result = {"entities": cand_entity_list, "context_text": context_text}
+                    if entity_roles:
+                        result["entity_roles"] = entity_roles
+                    return result
 
                 # Standard mode: use regex parsing
                 cand_entity_list_raw = self._parse_entity_response(response)
                 cand_entity_list = [e for e in cand_entity_list_raw if e not in self.stop_item_names and len(e) >= 2]
 
                 logger.info(f"[{model_name}] Extracted {len(cand_entity_list)} entities: {cand_entity_list}")
+
+                # Parse ROLE section (DAG mode with role classification)
+                entity_roles = {}
+                role_match = re.search(r'ROLE:\s*(.*?)(?:\n(?:DAG|ENTITY):|\Z)', response, re.DOTALL | re.IGNORECASE)
+                if role_match:
+                    role_text = role_match.group(1).strip()
+                    # Parse "entity1=role1, entity2=role2, ..." format
+                    for pair in re.split(r',\s*', role_text):
+                        pair = pair.strip()
+                        if '=' in pair:
+                            entity_name, role = pair.rsplit('=', 1)
+                            entity_name = entity_name.strip()
+                            role = role.strip().lower()
+                            if role in ('prerequisite', 'offer', 'benefit', 'context'):
+                                entity_roles[entity_name] = role
+                    if entity_roles:
+                        logger.info(f"[{model_name}] Parsed entity roles: {entity_roles}")
+                        # Filter out prerequisite/context entities
+                        prereq_removed = [f"{e}({entity_roles.get(e, '?')})" for e in cand_entity_list
+                                         if entity_roles.get(e) in ('prerequisite', 'context')]
+                        cand_entity_list = [e for e in cand_entity_list
+                                           if entity_roles.get(e) not in ('prerequisite', 'context')]
+                        if prereq_removed:
+                            logger.info(f"[{model_name}] DAG role filter removed {len(prereq_removed)}: {prereq_removed}")
 
                 context_text = ""
                 if extract_context and context_kw:
@@ -770,7 +966,10 @@ class EntityRecognizer:
                     else:
                         logger.debug(f"[{model_name}] No {context_kw} found in response")
 
-                return {"entities": cand_entity_list, "context_text": context_text}
+                result = {"entities": cand_entity_list, "context_text": context_text}
+                if entity_roles:
+                    result["entity_roles"] = entity_roles
+                return result
             except Exception as e:
                 logger.error(f"LLM extraction failed for {model_name}: {e}")
                 return {"entities": [], "context_text": ""}
@@ -784,8 +983,9 @@ class EntityRecognizer:
                 "llm_model": llm_model,
                 "extract_context": (context_mode != 'none'),
                 "context_keyword": context_keyword,
-                "is_ontology_mode": (context_mode == 'ont'),
-                "is_typed_mode": (context_mode == 'typed')
+                "is_ontology_mode": (context_mode in ('ont', 'kg')),
+                "is_typed_mode": (context_mode == 'typed'),
+                "is_kg_mode": (context_mode == 'kg')
             })
 
         n_jobs = min(len(batches), 3)
@@ -795,22 +995,39 @@ class EntityRecognizer:
         all_entities = []
         all_contexts = []
         all_entity_types = {}
+        all_entity_roles = {}
         all_relationships = []
+        all_kg_metadata = {}
 
         for result_dict in batch_results_dicts:
             all_entities.extend(result_dict['entities'])
             if result_dict['context_text']:
                 all_contexts.append(result_dict['context_text'])
-            # ONT 모드에서 entity_types와 relationships 수집
-            if context_mode == 'ont':
+            # ONT/KG 모드에서 entity_types, relationships, roles 수집
+            if context_mode in ('ont', 'kg'):
                 if 'entity_types' in result_dict:
                     all_entity_types.update(result_dict.get('entity_types', {}))
                 if 'relationships' in result_dict:
                     all_relationships.extend(result_dict.get('relationships', []))
+            # entity_roles 수집 (KG 모드 + DAG 모드 모두 지원)
+            if 'entity_roles' in result_dict:
+                all_entity_roles.update(result_dict.get('entity_roles', {}))
+            # KG 모드 전용: kg_metadata 수집
+            if context_mode == 'kg':
+                if 'kg_metadata' in result_dict:
+                    all_kg_metadata = result_dict.get('kg_metadata', {})
 
         combined_context = "\n".join(all_contexts)
 
         if external_cand_entities:
+            # Exclude external candidates that match prerequisite/context roles (KG and DAG modes)
+            if all_entity_roles:
+                excluded_ext = [e for e in external_cand_entities
+                                if all_entity_roles.get(e) in ('prerequisite', 'context')]
+                if excluded_ext:
+                    external_cand_entities = [e for e in external_cand_entities
+                                              if all_entity_roles.get(e) not in ('prerequisite', 'context')]
+                    logger.info(f"Role filter removed {len(excluded_ext)} external candidates: {excluded_ext}")
             all_entities.extend(external_cand_entities)
 
         cand_entity_list = list(set(all_entities))
@@ -820,8 +1037,9 @@ class EntityRecognizer:
             normalize_entity_name(e) for e in cand_entity_list if normalize_entity_name(e)
         ))
 
-        # N-gram expansion
-        cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
+        # N-gram expansion (skip for ONT/KG/DAG/Typed modes — entities are structured, not free text)
+        if context_mode not in ('ont', 'kg', 'dag', 'typed'):
+            cand_entity_list = list(set(sum([[c['text'] for c in extract_ngram_candidates(cand_entity, min_n=2, max_n=len(cand_entity.split())) if c['start_idx']<=0] if len(cand_entity.split())>=4 else [cand_entity] for cand_entity in cand_entity_list], [])))
 
         logger.info(f"Stage 1 complete: {len(cand_entity_list)} entities extracted")
 
@@ -831,9 +1049,41 @@ class EntityRecognizer:
             'context_text': combined_context
         }
 
+        # Include entity_roles whenever available (KG, ONT, and DAG modes)
+        if all_entity_roles:
+            result['entity_roles'] = all_entity_roles
+
         if context_mode == 'ont':
             result['entity_types'] = all_entity_types
             result['relationships'] = all_relationships
+            # ONT mode: build kg_metadata for downstream role filtering
+            if all_entity_roles:
+                result['kg_metadata'] = {
+                    'entity_roles': all_entity_roles,
+                }
+
+        if context_mode == 'kg':
+            result['entity_types'] = all_entity_types
+            result['relationships'] = all_relationships
+            result['kg_metadata'] = {
+                'raw_json': all_kg_metadata,
+                'entity_types': all_entity_types,
+                'entity_roles': all_entity_roles,
+                'relationships': all_relationships,
+                'dag_text': '',  # populated below
+            }
+            # Extract dag_text from context_text
+            for ctx in all_contexts:
+                if 'DAG:' in ctx:
+                    dag_part = ctx.split('DAG:', 1)[1].strip()
+                    result['kg_metadata']['dag_text'] = dag_part
+                    break
+
+        # DAG/Typed mode: build kg_metadata-like structure for downstream role filtering
+        if context_mode in ('dag', 'typed') and all_entity_roles:
+            result['kg_metadata'] = {
+                'entity_roles': all_entity_roles,
+            }
 
         return result
 
@@ -1005,9 +1255,9 @@ class EntityRecognizer:
                 llm_models = [self.llm_model]
 
             # Validate context_mode
-            if context_mode not in ['dag', 'pairing', 'none', 'ont', 'typed']:
-                logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'dag'")
-                context_mode = 'dag'
+            if context_mode not in ['dag', 'pairing', 'none', 'ont', 'typed', 'kg']:
+                logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'kg'")
+                context_mode = 'kg'
 
             # --- Two paths: with/without pre_extracted ---
             if pre_extracted:

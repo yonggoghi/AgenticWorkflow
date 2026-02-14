@@ -1890,7 +1890,7 @@ Examples:
     parser.add_argument("--entity-mode", type=str, choices=["llm", "logic", "nlp"], default="llm")
     parser.add_argument("--data-source", type=str, choices=["local", "db"], default="local")
     parser.add_argument("--extract-dag", action="store_true", help="Enable DAG extraction")
-    parser.add_argument("--context-mode", type=str, choices=["dag", "pairing", "none", "ont", "typed"], default="dag",
+    parser.add_argument("--context-mode", type=str, choices=["dag", "pairing", "none", "ont", "typed", "kg"], default="kg",
                        help="Entity extraction context mode (CRITICAL: dag vs ont vs typed produce different results)")
     parser.add_argument("--skip-entity-extraction", action="store_true",
                        help="Skip Kiwi + fuzzy matching entity pre-extraction (Step 2)")

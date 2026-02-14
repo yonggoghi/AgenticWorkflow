@@ -205,6 +205,7 @@ class WorkflowState:
     # Entity extraction and matching fields
     extracted_entities: Optional[Dict[str, Any]] = None  # Entity + Context (set by EntityContextExtractionStep)
     matched_products: List[Dict[str, Any]] = field(default_factory=list)  # 매칭된 상품 목록 (set by VocabularyFilteringStep)
+    kg_metadata: Optional[Dict[str, Any]] = None  # KG 전체 메타데이터 (set by EntityContextExtractionStep, KG 모드)
 
     # Control flags
     is_fallback: bool = False  # 폴백 모드 여부 (set by LLMExtractionStep or ResponseParsingStep)

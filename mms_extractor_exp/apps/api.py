@@ -312,7 +312,7 @@ def initialize_global_extractor(offer_info_data_src='db', num_cand_pgms=None, nu
             product_info_extraction_mode='llm',      # 기본 상품 추출 모드: LLM (CLI와 동일)
             entity_extraction_mode='llm',            # 기본 엔티티 매칭 모드: LLM (CLI와 동일)
             extract_entity_dag=True,
-            entity_extraction_context_mode='dag',    # 기본 컨텍스트 모드: DAG
+            entity_extraction_context_mode='kg',    # 기본 컨텍스트 모드: KG
             num_cand_pgms=num_cand_pgms,
             num_select_pgms=num_select_pgms,
         )
@@ -369,7 +369,7 @@ def get_configured_quick_extractor(use_llm=False, llm_model='ax'):
     
     return global_quick_extractor
 
-def get_configured_extractor(llm_model='ax', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=True, entity_extraction_context_mode='dag'):
+def get_configured_extractor(llm_model='ax', product_info_extraction_mode='llm', entity_matching_mode='llm', entity_llm_model='ax', extract_entity_dag=True, entity_extraction_context_mode='kg'):
     """
     런타임 설정으로 전역 추출기 구성
     
@@ -487,10 +487,10 @@ def extract_message():
         - offer_info_data_src (optional): 데이터 소스 (기본값: CLI 설정값)
         - product_info_extraction_mode (optional): 상품 추출 모드 (기본값: 'llm')
         - entity_matching_mode (optional): 엔티티 매칭 모드 (기본값: 'llm')
-        - entity_extraction_context_mode (optional): 엔티티 추출 컨텍스트 모드 (기본값: 'dag')
+        - entity_extraction_context_mode (optional): 엔티티 추출 컨텍스트 모드 (기본값: 'kg')
         - extraction_engine (optional): 추출 엔진 (기본값: 'default', 선택: default, langextract)
         - skip_entity_extraction (optional): 엔티티 추출 건너뛰기 (기본값: False)
-        - no_external_candidates (optional): 외부 후보 비활성화 (기본값: False)
+        - no_external_candidates (optional): 외부 후보 비활성화 (기본값: True)
         - extract_entity_dag (optional): 엔티티 DAG 추출 여부 (기본값: True)
                                          True일 경우 메시지에서 엔티티 간 관계를 DAG 형태로 추출하고
                                          시각적 다이어그램도 함께 생성합니다.
@@ -536,10 +536,10 @@ def extract_message():
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', True)
-        entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'dag')
+        entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'kg')
         extraction_engine = data.get('extraction_engine', 'default')
         skip_entity_extraction = data.get('skip_entity_extraction', False)
-        no_external_candidates = data.get('no_external_candidates', False)
+        no_external_candidates = data.get('no_external_candidates', True)
         save_to_mongodb = data.get('save_to_mongodb', True)
         result_type = data.get('result_type', 'ext')
         message_id = data.get('message_id', '#')  # 메시지 ID (기본값: '#')
@@ -728,7 +728,7 @@ def extract_batch():
         product_info_extraction_mode = data.get('product_info_extraction_mode', settings.ProcessingConfig.product_info_extraction_mode)
         entity_matching_mode = data.get('entity_matching_mode', settings.ProcessingConfig.entity_extraction_mode)
         extract_entity_dag = data.get('extract_entity_dag', True)
-        entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'dag')
+        entity_extraction_context_mode = data.get('entity_extraction_context_mode', 'kg')
         max_workers = data.get('max_workers', None)
         save_to_mongodb = data.get('save_to_mongodb', True)
         result_type = data.get('result_type', 'ext')
@@ -1631,12 +1631,12 @@ def main():
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
     parser.add_argument('--entity-llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt', 'opus'], default='ax',
                        help='엔티티 추출 전용 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT, opus: Claude Opus)')
-    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont', 'typed'], default='dag',
-                       help='엔티티 추출 컨텍스트 모드 (dag: DAG 기반, pairing: 페어링, none: 컨텍스트 없음, ont: 온톨로지, typed: 타입 지정)')
+    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont', 'typed', 'kg'], default='kg',
+                       help='엔티티 추출 컨텍스트 모드 (dag: DAG 기반, pairing: 페어링, none: 컨텍스트 없음, ont: 온톨로지, typed: 타입 지정, kg: Knowledge Graph)')
     parser.add_argument('--skip-entity-extraction', action='store_true', default=False,
                        help='엔티티 추출 단계 건너뛰기 (Steps 7-8 스킵)')
-    parser.add_argument('--no-external-candidates', action='store_true', default=False,
-                       help='외부 후보 소스 비활성화 (Kiwi NLP 후보만 사용)')
+    parser.add_argument('--no-external-candidates', action='store_true', default=True,
+                       help='외부 후보 소스 비활성화 (기본: True)')
     parser.add_argument('--extraction-engine', choices=['default', 'langextract'], default='default',
                        help='추출 엔진 선택 (default: 11-step pipeline, langextract: Google langextract 기반)')
     parser.add_argument('--storage', choices=['local', 'nas'], default='local',

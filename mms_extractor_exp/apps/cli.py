@@ -82,16 +82,16 @@ def main():
                        help='메인 프롬프트에 사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT, opus: Claude Opus)')
     parser.add_argument('--entity-llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt', 'opus'], default='ax',
                        help='엔티티 추출에 사용할 LLM 모델 (gem: Gemma, ax: ax, cld: Claude, gen: Gemini, gpt: GPT, opus: Claude Opus)')
-    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont', 'typed'], default='dag',
-                       help='엔티티 추출 컨텍스트 모드 (dag: DAG 컨텍스트, pairing: PAIRING 컨텍스트, none: 컨텍스트 없음, ont: 온톨로지 기반 추출, typed: 6-type 엔티티 추출)')
+    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont', 'typed', 'kg'], default='kg',
+                       help='엔티티 추출 컨텍스트 모드 (dag: DAG 컨텍스트, pairing: PAIRING 컨텍스트, none: 컨텍스트 없음, ont: 온톨로지 기반 추출, typed: 6-type 엔티티 추출, kg: Knowledge Graph 기반 역할 분류)')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'], default='INFO',
                        help='로그 레벨 설정')
     parser.add_argument('--message-id', type=str, default='#',
                        help='메시지 식별자 (기본값: #)')
     parser.add_argument('--skip-entity-extraction', action='store_true', default=False,
                        help='Kiwi + fuzzy matching 기반 엔티티 사전추출 스킵 (Step 2)')
-    parser.add_argument('--no-external-candidates', action='store_true', default=False,
-                       help='Step 7 매칭 시 외부 후보 엔티티(Kiwi+LLM) 주입 비활성화')
+    parser.add_argument('--no-external-candidates', action='store_true', default=True,
+                       help='Step 7 매칭 시 외부 후보 엔티티(Kiwi+LLM) 주입 비활성화 (기본: True)')
     parser.add_argument('--extract-entity-dag', action='store_true', default=False, help='Entity DAG extraction (default: False)')
     parser.add_argument('--save-to-mongodb', action='store_true', default=True, 
                        help='추출 결과를 MongoDB에 저장 (utils/mongodb_utils.py 필요)')

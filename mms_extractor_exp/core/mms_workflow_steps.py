@@ -669,8 +669,8 @@ class EntityContextExtractionStep(WorkflowStep):
 
     def __init__(self, entity_recognizer,
                  llm_factory=None, llm_model: str = 'ax',
-                 entity_extraction_context_mode: str = 'dag',
-                 use_external_candidates: bool = True,
+                 entity_extraction_context_mode: str = 'kg',
+                 use_external_candidates: bool = False,
                  extraction_engine: str = 'default',
                  stop_item_names: List[str] = None,
                  entity_extraction_mode: str = 'llm'):
@@ -730,14 +730,42 @@ class EntityContextExtractionStep(WorkflowStep):
                         entities.append(name)
                         type_pairs.append(f"{name}({ext.extraction_class})")
 
+                logger.info(f"✅ langextract Stage 1 완료: {len(entities)}개 엔티티 추출")
+                logger.info(f"   엔티티: {entities}")
+
+                # Post-extraction role classification
+                entity_roles = {}
+                if entities and self.llm_factory:
+                    llm_models = self.llm_factory.create_models([self.llm_model])
+                    if llm_models:
+                        entity_roles = self.entity_recognizer.classify_entity_roles(
+                            msg, entities, llm_models[0]
+                        )
+                        if entity_roles:
+                            logger.info(f"📋 LANGEXTRACT 역할 분류: {entity_roles}")
+                            # Filter out prerequisite/context entities
+                            prereq_removed = [e for e in entities if entity_roles.get(e) in ('prerequisite', 'context')]
+                            entities = [e for e in entities if entity_roles.get(e) not in ('prerequisite', 'context')]
+                            if prereq_removed:
+                                logger.info(f"🔽 Role filter removed {len(prereq_removed)}: {prereq_removed}")
+                            # Update type_pairs to include roles
+                            type_pairs = [f"{tp}:{entity_roles.get(tp.split('(')[0], '?')})"
+                                         if tp.endswith(')') else tp for tp in type_pairs]
+
                 state.extracted_entities = {
                     'entities': entities,
                     'context_text': ", ".join(type_pairs),
-                    'entity_types': {},  # langextract doesn't provide this
-                    'relationships': []  # langextract doesn't provide this
+                    'entity_types': {},
+                    'relationships': []
                 }
-                logger.info(f"✅ langextract Stage 1 완료: {len(entities)}개 엔티티 추출")
-                logger.info(f"   엔티티: {entities}")
+                if entity_roles:
+                    state.extracted_entities['entity_roles'] = entity_roles
+                    state.kg_metadata = {'entity_roles': entity_roles}
+                    prereqs = [e for e, r in entity_roles.items() if r == 'prerequisite']
+                    offers = [e for e, r in entity_roles.items() if r in ('offer', 'benefit')]
+                    logger.info(f"📋 LANGEXTRACT 역할 분류: prerequisite={prereqs}, offer/benefit={offers}")
+
+                logger.info(f"   최종 엔티티: {entities}")
                 logger.info(f"   컨텍스트: {state.extracted_entities['context_text']}")
             except Exception as e:
                 logger.error(f"❌ langextract 추출 실패, 기본 모드로 폴백: {e}")
@@ -761,6 +789,16 @@ class EntityContextExtractionStep(WorkflowStep):
                 state.extracted_entities = stage1_result
                 logger.info(f"✅ Stage 1 완료: {len(stage1_result.get('entities', []))}개 엔티티 추출")
                 logger.info(f"   엔티티: {stage1_result.get('entities', [])}")
+
+                # KG/DAG 모드: kg_metadata를 state에 저장 (역할 분류 기반 필터링에 사용)
+                if stage1_result.get('kg_metadata'):
+                    state.kg_metadata = stage1_result['kg_metadata']
+                    entity_roles = stage1_result.get('entity_roles', {})
+                    prereqs = [e for e, r in entity_roles.items() if r == 'prerequisite']
+                    offers = [e for e, r in entity_roles.items() if r in ('offer', 'benefit')]
+                    mode_label = self.entity_extraction_context_mode.upper()
+                    logger.info(f"📋 {mode_label} 역할 분류: prerequisite={prereqs}, offer/benefit={offers}")
+
             except Exception as e:
                 logger.error(f"❌ Stage 1 추출 실패: {e}")
                 state.extracted_entities = None
@@ -787,7 +825,7 @@ class VocabularyFilteringStep(WorkflowStep):
     def __init__(self, entity_recognizer, alias_pdf_raw: pd.DataFrame,
                  stop_item_names: List[str], entity_extraction_mode: str,
                  llm_factory=None, llm_model: str = 'ax',
-                 entity_extraction_context_mode: str = 'dag'):
+                 entity_extraction_context_mode: str = 'kg'):
         self.entity_recognizer = entity_recognizer
         self.alias_pdf_raw = alias_pdf_raw
         self.stop_item_names = stop_item_names
@@ -914,6 +952,78 @@ class VocabularyFilteringStep(WorkflowStep):
                 for d in filtered_product_items
             ]
             logger.info(f"폴백 상품 수 (item_id=#): {len(matched_products)}개")
+
+        # Role-based filter: remove prerequisite/context entities from matched_products (KG and DAG modes)
+        if hasattr(state, 'kg_metadata') and state.kg_metadata:
+            entity_roles = state.kg_metadata.get('entity_roles', {})
+            if entity_roles:
+                excluded = []
+                filtered = []
+                for p in matched_products:
+                    # Check item_nm AND item_name_in_msg against KG roles
+                    # Use both exact match and substring containment
+                    check_names = p.get('item_name_in_msg', []) + [p.get('item_nm', '')]
+                    role = None
+                    for name in check_names:
+                        if not name:
+                            continue
+                        # Exact match
+                        if name in entity_roles:
+                            role = entity_roles[name]
+                            break
+                        # Substring: KG entity name contained in product name or vice versa
+                        for kg_entity, kg_role in entity_roles.items():
+                            if kg_entity in name or name in kg_entity:
+                                role = kg_role
+                                break
+                        if role:
+                            break
+                    if role in ('prerequisite', 'context'):
+                        excluded.append(f"{p.get('item_nm', '')}({role})")
+                    else:
+                        filtered.append(p)
+                if excluded:
+                    matched_products = filtered
+                    logger.info(f"Role filter removed {len(excluded)} from matched_products: {excluded}")
+
+                # Offer passthrough: add offer-role entities not in matched_products
+                existing_names = set()
+                for p in matched_products:
+                    existing_names.update(p.get('item_name_in_msg', []))
+                    if p.get('item_nm'):
+                        existing_names.add(p['item_nm'])
+
+                added = []
+                # Build action map from LLM product_items
+                action_map = {item.get('name', ''): item.get('action', '기타') for item in product_items}
+
+                for kg_entity, kg_role in entity_roles.items():
+                    if kg_role != 'offer':
+                        continue
+                    if kg_entity in self.stop_item_names:
+                        continue
+                    # Skip if already in matched_products (exact or substring)
+                    already_matched = any(
+                        kg_entity in ex or ex in kg_entity for ex in existing_names
+                    )
+                    if already_matched:
+                        continue
+                    # Find action from LLM product_items (exact or substring match)
+                    action = '기타'
+                    for pname, paction in action_map.items():
+                        if pname == kg_entity or pname in kg_entity or kg_entity in pname:
+                            action = paction
+                            break
+                    matched_products.append({
+                        'item_nm': kg_entity,
+                        'item_id': ['#'],
+                        'item_name_in_msg': [kg_entity],
+                        'expected_action': [action]
+                    })
+                    added.append(kg_entity)
+
+                if added:
+                    logger.info(f"Offer passthrough: added {len(added)} unmatched offer products: {added}")
 
         state.matched_products = matched_products
         return state
@@ -1085,20 +1195,30 @@ class DAGExtractionStep(WorkflowStep):
         msg = state.get("msg")
         message_id = state.get("message_id", "#")
 
-        # NOTE: ONT 최적화 제거 - 모든 context mode에서 동일하게 fresh LLM call로 DAG 추출
-        # (이전: ONT 모드에서 ont_extraction_result 재사용으로 LLM 재호출 방지)
-        logger.info("🔗 DAG 추출 시작...")
+        # KG 모드: kg_metadata가 있으면 LLM 호출 없이 KG→DAG 변환
+        kg_metadata = state.kg_metadata if hasattr(state, 'kg_metadata') else None
+
+        if kg_metadata and (kg_metadata.get('relationships') or kg_metadata.get('dag_text')):
+            logger.info("🔗 KG → DAG 변환 시작 (LLM 호출 없음)...")
+            try:
+                dag_result = self._convert_kg_to_dag(kg_metadata, msg)
+            except Exception as e:
+                logger.warning(f"KG→DAG 변환 실패, fresh LLM call로 폴백: {e}")
+                kg_metadata = None  # fall through to LLM path
+
+        if not kg_metadata or not (kg_metadata.get('relationships') or kg_metadata.get('dag_text')):
+            logger.info("🔗 DAG 추출 시작 (fresh LLM call)...")
 
         try:
-            # entity_dag_extractor의 extract_dag 함수 호출
-            from .entity_dag_extractor import extract_dag
+            if not kg_metadata or not (kg_metadata.get('relationships') or kg_metadata.get('dag_text')):
+                from .entity_dag_extractor import extract_dag
 
-            dag_result = extract_dag(
-                self.dag_parser,
-                msg,
-                extractor.llm_model,
-                prompt_mode='cot'
-            )
+                dag_result = extract_dag(
+                    self.dag_parser,
+                    msg,
+                    extractor.llm_model,
+                    prompt_mode='cot'
+                )
 
             # DAG 섹션을 리스트로 변환 (빈 줄 제거 및 정렬)
             dag_list = sorted([
@@ -1142,6 +1262,61 @@ class DAGExtractionStep(WorkflowStep):
             state.set("raw_result", raw_result)
 
         return state
+
+    def _convert_kg_to_dag(self, kg_metadata: dict, msg: str) -> dict:
+        """
+        KG 메타데이터에서 DAG 변환 (LLM 호출 없음).
+
+        Args:
+            kg_metadata: Step 7에서 생성된 KG 메타데이터
+                {
+                    'dag_text': str,
+                    'entity_types': dict,
+                    'entity_roles': dict,
+                    'relationships': list
+                }
+            msg: 원본 메시지
+
+        Returns:
+            dict: extract_dag()와 동일한 형식
+                {
+                    'dag_section': str,
+                    'dag': nx.DiGraph,
+                    'dag_raw': str
+                }
+        """
+        import networkx as nx
+
+        dag_text = kg_metadata.get('dag_text', '')
+
+        # 방법 1: dag_text가 있으면 직접 파싱
+        if dag_text:
+            dag_graph = self.dag_parser.parse_dag(dag_text)
+            logger.info(f"✅ KG→DAG 변환 완료 (dag_text 파싱): {dag_graph.number_of_nodes()} 노드, {dag_graph.number_of_edges()} 엣지")
+            return {
+                'dag_section': dag_text,
+                'dag': dag_graph,
+                'dag_raw': dag_text
+            }
+
+        # 방법 2: relationships에서 그래프 생성
+        from .entity_dag_extractor import build_dag_from_ontology
+        dag_graph = build_dag_from_ontology(kg_metadata)
+
+        # graph → dag_text 변환
+        dag_lines = []
+        for u, v, data in dag_graph.edges(data=True):
+            relation = data.get('relation', '')
+            dag_lines.append(f"({u}) -[{relation}]-> ({v})")
+
+        dag_section = '\n'.join(dag_lines)
+        logger.info(f"✅ KG→DAG 변환 완료 (relationships 변환): {dag_graph.number_of_nodes()} 노드, {dag_graph.number_of_edges()} 엣지")
+
+        return {
+            'dag_section': dag_section,
+            'dag': dag_graph,
+            'dag_raw': dag_section
+        }
 
     def _execute_from_ont(self, state: WorkflowState, ont_result: dict, msg: str, message_id: str) -> WorkflowState:
         """

@@ -1,7 +1,7 @@
 import requests
 import json
 # Extract information
-response = requests.post('http://127.0.0.1:8000/extract', json={
+response = requests.post('http://127.0.0.1:8088/extract', json={
     "message": """
 (광고)[SKT] 9월 T day 혜택 안내__2025년 9월 17일(수)_럭키찬스!_아이폰 출시 기념 퀴즈_올리브영 기프트 카드 1만 원 응모 이벤트__▶ 자세히 보기: https://t-mms.kr/t.do?m=#61&s=33670&a=&u=https://bit.ly/467rn3q__■ 문의: SKT 고객센터(1558, 무료)__무료 수신거부 1504
 

@@ -4,9 +4,47 @@ ONTOLOGY_PROMPT = """# Role
 
 # Core Principles
 1. **Zero-Translation Rule:** 모든 개체명(상품명, 매장명, 요금제, 제휴 브랜드명 등)은 원문 그대로 추출하라. (예: "T 우주패스 올리브영&스타벅스&이마트24", "에스알대리점 지행역점", "5GX 프리미엄" 등)
-2. **DAG-Based Logic:** 메시지가 유도하는 최종 혜택까지의 흐름을 $G = (V, E)$ 구조로 파악하라. 분기 조건(약정 유형, 멤버십 등급 등)을 노드로 명시하라.
-3. **Functional Action:** Action은 단순한 텍스트가 아닌, 입력(Input), 조건(Logic), 결과(Effect)를 가진 **'Strongly Typed Function'**으로 모델링하라.
-4. **Focused Extraction:** 상품(Product), 서비스(Subscription/RatePlan), 매장(Store), 캠페인(Campaign) 등 핵심 오퍼링 엔티티를 중심으로 추출하라. Benefit, Channel, Segment, Contract, MembershipTier는 관계(Relationship)에서 참조하되, 핵심 오퍼링이 아닌 부가 정보는 최소한으로 추출하라.
+2. **역할 분류 (Entity Role Classification):** 각 개체가 메시지에서 어떤 역할을 하는지 판별하라.
+   - `prerequisite`: 타겟 고객이 **이미** 보유/가입/설치한 개체 (MMS 발송 대상 조건)
+   - `offer`: 메시지가 **새로 제안/안내/유도**하는 핵심 오퍼링
+   - `benefit`: 고객이 **얻게 되는** 혜택/보상 (금전적 가치, 무료 이용 등)
+   - `context`: 접점 채널, 연락처, 캠페인명 등 부가 정보
+3. **DAG-Based Logic:** 메시지가 유도하는 최종 혜택까지의 흐름을 $G = (V, E)$ 구조로 파악하라. 분기 조건(약정 유형, 멤버십 등급 등)을 노드로 명시하라.
+4. **Functional Action:** Action은 단순한 텍스트가 아닌, 입력(Input), 조건(Logic), 결과(Effect)를 가진 **'Strongly Typed Function'**으로 모델링하라.
+5. **Focused Extraction:** 상품(Product), 서비스(Subscription/RatePlan), 매장(Store), 캠페인(Campaign) 등 핵심 오퍼링 엔티티를 중심으로 추출하라. Benefit, Channel, Segment, Contract, MembershipTier는 관계(Relationship)에서 참조하되, 핵심 오퍼링이 아닌 부가 정보는 최소한으로 추출하라.
+
+# 역할 분류 판별 기준
+
+## prerequisite vs offer 핵심 구분
+"안내"가 있다고 무조건 prerequisite가 아니다. **무엇을** 안내하는지가 중요하다:
+- "~**이용** 안내" → 이미 보유한 것의 사용법/부가기능 안내 → prerequisite
+- "~**구매 혜택** 안내", "~**가입 혜택** 안내" → 구매/가입을 유도 → **offer**
+- "~**사전예약** 안내", "~**출시** 안내" → 구매를 유도 → **offer**
+
+핵심 테스트: **"이 메시지가 해당 개체를 아직 보유하지 않은 고객에게 구매/가입/설치/전환을 유도하는가?"**
+→ YES → offer / NO (이미 보유를 전제) → prerequisite
+
+## prerequisite 전이 규칙
+prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 prerequisite이다.
+- "T우주 wavve"=prerequisite → "wavve"도 prerequisite (T우주 wavve 가입 시 wavve 이용권 포함)
+- "T우주패스 Netflix"=prerequisite → "Netflix"도 prerequisite
+- 주의: 이름이 유사하더라도 독립적인 상품은 해당하지 않음 (예: "에이닷 전화" ≠ "에이닷" — 서로 다른 앱)
+
+## offer 판별 신호 (6대 카테고리)
+1. **구매/획득**: "~구매하면", "~사전예약", "~출시 기념", "~개통"
+2. **가입/구독**: "~가입", "~구독", "~신규가입", "~재가입"
+3. **설치/다운로드**: "~설치", "~다운로드", "~앱을 설치해 주세요"
+4. **전환/변경**: "~환승", "~기기변경", "~교체", "~변경", "~번호이동"
+5. **신청/등록**: "~신청", "~등록", "~응모"
+6. **설정/활성화**: "~설정하세요", "~이용해 보세요", "~해 보세요"
+
+## 예시
+| 메시지 패턴 | 개체 | 역할 | 근거 |
+|------------|------|------|------|
+| "에이닷 전화 이용 안내... AI 안심 차단 설정하면" | 에이닷 전화 | prerequisite | 이미 설치된 앱 전제 |
+| 위와 동일 | AI 안심 차단 | offer | 새로 설정 유도 |
+| "5GX 요금제 혜택 안내... 스마트워치 무료 이용" | 5GX 요금제 | prerequisite | 이미 가입된 요금제 |
+| "iPhone 신제품 구매 혜택 안내" | iPhone 신제품 | **offer** | 구매를 유도 |
 
 # 1. Object Schema (14 Entity Types)
 
@@ -147,7 +185,8 @@ ONTOLOGY_PROMPT = """# Role
   "entities": [
     {
       "id": "원문명 그대로",
-      "type": "위 14개 클래스 중 하나"
+      "type": "위 14개 클래스 중 하나",
+      "role": "prerequisite|offer|benefit|context"
     }
   ],
   "relationships": [
