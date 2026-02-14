@@ -176,9 +176,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Entity types to keep for product/service matching in ONT mode
-# Excludes: Benefit, Channel, Segment, Contract, MembershipTier
+# Excludes: Store (extracted by main prompt), Benefit, Channel, Segment, Contract, MembershipTier
 ONT_PRODUCT_RELEVANT_TYPES = {
-    'Store', 'Subscription', 'RatePlan', 'Product',
+    'Subscription', 'RatePlan', 'Product',
     'Campaign', 'WiredService', 'Event', 'ContentOffer', 'PartnerBrand'
 }
 
@@ -645,10 +645,11 @@ class EntityRecognizer:
         """
         Parse Knowledge Graph JSON response from LLM.
 
-        KG 응답은 ONT 응답과 유사하지만 entity에 'role' 필드가 추가됨.
+        KG 응답은 CoT 분석(마크다운) + ```json 블록 혼합 형식.
+        ```json 블록을 먼저 추출하고, 없으면 전체 응답에서 JSON 파싱 시도.
 
         Args:
-            response: LLM response (expected JSON format)
+            response: LLM response (CoT markdown + JSON block, or pure JSON)
 
         Returns:
             dict with keys:
@@ -660,10 +661,16 @@ class EntityRecognizer:
               - 'raw_json': dict - original parsed JSON
         """
         try:
-            json_str = response.strip()
-            if json_str.startswith('```'):
-                json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
-                json_str = re.sub(r'\n?```$', '', json_str)
+            # CoT+JSON 혼합 형식: ```json 블록 추출 우선
+            json_match = re.search(r'```json\s*(.*?)```', response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1).strip()
+            else:
+                # Fallback: 전체 응답에서 JSON 파싱 시도
+                json_str = response.strip()
+                if json_str.startswith('```'):
+                    json_str = re.sub(r'^```(?:json)?\n?', '', json_str)
+                    json_str = re.sub(r'\n?```$', '', json_str)
 
             data = json.loads(json_str)
 
@@ -1256,8 +1263,8 @@ class EntityRecognizer:
 
             # Validate context_mode
             if context_mode not in ['dag', 'pairing', 'none', 'ont', 'typed', 'kg']:
-                logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'kg'")
-                context_mode = 'kg'
+                logger.warning(f"Invalid context_mode '{context_mode}', defaulting to 'dag'")
+                context_mode = 'dag'
 
             # --- Two paths: with/without pre_extracted ---
             if pre_extracted:
