@@ -118,7 +118,7 @@ graph TB
 |--------|------|---------------|
 | **Entry Points** | 사용자 인터페이스 제공 | CLI, API, Batch |
 | **Core Layer** | 전체 프로세스 오케스트레이션 | MMSExtractor, WorkflowEngine |
-| **Workflow Steps** | 단계별 처리 로직 | 10개 Step 클래스 |
+| **Workflow Steps** | 단계별 처리 로직 | 11개 Step 클래스 |
 | **Service Layer** | 독립적인 비즈니스 로직 | 6개 Service 클래스 |
 | **Infrastructure** | 공통 기능 및 설정 | Factory, Config, Utils |
 | **Data Sources** | 데이터 저장소 | CSV, Oracle DB |
@@ -143,7 +143,7 @@ sequenceDiagram
     Extractor->>State: Create initial state
     Extractor->>Engine: execute(state)
     
-    loop 10 Workflow Steps
+    loop 11 Workflow Steps
         Engine->>Steps: execute(state)
         Steps->>Services: Call service
         Services-->>Steps: Return result
@@ -286,7 +286,7 @@ graph TD
 
 ### 1. Workflow Pattern 채택
 
-**결정**: 처리 로직을 10개의 독립적인 Step으로 분리 (조건부 스킵 가능)
+**결정**: 처리 로직을 11개의 독립적인 Step으로 분리 (조건부 스킵 가능)
 
 **이유**:
 - ✅ 각 단계의 책임이 명확함
@@ -372,19 +372,47 @@ graph TD
 
 | 모드 | 설명 | LLM 호출 | 특징 |
 |------|------|---------|------|
-| **dag** | DAG 기반 관계 추출 | Step 2 + Step 10 | 기본 모드 |
-| **pairing** | 엔티티 페어링 | Step 2 | 관계 중심 |
-| **none** | 컨텍스트 없음 | Step 2 | 최소 모드 |
-| **ont** | 온톨로지 기반 | Step 2 (Step 10 재사용) | LLM 호출 최적화 |
+| **dag** | DAG 기반 관계 추출 | Step 7 + Step 11 | 기본 모드 |
+| **pairing** | 엔티티 페어링 | Step 7 | 관계 중심 |
+| **none** | 컨텍스트 없음 | Step 7 | 최소 모드 |
+| **ont** | 온톨로지 기반 | Step 7 + Step 11 | 풍부한 메타데이터 |
 | **typed** | 6-type 엔티티 추출 | Step 7 (langextract) | 타입별 분류 |
 
 **ONT/TYPED 모드 장점**:
-- ✅ Step 10에서 별도 LLM 호출 불필요 (기존 결과 재사용)
 - ✅ 엔티티 타입, 관계 정보 풍부
 - ✅ 일관된 추출 결과
 - ✅ TYPED: langextract 엔진과 함께 사용 시 6개 타입으로 분류 (Product, Store, Program, Channel, Purpose, Other)
+- ⚠️ Step 11 (DAG)은 모든 모드에서 fresh LLM call 사용
 
-### 8. 추출 엔진 선택
+### 8. Few-shot Prompt 접근법
+
+**결정**: JSON 스키마 명세 대신 구체적인 Few-shot 예시 3개를 프롬프트에 포함
+
+**이유**:
+- ✅ 프롬프트 길이 37% 감소 (토큰 절약)
+- ✅ LLM이 구체적인 출력 형식을 더 잘 학습
+- ✅ 스키마 정의 대신 실제 예시로 출력 구조 명시
+- ✅ `OUTPUT_SCHEMA_REFERENCE`로 필드 설명 보완
+
+**구현** (`prompts/main_extraction_prompt.py`):
+- `FEW_SHOT_EXAMPLES`: 3개 예시 (단일 상품, 다중 상품, 이벤트+혜택)
+- `_build_few_shot_section()`: 예시를 프롬프트에 포맷팅
+- `build_extraction_prompt(num_select_pgms)`: 프로그램 선택 수 파라미터화
+
+### 9. 프로그램 분류 파라미터화
+
+**결정**: 후보/선택 프로그램 수를 CLI/API에서 설정 가능하게 제공
+
+**파라미터**:
+- `num_cand_pgms` (기본값: 15): 임베딩 유사도 기반 후보 프로그램 수
+- `num_select_pgms` (기본값: 1): LLM이 최종 선택하는 프로그램 수
+
+**이유**:
+- ✅ 메시지 유형에 따라 적절한 후보 수 조정 가능
+- ✅ 다중 프로그램 선택이 필요한 경우 대응
+- ✅ 프롬프트에 선택 힌트 자동 반영
+
+### 10. 추출 엔진 선택
 
 **결정**: 두 가지 추출 엔진 지원 (default, langextract)
 
@@ -467,5 +495,5 @@ Step 2 (EntityExtractionStep)의 Fuzzy Matching 병목을 해결하기 위해 bi
 ---
 
 *작성일: 2025-12-16*
-*최종 업데이트: 2026-02-11*
-*버전: 1.4*
+*최종 업데이트: 2026-02-14*
+*버전: 1.5*

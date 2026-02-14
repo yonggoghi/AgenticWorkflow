@@ -149,8 +149,12 @@ elif entity_extraction_mode == 'llm':
 ```python
 1. 메시지 임베딩 생성
 2. 프로그램 클루 임베딩과 코사인 유사도 계산
-3. 상위 N개 후보 프로그램 선택
+3. 상위 N개 후보 프로그램 선택 (N = num_cand_pgms, 기본 15)
 ```
+
+**설정 파라미터**:
+- `num_cand_pgms` (기본: 15): 임베딩 유사도 기반 후보 프로그램 수 (CLI: `--num-cand-pgms`)
+- `num_select_pgms` (기본: 1): LLM이 최종 선택하는 프로그램 수 (CLI: `--num-select-pgms`, Step 5 프롬프트에 반영)
 
 **출력**:
 - `state.pgm_info`: 프로그램 분류 정보
@@ -237,9 +241,13 @@ elif entity_extraction_mode == 'llm':
 ```
 시스템 메시지: 역할 정의
 ↓
+Few-shot 예시 3개: 단일 상품, 다중 상품, 이벤트+혜택
+↓
+OUTPUT_SCHEMA_REFERENCE: 필드 설명
+↓
 RAG 컨텍스트: 참조 정보
 ↓
-프로그램 정보: 분류 결과
+프로그램 정보: 분류 결과 + 선택 힌트 (num_select_pgms)
 ↓
 메시지: 분석 대상
 ↓
@@ -429,7 +437,7 @@ python apps/cli.py --no-external-candidates --message "광고 메시지"
 **목적**: 매칭된 상품 기반으로 최종 결과 조립
 
 **입력**:
-- `state.matched_products`: 매칭된 상품 (Step 7 출력)
+- `state.matched_products`: 매칭된 상품 (Step 8 출력)
 - `state.json_objects`: 파싱된 JSON 객체
 - `state.msg`: 원본 메시지
 - `state.pgm_info`: 프로그램 정보
@@ -438,7 +446,7 @@ python apps/cli.py --no-external-candidates --message "광고 메시지"
 ```python
 1. ResultBuilder.assemble_result() 호출
 2. 채널 정보 추출 및 보강
-3. 프로그램 매핑
+3. 프로그램 매핑 (list membership + similarity sort로 정확한 매칭)
 4. Offer 객체 생성
 5. entity_dag, message_id 첨부
 ```
@@ -548,9 +556,9 @@ class WorkflowState:
     rag_context: str = ""           # RAG 컨텍스트 (Step 4)
     llm_response: str = ""          # LLM 응답 (Step 5)
     json_objects: List[Dict] = field(default_factory=list)  # 파싱 결과 (Step 6)
-    matched_products: List[Dict] = field(default_factory=list)  # 매칭된 상품 (Step 7)
-    final_result: Dict = field(default_factory=dict)  # 최종 결과 (Step 8)
-    entity_dag: List[str] = field(default_factory=list)  # DAG (Step 10)
+    matched_products: List[Dict] = field(default_factory=list)  # 매칭된 상품 (Step 8)
+    final_result: Dict = field(default_factory=dict)  # 최종 결과 (Step 9)
+    entity_dag: List[str] = field(default_factory=list)  # DAG (Step 11)
     
     # === 메타데이터 ===
     is_fallback: bool = False       # 폴백 여부
@@ -588,13 +596,15 @@ Step 5: llm_response 설정
     ↓
 Step 6: json_objects 설정
     ↓
-Step 7: matched_products 설정 (스킵 가능: 에러/폴백/상품없음)
+Step 7: extracted_entities 설정 (스킵 가능: 에러/logic 모드)
     ↓
-Step 8: final_result 설정
+Step 8: matched_products 설정 (스킵 가능: 에러/폴백/상품없음)
     ↓
-Step 9: 검증 (상태 변경 없음)
+Step 9: final_result 설정
     ↓
-Step 10: entity_dag 설정 (선택적)
+Step 10: 검증 (상태 변경 없음)
+    ↓
+Step 11: entity_dag 설정 (선택적)
     ↓
 최종 상태 반환
 ```
@@ -782,6 +792,6 @@ def execute(self, state: WorkflowState) -> WorkflowState:
 ---
 
 *작성일: 2025-12-16*
-*최종 업데이트: 2026-02-11*
-*버전: 1.4*
+*최종 업데이트: 2026-02-14*
+*버전: 1.5*
 *작성자: 신용욱 with Google Antigravity*

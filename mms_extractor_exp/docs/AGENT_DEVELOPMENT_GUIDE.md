@@ -20,8 +20,8 @@ MMS 광고 메시지에서 구조화된 정보를 추출하는 AI 기반 시스�
 - **엔티티 추출**: 상품, 채널, 프로그램, 매장 정보 추출
 - **LLM 기반 분석**: 다중 LLM 모델 지원 (Gemini, Claude, GPT-4, AX)
 - **DAG 추출**: 엔티티 간 관계 그래프 생성
-- **다양한 컨텍스트 모드**: dag, pairing, simple, ont 지원
-- **Workflow 기반**: 모듈화된 9단계 처리 파이프라인
+- **다양한 컨텍스트 모드**: dag, pairing, none, ont, typed 지원
+- **Workflow 기반**: 모듈화된 11단계 처리 파이프라인
 
 ---
 
@@ -34,7 +34,7 @@ mms_extractor_exp/
 ├── core/                    # 핵심 로직
 │   ├── mms_extractor.py    # 메인 추출기 (MMSExtractor 클래스)
 │   ├── workflow_core.py    # Workflow 프레임워크
-│   ├── mms_workflow_steps.py  # 9개 Workflow 단계 구현
+│   ├── mms_workflow_steps.py  # 11개 Workflow 단계 구현
 │   └── entity_dag_extractor.py  # DAG 추출 로직
 │
 ├── services/                # 비즈니스 로직 서비스
@@ -113,16 +113,18 @@ WorkflowStep (Abstract)    # 각 처리 단계의 베이스 클래스
 WorkflowEngine             # 단계들을 순차 실행
 ```
 
-**9개 Workflow 단계** (`mms_workflow_steps.py`):
+**11개 Workflow 단계** (`mms_workflow_steps.py`):
 1. `InputValidationStep`: 입력 검증
-2. `EntityExtractionStep`: 엔티티 추출 (Kiwi/LLM)
-3. `ProgramClassificationStep`: 프로그램 분류
+2. `EntityExtractionStep`: 엔티티 사전추출 (Kiwi + Fuzzy Matching)
+3. `ProgramClassificationStep`: 프로그램 분류 (`num_cand_pgms` 설정 가능)
 4. `ContextPreparationStep`: RAG 컨텍스트 준비
-5. `LLMExtractionStep`: LLM 기반 정보 추출
+5. `LLMExtractionStep`: LLM 기반 정보 추출 (Few-shot 예시 포함)
 6. `ResponseParsingStep`: LLM 응답 파싱
-7. `ResultConstructionStep`: 최종 결과 구성
-8. `ValidationStep`: 결과 검증
-9. `DAGExtractionStep`: DAG 추출 (선택적, ONT 모드 시 기존 결과 재사용)
+7. `EntityContextExtractionStep`: 엔티티+컨텍스트 추출 (Stage 1, logic 모드 시 스킵)
+8. `VocabularyFilteringStep`: 어휘 매칭 및 필터링 (Stage 2)
+9. `ResultConstructionStep`: 최종 결과 구성
+10. `ValidationStep`: 결과 검증
+11. `DAGExtractionStep`: DAG 추출 (선택적, 모든 모드에서 fresh LLM call)
 
 #### 2. **Service Layer Pattern**
 
@@ -519,7 +521,7 @@ class ServiceName:
 
 **포함 내용**:
 - ✅ Workflow 순서도 (Mermaid)
-- ✅ 9개 단계별 상세 가이드
+- ✅ 11개 단계별 상세 가이드
   - 각 단계의 목적, 입력, 출력
   - 처리 로직 설명
   - 협력 객체 명시
@@ -533,7 +535,7 @@ class ServiceName:
 
 **Core 모듈**:
 - ✅ `workflow_core.py`: 워크플로우 프레임워크 아키텍처
-- ✅ `mms_workflow_steps.py`: 9개 단계 상세 문서화
+- ✅ `mms_workflow_steps.py`: 11개 단계 상세 문서화
 - ✅ `mms_extractor.py`: 메인 엔진 협력 다이어그램
 
 **Utils 모듈**:
@@ -741,6 +743,6 @@ class QualityMetrics:
 ---
 
 *최초 작성일: 2025-12-10*
-*최종 업데이트: 2026-02-09*
+*최종 업데이트: 2026-02-14*
 *대상: Agent 및 개발자*
-*버전: 2.2*
+*버전: 2.3*

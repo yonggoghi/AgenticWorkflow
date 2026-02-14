@@ -1,6 +1,8 @@
 # Plan: ONT 모드 결과로 Step 9 (DAG Extraction) 대체
 
-> **상태: ✅ 구현 완료** (2026-02-03)
+> **상태: ✅ 구현 완료** (2026-02-03) → **⚠️ ONT 최적화 이후 제거됨** (commit a4e1ef0)
+>
+> DAG 추출은 모든 context mode에서 fresh LLM call을 사용합니다. ONT 모드에서의 DAG 재사용 최적화는 결과 품질 문제로 제거되었습니다.
 
 ## 목표
 `entity_extraction_context_mode='ont'` 사용 시, **별도의 LLM 호출 없이** 이미 추출된 온톨로지 결과를 활용하여 Step 9 (DAGExtractionStep)의 기능을 수행한다.

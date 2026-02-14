@@ -1,8 +1,8 @@
 # MMS Extractor - Agent Quick Reference
 
 > **사용 목적**: Agent가 수정/개선/확장 작업 시 첫 번째로 참조하는 문서
-> **업데이트**: 2026-02-11
-> **버전**: 1.3
+> **업데이트**: 2026-02-14
+> **버전**: 1.4
 
 ---
 
@@ -63,7 +63,7 @@ graph TB
     subgraph "Core Engine"
         MMSExtractor[core/mms_extractor.py<br/>MMSExtractor]
         WorkflowEngine[core/workflow_core.py<br/>WorkflowEngine]
-        WorkflowSteps[core/mms_workflow_steps.py<br/>10 Workflow Steps]
+        WorkflowSteps[core/mms_workflow_steps.py<br/>11 Workflow Steps]
     end
     
     subgraph "Services Layer"
@@ -516,10 +516,27 @@ class ModelConfig:
 - `ax`: AX model (default)
 - `gpt`: GPT-4o
 - `gen`: Gemini 1.5 Pro
+- `gem`: Gemma (경량 모델)
 - `cld`: Claude Sonnet
 - `opus`: Claude Opus 4.6 (강력한 성능, 높은 비용)
 
-#### D-3. 추출 엔진 선택
+#### D-3. 프로그램 분류 파라미터
+
+```bash
+# 후보 프로그램 수 조정 (기본: 15)
+python apps/cli.py --num-cand-pgms 20 --message "테스트"
+
+# LLM 최종 선택 프로그램 수 조정 (기본: 1)
+python apps/cli.py --num-select-pgms 3 --message "테스트"
+```
+
+**파라미터 설명**:
+- `num_cand_pgms` (기본: 15): 임베딩 유사도 기반으로 선택하는 후보 프로그램 수
+- `num_select_pgms` (기본: 1): LLM이 최종 선택하는 프로그램 수. 프롬프트에 선택 힌트가 자동 반영됨
+
+> **참고**: `product_info_extraction_mode`와 `entity_matching_mode`의 기본값이 `nlp`/`logic`에서 `llm`으로 변경되었습니다.
+
+#### D-4. 추출 엔진 선택
 
 ```bash
 # Default engine (11-step pipeline)
@@ -540,7 +557,7 @@ python apps/cli.py --extraction-engine langextract --message "테스트"
 - langextract는 Step 7에서 사전 추출 단계로 실행됨
 - 실패 시 자동으로 default 모드로 폴백
 
-#### D-4. 엔티티 추출 컨텍스트 모드
+#### D-5. 엔티티 추출 컨텍스트 모드
 
 ```bash
 # DAG 모드 (기본)
@@ -773,5 +790,5 @@ python -m pytest tests/
 
 ---
 
-*최종 업데이트: 2026-02-11*
+*최종 업데이트: 2026-02-14*
 *다음 업데이트 예정: 주요 구조 변경 시*

@@ -28,18 +28,22 @@ graph TB
     C -->|pgm_info| D[ContextPreparationStep]
     D -->|rag_context, product_element| E[LLMExtractionStep]
     E -->|result_json_text| F[ResponseParsingStep]
-    F -->|json_objects, raw_result| G[ResultConstructionStep]
-    G -->|final_result| H[ValidationStep]
-    H -->|validated final_result| I{extract_entity_dag?}
-    I -->|Yes| J[DAGExtractionStep]
-    I -->|No| K[End]
-    J -->|entity_dag| K
-    
+    F -->|json_objects, raw_result| G[EntityContextExtractionStep]
+    G -->|extracted_entities| H[VocabularyFilteringStep]
+    H -->|matched_products| I[ResultConstructionStep]
+    I -->|final_result| J[ValidationStep]
+    J -->|validated final_result| K{extract_entity_dag?}
+    K -->|Yes| L[DAGExtractionStep]
+    K -->|No| M[End]
+    L -->|entity_dag| M
+
     style A fill:#e1f5ff
     style E fill:#ffe1e1
-    style G fill:#fff4e1
-    style J fill:#e1ffe1
-    style K fill:#d4edda
+    style G fill:#ffd
+    style H fill:#ffd
+    style I fill:#fff4e1
+    style L fill:#e1ffe1
+    style M fill:#d4edda
 ```
 
 📊 각 단계별 역할
@@ -98,17 +102,33 @@ graph TB
 - 스키마 응답 감지 (detect_schema_response)
 - raw_result 생성
 
-### 7. ResultConstructionStep
+### 7. EntityContextExtractionStep
+**목적**: 엔티티 및 컨텍스트 추출 (Stage 1)
+**입력**: msg, entities_from_kiwi, json_objects
+**출력**: extracted_entities (entities, context_text, entity_types, relationships)
+**주요 작업**:
+- LangExtract 또는 Default 엔진으로 엔티티 추출
+- logic 모드 시 스킵
+
+### 8. VocabularyFilteringStep
+**목적**: 어휘 매칭 및 필터링 (Stage 2)
+**입력**: extracted_entities, msg, json_objects
+**출력**: matched_products
+**주요 작업**:
+- Fuzzy/Sequence 유사도 기반 상품 DB 매칭
+- LLM 기반 vocabulary 필터링
+
+### 9. ResultConstructionStep
 **목적**: 최종 결과 구성
-**입력**: json_objects, msg, pgm_info, entities_from_kiwi
+**입력**: matched_products, json_objects, msg, pgm_info
 **출력**: final_result
 **주요 작업**:
-- 엔티티 매칭 (ResultBuilder)
+- ResultBuilder.assemble_result() 호출
 - 채널 정보 추출 및 보강
 - 프로그램 매핑
 - offer 객체 생성
 
-### 8. ValidationStep
+### 10. ValidationStep
 **목적**: 결과 검증 및 요약
 **입력**: final_result
 **출력**: validated final_result
@@ -116,12 +136,12 @@ graph TB
 - 결과 유효성 검증 (validate_extraction_result)
 - 최종 결과 요약 로깅
 
-### 9. DAGExtractionStep (선택적)
+### 11. DAGExtractionStep (선택적)
 **목적**: 엔티티 간 관계 그래프 생성
 **입력**: msg, extract_entity_dag 플래그
 **출력**: entity_dag (DAG 리스트)
 **주요 작업**:
-- LLM 기반 DAG 추출 (extract_dag)
+- LLM 기반 DAG 추출 (extract_dag) — 모든 모드에서 fresh LLM call
 - NetworkX 그래프 생성
 - Graphviz 다이어그램 생성
 

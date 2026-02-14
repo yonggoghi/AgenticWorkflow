@@ -244,11 +244,14 @@ CLI 명령어 실행 시 호출되는 모든 클래스와 함수를 순서대로
   - LLM API 호출
   - 응답 수신
 
-#### 5.1 [`build_extraction_prompt()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/prompts/__init__.py)
-- **파일**: [prompts/\_\_init\_\_.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/prompts/__init__.py)
-- **입력**: `msg`, `rag_context`, `product_element`
+#### 5.1 [`build_extraction_prompt()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/prompts/main_extraction_prompt.py)
+- **파일**: [prompts/main_extraction_prompt.py](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/prompts/main_extraction_prompt.py)
+- **입력**: `msg`, `rag_context`, `product_element`, `num_select_pgms`
 - **출력**: `prompt` - 구성된 프롬프트 문자열
 - **주요 작업**: LLM 추출용 프롬프트 생성
+  - Few-shot 예시 3개 포함 (단일 상품, 다중 상품, 이벤트+혜택)
+  - `OUTPUT_SCHEMA_REFERENCE`로 필드 설명 보완
+  - `num_select_pgms` 값에 따른 프로그램 선택 힌트 삽입
 
 ### Step 6: [`ResponseParsingStep.execute()`](file:///Users/yongwook/workspace/AgenticWorkflow/mms_extractor_exp/core/mms_workflow_steps.py#L538)
 - **입력**: `state`
@@ -451,7 +454,14 @@ response = requests.post('http://127.0.0.1:8000/extract', json={
     "entity_matching_mode": "llm",
     "extract_entity_dag": True,
     "result_type": "ext",
-    "save_to_mongodb": True
+    "save_to_mongodb": True,
+    "extraction_engine": "default",
+    "skip_entity_extraction": False,
+    "no_external_candidates": False,
+    "entity_llm_model": "ax",
+    "entity_extraction_context_mode": "dag",
+    "num_cand_pgms": 15,
+    "num_select_pgms": 1
 })
 ```
 
@@ -491,11 +501,18 @@ REST API를 통한 메시지 처리 시 호출되는 모든 클래스와 함수�
   - `message` (필수)
   - `message_id` (선택, 기본값: '#')
   - `llm_model` (선택, 기본값: 'ax')
-  - `product_info_extraction_mode` (선택)
-  - `entity_matching_mode` (선택)
+  - `product_info_extraction_mode` (선택, 기본값: 'llm')
+  - `entity_matching_mode` (선택, 기본값: 'llm')
   - `extract_entity_dag` (선택, 기본값: True)
   - `save_to_mongodb` (선택, 기본값: True)
   - `result_type` (선택, 기본값: 'ext')
+  - `extraction_engine` (선택, 기본값: 'default') — 추출 엔진 (default/langextract)
+  - `skip_entity_extraction` (선택, 기본값: False) — Step 2 스킵 여부
+  - `no_external_candidates` (선택, 기본값: False) — 외부 후보 엔티티 비활성화
+  - `entity_llm_model` (선택, 기본값: 'ax') — 엔티티 추출 전용 LLM 모델
+  - `entity_extraction_context_mode` (선택, 기본값: 'dag') — 컨텍스트 모드 (dag/pairing/none/ont/typed)
+  - `num_cand_pgms` (선택, 기본값: 15) — 후보 프로그램 수
+  - `num_select_pgms` (선택, 기본값: 1) — LLM 최종 선택 프로그램 수
 - **출력**: JSON 응답
 - **주요 작업**:
   - 요청 데이터 검증
@@ -907,4 +924,4 @@ msg_001,"(광고)[SKT] ...","{...}","2025-12-18 14:00:00","T day 혜택","[\"프
 
 ---
 
-*최종 업데이트: 2026-02-11*
+*최종 업데이트: 2026-02-14*
