@@ -272,6 +272,8 @@ class ProductExtractionTracer:
                         entity_type_str = ", ".join([f"{k}({v})" for k, v in entity_types.items()]) if entity_types else ""
                         rel_lines = []
                         for rel in relationships:
+                            if not isinstance(rel, dict):
+                                continue
                             src = rel.get('source', '')
                             tgt = rel.get('target', '')
                             rel_type = rel.get('type', '')
@@ -847,6 +849,13 @@ class ProductExtractionTracer:
                     batch_size=30,
                     normalization_value='s2'
                 ).rename(columns={'sim': 'sim_s2'})
+
+                # 방어: seq similarity 결과에 필수 컬럼이 없으면 빈 DataFrame 반환
+                required_cols = {'item_name_in_msg', 'item_nm_alias'}
+                if sim_s1.empty or not required_cols.issubset(sim_s1.columns):
+                    return pd.DataFrame()
+                if sim_s2.empty or not required_cols.issubset(sim_s2.columns):
+                    return pd.DataFrame()
 
                 cand_entities_sim = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
                 trace_data.similarities_before_combined_filter = cand_entities_sim.copy() if not cand_entities_sim.empty else None
@@ -1890,7 +1899,7 @@ Examples:
     parser.add_argument("--entity-mode", type=str, choices=["llm", "logic", "nlp"], default="llm")
     parser.add_argument("--data-source", type=str, choices=["local", "db"], default="local")
     parser.add_argument("--extract-dag", action="store_true", help="Enable DAG extraction")
-    parser.add_argument("--context-mode", type=str, choices=["dag", "pairing", "none", "ont", "typed", "kg"], default="kg",
+    parser.add_argument("--context-mode", type=str, choices=["dag", "pairing", "none", "ont", "typed", "kg"], default="dag",
                        help="Entity extraction context mode (CRITICAL: dag vs ont vs typed produce different results)")
     parser.add_argument("--skip-entity-extraction", action="store_true",
                        help="Skip Kiwi + fuzzy matching entity pre-extraction (Step 2)")

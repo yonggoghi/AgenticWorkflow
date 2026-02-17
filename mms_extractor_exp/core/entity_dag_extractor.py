@@ -623,6 +623,8 @@ def build_dag_from_ontology(ont_result: dict) -> nx.DiGraph:
     # 방법 1: relationships에서 그래프 생성 (더 정확한 타입 정보 보존)
     if relationships:
         for rel in relationships:
+            if not isinstance(rel, dict):
+                continue
             src = rel.get('source', '')
             tgt = rel.get('target', '')
             rel_type = rel.get('type', '')

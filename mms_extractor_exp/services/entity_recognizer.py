@@ -454,7 +454,8 @@ class EntityRecognizer:
                 default_return=pd.DataFrame()
             ).rename(columns={'sim': 'sim_s2'})
             
-            if not sim_s1.empty and not sim_s2.empty:
+            required_cols = {'item_name_in_msg', 'item_nm_alias'}
+            if not sim_s1.empty and not sim_s2.empty and required_cols.issubset(sim_s1.columns) and required_cols.issubset(sim_s2.columns):
                 combined = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
                 filtered = combined.query("(sim_s1>=@PROCESSING_CONFIG.combined_similarity_threshold and sim_s2>=@PROCESSING_CONFIG.combined_similarity_threshold)")
                 
@@ -475,52 +476,68 @@ class EntityRecognizer:
             return pd.DataFrame()
 
     def _parse_entity_response(self, response: str) -> List[str]:
-        """Parse entities from LLM response"""
+        """Parse entities from LLM response.
+
+        Supports both pipe-separated (preferred) and comma-separated formats:
+        - Pipe: "entity1 | entity2 | entity3"
+        - Comma: "entity1, entity2, entity3" (legacy fallback)
+        """
         try:
             lines = response.split('\n')
             for line in lines:
                 line_stripped = line.strip()
                 line_upper = line_stripped.upper()
-                
+
                 if line_upper.startswith('REASON:'):
                     continue
-                
+
                 if line_upper.startswith('ENTITY:'):
                     entity_part = line_stripped[line_upper.find('ENTITY:') + 7:].strip()
-                    
+
                     if not entity_part or entity_part.lower() in ['none', 'empty', '없음', 'null']:
                         return []
-                    
+
                     if len(entity_part) > 200:
                         continue
-                    
-                    entities = [e.strip() for e in entity_part.split(',') if e.strip()]
+
+                    # Pipe-separated (preferred) or comma-separated (fallback)
+                    if '|' in entity_part:
+                        entities = [e.strip() for e in entity_part.split('|') if e.strip()]
+                    else:
+                        entities = [e.strip() for e in entity_part.split(',') if e.strip()]
                     return [e for e in entities if len(e) <= 100 and not (e.startswith('"') and not e.endswith('"'))]
-            
+
             entity_pattern = r'ENTITY:\s*([^\n]*?)(?:\n|$)'
             entity_matches = list(re.finditer(entity_pattern, response, re.IGNORECASE))
-            
+
             if entity_matches:
                 last_match = entity_matches[-1]
                 entity_text = last_match.group(1).strip()
                 if entity_text and entity_text.lower() not in ['none', 'empty', '없음', 'null']:
                     if len(entity_text) <= 200:
-                        return [e.strip() for e in entity_text.split(',') if e.strip() and len(e.strip()) <= 100]
-            
+                        if '|' in entity_text:
+                            return [e.strip() for e in entity_text.split('|') if e.strip() and len(e.strip()) <= 100]
+                        else:
+                            return [e.strip() for e in entity_text.split(',') if e.strip() and len(e.strip()) <= 100]
+
             for line in reversed(lines):
                 line_stripped = line.strip()
                 if not line_stripped or line_stripped.upper().startswith('REASON:') or len(line_stripped) > 200:
                     continue
-                
-                if ',' in line_stripped:
+
+                if '|' in line_stripped:
+                    entities = [e.strip() for e in line_stripped.split('|') if e.strip() and len(e.strip()) <= 100]
+                    if entities:
+                        return entities
+                elif ',' in line_stripped:
                     entities = [e.strip() for e in line_stripped.split(',') if e.strip() and len(e.strip()) <= 100]
                     if entities and all(len(e) <= 100 for e in entities):
                         return entities
                 elif len(line_stripped) <= 100:
                     return [line_stripped]
-            
+
             return []
-            
+
         except Exception as e:
             logger.error(f"Entity parsing failed: {e}")
             return []
@@ -604,23 +621,36 @@ class EntityRecognizer:
                 json_str = re.sub(r'\n?```$', '', json_str)
 
             data = json.loads(json_str)
+            if isinstance(data, list):
+                logger.info(f"ONT JSON is a list ({len(data)} items), wrapping as entities")
+                data = {"entities": data, "relationships": [], "user_action_path": {}}
+            elif not isinstance(data, dict):
+                raise ValueError(f"Expected dict, got {type(data).__name__}")
 
-            # entities 추출
-            entities = [e.get('id', '') for e in data.get('entities', []) if e.get('id')]
+            # entities 추출 (엔티티가 dict가 아닌 경우 방어)
+            raw_entities = data.get('entities', [])
+            entities = []
+            entity_types = {}
+            entity_roles = {}
+            for e in raw_entities:
+                if isinstance(e, dict):
+                    eid = e.get('id', '')
+                    if eid:
+                        entities.append(eid)
+                        entity_types[eid] = e.get('type', 'Unknown')
+                        if e.get('role'):
+                            entity_roles[eid] = e.get('role', 'unknown')
+                elif isinstance(e, str) and e:
+                    entities.append(e)
+                    entity_types[e] = 'Unknown'
 
-            # entity_types 매핑
-            entity_types = {e.get('id'): e.get('type', 'Unknown')
-                           for e in data.get('entities', []) if e.get('id')}
-
-            # entity_roles 매핑 (role 필드가 있는 경우)
-            entity_roles = {e.get('id'): e.get('role', 'unknown')
-                           for e in data.get('entities', []) if e.get('id') and e.get('role')}
-
-            # relationships 추출
-            relationships = data.get('relationships', [])
+            # relationships 추출 (dict만 유지)
+            raw_rels = data.get('relationships', [])
+            relationships = [r for r in raw_rels if isinstance(r, dict)]
 
             # DAG 텍스트 추출
-            dag_text = data.get('user_action_path', {}).get('dag', '')
+            uap = data.get('user_action_path', {})
+            dag_text = uap.get('dag', '') if isinstance(uap, dict) else ''
 
             return {
                 'entities': entities,
@@ -630,12 +660,13 @@ class EntityRecognizer:
                 'dag_text': dag_text,
                 'raw_json': data
             }
-        except json.JSONDecodeError as e:
+        except (json.JSONDecodeError, ValueError, AttributeError, TypeError) as e:
             logger.warning(f"Ontology JSON parsing failed: {e}")
             # Fallback: 기존 파싱 로직 사용
             return {
                 'entities': self._parse_entity_response(response),
                 'entity_types': {},
+                'entity_roles': {},
                 'relationships': [],
                 'dag_text': '',
                 'raw_json': {}
@@ -673,18 +704,37 @@ class EntityRecognizer:
                     json_str = re.sub(r'\n?```$', '', json_str)
 
             data = json.loads(json_str)
+            if isinstance(data, list):
+                # LLM이 엔티티 배열만 반환한 경우 — dict로 래핑
+                logger.info(f"KG JSON is a list ({len(data)} items), wrapping as entities")
+                data = {"entities": data, "relationships": [], "user_action_path": {}}
+            elif not isinstance(data, dict):
+                raise ValueError(f"Expected dict, got {type(data).__name__}")
 
-            entities = [e.get('id', '') for e in data.get('entities', []) if e.get('id')]
+            # entities가 list-of-dicts가 아닌 경우 방어 처리
+            raw_entities = data.get('entities', [])
+            entities = []
+            entity_types = {}
+            entity_roles = {}
+            for e in raw_entities:
+                if isinstance(e, dict):
+                    eid = e.get('id', '')
+                    if eid:
+                        entities.append(eid)
+                        entity_types[eid] = e.get('type', 'Unknown')
+                        entity_roles[eid] = e.get('role', 'unknown')
+                elif isinstance(e, str) and e:
+                    entities.append(e)
+                    entity_types[e] = 'Unknown'
+                    entity_roles[e] = 'unknown'
 
-            entity_types = {e.get('id'): e.get('type', 'Unknown')
-                           for e in data.get('entities', []) if e.get('id')}
+            # relationships가 list-of-dicts가 아닌 경우 방어 처리
+            raw_rels = data.get('relationships', [])
+            relationships = [r for r in raw_rels if isinstance(r, dict)]
 
-            entity_roles = {e.get('id'): e.get('role', 'unknown')
-                           for e in data.get('entities', []) if e.get('id')}
-
-            relationships = data.get('relationships', [])
-
-            dag_text = data.get('user_action_path', {}).get('dag', '')
+            # user_action_path가 dict가 아닌 경우 방어 처리
+            uap = data.get('user_action_path', {})
+            dag_text = uap.get('dag', '') if isinstance(uap, dict) else ''
 
             logger.info(f"KG JSON parsed: {len(entities)} entities, "
                        f"{len(relationships)} relationships, "
@@ -698,7 +748,7 @@ class EntityRecognizer:
                 'dag_text': dag_text,
                 'raw_json': data
             }
-        except json.JSONDecodeError as e:
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError) as e:
             logger.warning(f"KG JSON parsing failed: {e}, falling back to ONT parser")
             # Fallback: ONT 파서 사용
             result = self._parse_ontology_response(response)
@@ -844,6 +894,8 @@ class EntityRecognizer:
                     # Format relationships: Source -[TYPE]-> Target
                     rel_lines = []
                     for rel in relationships:
+                        if not isinstance(rel, dict):
+                            continue
                         src = rel.get('source', '')
                         tgt = rel.get('target', '')
                         rel_type = rel.get('type', '')
@@ -888,8 +940,10 @@ class EntityRecognizer:
                         json_str = re.sub(r'\n?```$', '', json_str)
                     try:
                         data = json.loads(json_str)
-                        entities_raw = data.get('entities', [])
-                    except json.JSONDecodeError:
+                        if not isinstance(data, dict):
+                            raise ValueError(f"Expected dict, got {type(data).__name__}")
+                        entities_raw = [e for e in data.get('entities', []) if isinstance(e, dict)]
+                    except (json.JSONDecodeError, ValueError, AttributeError):
                         logger.warning(f"[{model_name}] Typed JSON parsing failed, falling back to regex")
                         entities_raw = []
 
@@ -945,8 +999,9 @@ class EntityRecognizer:
                 role_match = re.search(r'ROLE:\s*(.*?)(?:\n(?:DAG|ENTITY):|\Z)', response, re.DOTALL | re.IGNORECASE)
                 if role_match:
                     role_text = role_match.group(1).strip()
-                    # Parse "entity1=role1, entity2=role2, ..." format
-                    for pair in re.split(r',\s*', role_text):
+                    # Parse "entity1=role1 | entity2=role2 | ..." (pipe) or "entity1=role1, entity2=role2, ..." (comma) format
+                    separator = '|' if '|' in role_text else ','
+                    for pair in role_text.split(separator):
                         pair = pair.strip()
                         if '=' in pair:
                             entity_name, role = pair.rsplit('=', 1)
@@ -1379,11 +1434,18 @@ class EntityRecognizer:
                 normalization_value='s2'
             ).rename(columns={'sim': 'sim_s2'})
             
+            # 방어: seq similarity 결과에 필수 컬럼이 없으면 빈 DataFrame 반환
+            required_cols = {'item_name_in_msg', 'item_nm_alias'}
+            if sim_s1.empty or not required_cols.issubset(sim_s1.columns):
+                return pd.DataFrame()
+            if sim_s2.empty or not required_cols.issubset(sim_s2.columns):
+                return pd.DataFrame()
+
             cand_entities_sim = sim_s1.merge(sim_s2, on=['item_name_in_msg', 'item_nm_alias'])
-            
+
             if cand_entities_sim.empty:
                 return pd.DataFrame()
-            
+
             cand_entities_sim = cand_entities_sim.query("(sim_s1>=@PROCESSING_CONFIG.combined_similarity_threshold and sim_s2>=@PROCESSING_CONFIG.combined_similarity_threshold)")
 
             if cand_entities_sim.empty:

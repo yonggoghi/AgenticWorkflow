@@ -708,7 +708,7 @@ def main():
                        help='메인 프롬프트에 사용할 LLM 모델 (default: ax)')
     parser.add_argument('--entity-llm-model', choices=['gem', 'ax', 'cld', 'gen', 'gpt'], default='ax',
                        help='엔티티 추출에 사용할 LLM 모델 (default: ax)')
-    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont', 'typed', 'kg'], default='kg',
+    parser.add_argument('--entity-extraction-context-mode', choices=['dag', 'pairing', 'none', 'ont', 'typed', 'kg'], default='dag',
                        help='엔티티 추출 컨텍스트 모드 (dag: DAG 컨텍스트, pairing: PAIRING 컨텍스트, none: 컨텍스트 없음, ont: 온톨로지, typed: 타입 지정, kg: Knowledge Graph)')
     parser.add_argument('--skip-entity-extraction', action='store_true', default=False,
                        help='Kiwi + fuzzy matching 기반 엔티티 사전추출 스킵 (Step 2)')

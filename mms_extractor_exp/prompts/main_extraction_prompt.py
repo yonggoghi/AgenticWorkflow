@@ -169,10 +169,10 @@ EXTRACTION_GUIDELINES_BASE = """
 * For product action, select from: 구매, 가입, 사용, 방문, 참여, 코드입력, 쿠폰다운로드, 기타.
 * For channel type, select from: URL, 전화번호, 앱, 대리점, 온라인스토어. For channel action, select from: 가입, 추가 정보, 문의, 수신, 수신 거부.
 * For pgm: Select up to {num_select_pgms} most relevant pgm_nm from the "광고 분류 기준 정보" section provided below. Pay close attention to the message's opening section (sender name, subject line, first sentence) as it often reveals the core campaign intent (e.g., device upgrade promotion, plan subscription, store visit campaign). Match this intent against each candidate's clue_tag to choose the best-fitting programs. You MUST copy the exact pgm_nm string as-is — do NOT shorten, paraphrase, or generate your own program names. If no "광고 분류 기준 정보" section is provided, return an empty array.
-  - pgm selection hints (apply when the pattern is present in the message):
-    - A specific store/agency name (e.g., "***대리점", "***직영점") with address or visit info → include a store-visit/opening pgm ('매장오픈안내 및 방문유도') if available in the candidate list.
-    - A new device name with purchase/pre-order keywords (e.g., "사전예약", "출시") → include a device upgrade pgm (기변유도) if available.
-    - A rate plan or subscription service with sign-up keywords (e.g., "가입", "구독") → include a subscription pgm (가입유도) if available.
+  - pgm selection hints (apply in PRIORITY ORDER — earlier rules take precedence):
+    1. [HIGHEST PRIORITY] A specific store/agency name (e.g., "***대리점", "***직영점") with address/phone/visit info → select '매장오픈안내 및 방문유도'. This takes priority even if device launch or plan keywords are also present, because the message originates from a specific store promoting visits.
+    2. A new device name with purchase/pre-order keywords (e.g., "사전예약", "출시") WITHOUT a specific store/agency name → select a device upgrade pgm (기변유도).
+    3. A rate plan or subscription service with sign-up keywords (e.g., "가입", "구독") → select a subscription pgm (가입유도) if available.
 """
 
 EXTRACTION_GUIDELINES_NLP_MODE = """

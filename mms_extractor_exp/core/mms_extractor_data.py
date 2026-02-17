@@ -673,6 +673,24 @@ class MMSExtractorDataMixin:
             logger.error(f"Kiwi 상품명 등록 실패: {e}")
             logger.error(f"오류 상세: {traceback.format_exc()}")
 
+    # pgm별 clue_tag 보강 규칙: 원본 데이터를 수정하지 않고 런타임에 추가
+    PGM_CLUE_TAG_ENHANCEMENTS = {
+        '매장오픈안내 및 방문유도': '직영점, 이벤트, 행사, 기념, 개통, 할인, 혜택, 안내드립니다, 주소, 연락처, 상담',
+    }
+
+    def _enhance_pgm_clue_tags(self):
+        """pgm clue_tag를 런타임에 보강 (원본 CSV/DB 데이터 변경 없이)"""
+        enhanced_count = 0
+        for pgm_nm, extra_tags in self.PGM_CLUE_TAG_ENHANCEMENTS.items():
+            mask = self.pgm_pdf['pgm_nm'] == pgm_nm
+            if mask.any():
+                original = self.pgm_pdf.loc[mask, 'clue_tag'].iloc[0]
+                self.pgm_pdf.loc[mask, 'clue_tag'] = original + ', ' + extra_tags
+                enhanced_count += 1
+                logger.info(f"clue_tag 보강: {pgm_nm} (+{extra_tags})")
+        if enhanced_count:
+            logger.info(f"clue_tag 보강 완료: {enhanced_count}개 프로그램")
+
     def _load_program_data(self):
         """프로그램 분류 정보 로드 및 임베딩 생성"""
         try:
@@ -687,6 +705,10 @@ class MMSExtractorDataMixin:
                 self._load_program_from_database()
                 logger.info(f"데이터베이스에서 프로그램 정보 로드: {len(self.pgm_pdf)}개")
             
+            # clue_tag 보강: 원본 데이터(CSV/DB)를 수정하지 않고 런타임에 추가
+            if not self.pgm_pdf.empty:
+                self._enhance_pgm_clue_tags()
+
             # 프로그램 분류를 위한 임베딩 생성
             if not self.pgm_pdf.empty:
                 logger.info("프로그램 분류 임베딩 생성 시작...")

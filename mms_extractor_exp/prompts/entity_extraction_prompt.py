@@ -281,7 +281,7 @@ Guidelines:
     elif context_keyword == 'TYPED':
         context_guideline = """
 5. **TYPED Context 활용** — Stage 1에서 추출된 엔티티의 타입 정보를 활용하여 vocabulary 매칭을 수행:
-   - R(Store): 매장/대리점 → vocabulary의 매장 관련 아이템 매칭
+   - R(Store): **제외** — 대리점/매장은 main prompt에서 별도 추출하므로 vocabulary 매칭하지 않음
    - E(Equipment): 단말기 → vocabulary의 디바이스 아이템 매칭. 정확한 모델명만 선택 (접미사 FE/Plus/Max 불일치 시 제외)
    - P(Product): 요금제/부가서비스 → vocabulary의 요금제/서비스 아이템 매칭
    - S(Subscription): 구독 상품 → vocabulary의 구독 관련 아이템 매칭
@@ -372,14 +372,13 @@ SIMPLE_ENTITY_EXTRACTION_PROMPT = """
 TYPED_ENTITY_EXTRACTION_PROMPT = """\
 # Task
 SK텔레콤 MMS 광고 메시지에서 **핵심 오퍼링 엔티티**(Core Offering Entities)를 추출하라.
-핵심 오퍼링이란 광고가 고객에게 제안하는 구체적인 상품·서비스·매장·이벤트를 의미한다.
+핵심 오퍼링이란 광고가 고객에게 제안하는 구체적인 상품·서비스·이벤트를 의미한다.
 
-# Entity Type Definitions (6 types)
-아래 6개 타입 중 해당하는 것만 추출한다.
+# Entity Type Definitions (5 types)
+아래 5개 타입 중 해당하는 것만 추출한다. **대리점/매장(Store)은 추출하지 않는다.**
 
 | Type | Code | 설명 | 예시 |
 |------|------|------|------|
-| **Store** | R | 물리적 대리점·매장 (지점명 포함) | CD대리점 동탄목동점, 유엔대리점 배곧사거리직영점, PS&M 동탄타임테라스점 |
 | **Equipment** | E | 단말기·디바이스 모델명 | 아이폰 17, 갤럭시 Z 폴드7, iPad Air 13, 갤럭시 워치6 |
 | **Product** | P | 요금제·부가서비스·유선상품 | 5GX 프라임 요금제, T끼리 온가족할인, 인터넷+IPTV, 로밍 baro 요금제 |
 | **Subscription** | S | 월정액 구독 상품 | T 우주패스 올리브영&스타벅스&이마트24, T 우주패스 Netflix |
@@ -410,17 +409,16 @@ prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 pre
    - 원문이 "T Day"이면 → "T Day" (NOT "티데이")
 
 2. **Specificity:** 구체적인 고유명사만 추출하라. 포괄적 카테고리명은 제외한다.
-   - ✅ "갤럭시 S25", "5GX 프라임 요금제", "CD대리점 동탄목동점"
+   - ✅ "갤럭시 S25", "5GX 프라임 요금제"
    - ❌ "휴대폰", "요금제", "대리점", "인터넷"(단독), "할인"(단독)
 
-3. **Store 추출:** 대리점명 + 지점명을 하나의 엔티티로 추출한다.
-   - "유엔대리점 배곧사거리직영점" → 하나의 Store 엔티티
-
-4. **Voucher 추출:** 제휴 브랜드 + 혜택 설명을 결합하여 추출한다.
+3. **Voucher 추출:** 제휴 브랜드 + 혜택 설명을 결합하여 추출한다. 쿠폰은 혜택과 함께 일회성으로 만들어지므로 혜택 표현(금액, %, 무료 등)이 쿠폰명의 일부이다.
    - "도미노피자 배달/방문 포장 50% 할인" → 하나의 Voucher 엔티티
+   - "올리브영 3천 원 기프트카드", "스타벅스 카페 아메리카노 무료 쿠폰", "CGV 영화 티켓 8,500원" → 혜택 포함 추출
    - 단, 브랜드만 언급되고 구체적 혜택이 없으면 추출하지 않는다.
 
-5. **Strict Exclusions — 다음은 절대 추출하지 않는다:**
+4. **Strict Exclusions — 다음은 절대 추출하지 않는다:**
+   - 대리점/매장명: "CD대리점 동탄목동점", "PS&M 동탄타임테라스점" 등 (main prompt에서 별도 추출)
    - 할인 금액/비율 단독: "최대 22만원", "50% 할인", "25% 할인"
    - 일반 행위/설명: "매장 방문", "사전예약", "통신사 이동", "번호이동"
    - URL/연락처: "skt.sh/...", "1558", "1504"
@@ -433,7 +431,7 @@ prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 pre
 
 {
   "entities": [
-    {"name": "엔티티명(원문 그대로)", "type": "R|E|P|S|V|X", "role": "prerequisite|offer|benefit|context"}
+    {"name": "엔티티명(원문 그대로)", "type": "E|P|S|V|X", "role": "prerequisite|offer|benefit|context"}
   ]
 }
 """
@@ -441,7 +439,7 @@ prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 pre
 HYBRID_DAG_EXTRACTION_PROMPT = """
 Analyze the advertisement to extract **User Action Paths**.
 Output three distinct sections:
-1. **ENTITY**: A list of Core Offering entities.
+1. **ENTITY**: Core Offering entities (pipe-separated).
 2. **ROLE**: The role of each entity (prerequisite, offer, or benefit).
 3. **DAG**: A structured graph representing the flow from Root to Benefit.
 
@@ -449,15 +447,21 @@ Output three distinct sections:
 * **DO NOT TRANSLATE:** Extract entities **exactly as they appear** in the source text.
 * **Preserve Original Script:** If the text says "아이폰 17", output "아이폰 17" (NOT "iPhone 17"). If it says "T Day", output "T Day".
 
+## What is an Entity?
+An entity is a **named product, service, plan, subscription, campaign, or brand** that is independently purchasable, subscribable, or installable. It has its own identity in the company's product catalog.
+
+**IS an entity:** 콜키퍼 플러스, T 우주패스 올리브영&스타벅스&이마트24, 갤럭시 Z 플립7, 5GX 프라임 요금제, 50% 할인 쿠폰
+**NOT an entity:** feature descriptions (부재중 전화 내용 문자 안내), price points (이용요금: 월 990원), action phrases (매장 방문), sub-benefits (8천 원 상당 추가 혜택)
+
 ## Entity Type Categories
-Classify entities into these types while extracting:
 * **Product (단말기):** Specific device models — 아이폰 17 Pro, 갤럭시 Z 플립7, 갤럭시 S25 울트라
 * **RatePlan (요금제):** Mobile/data rate plans — 5GX 프라임 요금제, T 프라임 에센셜, 로밍 baro 요금제
 * **Subscription (구독):** Membership/subscription — T 우주패스, FLO 이용권, 정기배송
-* **Store (매장):** Specific branch names — 새샘대리점 역곡점, 백색대리점 수성직영점
 * **PartnerBrand (제휴 브랜드):** Partner brands in promotions — 올리브영, CGV, 스타벅스
 * **WiredService (유선):** Internet/IPTV/home — 인터넷+IPTV, B tv, T 인터넷
 * **Campaign (캠페인):** Named events/campaigns — T Day, 0 day, Lucky 1717 이벤트
+* **Benefit (혜택):** Standalone benefits that are the core value proposition — 50% 할인, 2만원 할인, 무료 쿠폰
+* **EXCLUDE Store (매장/대리점):** Do NOT extract dealer/store names. They are extracted separately by the main prompt.
 
 ## Entity Role Classification (Critical)
 Each entity plays a role in the message. Classify every entity:
@@ -498,25 +502,24 @@ A service whose access is already granted through a prerequisite subscription/bu
 | "iPhone 신제품 구매 혜택 안내... 구매하면 캐시백" | iPhone 신제품 | offer | Promotes purchase |
 | "갤럭시 Z 플립7 사전예약 안내" | 갤럭시 Z 플립7 | offer | Promotes pre-order |
 
-## Part 1: Root Node Selection Hierarchy (Extract ALL Distinct Roots)
+## Root Node Selection Hierarchy (Extract ALL Distinct Roots)
 Identify logical starting points based on this priority. If multiple independent offers exist, extract all.
+**IMPORTANT: Do NOT use Store/dealer names as Root Nodes.**
 
-1.  **Store (Highest):** Specific branch names.
-    * *Match:* "새샘대리점 역곡점", "백색대리점 수성직영점"
-2.  **RatePlan / WiredService:** Rate plans, Internet/IPTV.
+1.  **RatePlan / WiredService:** Rate plans, Internet/IPTV.
     * *Match:* "5GX 프라임 요금제", "인터넷+IPTV 가입 혜택", "로밍 baro 요금제"
-3.  **Subscription / Campaign:** Membership signups or specific campaigns.
+2.  **Subscription / Campaign:** Membership signups or specific campaigns.
     * *Match:* "T 우주", "T Day", "0 day", "골드번호 프로모션"
-4.  **PartnerBrand:** When the promotion centers on a partner brand.
+3.  **PartnerBrand:** When the promotion centers on a partner brand.
     * *Match:* "올리브영", "CGV T day"
-5.  **Product (Hardware):** Device launches without a specific store focus.
+4.  **Product (Hardware):** Device launches without a specific store focus.
     * *Match:* "아이폰 17", "갤럭시 Z 플립7"
 
 ## Specificity Rule
 * Extract **specific model/plan names**, not generic categories.
 * When only a generic term exists (e.g., "아이폰 신제품"), extract as-is — do NOT invent specific model names.
 
-## Part 2: DAG Construction Rules
+## DAG Construction Rules
 Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
 * **Format:** `(Node:Action) -[Edge]-> (Node:Action)`
 * **Nodes:**
@@ -526,18 +529,47 @@ Construct a Directed Acyclic Graph (DAG) for each identified Root Node.
 * **Edges:** Use concise action verbs: 가입, 구매, 사용, 획득, 제공, 지급, 방문, 다운로드, 신청, 응모, 참여
 * **Logic:** Represent the shortest path from the Root action to the Final Benefit.
 
-## Strict Exclusions
-* Standalone discount amounts/rates: "최대 22만원", "50% 할인"
-* Generic tech terms alone: "5G", "LTE" (but named services like "5GX 프라임" OK)
-* Gift brand names in brackets: [사죠영], [크레앙]
-* Customer service / URLs: "고객센터 080-XXX", "skt.sh/xxxxx"
-* Navigational labels: '바로 가기', '링크', 'Shortcut', '자세히 보기'
-* Action/benefit descriptions: "매장 방문", "쓰던 아이폰 반납", "보상 프로그램"
-* Generic partners unless main promotion subject: '스타벅스', 'CU' (mention only, not promotion focus)
+## Strict Exclusions (Do NOT extract as entities)
+* **Store/dealer names**: "CD대리점 동탄목동점", "새샘대리점 역곡점" (extracted separately by the main prompt)
+* **Feature descriptions**: "부재중 전화 내용 문자 안내", "스팸 전화 차단", "AI 통화 녹음"
+* **Price points / fee amounts**: "이용요금: 월 990원", "월 9,900원에 최대 6만 원 혜택"
+* **Generic tech terms alone**: "5G", "LTE" (but named services like "5GX 프라임" OK)
+* **Gift brand names in brackets**: [사죠영], [크레앙]
+* **Customer service / URLs**: "고객센터 080-XXX", "skt.sh/xxxxx"
+* **Navigational labels**: '바로 가기', '링크', 'Shortcut', '자세히 보기'
+* **Action phrases**: "매장 방문", "쓰던 아이폰 반납"
+* **Promotional detail descriptions**: "8천 원 상당 추가 혜택", "프로모션 혜택", "론칭 기념 프로모션"
+* **Generic partners unless main promotion subject**: '스타벅스', 'CU' (mention only, not promotion focus)
 
-## Output Format: Do not use Markdown formatting. Use plain text.
-ENTITY: <comma-separated list of Core Offering entities only in original text>
-ROLE: <entity1>=<role>, <entity2>=<role>, ... (role is one of: prerequisite, offer, benefit)
+## Analysis Process (Required — follow these steps before producing final output)
+
+### Step 1: Message Understanding
+- What is the core message? (one sentence)
+- Who is the target? What does the advertiser want them to do?
+
+### Step 2: Entity Identification
+- List ONLY named products/services/plans/subscriptions/campaigns/brands
+- Apply the "catalog test": Would this appear as a standalone item in a product catalog? If not, it's NOT an entity.
+- Do NOT list feature descriptions, price details, or promotional sub-items as entities
+
+### Step 3: Role Classification + DAG
+- Classify each entity's role (prerequisite/offer/benefit)
+- Build the DAG: shortest path from Root to final Benefit
+
+### Step 4: Self-Verification (Critical — check and correct)
+1. **Zero-Translation**: Every entity name must match the original text exactly.
+2. **Role Accuracy**: Re-test each prerequisite (truly already owned?) and offer (actively promoted?).
+3. **No Over-extraction**: Count your entities. A typical MMS promotes 1-3 core entities. If you have significantly more, you are likely extracting sub-features or benefit details as separate entities — remove them.
+4. **DAG Minimality**: Shortest meaningful path, no redundant nodes.
+
+## Output Format
+First write your analysis (Steps 1-4), then output the final result.
+IMPORTANT: In your analysis, do NOT start any line with 'ENTITY:', 'ROLE:', or 'DAG:'.
+
+[Your step-by-step analysis here]
+
+ENTITY: <pipe-separated list of entities in original text — e.g., entity1 | entity2 | entity3>
+ROLE: <entity1>=<role> | <entity2>=<role> | ... (role: prerequisite, offer, benefit)
 DAG: <DAG representation line by line in original text>
 """
 
@@ -558,9 +590,7 @@ Preserve Original Script: If the text says "아이폰 17", output "아이폰 17"
 Part 1: Root Node Selection Hierarchy (Extract ALL Distinct Roots)
 Identify logical starting points based on this priority. If multiple independent offers exist, extract all.
 
-Physical Store (Highest): Specific branch names.
-
-Match: "새샘대리점 역곡점", "티원대리점 화순점"
+**IMPORTANT: Do NOT extract Store/dealer names (e.g., "새샘대리점 역곡점"). They are extracted separately by the main prompt.**
 
 Core Service (Plans/VAS): Rate plans, Value-Added Services, Internet/IPTV.
 

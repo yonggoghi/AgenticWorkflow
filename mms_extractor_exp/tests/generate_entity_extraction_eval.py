@@ -649,8 +649,8 @@ Examples:
         "--context-mode", "-c",
         type=str,
         choices=['dag', 'pairing', 'none', 'ont', 'typed', 'kg'],
-        default='kg',
-        help="Entity extraction context mode (default: kg)"
+        default='dag',
+        help="Entity extraction context mode (default: dag)"
     )
     parser.add_argument(
         "--extraction-engine",

@@ -669,7 +669,7 @@ class EntityContextExtractionStep(WorkflowStep):
 
     def __init__(self, entity_recognizer,
                  llm_factory=None, llm_model: str = 'ax',
-                 entity_extraction_context_mode: str = 'kg',
+                 entity_extraction_context_mode: str = 'dag',
                  use_external_candidates: bool = False,
                  extraction_engine: str = 'default',
                  stop_item_names: List[str] = None,
@@ -825,7 +825,7 @@ class VocabularyFilteringStep(WorkflowStep):
     def __init__(self, entity_recognizer, alias_pdf_raw: pd.DataFrame,
                  stop_item_names: List[str], entity_extraction_mode: str,
                  llm_factory=None, llm_model: str = 'ax',
-                 entity_extraction_context_mode: str = 'kg'):
+                 entity_extraction_context_mode: str = 'dag'):
         self.entity_recognizer = entity_recognizer
         self.alias_pdf_raw = alias_pdf_raw
         self.stop_item_names = stop_item_names
@@ -887,7 +887,7 @@ class VocabularyFilteringStep(WorkflowStep):
                 context_text = extracted_entities.get('context_text', '')
                 logger.info(f"🔍 Stage 2 시작: {len(entities)}개 엔티티 필터링 (context_mode={self.entity_extraction_context_mode})")
 
-                similarities_fuzzy = self.entity_recognizer._filter_with_vocabulary(
+                stage2_result = self.entity_recognizer._filter_with_vocabulary(
                     entities=entities,
                     context_text=context_text,
                     context_mode=self.entity_extraction_context_mode,
@@ -895,6 +895,12 @@ class VocabularyFilteringStep(WorkflowStep):
                     rank_limit=100,
                     llm_model=llm_models[0] if llm_models else None
                 )
+
+                # ONT 모드는 dict를 반환, 그 외는 DataFrame
+                if isinstance(stage2_result, dict):
+                    similarities_fuzzy = stage2_result.get('similarities_df', pd.DataFrame())
+                else:
+                    similarities_fuzzy = stage2_result
                 logger.info(f"✅ Stage 2 완료: {similarities_fuzzy.shape[0] if not similarities_fuzzy.empty else 0}개 엔티티 필터링됨")
             else:
                 # Fallback: no extracted entities, use wrapper
@@ -1345,6 +1351,8 @@ class DAGExtractionStep(WorkflowStep):
             dag_lines = []
 
             for rel in relationships:
+                if not isinstance(rel, dict):
+                    continue
                 src = rel.get('source', '')
                 tgt = rel.get('target', '')
                 rel_type = rel.get('type', '')

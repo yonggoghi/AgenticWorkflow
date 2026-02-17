@@ -2,7 +2,8 @@
 Few-shot ExampleData for Korean MMS entity extraction via langextract.
 
 Provides representative Korean MMS advertisement examples covering text-aligned entity
-types (Store, Equipment, Product, Subscription, Voucher, Campaign, Channel).
+types (Equipment, Product, Subscription, Voucher, Campaign, Channel).
+Store (대리점/매장) is excluded — extracted separately by the main prompt.
 Purpose is excluded since it's a classification label, not a text span that langextract
 can align to source text.
 """
@@ -17,7 +18,7 @@ def build_mms_examples() -> list[ExampleData]:
         List of 5 ExampleData covering all entity types.
     """
     return [
-        # Example 1: Store + Equipment + Voucher + Channel
+        # Example 1: Equipment + Voucher + Channel (Store excluded — extracted by main prompt)
         ExampleData(
             text=(
                 "(광고)[SKT] CD대리점 동탄목동점에서 아이폰 17 Pro 사전예약 시작! "
@@ -26,7 +27,6 @@ def build_mms_examples() -> list[ExampleData]:
                 "수신거부 080-1234-5678"
             ),
             extractions=[
-                Extraction(extraction_class="Store", extraction_text="CD대리점 동탄목동점"),
                 Extraction(extraction_class="Equipment", extraction_text="아이폰 17 Pro"),
                 Extraction(extraction_class="Voucher", extraction_text="올리브영 3천 원 기프트카드"),
                 Extraction(extraction_class="Channel", extraction_text="skt.sh/abc123"),
@@ -60,7 +60,7 @@ def build_mms_examples() -> list[ExampleData]:
                 Extraction(extraction_class="Channel", extraction_text="skt.sh/xyz789"),
             ],
         ),
-        # Example 4: Equipment + Product + Store
+        # Example 4: Equipment + Product (Store excluded — extracted by main prompt)
         ExampleData(
             text=(
                 "[SKT] 갤럭시 Z 플립7 출시 기념! 유엔대리점 배곧사거리직영점 방문 시 "
@@ -70,7 +70,6 @@ def build_mms_examples() -> list[ExampleData]:
             ),
             extractions=[
                 Extraction(extraction_class="Equipment", extraction_text="갤럭시 Z 플립7"),
-                Extraction(extraction_class="Store", extraction_text="유엔대리점 배곧사거리직영점"),
                 Extraction(extraction_class="Product", extraction_text="T끼리 온가족할인"),
                 Extraction(extraction_class="Voucher", extraction_text="도미노피자 50% 할인 쿠폰"),
             ],

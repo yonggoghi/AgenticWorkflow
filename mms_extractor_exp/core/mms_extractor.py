@@ -348,7 +348,7 @@ class MMSExtractor(MMSExtractorDataMixin):
     
     def __init__(self, model_path=None, data_dir=None, product_info_extraction_mode=None,
                  entity_extraction_mode=None, offer_info_data_src='db', llm_model='ax',
-                 entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='kg',
+                 entity_llm_model='ax', extract_entity_dag=False, entity_extraction_context_mode='dag',
                  skip_entity_extraction=False, use_external_candidates=False,
                  extraction_engine='default',
                  num_cand_pgms=None, num_select_pgms=None):
@@ -371,7 +371,7 @@ class MMSExtractor(MMSExtractorDataMixin):
             llm_model (str, optional): 사용할 LLM 모델. 기본값: 'ax'
             entity_llm_model (str, optional): 엔티티 추출용 LLM 모델. 기본값: 'ax'
             extract_entity_dag (bool, optional): DAG 추출 여부. 기본값: False
-            entity_extraction_context_mode (str, optional): 엔티티 추출 컨텍스트 모드 ('dag', 'pairing', 'none', 'ont', 'kg'). 기본값: 'kg'
+            entity_extraction_context_mode (str, optional): 엔티티 추출 컨텍스트 모드 ('dag', 'pairing', 'none', 'ont', 'kg'). 기본값: 'dag'
             
         Raises:
             Exception: 초기화 과정에서 발생하는 모든 오류
@@ -795,13 +795,17 @@ class MMSExtractor(MMSExtractorDataMixin):
                 self.pgm_pdf = load_program_from_database()
                 logger.info(f"데이터베이스에서 프로그램 정보 로드: {len(self.pgm_pdf)}개")
             
+            # clue_tag 보강: 원본 데이터(CSV/DB)를 수정하지 않고 런타임에 추가
+            if not self.pgm_pdf.empty:
+                self._enhance_pgm_clue_tags()
+
             # 프로그램 분류를 위한 임베딩 생성
             if not self.pgm_pdf.empty:
                 logger.info("프로그램 분류 임베딩 생성 시작...")
                 clue_texts = self.pgm_pdf[["pgm_nm","clue_tag"]].apply(
                     lambda x: preprocess_text(x['pgm_nm'].lower()) + " " + x['clue_tag'].lower(), axis=1
                 ).tolist()
-                
+
                 if self.emb_model is not None:
                     self.clue_embeddings = self.emb_model.encode(
                         clue_texts, convert_to_tensor=True, show_progress_bar=False
@@ -809,7 +813,7 @@ class MMSExtractor(MMSExtractorDataMixin):
                 else:
                     logger.warning("임베딩 모델이 없어 빈 tensor 사용")
                     self.clue_embeddings = torch.empty((0, 768))
-                
+
                 logger.info(f"프로그램 분류 임베딩 생성 완료: {len(self.pgm_pdf)}개 프로그램")
             else:
                 logger.warning("프로그램 데이터가 비어있어 임베딩을 생성할 수 없습니다")
@@ -1041,13 +1045,28 @@ class MMSExtractor(MMSExtractorDataMixin):
             # message_id를 결과에 포함
             final_result['message_id'] = message_id
             raw_result['message_id'] = message_id
-            
+
+            # Step 7 엔티티 추출 결과 (ent_result)
+            ent_result = {}
+            extracted_entities = final_state.get("extracted_entities")
+            if extracted_entities:
+                ent_result = {
+                    'entities': extracted_entities.get('entities', []),
+                    'context_text': extracted_entities.get('context_text', ''),
+                    'entity_roles': extracted_entities.get('entity_roles', {}),
+                    'message_id': message_id,
+                }
+            kg_metadata = final_state.get("kg_metadata")
+            if kg_metadata:
+                ent_result['kg_metadata'] = kg_metadata
+
             # 프롬프트 정보 가져오기
             actual_prompts = PromptManager.get_stored_prompts_from_thread()
-            
+
             return {
                 "ext_result": final_result,
                 "raw_result": raw_result,
+                "ent_result": ent_result,
                 "prompts": actual_prompts
             }
             
@@ -1194,7 +1213,7 @@ class MMSExtractor(MMSExtractorDataMixin):
 
     def _create_fallback_result(self, msg: str, message_id: str = '#') -> Dict[str, Any]:
         """처리 실패 시 기본 결과 생성"""
-        return {
+        fallback = {
             "message_id": message_id,
             "title": "광고 메시지",
             "purpose": ["정보 제공"],
@@ -1204,6 +1223,12 @@ class MMSExtractor(MMSExtractorDataMixin):
             "pgm": [],
             "offer": {"type": "product", "value": []},
             "entity_dag": []
+        }
+        return {
+            "ext_result": fallback,
+            "raw_result": fallback.copy(),
+            "ent_result": {"message_id": message_id},
+            "prompts": {}
         }
 
     # _build_final_result and _map_program_classification removed (moved to ResultBuilder)
@@ -1257,14 +1282,16 @@ def process_message_worker(extractor, message: str, extract_dag: bool = False, m
         raw_result['entity_dag'] = dag_list
         result['raw_result'] = raw_result
 
+        # ent_result는 process_message에서 이미 설정됨
         result['error'] = ""
-        
+
         logger.info(f"워커 프로세스에서 메시지 처리 완료")
         return result
-        
+
     except Exception as e:
         logger.error(f"워커 프로세스에서 메시지 처리 실패: {e}")
         return {
+            "ent_result": {"message_id": message_id},
             "ext_result": {
                 "message_id": message_id, # message_id 추가
                 "title": "처리 실패",
@@ -1486,12 +1513,15 @@ def save_result_to_mongodb_if_enabled(message: str, result: dict, args_or_data, 
             }
         }
         
+        # ent_result (Step 7 엔티티 추출 결과)
+        ent_result = result.get('ent_result', {})
+
         # MongoDB에 저장
         user_id = getattr(args, 'user_id', 'DEFAULT_USER')
         # result에서 message_id 추출 (ext_result 또는 raw_result에서)
         message_id = result.get('ext_result', {}).get('message_id') or result.get('raw_result', {}).get('message_id') or '#'
-        saved_id = save_to_mongodb(message, extraction_result, raw_result_data, extraction_prompts, 
-                         user_id=user_id, message_id=message_id)
+        saved_id = save_to_mongodb(message, extraction_result, raw_result_data, extraction_prompts,
+                         user_id=user_id, message_id=message_id, ent_result=ent_result)
         
         if saved_id:
             print(f"📄 결과가 MongoDB에 저장되었습니다. (ID: {saved_id[:8]}...)")

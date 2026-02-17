@@ -3,7 +3,7 @@ ONTOLOGY_PROMPT = """# Role
 주어진 MMS 메시지에서 핵심 객체(Object), 객체 간의 의미론적 관계(Relationship), 그리고 실행 가능한 행동(Action)을 추출하여 구조화된 지식 그래프(Knowledge Graph)로 변환하라.
 
 # Core Principles
-1. **Zero-Translation Rule:** 모든 개체명(상품명, 매장명, 요금제, 제휴 브랜드명 등)은 원문 그대로 추출하라. (예: "T 우주패스 올리브영&스타벅스&이마트24", "에스알대리점 지행역점", "5GX 프리미엄" 등)
+1. **Zero-Translation Rule:** 모든 개체명(상품명, 요금제, 제휴 브랜드명 등)은 원문 그대로 추출하라. (예: "T 우주패스 올리브영&스타벅스&이마트24", "5GX 프리미엄" 등)
 2. **역할 분류 (Entity Role Classification):** 각 개체가 메시지에서 어떤 역할을 하는지 판별하라.
    - `prerequisite`: 타겟 고객이 **이미** 보유/가입/설치한 개체 (MMS 발송 대상 조건)
    - `offer`: 메시지가 **새로 제안/안내/유도**하는 핵심 오퍼링
@@ -11,7 +11,7 @@ ONTOLOGY_PROMPT = """# Role
    - `context`: 접점 채널, 연락처, 캠페인명 등 부가 정보
 3. **DAG-Based Logic:** 메시지가 유도하는 최종 혜택까지의 흐름을 $G = (V, E)$ 구조로 파악하라. 분기 조건(약정 유형, 멤버십 등급 등)을 노드로 명시하라.
 4. **Functional Action:** Action은 단순한 텍스트가 아닌, 입력(Input), 조건(Logic), 결과(Effect)를 가진 **'Strongly Typed Function'**으로 모델링하라.
-5. **Focused Extraction:** 상품(Product), 서비스(Subscription/RatePlan), 매장(Store), 캠페인(Campaign) 등 핵심 오퍼링 엔티티를 중심으로 추출하라. Benefit, Channel, Segment, Contract, MembershipTier는 관계(Relationship)에서 참조하되, 핵심 오퍼링이 아닌 부가 정보는 최소한으로 추출하라.
+5. **Focused Extraction:** 상품(Product), 서비스(Subscription/RatePlan), 캠페인(Campaign) 등 핵심 오퍼링 엔티티를 중심으로 추출하라. **대리점/매장(Store)은 추출하지 않는다** (main prompt에서 별도 추출). Benefit, Channel, Segment, Contract, MembershipTier는 관계(Relationship)에서 참조하되, 핵심 오퍼링이 아닌 부가 정보는 최소한으로 추출하라.
 
 # 역할 분류 판별 기준
 
@@ -52,9 +52,7 @@ prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 pre
 
 ## Phase 1 — 핵심 엔티티 (Core)
 
-- **Store**
-  물리적 매장 및 대리점.
-  예: "에스알대리점 지행역점", "미래대리점 문정법조타운점", "홍익대리점 산남점"
+- **Store** — **추출하지 않음** (main prompt에서 별도 추출). 관계(Relationship)에서만 참조.
 
 - **Campaign**
   마케팅 캠페인 또는 프로모션 프로그램. 기간과 참여 조건이 있는 지속적 마케팅 활동.
@@ -83,6 +81,8 @@ prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 pre
 - **PartnerBrand** ★ 신규
   제휴 브랜드 및 외부 서비스 제공자. Campaign과 Benefit 사이를 매개하는 독립 노드.
   예: "올리브영", "스타벅스", "파리바게뜨", "GS25", "이마트24", "야놀자", "배달의민족", "11번가", "메가MGC커피", "티빙", "백미당", "잠바주스", "헉슬리", "CU", "Google One"
+  ⚠️ **쿠폰/기프티콘인 경우**: 제휴 브랜드 + 혜택 설명을 결합하여 하나의 엔티티로 추출하라. 쿠폰은 혜택과 함께 일회성으로 생성되므로 혜택 표현이 쿠폰명의 일부이다.
+  예: "올리브영 3천 원 기프트카드", "스타벅스 카페 아메리카노 무료 쿠폰", "CGV 영화 티켓 8,500원", "도미노피자 50% 할인 쿠폰"
 
 - **Contract** ★ 신규
   약정 및 지원금 조건. DAG에서 혜택 분기를 만드는 계약 조건 노드.
@@ -153,7 +153,7 @@ prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 pre
 - **고객센터/연락처**: "SKT 고객센터(1558)", "고객센터(114)", 전화번호
 - **URL/링크**: "https://...", "http://..."
 - **네비게이션 라벨**: "바로 가기", "자세히 보기", "링크", "Shortcut"
-- **단독 할인 금액/비율**: "20% 할인", "최대 22만 원 캐시백", "50% 할인 쿠폰" (Benefit으로만 분류하고, 상품명 일부가 아닌 한 별도 엔티티로 추출하지 말라)
+- **단독 할인 금액/비율**: "20% 할인", "최대 22만 원 캐시백" (Benefit으로만 분류하고, 상품명 일부가 아닌 한 별도 엔티티로 추출하지 말라. 단, 쿠폰/기프티콘명에 포함된 혜택 표현은 제외 대상이 아님 — "올리브영 3천 원 기프트카드", "도미노피자 50% 할인 쿠폰"은 쿠폰 엔티티로 추출)
 - **일반 기술 용어 단독**: "5G", "LTE" (요금제명의 일부인 "5GX 프리미엄"은 추출)
 - **수신거부 문구**: "무료 수신거부 1504"
 - **사은품 브랜드명 단독**: "[사죠영]", "[크레앙]", "[프리디]" 등 사은품 제조사명 (사은품 자체는 Benefit으로 분류)
@@ -227,7 +227,7 @@ prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 pre
 | "~요금제", "5GX~", "다이렉트~", "프라임~" | RatePlan | 통신 요금 과금 단위 |
 | "T 우주패스~", "~보험", "헬로링", "소리샘~" | Subscription | 월정액 부가서비스 |
 | "올리브영", "스타벅스", "GS25", "배달의민족" | PartnerBrand | 외부 제휴사 |
-| "~대리점", "~점" (물리 매장) | Store | 오프라인 판매처 |
+| "~대리점", "~점" (물리 매장) | Store | **추출 제외** (main prompt에서 별도 추출) |
 | "~약정", "공시지원금", "선택약정" | Contract | 계약 조건 |
 | "T 월드 앱", "카카오톡 채널", "고객센터" | Channel | 접점 채널 |
 | "VIP", "GOLD", "SILVER", "장기 우수 고객" | MembershipTier | 멤버십 등급 |
@@ -255,7 +255,7 @@ prerequisite 구독/번들을 통해 이미 접근이 부여된 서비스도 pre
 - 추가 설명이나 마크다운 코드 블록 없이 순수 JSON만 반환하라
 - 응답의 첫 문자는 반드시 '{'로 시작하고 마지막 문자는 '}'로 끝나야 한다
 - JSON 외에 다른 텍스트를 포함하지 말라
-- 핵심 오퍼링(Store, Product, Subscription, RatePlan, Campaign, Event, WiredService, PartnerBrand) 중심으로 추출하라
+- 핵심 오퍼링(Product, Subscription, RatePlan, Campaign, Event, WiredService, PartnerBrand) 중심으로 추출하라. **Store(대리점/매장)는 추출하지 않는다.**
 - Strict Exclusions에 해당하는 항목은 엔티티로 추출하지 말라
 - 동일 엔티티가 여러 관계에 참여할 수 있다
 - 메시지에 명시되지 않은 정보는 추론하지 말고, 명시된 정보만 추출하라

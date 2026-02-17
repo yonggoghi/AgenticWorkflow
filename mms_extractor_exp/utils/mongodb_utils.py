@@ -58,12 +58,12 @@ class MongoDBManager:
             self.client.close()
             logger.info("MongoDB 연결 해제")
     
-    def save_extraction_result(self, message: str, extraction_result: Dict[str, Any], raw_result: Dict[str, Any], 
-                               extraction_prompts: Dict[str, Any], user_id: str = "SKT1110566", 
-                               message_id: str = None) -> Optional[str]:
+    def save_extraction_result(self, message: str, extraction_result: Dict[str, Any], raw_result: Dict[str, Any],
+                               extraction_prompts: Dict[str, Any], user_id: str = "SKT1110566",
+                               message_id: str = None, ent_result: Dict[str, Any] = None) -> Optional[str]:
         """
         MMS 추출 결과를 MongoDB에 저장
-        
+
         Args:
             message: 원본 메시지
             extraction_result: API에서 반환된 전체 추출 결과
@@ -71,7 +71,8 @@ class MongoDBManager:
             extraction_prompts: 프롬프트 정보
             user_id: 분석 작업 요청자 ID (기본값: SKT1110566)
             message_id: 메시지 ID (None이면 자동 생성)
-            
+            ent_result: Step 7 엔티티 추출 결과 (entities, context_text, entity_roles, kg_metadata)
+
         Returns:
             저장된 문서의 ObjectId (문자열) 또는 None
         """
@@ -116,6 +117,7 @@ class MongoDBManager:
                 'dag_prompt': dag_prompt,
                 'raw_result': raw_result,
                 'ext_result': ext_result,
+                'ent_result': ent_result or {},       # Step 7 엔티티 추출 결과
                 'metadata': metadata,
                 'ext_timestamp': datetime.utcnow(),  # 저장 시간
                 'user_id': user_id,                  # 분석 작업 요청자 ID
@@ -215,12 +217,12 @@ def get_mongodb_manager() -> MongoDBManager:
         _mongodb_manager = MongoDBManager()
     return _mongodb_manager
 
-def save_to_mongodb(message: str, extraction_result: Dict[str, Any], raw_result: Dict[str, Any], 
-                   extraction_prompts: Dict[str, Any], user_id: str = "SKT1110566", 
-                   message_id: str = None) -> Optional[str]:
+def save_to_mongodb(message: str, extraction_result: Dict[str, Any], raw_result: Dict[str, Any],
+                   extraction_prompts: Dict[str, Any], user_id: str = "SKT1110566",
+                   message_id: str = None, ent_result: Dict[str, Any] = None) -> Optional[str]:
     """
     편의 함수: MMS 추출 결과를 MongoDB에 저장
-    
+
     Args:
         message: 원본 메시지
         extraction_result: 추출 결과
@@ -228,13 +230,15 @@ def save_to_mongodb(message: str, extraction_result: Dict[str, Any], raw_result:
         extraction_prompts: 프롬프트 정보
         user_id: 분석 작업 요청자 ID (기본값: SKT1110566)
         message_id: 메시지 ID (None이면 자동 생성)
-        
+        ent_result: Step 7 엔티티 추출 결과
+
     Returns:
         저장된 문서의 ObjectId (문자열) 또는 None
     """
     # 매번 새로운 매니저 인스턴스 생성 (연결 문제 해결)
     manager = MongoDBManager()
-    result = manager.save_extraction_result(message, extraction_result, raw_result, extraction_prompts, user_id, message_id)
+    result = manager.save_extraction_result(message, extraction_result, raw_result, extraction_prompts,
+                                            user_id, message_id, ent_result=ent_result)
     manager.disconnect()
     return result
 
