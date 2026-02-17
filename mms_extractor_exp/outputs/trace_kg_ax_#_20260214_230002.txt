@@ -1,0 +1,914 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "(광고)[SKT] CD대리점 동탄목동점에서 아이폰 17 Pro 사전예약 시작\! 최대 22만 원 캐시백 + 올리브영 3천 원 기프트카드 증정. 매장 방문 또는 skt.sh/abc1..."
+Timestamp: 2026-02-14 22:59:19
+Total Duration: 42.58 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: kg <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: (광고)[SKT] CD대리점 동탄목동점에서 아이폰 17 Pro 사전예약 시작\! 최대 22만 원 캐시백 + 올리브영 3천 원 기프트카드 증정. 매장 방문 또는 skt.sh/abc123 에서 확인하세요. 수신거부 080-1234-5678
+
+OUTPUT:
+  msg: (광고)[SKT] CD대리점 동탄목동점에서 아이폰 17 Pro 사전예약 시작\! 최대 22만 원 캐시백 + 올리브영 3천 원 기프트카드 증정. 매장 방문 또는 skt.sh/abc123 에서 확인하세요. 수신거부 080-1234-5678
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (1.05s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.616s (58.7%)
+  kiwi_tokenization_nnp: 0.002s (0.2%)
+  fuzzy_matching: 0.297s (28.3%)
+  sequence_similarity: 0.122s (11.6%)
+  threshold_filter_merge: 0.009s (0.9%)
+
+INPUT:
+  msg: (광고)[SKT] CD대리점 동탄목동점에서 아이폰 17 Pro 사전예약 시작\! 최대 22만 원 캐시백 + 올리브영 3천 원 기프트카드 증정. 매장 방문 또는 skt.sh/abc123 에서 확인하세요. 수신거부 080-1234-5678
+  context_mode: kg
+
+OUTPUT:
+  entities_from_kiwi: ['아이폰 17 Pro']
+  cand_item_list: [30 items]
+    First 3: ['아이폰 17 Pro', '아이폰 17 pro', '아이폰 17 PRO']
+  cand_item_count: 39
+  extra_item_pdf_shape: (11, 2)
+  extra_item_pdf_sample: [5 items]
+    First 3: [{'item_nm': 'iPhone 13', 'item_id': ['U000005273']}, {'item_nm': 'iPhone 14', 'item_id': ['U000005792']}, {'item_nm': 'iPhone 15', 'item_id': ['U000006212']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 1
+  candidate_products_matched: 39
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.13s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] CD대리점 동탄목동점에서 아이폰 17 Pro 사전예약 시작\! 최대 22만 원 캐시백 + 올리브영 3천 원 기프트카드 증정. 매장 방문 또는 skt.sh/abc123 에서 확인하세요. 수신거부 080-1234-5678
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	매장오픈안내 및 방문유도 : 매장, 대리점, 오픈, 내방, 방문, 리뉴얼, 이전, 홍보, 프로모션, 사은품
+	상품 및 부가서비스 가입유도_구독 : T우주, 구독, 우주패스, 1505, 월정액, Netflix, Wavve, 스트리밍, 콘텐츠
+	상품 
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: [20 items]
+  extra_item_pdf_shape: (11, 2)
+
+OUTPUT:
+  rag_context_length: 1752
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	매장오픈안내 및 방문유도 : 매장, 대리...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (5.41s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] CD대리점 동탄목동점에서 아이폰 17 Pro 사전예약 시작\! 최대 22만 원 캐시백 + 올리브영 3천 원 기프트카드 증정. 매장 방문 또는 skt.sh/abc123 에서 확인하세요. 수신거부 080-1234-5678
+  rag_context_length: 1752
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 581
+  result_json_text_preview: ```json
+{
+  "title": "아이폰17Pro 사전예약 최대 22만원 캐시백",
+  "purpose": [
+    "상품 가입 유도",
+    "대리점/매장 방문 유도"
+  ],
+  "sales_script": "아이폰17Pro 사전예약! CD대리점 동탄목동점 방문 시 최대 22만원 캐시백+올리브영 기프트카드. 안내드릴까요?",
+  "product": [
+    {
+      "name": "아이폰 17 Pro",
+      "action": "구매"
+    },
+    {
+      "name": "올리브영 3천 원 기프...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 581
+  result_json_text_preview: ```json
+{
+  "title": "아이폰17Pro 사전예약 최대 22만원 캐시백",
+  "purpose": [
+    "상품 가입 유도",
+    "대리점/매장 방문 유도"
+  ],
+  "sales_script": "아이폰17Pro 사전예약! CD대리점 동탄목동점 방문 시 최대 22만원 캐시백+올리브영 기프트카드. 안내드릴까요?",
+  "product": [
+    {
+      "name": "아이폰 17 Pro",
+      "action": "구매"
+    },
+    {
+      "name": "올리브영 3천 원 기프트카드",
+      "action": "쿠폰다운로드"
+    }
+  ],
+  "channel": [
+    {
+      "type": "대리점",
+      "value": "CD대리점 동탄목동점",
+      "action": "가입"
+    },
+    {
+      "type": "URL",
+      "value": "skt.sh/abc123",
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '아이폰 17 Pro', 'action': '구매'}, {'name': '올리브영 3천 원 기프트카드', 'action': '쿠폰다운로드'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 2
+  llm_product_names: ['아이폰 17 Pro', '올리브영 3천 원 기프트카드']
+  llm_product_actions: ['구매', '쿠폰다운로드']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (31.37s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['아이폰 17 Pro']
+  entity_extraction_mode: llm
+  context_mode: kg
+
+OUTPUT:
+  extracted_entities: ['아이폰 17 Pro', '사전예약', '최대 22만 원 캐시백', '올리브영 3천 원 기프트카드']
+  context_text: Entities: 아이폰 17 Pro(Product:offer), 사전예약(Campaign:offer), 최대 22만 원 캐시백(Benefit:benefit), 올리브영 3천 원 기프트카드(Benefit:benefit), CD대리점 동탄목동점(Channel:context), skt.sh/abc123(Channel:context)
+Relationships:
+  - CD대리점 동탄목동점 -[REACHABLE_VIA]-> 사전예약
+  - skt.sh/abc123 -[REACHABLE_VIA]-> 사전예약
+  - 사전예약 -[OFFERS]...
+
+PRODUCT FOCUS:
+  extracted_entities_count: 4
+  extracted_entities: ['아이폰 17 Pro', '사전예약', '최대 22만 원 캐시백', '올리브영 3천 원 기프트카드']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (4.39s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': '아이폰 17 Pro', 'action': '구매'}, {'name': '올리브영 3천 원 기프트카드', 'action': '쿠폰다운로드'}]
+  extracted_entities: {...6 keys...}
+
+OUTPUT:
+  matched_products: [3 items]
+    First 3: [{'item_nm': 'iPhone 17 Pro', 'item_id': ['U000006956'], 'item_name_in_msg': ['아이폰 17 Pro'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro Max', 'item_id': ['U000006955'], 'item_name_in_msg': ['아이폰 17 Pro'], 'expected_action': ['구매']}, {'item_nm': '사전예약', 'item_id': ['#'], 'item_name_in_msg': ['사전예약'], 'expected_action': ['기타']}]
+  matched_products_count: 3
+  similarity_scores_count: 205
+  similarity_scores_sample:
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 PRO', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 Pro', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 pro', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 PRO 맥스', 'sim': 1.7861538461538462, 'rank': 2.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 Pro 맥스', 'sim': 1.7861538461538462, 'rank': 2.0, 'item_dmn_nm': '단말기'}
+    ... (15 more)
+
+PRODUCT FOCUS:
+  matched_product_count: 3
+  product_details:
+    - item_nm: iPhone 17 Pro
+      item_id: ['U000006956']
+      item_name_in_msg: ['아이폰 17 Pro']
+      expected_action: ['구매']
+    - item_nm: iPhone 17 Pro Max
+      item_id: ['U000006955']
+      item_name_in_msg: ['아이폰 17 Pro']
+      expected_action: ['구매']
+    - item_nm: 사전예약
+      item_id: ['#']
+      item_name_in_msg: ['사전예약']
+      expected_action: ['기타']
+  similarity_matching:
+    - total_matches: 205
+    - unique_entities_in_msg: 1
+    - unique_aliases_matched: 205
+  top_similarity_matches:
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 PRO', 'sim': 2.0}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 Pro', 'sim': 2.0}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 pro', 'sim': 2.0}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 PRO 맥스', 'sim': 1.7861538461538462}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 Pro 맥스', 'sim': 1.7861538461538462}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 pro 맥스', 'sim': 1.7861538461538462}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17/17 PRO', 'sim': 1.7653846153846153}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17/17 Pro', 'sim': 1.7653846153846153}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17/17 pro', 'sim': 1.7653846153846153}
+    - {'item_name_in_msg': '아이폰 17 Pro', 'item_nm_alias': '아이폰 17 PRO MAX', 'sim': 1.747142857142857}
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.22s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 3
+  matched_products: [3 items]
+
+OUTPUT:
+  final_result_product: [3 items]
+    First 3: [{'item_nm': 'iPhone 17 Pro', 'item_id': ['U000006956'], 'item_name_in_msg': ['아이폰 17 Pro'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro Max', 'item_id': ['U000006955'], 'item_name_in_msg': ['아이폰 17 Pro'], 'expected_action': ['구매']}, {'item_nm': '사전예약', 'item_id': ['#'], 'item_name_in_msg': ['사전예약'], 'expected_action': ['기타']}]
+  final_result_product_count: 3
+  offer_type: org
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 3
+
+OUTPUT:
+  validated_product_count: 3
+  has_errors: False
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 205
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg   item_nm_alias       sim  rank item_dmn_nm
+0        아이폰 17 Pro      아이폰 17 PRO  2.000000   1.0         단말기
+1        아이폰 17 Pro      아이폰 17 Pro  2.000000   1.0         단말기
+2        아이폰 17 Pro      아이폰 17 pro  2.000000   1.0         단말기
+3        아이폰 17 Pro   아이폰 17 PRO 맥스  1.786154   2.0         단말기
+4        아이폰 17 Pro   아이폰 17 Pro 맥스  1.786154   2.0         단말기
+5        아이폰 17 Pro   아이폰 17 pro 맥스  1.786154   2.0         단말기
+6        아이폰 17 Pro   아이폰 17/17 PRO  1.765385   3.0         단말기
+7        아이폰 17 Pro   아이폰 17/17 Pro  1.765385   3.0         단말기
+8        아이폰 17 Pro   아이폰 17/17 pro  1.765385   3.0         단말기
+9        아이폰 17 Pro  아이폰 17 PRO MAX  1.747143   4.0         단말기
+10       아이폰 17 Pro  아이폰 17 PRO Max  1.747143   4.0         단말기
+11       아이폰 17 Pro  아이폰 17 PRO max  1.747143   4.0         단말기
+12       아이폰 17 Pro  아이폰 17 Pro MAX  1.747143   4.0         단말기
+13       아이폰 17 Pro  아이폰 17 Pro Max  1.747143   4.0         단말기
+14       아이폰 17 Pro  아이폰 17 Pro max  1.747143   4.0         단말기
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 675
+  Unique item_name_in_msg: 4
+  Unique item_nm_alias: 675
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 675
+  sim_s1 range: 0.1600 - 1.0000
+  sim_s2 range: 0.0800 - 1.0000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 242
+  Filtered OUT at this stage: 433 rows
+  Sample of filtered items:
+    - 아이폰 17 Pro -> UPS Pro (s1=0.3867, s2=0.5571)
+    - 아이폰 17 Pro -> UPS pro (s1=0.3867, s2=0.5571)
+    - 아이폰 17 Pro -> TiPhone파손 13 Pro_예 (s1=0.5467, s2=0.3167)
+    - 아이폰 17 Pro -> TIPHONE파손 13 Pro_예 (s1=0.5467, s2=0.3167)
+    - 아이폰 17 Pro -> Tiphone파손 13 Pro_예 (s1=0.5467, s2=0.3167)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 242
+  Combined sim range: 0.9659 - 2.0000
+  All items with combined scores:
+    - 아이폰 17 Pro -> 아이폰 17 Pro: sim=2.000000
+    - 아이폰 17 Pro -> 아이폰 17 pro: sim=2.000000
+    - 아이폰 17 Pro -> 아이폰 17 PRO: sim=2.000000
+    - 아이폰 17 Pro -> 아이폰 17 Pro 맥스: sim=1.786154
+    - 아이폰 17 Pro -> 아이폰 17 pro 맥스: sim=1.786154
+    - 아이폰 17 Pro -> 아이폰 17 PRO 맥스: sim=1.786154
+    - 아이폰 17 Pro -> 아이폰 17/17 pro: sim=1.765385
+    - 아이폰 17 Pro -> 아이폰 17/17 PRO: sim=1.765385
+    - 아이폰 17 Pro -> 아이폰 17/17 Pro: sim=1.765385
+    - 아이폰 17 Pro -> 아이폰 17 pro max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 PRO MAX: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 PRO max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 PRO Max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 Pro MAX: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 Pro Max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 Pro max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 pro Max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 pro MAX: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 16 Pro: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 15 PRO: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 16 pro: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 15 Pro: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 15 pro: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 16 PRO: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 17: sim=1.649333
+    - 아이폰 17 Pro -> 아이폰 16 pro 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 15 Pro 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 15 PRO 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 16 Pro 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 15 pro 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 16 PRO 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 16 pro max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 pro Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 pro MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 PRO max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 Pro max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 Pro Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 Pro MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 Pro MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 PRO Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 Pro Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 PRO MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 PRO Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 Pro max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 pro MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 pro max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 pro Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 PRO max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 PRO MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 17 프로: sim=1.448889
+    - 아이폰 17 Pro -> T아이폰파손 14 PRO: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 13 Pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 13 PRO: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 13 pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 14 PRO: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 14 Pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 14 pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 14 pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 14 Pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 13  PRO: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 13  Pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 13  pro: sim=1.407179
+    - 아이폰 17 Pro -> 아이폰 17 시리즈: sim=1.386667
+    - 아이폰 17 Pro -> T 아이폰케어 15 Pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 15 pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 16 Pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 16 PRO: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 16 Pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 16 pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 15 PRO: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 15 Pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 15 pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 15 PRO: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 16 PRO: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 16 pro: sim=1.350952
+    - 아이폰 17 Pro -> T아이폰CARE 13 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰Care 13 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰Care 14 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰CARE 13 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰CARE 14 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰care 14 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰CARE 14 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰care 14 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰care 13 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰Care 13 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰care 13 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰Care 14 pro: sim=1.333333
+    - 아이폰 17 Pro -> 아이패드 미니 (A17 Pro): sim=1.316667
+    - 아이폰 17 Pro -> 아이패드 미니 (A17 pro): sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 14 pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 13 pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 14 Pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 14 PRO_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 13 PRO_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 13 Pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 14 pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 14 Pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 14 PRO_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 13 pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 13 PRO_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 13 Pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T 아이폰Care 15 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰care 16 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰care 15 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰Care 16 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰Care 16 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰Care 15 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰CARE 16 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰CARE 16 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰CARE 15 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰CARE 15 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰care 16 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰care 15 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰케어 15 pro_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰파손 15 PRO_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰파손 15 Pro_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰파손 15 pro_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰케어 15 PRO_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰케어 15 Pro_예: sim=1.276667
+    - 아이폰 17 Pro -> T아이폰care 14 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 Mini (A17 pro): sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 MINI (A17 Pro): sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 MINI (A17 pro): sim=1.260196
+    - 아이폰 17 Pro -> T아이폰CARE 13 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> T아이폰CARE 14 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> T아이폰care 13 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 Mini (A17 Pro): sim=1.260196
+    - 아이폰 17 Pro -> T아이폰Care 13 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> T아이폰Care 14 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 mini (A17 Pro): sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 mini (A17 pro): sim=1.260196
+    - 아이폰 17 Pro -> 아이폰 17/17 프로: sim=1.260000
+    - 아이폰 17 Pro -> 아이폰 17 프로 맥스: sim=1.260000
+    - 아이폰 17 Pro -> iphone 17 Pro: sim=1.257436
+    - 아이폰 17 Pro -> iphone 17 pro: sim=1.257436
+    - 아이폰 17 Pro -> iPhone 17 Pro: sim=1.257436
+    - 아이폰 17 Pro -> IPHONE 17 pro: sim=1.257436
+    - 아이폰 17 Pro -> IPHONE 17 Pro: sim=1.257436
+    - 아이폰 17 Pro -> iPhone 17 pro: sim=1.257436
+    - 아이폰 17 Pro -> 아이폰 14: sim=1.233333
+    - 아이폰 17 Pro -> 아이폰 15: sim=1.233333
+    - 아이폰 17 Pro -> 아이폰 13: sim=1.233333
+    - 아이폰 17 Pro -> 아이폰 16: sim=1.233333
+    - 아이폰 17 Pro -> T아이폰케어16 pro_예: sim=1.230476
+    - 아이폰 17 Pro -> T아이폰케어16 Pro_예: sim=1.230476
+    - 아이폰 17 Pro -> T아이폰케어16 PRO_예: sim=1.230476
+    - 아이폰 17 Pro -> T 아이폰CARE 15 Pro_예: sim=1.226667
+    - 아이폰 17 Pro -> T 아이폰Care 15 Pro_예: sim=1.226667
+    - 아이폰 17 Pro -> T 아이폰care 15 Pro_예: sim=1.226667
+    - 아이폰 17 Pro -> 아이폰 17 프로 Max: sim=1.224103
+    - 아이폰 17 Pro -> 아이폰 17 프로 max: sim=1.224103
+    - 아이폰 17 Pro -> 아이폰 17 프로 MAX: sim=1.224103
+    - 아이폰 17 Pro -> 아이패드 미니 (A17 Pro) NEW: sim=1.205614
+    - 아이폰 17 Pro -> 아이패드 미니 (A17 pro) NEW: sim=1.205614
+    - 아이폰 17 Pro -> 아이폰 15 PLUS: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 15 plus: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 15 Plus: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 16 Plus: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 16 plus: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 16 PLUS: sim=1.202424
+    - 아이폰 17 Pro -> T아이폰Care16 Pro_예: sim=1.173333
+    - 아이폰 17 Pro -> T아이폰care16 Pro_예: sim=1.173333
+    - 아이폰 17 Pro -> T아이폰CARE16 Pro_예: sim=1.173333
+    - 아이폰 17 Pro -> 아이폰 16 프로: sim=1.146667
+    - 아이폰 17 Pro -> 아이폰 15 프로: sim=1.146667
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 pro모션: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 pro맥스: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 Pro모션: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 Pro맥스: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 PRO모션: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 PRO맥스: sim=1.143529
+    - 아이폰 17 Pro -> IPHONE 17/17 Pro: sim=1.143333
+    - 아이폰 17 Pro -> IPHONE 17 pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> IPHONE 17 Pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> iphone 17/17 Pro: sim=1.143333
+    - 아이폰 17 Pro -> IPHONE 17/17 pro: sim=1.143333
+    - 아이폰 17 Pro -> iphone 17/17 pro: sim=1.143333
+    - 아이폰 17 Pro -> iPhone 17 Pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> iPhone 17 pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> iPhone 17/17 Pro: sim=1.143333
+    - 아이폰 17 Pro -> iPhone 17/17 pro: sim=1.143333
+    - 아이폰 17 Pro -> iphone 17 Pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> iphone 17 pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> 아이폰 16e: sim=1.138095
+    - 아이폰 17 Pro -> 아이폰 AIR: sim=1.138095
+    - 아이폰 17 Pro -> 아이폰 Air: sim=1.138095
+    - 아이폰 17 Pro -> iPhone 17 Pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 pro Max: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 Pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 Pro Max: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 Pro max: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 pro Max: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 pro max: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 Pro Max: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 Pro max: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 pro max: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 pro max: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 Pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 Pro Max: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 Pro max: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 pro Max: sim=1.122745
+    - 아이폰 17 Pro -> 던킨_클럽 아이폰 17: sim=1.113333
+    - 아이폰 17 Pro -> 아이폰 15 플러스: sim=1.093333
+    - 아이폰 17 Pro -> 아이폰 16 플러스: sim=1.093333
+    - 아이폰 17 Pro -> 에이닷 노트 Pro: sim=1.093333
+    - 아이폰 17 Pro -> 헉슬리_클럽 아이폰 17: sim=1.082564
+    - 아이폰 17 Pro -> 티머니_클럽 아이폰 17: sim=1.082564
+    - 아이폰 17 Pro -> 백미당_클럽 아이폰 17: sim=1.082564
+    - 아이폰 17 Pro -> 텐바이텐_클럽 아이폰 17: sim=1.056190
+    - 아이폰 17 Pro -> IPAD 미니 (A17 Pro): sim=1.050000
+    - 아이폰 17 Pro -> IPAD 미니 (A17 pro): sim=1.050000
+    - 아이폰 17 Pro -> ipad 미니 (A17 Pro): sim=1.050000
+    - 아이폰 17 Pro -> iPad 미니 (A17 Pro): sim=1.050000
+    - 아이폰 17 Pro -> iPad 미니 (A17 pro): sim=1.050000
+    - 아이폰 17 Pro -> ipad 미니 (A17 pro): sim=1.050000
+    - 아이폰 17 Pro -> t 머니_클럽 아이폰 17: sim=1.036190
+    - 아이폰 17 Pro -> t-머니_클럽 아이폰 17: sim=1.036190
+    - 아이폰 17 Pro -> T 머니_클럽 아이폰 17: sim=1.036190
+    - 아이폰 17 Pro -> T-머니_클럽 아이폰 17: sim=1.036190
+    - 아이폰 17 Pro -> A. 노트 Pro: sim=1.033333
+    - 아이폰 17 Pro -> 아이디어스_클럽 아이폰 17: sim=1.033333
+    - 올리브영 3천 원 기프트카드 -> 올리브영 3종 쿠폰팩: sim=0.999091
+    - 아이폰 17 Pro -> 아이폰 16 프로 맥스: sim=0.996667
+    - 아이폰 17 Pro -> 아이폰 15 프로 맥스: sim=0.996667
+    - 아이폰 17 Pro -> A. (에이닷) 노트 Pro: sim=0.996667
+    - 아이폰 17 Pro -> T아이폰파손16pro_예: sim=0.990769
+    - 아이폰 17 Pro -> T아이폰파손16Pro_예: sim=0.990769
+    - 아이폰 17 Pro -> iphone 15 Pro: sim=0.982564
+    - 아이폰 17 Pro -> iPhone 16 Pro: sim=0.982564
+    - 아이폰 17 Pro -> iPhone 15 Pro: sim=0.982564
+    - 아이폰 17 Pro -> IPHONE 16 Pro: sim=0.982564
+    - 아이폰 17 Pro -> IPHONE 15 Pro: sim=0.982564
+    - 아이폰 17 Pro -> iphone 16 Pro: sim=0.982564
+    - 아이폰 17 Pro -> 아이폰 16 프로 MAX: sim=0.965897
+    - 아이폰 17 Pro -> 아이폰 16 프로 Max: sim=0.965897
+    - 아이폰 17 Pro -> 아이폰 15 프로 max: sim=0.965897
+    - 아이폰 17 Pro -> 아이폰 15 프로 Max: sim=0.965897
+    - 아이폰 17 Pro -> 아이폰 15 프로 MAX: sim=0.965897
+    - 아이폰 17 Pro -> 아이폰 16 프로 max: sim=0.965897
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 205
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  37 items filtered out:
+    - 아이폰 17 Pro -> 에이닷 노트 Pro: sim=1.093333 -> FAILED (need 1.1, got 1.093333)
+    - 아이폰 17 Pro -> 아이폰 15 플러스: sim=1.093333 -> FAILED (need 1.1, got 1.093333)
+    - 아이폰 17 Pro -> 아이폰 16 플러스: sim=1.093333 -> FAILED (need 1.1, got 1.093333)
+    - 아이폰 17 Pro -> 헉슬리_클럽 아이폰 17: sim=1.082564 -> FAILED (need 1.1, got 1.082564)
+    - 아이폰 17 Pro -> 티머니_클럽 아이폰 17: sim=1.082564 -> FAILED (need 1.1, got 1.082564)
+    - 아이폰 17 Pro -> 백미당_클럽 아이폰 17: sim=1.082564 -> FAILED (need 1.1, got 1.082564)
+    - 아이폰 17 Pro -> 텐바이텐_클럽 아이폰 17: sim=1.056190 -> FAILED (need 1.1, got 1.056190)
+    - 아이폰 17 Pro -> IPAD 미니 (A17 Pro): sim=1.050000 -> FAILED (need 1.1, got 1.050000)
+    - 아이폰 17 Pro -> IPAD 미니 (A17 pro): sim=1.050000 -> FAILED (need 1.1, got 1.050000)
+    - 아이폰 17 Pro -> ipad 미니 (A17 pro): sim=1.050000 -> FAILED (need 1.1, got 1.050000)
+    - 아이폰 17 Pro -> ipad 미니 (A17 Pro): sim=1.050000 -> FAILED (need 1.1, got 1.050000)
+    - 아이폰 17 Pro -> iPad 미니 (A17 Pro): sim=1.050000 -> FAILED (need 1.1, got 1.050000)
+    - 아이폰 17 Pro -> iPad 미니 (A17 pro): sim=1.050000 -> FAILED (need 1.1, got 1.050000)
+    - 아이폰 17 Pro -> t 머니_클럽 아이폰 17: sim=1.036190 -> FAILED (need 1.1, got 1.036190)
+    - 아이폰 17 Pro -> t-머니_클럽 아이폰 17: sim=1.036190 -> FAILED (need 1.1, got 1.036190)
+    - 아이폰 17 Pro -> T-머니_클럽 아이폰 17: sim=1.036190 -> FAILED (need 1.1, got 1.036190)
+    - 아이폰 17 Pro -> T 머니_클럽 아이폰 17: sim=1.036190 -> FAILED (need 1.1, got 1.036190)
+    - 아이폰 17 Pro -> 아이디어스_클럽 아이폰 17: sim=1.033333 -> FAILED (need 1.1, got 1.033333)
+    - 아이폰 17 Pro -> A. 노트 Pro: sim=1.033333 -> FAILED (need 1.1, got 1.033333)
+    - 올리브영 3천 원 기프트카드 -> 올리브영 3종 쿠폰팩: sim=0.999091 -> FAILED (need 1.1, got 0.999091)
+    - 아이폰 17 Pro -> A. (에이닷) 노트 Pro: sim=0.996667 -> FAILED (need 1.1, got 0.996667)
+    - 아이폰 17 Pro -> 아이폰 16 프로 맥스: sim=0.996667 -> FAILED (need 1.1, got 0.996667)
+    - 아이폰 17 Pro -> 아이폰 15 프로 맥스: sim=0.996667 -> FAILED (need 1.1, got 0.996667)
+    - 아이폰 17 Pro -> T아이폰파손16Pro_예: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - 아이폰 17 Pro -> T아이폰파손16pro_예: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - 아이폰 17 Pro -> IPHONE 15 Pro: sim=0.982564 -> FAILED (need 1.1, got 0.982564)
+    - 아이폰 17 Pro -> IPHONE 16 Pro: sim=0.982564 -> FAILED (need 1.1, got 0.982564)
+    - 아이폰 17 Pro -> iPhone 15 Pro: sim=0.982564 -> FAILED (need 1.1, got 0.982564)
+    - 아이폰 17 Pro -> iphone 16 Pro: sim=0.982564 -> FAILED (need 1.1, got 0.982564)
+    - 아이폰 17 Pro -> iphone 15 Pro: sim=0.982564 -> FAILED (need 1.1, got 0.982564)
+    - 아이폰 17 Pro -> iPhone 16 Pro: sim=0.982564 -> FAILED (need 1.1, got 0.982564)
+    - 아이폰 17 Pro -> 아이폰 16 프로 max: sim=0.965897 -> FAILED (need 1.1, got 0.965897)
+    - 아이폰 17 Pro -> 아이폰 16 프로 MAX: sim=0.965897 -> FAILED (need 1.1, got 0.965897)
+    - 아이폰 17 Pro -> 아이폰 15 프로 max: sim=0.965897 -> FAILED (need 1.1, got 0.965897)
+    - 아이폰 17 Pro -> 아이폰 15 프로 Max: sim=0.965897 -> FAILED (need 1.1, got 0.965897)
+    - 아이폰 17 Pro -> 아이폰 15 프로 MAX: sim=0.965897 -> FAILED (need 1.1, got 0.965897)
+    - 아이폰 17 Pro -> 아이폰 16 프로 Max: sim=0.965897 -> FAILED (need 1.1, got 0.965897)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - 아이폰 17 Pro -> 아이폰 17 Pro: sim=2.000000
+    - 아이폰 17 Pro -> 아이폰 17 PRO: sim=2.000000
+    - 아이폰 17 Pro -> 아이폰 17 pro: sim=2.000000
+    - 아이폰 17 Pro -> 아이폰 17 Pro 맥스: sim=1.786154
+    - 아이폰 17 Pro -> 아이폰 17 pro 맥스: sim=1.786154
+    - 아이폰 17 Pro -> 아이폰 17 PRO 맥스: sim=1.786154
+    - 아이폰 17 Pro -> 아이폰 17/17 Pro: sim=1.765385
+    - 아이폰 17 Pro -> 아이폰 17/17 PRO: sim=1.765385
+    - 아이폰 17 Pro -> 아이폰 17/17 pro: sim=1.765385
+    - 아이폰 17 Pro -> 아이폰 17 PRO MAX: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 PRO Max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 Pro Max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 pro max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 Pro MAX: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 pro Max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 pro MAX: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 PRO max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 17 Pro max: sim=1.747143
+    - 아이폰 17 Pro -> 아이폰 16 Pro: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 15 pro: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 16 PRO: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 15 Pro: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 16 pro: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 15 PRO: sim=1.706667
+    - 아이폰 17 Pro -> 아이폰 17: sim=1.649333
+    - 아이폰 17 Pro -> 아이폰 16 PRO 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 16 Pro 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 15 pro 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 15 PRO 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 15 Pro 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 16 pro 맥스: sim=1.507179
+    - 아이폰 17 Pro -> 아이폰 15 Pro Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 pro MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 Pro max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 PRO max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 Pro MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 pro max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 PRO max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 PRO MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 pro max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 pro Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 pro MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 Pro max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 Pro Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 Pro MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 16 PRO Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 PRO Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 PRO MAX: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 15 pro Max: sim=1.467619
+    - 아이폰 17 Pro -> 아이폰 17 프로: sim=1.448889
+    - 아이폰 17 Pro -> T아이폰케어 14 Pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 14 pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 13  Pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 14 PRO: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 14 pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 14 PRO: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 13 pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 13 Pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰케어 13 PRO: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 13  pro: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 13  PRO: sim=1.407179
+    - 아이폰 17 Pro -> T아이폰파손 14 Pro: sim=1.407179
+    - 아이폰 17 Pro -> 아이폰 17 시리즈: sim=1.386667
+    - 아이폰 17 Pro -> T 아이폰파손 16 pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 15 PRO: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 15 Pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 15 pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 16 PRO: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 16 Pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰케어 16 pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 15 PRO: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 15 Pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 15 pro: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 16 PRO: sim=1.350952
+    - 아이폰 17 Pro -> T 아이폰파손 16 Pro: sim=1.350952
+    - 아이폰 17 Pro -> T아이폰care 13 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰care 14 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰CARE 13 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰CARE 14 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰CARE 14 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰Care 13 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰Care 13 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰Care 14 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰Care 14 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰care 13 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰care 14 pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰CARE 13 Pro: sim=1.333333
+    - 아이폰 17 Pro -> T아이폰파손 14 Pro_예: sim=1.316667
+    - 아이폰 17 Pro -> 아이패드 미니 (A17 Pro): sim=1.316667
+    - 아이폰 17 Pro -> 아이패드 미니 (A17 pro): sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 14 pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 14 PRO_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 13 pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 13 pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 14 Pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 14 PRO_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 13 PRO_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰파손 13 Pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 14 pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 13 Pro_예: sim=1.316667
+    - 아이폰 17 Pro -> T아이폰케어 13 PRO_예: sim=1.316667
+    - 아이폰 17 Pro -> T 아이폰Care 15 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰CARE 16 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰Care 15 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰Care 16 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰care 15 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰care 15 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰CARE 16 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰CARE 15 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰care 16 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰care 16 pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰CARE 15 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰Care 16 Pro: sim=1.286667
+    - 아이폰 17 Pro -> T 아이폰파손 15 pro_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰케어 15 pro_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰파손 15 Pro_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰파손 15 PRO_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰케어 15 Pro_예: sim=1.276667
+    - 아이폰 17 Pro -> T 아이폰케어 15 PRO_예: sim=1.276667
+    - 아이폰 17 Pro -> 아이패드 MINI (A17 pro): sim=1.260196
+    - 아이폰 17 Pro -> T아이폰care 13 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 mini (A17 pro): sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 mini (A17 Pro): sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 Mini (A17 pro): sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 Mini (A17 Pro): sim=1.260196
+    - 아이폰 17 Pro -> 아이패드 MINI (A17 Pro): sim=1.260196
+    - 아이폰 17 Pro -> T아이폰CARE 13 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> T아이폰Care 14 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> T아이폰Care 13 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> T아이폰CARE 14 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> T아이폰care 14 Pro_예: sim=1.260196
+    - 아이폰 17 Pro -> 아이폰 17 프로 맥스: sim=1.260000
+    - 아이폰 17 Pro -> 아이폰 17/17 프로: sim=1.260000
+    - 아이폰 17 Pro -> IPHONE 17 pro: sim=1.257436
+    - 아이폰 17 Pro -> IPHONE 17 Pro: sim=1.257436
+    - 아이폰 17 Pro -> iPhone 17 Pro: sim=1.257436
+    - 아이폰 17 Pro -> iphone 17 Pro: sim=1.257436
+    - 아이폰 17 Pro -> iPhone 17 pro: sim=1.257436
+    - 아이폰 17 Pro -> iphone 17 pro: sim=1.257436
+    - 아이폰 17 Pro -> 아이폰 14: sim=1.233333
+    - 아이폰 17 Pro -> 아이폰 15: sim=1.233333
+    - 아이폰 17 Pro -> 아이폰 16: sim=1.233333
+    - 아이폰 17 Pro -> 아이폰 13: sim=1.233333
+    - 아이폰 17 Pro -> T아이폰케어16 PRO_예: sim=1.230476
+    - 아이폰 17 Pro -> T아이폰케어16 Pro_예: sim=1.230476
+    - 아이폰 17 Pro -> T아이폰케어16 pro_예: sim=1.230476
+    - 아이폰 17 Pro -> T 아이폰Care 15 Pro_예: sim=1.226667
+    - 아이폰 17 Pro -> T 아이폰care 15 Pro_예: sim=1.226667
+    - 아이폰 17 Pro -> T 아이폰CARE 15 Pro_예: sim=1.226667
+    - 아이폰 17 Pro -> 아이폰 17 프로 max: sim=1.224103
+    - 아이폰 17 Pro -> 아이폰 17 프로 Max: sim=1.224103
+    - 아이폰 17 Pro -> 아이폰 17 프로 MAX: sim=1.224103
+    - 아이폰 17 Pro -> 아이패드 미니 (A17 Pro) NEW: sim=1.205614
+    - 아이폰 17 Pro -> 아이패드 미니 (A17 pro) NEW: sim=1.205614
+    - 아이폰 17 Pro -> 아이폰 16 plus: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 16 PLUS: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 16 Plus: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 15 PLUS: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 15 plus: sim=1.202424
+    - 아이폰 17 Pro -> 아이폰 15 Plus: sim=1.202424
+    - 아이폰 17 Pro -> T아이폰Care16 Pro_예: sim=1.173333
+    - 아이폰 17 Pro -> T아이폰care16 Pro_예: sim=1.173333
+    - 아이폰 17 Pro -> T아이폰CARE16 Pro_예: sim=1.173333
+    - 아이폰 17 Pro -> 아이폰 15 프로: sim=1.146667
+    - 아이폰 17 Pro -> 아이폰 16 프로: sim=1.146667
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 pro맥스: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 Pro모션: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 pro모션: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 Pro맥스: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 PRO모션: sim=1.143529
+    - 아이폰 17 Pro -> T즉시보상 아이폰17 PRO맥스: sim=1.143529
+    - 아이폰 17 Pro -> IPHONE 17/17 pro: sim=1.143333
+    - 아이폰 17 Pro -> IPHONE 17 pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> IPHONE 17 Pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> IPHONE 17/17 Pro: sim=1.143333
+    - 아이폰 17 Pro -> iPhone 17/17 Pro: sim=1.143333
+    - 아이폰 17 Pro -> iphone 17/17 pro: sim=1.143333
+    - 아이폰 17 Pro -> iphone 17/17 Pro: sim=1.143333
+    - 아이폰 17 Pro -> iPhone 17 Pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> iphone 17 pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> iphone 17 Pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> iPhone 17/17 pro: sim=1.143333
+    - 아이폰 17 Pro -> iPhone 17 pro 맥스: sim=1.143333
+    - 아이폰 17 Pro -> 아이폰 AIR: sim=1.138095
+    - 아이폰 17 Pro -> 아이폰 Air: sim=1.138095
+    - 아이폰 17 Pro -> 아이폰 16e: sim=1.138095
+    - 아이폰 17 Pro -> IPHONE 17 Pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 Pro Max: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 Pro max: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 pro Max: sim=1.122745
+    - 아이폰 17 Pro -> IPHONE 17 pro max: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 Pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 Pro Max: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 pro Max: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 pro max: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 Pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 Pro Max: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 Pro max: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 pro MAX: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 pro Max: sim=1.122745
+    - 아이폰 17 Pro -> iphone 17 pro max: sim=1.122745
+    - 아이폰 17 Pro -> iPhone 17 Pro max: sim=1.122745
+    - 아이폰 17 Pro -> 던킨_클럽 아이폰 17: sim=1.113333
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 3
+  Unique aliases: 3
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 3
+    - 아이폰 17 Pro
+    - iPhone 17 Pro
+    - iphone 17 Pro Max
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 3
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 3
+  Unique item_nm: 2
+  Final product names:
+    - iPhone 17 Pro
+    - iPhone 17 Pro Max
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 205
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 6
+  Filtered out: 199 rows
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "아이폰17Pro 사전예약 최대 22만원 캐시백",
+  "purpose": [
+    "상품 가입 유도",
+    "대리점/매장 방문 유도"
+  ],
+  "sales_script": "아이폰17Pro 사전예약! CD대리점 동탄목동점 방문 시 최대 22만원 캐시백+올리브영 기프트카드. 안내드릴까요?",
+  "product": [
+    {
+      "name": "아이폰 17 Pro",
+      "action": "구매"
+    },
+    {
+      "name": "올리브영 3천 원 기프트카드",
+      "action": "쿠폰다운로드"
+    }
+  ],
+  "channel": [
+    {
+      "type": "대리점",
+      "value": "CD대리점 동탄목동점",
+      "action": "가입"
+    },
+    {
+      "type": "URL",
+      "value": "skt.sh/abc123",
+      "action": "추가 정보"
+    }
+  ],
+  "pgm": [
+    "기변유도 및 해지방어_신규단말출시"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 3
+================================================================================
+1. iPhone 17 Pro
+   - item_id: ['U000006956']
+   - item_name_in_msg: ['아이폰 17 Pro']
+   - expected_action: ['구매']
+2. iPhone 17 Pro Max
+   - item_id: ['U000006955']
+   - item_name_in_msg: ['아이폰 17 Pro']
+   - expected_action: ['구매']
+3. 사전예약
+   - item_id: ['#']
+   - item_name_in_msg: ['사전예약']
+   - expected_action: ['기타']
+
+================================================================================

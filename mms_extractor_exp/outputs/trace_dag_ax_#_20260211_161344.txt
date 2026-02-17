@@ -1,0 +1,770 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "을지로점에서 아이폰 17 기변하세요"
+Timestamp: 2026-02-11 16:13:35
+Total Duration: 8.80 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: dag <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 5
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (25, 6)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: 을지로점에서 아이폰 17 기변하세요
+
+OUTPUT:
+  msg: 을지로점에서 아이폰 17 기변하세요
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (0.88s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.603s (68.9%)
+  kiwi_tokenization_nnp: 0.001s (0.1%)
+  fuzzy_matching: 0.212s (24.2%)
+  sequence_similarity: 0.048s (5.4%)
+  threshold_filter_merge: 0.009s (1.0%)
+
+INPUT:
+  msg: 을지로점에서 아이폰 17 기변하세요
+  context_mode: dag
+
+OUTPUT:
+  entities_from_kiwi: ['아이폰']
+  cand_item_list: ['아이폰', '아이폰 17', '아이폰17', '아이폰 13', '아이폰 14', '아이폰 15', '아이폰 16', '아이폰 17 프로']
+  cand_item_count: 8
+  extra_item_pdf_shape: (7, 2)
+  extra_item_pdf_sample: [{'item_nm': 'iPhone 13', 'item_id': ['U000005273']}, {'item_nm': 'iPhone 14', 'item_id': ['U000005792']}, {'item_nm': 'iPhone 15', 'item_id': ['U000006212']}, {'item_nm': 'iPhone 16', 'item_id': ['U000006532']}, {'item_nm': 'iPhone 17', 'item_id': ['U000006958', 'U000006958', 'U000006958']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 1
+  candidate_products_matched: 8
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.13s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: 을지로점에서 아이폰 17 기변하세요
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 상품및부가서비스가입유도_단말 : 신규, 출시, 갤럭시, Galaxy, Iphone, 아이폰, 사전, 예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	사용법/혜택/이벤트안내_단말 : 갤럭시, 아이폰, 사용법, 안내, 이벤트, 혜택, 기능, 팁, 활용법, 업데이트
+	타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰
+	매장오픈안내및방문유도 : 매장, 대리점, 오픈, 내방, 방문, 리뉴얼, 이전, 홍보, 프로모션, 사은품
+	기변
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['아이폰', '아이폰 17', '아이폰17', '아이폰 13', '아이폰 14', '아이폰 15', '아이폰 16', '아이폰 17 프로']
+  extra_item_pdf_shape: (7, 2)
+
+OUTPUT:
+  rag_context_length: 483
+  rag_context_preview: 
+### 광고 분류 기준 정보 ###
+	상품및부가서비스가입유도_단말 : 신규, 출시, 갤럭시, Galaxy, Iphone, 아이폰, 사전, 예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	사용법/혜택/이벤트안내_단말 : 갤럭시, 아이폰, 사용법, 안내, 이벤트, 혜택, 기능, 팁, 활용법, 업데이트
+	타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰
+	매장오픈안내및방문유도 : 매장, 대리점, 오픈, 내방, 방문, 리뉴얼,...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (4.20s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: 을지로점에서 아이폰 17 기변하세요
+  rag_context_length: 483
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 479
+  result_json_text_preview: ```json
+{
+    "title": "을지로점에서 아이폰 17 기변 안내",
+    "purpose": [
+        "대리점/매장 방문 유도",
+        "기변유도및해지방어_준실시간"
+    ],
+    "sales_script": "을지로점에서 아이폰 17 기변 안내. 지금 바로 방문 권유할까요?",
+    "product": [
+        {
+            "name": "아이폰 17",
+            "action": "기변"
+        }
+    ],
+    "channel": [
+   ...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 479
+  result_json_text_preview: ```json
+{
+    "title": "을지로점에서 아이폰 17 기변 안내",
+    "purpose": [
+        "대리점/매장 방문 유도",
+        "기변유도및해지방어_준실시간"
+    ],
+    "sales_script": "을지로점에서 아이폰 17 기변 안내. 지금 바로 방문 권유할까요?",
+    "product": [
+        {
+            "name": "아이폰 17",
+            "action": "기변"
+        }
+    ],
+    "channel": [
+        {
+            "type": "대리점",
+            "value": "을지로점",
+            "action": "방문"
+        }
+    ],
+    "pgm": [
+        "기변유도및해지방어_준실시간",
+        "매장오픈안내및방문유도"
+    ]
+}
+```
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '아이폰 17', 'action': '기변'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 1
+  llm_product_names: ['아이폰 17']
+  llm_product_actions: ['기변']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['아이폰']
+  entity_extraction_mode: llm
+  context_mode: dag
+
+OUTPUT:
+  extracted_entities: None
+  context_text: 
+
+PRODUCT FOCUS:
+  extracted_entities_count: 0
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (3.48s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  llm_stage1_llm_call: 1.163s (33.4%)
+  llm_normalization_ngram: 0.000s (0.0%)
+  llm_product_matching: 0.305s (8.8%)
+  llm_stage2_llm_call: 1.990s (57.1%)
+  (overhead/other): 0.026s (0.7%)
+
+INPUT:
+  json_objects_product: [{'name': '아이폰 17', 'action': '기변'}]
+  extracted_entities: None
+
+OUTPUT:
+  matched_products: [3 items]
+    First 3: [{'item_nm': 'iPhone 17', 'item_id': ['U000006958'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}, {'item_nm': 'iPhone 17 Pro', 'item_id': ['U000006956'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}, {'item_nm': 'iPhone 17 Pro Max', 'item_id': ['U000006955'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}]
+  matched_products_count: 3
+  similarity_scores_count: 74
+  similarity_scores_sample:
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 프로', 'sim': 1.6966666666666665, 'rank': 2.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 PRO', 'sim': 1.6493333333333333, 'rank': 3.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 Pro', 'sim': 1.6493333333333333, 'rank': 3.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 pro', 'sim': 1.6493333333333333, 'rank': 3.0, 'item_dmn_nm': '단말기'}
+    ... (15 more)
+
+PRODUCT FOCUS:
+  matched_product_count: 3
+  product_details:
+    - item_nm: iPhone 17
+      item_id: ['U000006958']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 17 Pro
+      item_id: ['U000006956']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 17 Pro Max
+      item_id: ['U000006955']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+  similarity_matching:
+    - total_matches: 74
+    - unique_entities_in_msg: 1
+    - unique_aliases_matched: 74
+  top_similarity_matches:
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17', 'sim': 2.0}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 프로', 'sim': 1.6966666666666665}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 PRO', 'sim': 1.6493333333333333}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 Pro', 'sim': 1.6493333333333333}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 pro', 'sim': 1.6493333333333333}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 시리즈', 'sim': 1.6493333333333333}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '던킨_클럽 아이폰 17', 'sim': 1.545}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰', 'sim': 1.545}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17 프로 맥스', 'sim': 1.545}
+    - {'item_name_in_msg': '아이폰 17', 'item_nm_alias': '아이폰 17/17 프로', 'sim': 1.545}
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.11s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 3
+  matched_products: [3 items]
+
+OUTPUT:
+  final_result_product: [3 items]
+    First 3: [{'item_nm': 'iPhone 17', 'item_id': ['U000006958'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}, {'item_nm': 'iPhone 17 Pro', 'item_id': ['U000006956'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}, {'item_nm': 'iPhone 17 Pro Max', 'item_id': ['U000006955'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}]
+  final_result_product_count: 3
+  offer_type: org
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 3
+
+OUTPUT:
+  validated_product_count: 3
+  has_errors: False
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 74
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg  item_nm_alias       sim  rank item_dmn_nm
+0            아이폰 17         아이폰 17  2.000000   1.0         단말기
+1            아이폰 17      아이폰 17 프로  1.696667   2.0         단말기
+2            아이폰 17     아이폰 17 PRO  1.649333   3.0         단말기
+3            아이폰 17     아이폰 17 Pro  1.649333   3.0         단말기
+4            아이폰 17     아이폰 17 pro  1.649333   3.0         단말기
+5            아이폰 17     아이폰 17 시리즈  1.649333   3.0         단말기
+6            아이폰 17   던킨_클럽 아이폰 17  1.545000   4.0          기타
+7            아이폰 17            아이폰  1.545000   4.0         단말기
+8            아이폰 17   아이폰 17 프로 맥스  1.545000   4.0         단말기
+9            아이폰 17   아이폰 17/17 프로  1.545000   4.0         단말기
+10           아이폰 17         아이폰 13  1.533333   5.0         단말기
+11           아이폰 17         아이폰 14  1.533333   5.0         단말기
+12           아이폰 17         아이폰 15  1.533333   5.0         단말기
+13           아이폰 17         아이폰 16  1.533333   5.0         단말기
+14           아이폰 17  백미당_클럽 아이폰 17  1.517692   6.0          기타
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 506
+  Unique item_name_in_msg: 1
+  Unique item_nm_alias: 506
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 506
+  sim_s1 range: 0.4000 - 1.0000
+  sim_s2 range: 0.1500 - 1.0000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 74
+  Filtered OUT at this stage: 432 rows
+  Sample of filtered items:
+    - 아이폰 17 -> T아이폰파손 13_예 (s1=0.6667, s2=0.3636)
+    - 아이폰 17 -> T아이폰파손 13 Pro_예 (s1=0.6667, s2=0.2667)
+    - 아이폰 17 -> T아이폰파손 13 프로_예 (s1=0.6667, s2=0.2857)
+    - 아이폰 17 -> T아이폰파손 13 PRO_예 (s1=0.6667, s2=0.2667)
+    - 아이폰 17 -> T아이폰파손 13 pro_예 (s1=0.6667, s2=0.2667)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 74
+  Combined sim range: 1.1111 - 2.0000
+  All items with combined scores:
+    - 아이폰 17 -> 아이폰 17: sim=2.000000
+    - 아이폰 17 -> 아이폰 17 프로: sim=1.696667
+    - 아이폰 17 -> 아이폰 17 Pro: sim=1.649333
+    - 아이폰 17 -> 아이폰 17 pro: sim=1.649333
+    - 아이폰 17 -> 아이폰 17 시리즈: sim=1.649333
+    - 아이폰 17 -> 아이폰 17 PRO: sim=1.649333
+    - 아이폰 17 -> 아이폰: sim=1.545000
+    - 아이폰 17 -> 아이폰 17 프로 맥스: sim=1.545000
+    - 아이폰 17 -> 아이폰 17/17 프로: sim=1.545000
+    - 아이폰 17 -> 던킨_클럽 아이폰 17: sim=1.545000
+    - 아이폰 17 -> 아이폰 16: sim=1.533333
+    - 아이폰 17 -> 아이폰 13: sim=1.533333
+    - 아이폰 17 -> 아이폰 14: sim=1.533333
+    - 아이폰 17 -> 아이폰 15: sim=1.533333
+    - 아이폰 17 -> 아이폰 17 프로 MAX: sim=1.517692
+    - 아이폰 17 -> 아이폰 17/17 Pro: sim=1.517692
+    - 아이폰 17 -> 아이폰 17/17 pro: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 pro 맥스: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 프로 Max: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 프로 max: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 Pro 맥스: sim=1.517692
+    - 아이폰 17 -> 티머니_클럽 아이폰 17: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 PRO 맥스: sim=1.517692
+    - 아이폰 17 -> 아이폰 17/17 PRO: sim=1.517692
+    - 아이폰 17 -> 헉슬리_클럽 아이폰 17: sim=1.517692
+    - 아이폰 17 -> 백미당_클럽 아이폰 17: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 pro MAX: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 pro Max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 Pro Max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 Pro MAX: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 pro max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 PRO max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 PRO Max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 PRO MAX: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 Pro max: sim=1.494286
+    - 아이폰 17 -> 텐바이텐_클럽 아이폰 17: sim=1.494286
+    - 아이폰 17 -> t-머니_클럽 아이폰 17: sim=1.474286
+    - 아이폰 17 -> T 머니_클럽 아이폰 17: sim=1.474286
+    - 아이폰 17 -> t 머니_클럽 아이폰 17: sim=1.474286
+    - 아이폰 17 -> T-머니_클럽 아이폰 17: sim=1.474286
+    - 아이폰 17 -> 아이디어스_클럽 아이폰 17: sim=1.474000
+    - 아이폰 17 -> 아이폰17: sim=1.466667
+    - 아이폰 17 -> 투썸플레이스_클럽 아이폰 17: sim=1.456250
+    - 아이폰 17 -> 아이폰 16e: sim=1.438095
+    - 아이폰 17 -> t-money_클럽 아이폰 17: sim=1.420588
+    - 아이폰 17 -> t money_클럽 아이폰 17: sim=1.420588
+    - 아이폰 17 -> T-money_클럽 아이폰 17: sim=1.420588
+    - 아이폰 17 -> T money_클럽 아이폰 17: sim=1.420588
+    - 아이폰 17 -> 아이폰 15 프로: sim=1.277778
+    - 아이폰 17 -> 아이폰 16 프로: sim=1.277778
+    - 아이폰 17 -> 아이폰 에어: sim=1.266667
+    - 아이폰 17 -> 아이폰 15 플러스: sim=1.233333
+    - 아이폰 17 -> 아이폰 15 PRO: sim=1.233333
+    - 아이폰 17 -> 아이폰 15 pro: sim=1.233333
+    - 아이폰 17 -> 아이폰 15 Pro: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 플러스: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 pro: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 PRO: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 Pro: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 PLUS: sim=1.196970
+    - 아이폰 17 -> 아이폰 16 Plus: sim=1.196970
+    - 아이폰 17 -> 아이폰 15 PLUS: sim=1.196970
+    - 아이폰 17 -> 아이폰 16 plus: sim=1.196970
+    - 아이폰 17 -> 아이폰 15 plus: sim=1.196970
+    - 아이폰 17 -> 아이폰 15 Plus: sim=1.196970
+    - 아이폰 17 -> 아이폰 AIR: sim=1.190476
+    - 아이폰 17 -> 아이폰 Air: sim=1.190476
+    - 아이폰 17 -> 아이폰 신제품: sim=1.190476
+    - 아이폰 17 -> 아이폰 최신폰: sim=1.190476
+    - 아이폰 17 -> 아이폰 통화녹음: sim=1.133333
+    - 아이폰 17 -> T아이폰케어 14: sim=1.111111
+    - 아이폰 17 -> T아이폰파손 13: sim=1.111111
+    - 아이폰 17 -> T아이폰파손 14: sim=1.111111
+    - 아이폰 17 -> T아이폰케어 13: sim=1.111111
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 74
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - 아이폰 17 -> 아이폰 17: sim=2.000000
+    - 아이폰 17 -> 아이폰 17 프로: sim=1.696667
+    - 아이폰 17 -> 아이폰 17 Pro: sim=1.649333
+    - 아이폰 17 -> 아이폰 17 pro: sim=1.649333
+    - 아이폰 17 -> 아이폰 17 시리즈: sim=1.649333
+    - 아이폰 17 -> 아이폰 17 PRO: sim=1.649333
+    - 아이폰 17 -> 아이폰: sim=1.545000
+    - 아이폰 17 -> 아이폰 17 프로 맥스: sim=1.545000
+    - 아이폰 17 -> 아이폰 17/17 프로: sim=1.545000
+    - 아이폰 17 -> 던킨_클럽 아이폰 17: sim=1.545000
+    - 아이폰 17 -> 아이폰 16: sim=1.533333
+    - 아이폰 17 -> 아이폰 13: sim=1.533333
+    - 아이폰 17 -> 아이폰 14: sim=1.533333
+    - 아이폰 17 -> 아이폰 15: sim=1.533333
+    - 아이폰 17 -> 아이폰 17 프로 MAX: sim=1.517692
+    - 아이폰 17 -> 아이폰 17/17 Pro: sim=1.517692
+    - 아이폰 17 -> 아이폰 17/17 pro: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 pro 맥스: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 프로 Max: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 프로 max: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 Pro 맥스: sim=1.517692
+    - 아이폰 17 -> 티머니_클럽 아이폰 17: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 PRO 맥스: sim=1.517692
+    - 아이폰 17 -> 아이폰 17/17 PRO: sim=1.517692
+    - 아이폰 17 -> 헉슬리_클럽 아이폰 17: sim=1.517692
+    - 아이폰 17 -> 백미당_클럽 아이폰 17: sim=1.517692
+    - 아이폰 17 -> 아이폰 17 pro MAX: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 pro Max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 Pro Max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 Pro MAX: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 pro max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 PRO max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 PRO Max: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 PRO MAX: sim=1.494286
+    - 아이폰 17 -> 아이폰 17 Pro max: sim=1.494286
+    - 아이폰 17 -> 텐바이텐_클럽 아이폰 17: sim=1.494286
+    - 아이폰 17 -> t-머니_클럽 아이폰 17: sim=1.474286
+    - 아이폰 17 -> T 머니_클럽 아이폰 17: sim=1.474286
+    - 아이폰 17 -> t 머니_클럽 아이폰 17: sim=1.474286
+    - 아이폰 17 -> T-머니_클럽 아이폰 17: sim=1.474286
+    - 아이폰 17 -> 아이디어스_클럽 아이폰 17: sim=1.474000
+    - 아이폰 17 -> 아이폰17: sim=1.466667
+    - 아이폰 17 -> 투썸플레이스_클럽 아이폰 17: sim=1.456250
+    - 아이폰 17 -> 아이폰 16e: sim=1.438095
+    - 아이폰 17 -> t-money_클럽 아이폰 17: sim=1.420588
+    - 아이폰 17 -> t money_클럽 아이폰 17: sim=1.420588
+    - 아이폰 17 -> T-money_클럽 아이폰 17: sim=1.420588
+    - 아이폰 17 -> T money_클럽 아이폰 17: sim=1.420588
+    - 아이폰 17 -> 아이폰 15 프로: sim=1.277778
+    - 아이폰 17 -> 아이폰 16 프로: sim=1.277778
+    - 아이폰 17 -> 아이폰 에어: sim=1.266667
+    - 아이폰 17 -> 아이폰 15 플러스: sim=1.233333
+    - 아이폰 17 -> 아이폰 15 PRO: sim=1.233333
+    - 아이폰 17 -> 아이폰 15 pro: sim=1.233333
+    - 아이폰 17 -> 아이폰 15 Pro: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 플러스: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 pro: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 PRO: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 Pro: sim=1.233333
+    - 아이폰 17 -> 아이폰 16 PLUS: sim=1.196970
+    - 아이폰 17 -> 아이폰 16 Plus: sim=1.196970
+    - 아이폰 17 -> 아이폰 15 PLUS: sim=1.196970
+    - 아이폰 17 -> 아이폰 16 plus: sim=1.196970
+    - 아이폰 17 -> 아이폰 15 plus: sim=1.196970
+    - 아이폰 17 -> 아이폰 15 Plus: sim=1.196970
+    - 아이폰 17 -> 아이폰 AIR: sim=1.190476
+    - 아이폰 17 -> 아이폰 Air: sim=1.190476
+    - 아이폰 17 -> 아이폰 신제품: sim=1.190476
+    - 아이폰 17 -> 아이폰 최신폰: sim=1.190476
+    - 아이폰 17 -> 아이폰 통화녹음: sim=1.133333
+    - 아이폰 17 -> T아이폰케어 14: sim=1.111111
+    - 아이폰 17 -> T아이폰파손 13: sim=1.111111
+    - 아이폰 17 -> T아이폰파손 14: sim=1.111111
+    - 아이폰 17 -> T아이폰케어 13: sim=1.111111
+
+------------------------------------------------------------
+STAGE 5.5: 2nd STAGE LLM FILTERING *** CRITICAL FOR DAG vs ONT ***
+------------------------------------------------------------
+  Context Mode: dag
+
+  Entities in Message (sent to 2nd stage):
+    - 아이폰 17
+
+  Candidate Aliases (vocab sent to 2nd stage): 74
+    - 아이폰 17
+    - 아이폰 17 프로
+    - 아이폰 17 PRO
+    - 아이폰 17 Pro
+    - 아이폰 17 pro
+    - 아이폰 17 시리즈
+    - 던킨_클럽 아이폰 17
+    - 아이폰
+    - 아이폰 17 프로 맥스
+    - 아이폰 17/17 프로
+    - 아이폰 13
+    - 아이폰 14
+    - 아이폰 15
+    - 아이폰 16
+    - 백미당_클럽 아이폰 17
+    - 아이폰 17 PRO 맥스
+    - 아이폰 17 Pro 맥스
+    - 아이폰 17 pro 맥스
+    - 아이폰 17 프로 MAX
+    - 아이폰 17 프로 Max
+    ... (54 more)
+
+  Context Text (passed to 2nd stage LLM):
+    (을지로점:방문) -[기변]-> (아이폰 17:구매) -[획득]-> (혜택:획득)
+
+  2nd Stage Prompts: 4 calls
+  --- Prompt 1 (truncated) ---
+    
+                    Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+    
+    ***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지나 RAG Context에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
+    
+    Guidelines:
+    1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+    2. Exclude general concepts not tied to specific offerings
+    3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+    4. Multiple entities in 'entities in message' may combine into one composite entity
+    5. **DAG Context 활용** — 'DAG Context'의 사용자 행동 경로를 분석하여 핵심 오퍼링을 식별:
+       - PROMOTES 대상 = 핵심 오퍼링: DAG에서 Core 노드 식별
+       - OFFERS 대상 = 제외: Value 노드(캐시백, 기프티콘, 할인)는 혜택이므로 entity가 아님
+       - 이벤트 참여 수단 제외: 퀴즈 주제 vs 최종 혜택 구별
+    6. **Vocabulary 매칭 가이드**:
+       a) 복합 V-domain 아이템: "올리브영_올리브영" ← "올리브영" 부분 일치 선택
+       b) 정확한 모델명만 선택: 접미사(FE, Plus, Max, Pro 등) 불일치 시 제외. 예: "갤럭시 Z 플립7" ✅, "갤럭시 Z 플립7 FE" ❌
+       c) "신제품" 포괄 표현: 최신 세대만 선택, 구세대 제외
+       d) 부가서비스/보험/케어 제외: T 아이폰케어, 분실파손, T ALL케어, T 즉시보상 등 — 메시지의 핵심 오퍼링이 아닌 한 제외
+    7. **Anti-noise 규칙**:
+       - 일반 카테고리 단어 일치만으로 선택하지 않음
+       - 할인 금액/비율 단독 제외
+       - 행동/설명 구절 제외
+       - 확신이 없으면 제외 (When in doubt, exclude)
+    
+    Return format: Do not use Markdown formatting. Use plain text.
+    REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을
+    ... (700 more chars)
+  --- Prompt 2 (truncated) ---
+    
+                    Select product/service names from 'candidate entities in vocabulary' that are directly mentioned and promoted in the message.
+    
+    ***핵심 지침 (Critical Constraint): ENTITY는 'candidate entities in vocabulary'에 있는 개체명만 **정확히 일치하는 문자열**로 반환해야 합니다. 메시지나 RAG Context에 언급된 개체라도, 'candidate entities in vocabulary'에 없는 문자열은 절대 반환하지 마십시오. 가장 가까운 개체를 매핑하여 선택해야 합니다.***
+    
+    Guidelines:
+    1. **핵심 혜택/프로모션/제공 상품**과 직접적으로 관련된 개체만 포함합니다. (e.g., 이벤트 참여 수단이나 퀴즈 주제가 아닌, **실제 획득 가능한 혜택/보상**에 해당하는 개체)
+    2. Exclude general concepts not tied to specific offerings
+    3. Consider message context and product categories (plans, services, devices, apps, events, coupons)
+    4. Multiple entities in 'entities in message' may combine into one composite entity
+    5. **DAG Context 활용** — 'DAG Context'의 사용자 행동 경로를 분석하여 핵심 오퍼링을 식별:
+       - PROMOTES 대상 = 핵심 오퍼링: DAG에서 Core 노드 식별
+       - OFFERS 대상 = 제외: Value 노드(캐시백, 기프티콘, 할인)는 혜택이므로 entity가 아님
+       - 이벤트 참여 수단 제외: 퀴즈 주제 vs 최종 혜택 구별
+    6. **Vocabulary 매칭 가이드**:
+       a) 복합 V-domain 아이템: "올리브영_올리브영" ← "올리브영" 부분 일치 선택
+       b) 정확한 모델명만 선택: 접미사(FE, Plus, Max, Pro 등) 불일치 시 제외. 예: "갤럭시 Z 플립7" ✅, "갤럭시 Z 플립7 FE" ❌
+       c) "신제품" 포괄 표현: 최신 세대만 선택, 구세대 제외
+       d) 부가서비스/보험/케어 제외: T 아이폰케어, 분실파손, T ALL케어, T 즉시보상 등 — 메시지의 핵심 오퍼링이 아닌 한 제외
+    7. **Anti-noise 규칙**:
+       - 일반 카테고리 단어 일치만으로 선택하지 않음
+       - 할인 금액/비율 단독 제외
+       - 행동/설명 구절 제외
+       - 확신이 없으면 제외 (When in doubt, exclude)
+    
+    Return format: Do not use Markdown formatting. Use plain text.
+    REASON: Brief explanation (max 100 chars Korean). **반드시 핵심 혜택(Core Offering)을
+    ... (778 more chars)
+  ... (2 more prompts)
+
+  2nd Stage Responses: 4 responses
+  --- Response 1 ---
+    REASON: 아이폰 17 기변(구매)을 직접적으로 언급하고 있음. Vocabulary에서 정확히 일치함.
+ENTITY: 아이폰 17/17 PRO
+  --- Response 2 ---
+    REASON: 메시지에는 아이폰 17 기변 혜택이 언급되어 있으며, 이는 'candidate entities in vocabulary'에 정확히 일치합니다.
+ENTITY: 아이폰17
+  --- Response 3 ---
+    REASON: 메시지에서는 아이폰 17 기변(구매)을 핵심 혜택으로 직접 언급하고 있으며, 이는 Vocabulary에 정확히 일치합니다.
+ENTITY: 아이폰 17
+  --- Response 4 ---
+    REASON: 메시지에서는 아이폰 17 기변(구매)을 핵심 혜택으로 언급했으나, 해당 엔티티는 vocabulary에 없음.
+ENTITY: 아이폰 신제품, 아이폰 최신폰
+
+  *** CONFIRMED BY 2nd STAGE LLM: 5 entities ***
+    - 아이폰17
+    - 아이폰 17
+    - 아이폰 신제품
+    - 아이폰 17/17 PRO
+    - 아이폰 최신폰
+
+  *** 2nd STAGE FILTERING EFFECT: ***
+    Before 2nd stage: 74 rows
+    After 2nd stage:  5 rows
+    Filtered out:     69 rows
+
+    *** FILTERED OUT BY 2nd STAGE LLM: ***
+      - 아이폰 17 -> 아이폰 17 프로: sim=1.696667
+      - 아이폰 17 -> 아이폰 17 Pro: sim=1.649333
+      - 아이폰 17 -> 아이폰 17 pro: sim=1.649333
+      - 아이폰 17 -> 아이폰 17 시리즈: sim=1.649333
+      - 아이폰 17 -> 아이폰 17 PRO: sim=1.649333
+      - 아이폰 17 -> 던킨_클럽 아이폰 17: sim=1.545000
+      - 아이폰 17 -> 아이폰: sim=1.545000
+      - 아이폰 17 -> 아이폰 17 프로 맥스: sim=1.545000
+      - 아이폰 17 -> 아이폰 17/17 프로: sim=1.545000
+      - 아이폰 17 -> 아이폰 15: sim=1.533333
+      - 아이폰 17 -> 아이폰 16: sim=1.533333
+      - 아이폰 17 -> 아이폰 13: sim=1.533333
+      - 아이폰 17 -> 아이폰 14: sim=1.533333
+      - 아이폰 17 -> 아이폰 17 프로 max: sim=1.517692
+      - 아이폰 17 -> 헉슬리_클럽 아이폰 17: sim=1.517692
+      - 아이폰 17 -> 티머니_클럽 아이폰 17: sim=1.517692
+      - 아이폰 17 -> 아이폰 17/17 pro: sim=1.517692
+      - 아이폰 17 -> 아이폰 17/17 Pro: sim=1.517692
+      - 아이폰 17 -> 아이폰 17 프로 Max: sim=1.517692
+      - 아이폰 17 -> 백미당_클럽 아이폰 17: sim=1.517692
+      - 아이폰 17 -> 아이폰 17 pro 맥스: sim=1.517692
+      - 아이폰 17 -> 아이폰 17 Pro 맥스: sim=1.517692
+      - 아이폰 17 -> 아이폰 17 PRO 맥스: sim=1.517692
+      - 아이폰 17 -> 아이폰 17 프로 MAX: sim=1.517692
+      - 아이폰 17 -> 아이폰 17 Pro MAX: sim=1.494286
+      - 아이폰 17 -> 아이폰 17 PRO MAX: sim=1.494286
+      - 아이폰 17 -> 아이폰 17 PRO Max: sim=1.494286
+      - 아이폰 17 -> 아이폰 17 PRO max: sim=1.494286
+      - 아이폰 17 -> 아이폰 17 Pro Max: sim=1.494286
+      - 아이폰 17 -> 아이폰 17 Pro max: sim=1.494286
+      - 아이폰 17 -> 아이폰 17 pro MAX: sim=1.494286
+      - 아이폰 17 -> 아이폰 17 pro Max: sim=1.494286
+      - 아이폰 17 -> 아이폰 17 pro max: sim=1.494286
+      - 아이폰 17 -> 텐바이텐_클럽 아이폰 17: sim=1.494286
+      - 아이폰 17 -> t 머니_클럽 아이폰 17: sim=1.474286
+      - 아이폰 17 -> t-머니_클럽 아이폰 17: sim=1.474286
+      - 아이폰 17 -> T 머니_클럽 아이폰 17: sim=1.474286
+      - 아이폰 17 -> T-머니_클럽 아이폰 17: sim=1.474286
+      - 아이폰 17 -> 아이디어스_클럽 아이폰 17: sim=1.474000
+      - 아이폰 17 -> 투썸플레이스_클럽 아이폰 17: sim=1.456250
+      - 아이폰 17 -> 아이폰 16e: sim=1.438095
+      - 아이폰 17 -> T money_클럽 아이폰 17: sim=1.420588
+      - 아이폰 17 -> T-money_클럽 아이폰 17: sim=1.420588
+      - 아이폰 17 -> t money_클럽 아이폰 17: sim=1.420588
+      - 아이폰 17 -> t-money_클럽 아이폰 17: sim=1.420588
+      - 아이폰 17 -> 아이폰 15 프로: sim=1.277778
+      - 아이폰 17 -> 아이폰 16 프로: sim=1.277778
+      - 아이폰 17 -> 아이폰 에어: sim=1.266667
+      - 아이폰 17 -> 아이폰 16 PRO: sim=1.233333
+      - 아이폰 17 -> 아이폰 16 플러스: sim=1.233333
+      - 아이폰 17 -> 아이폰 16 pro: sim=1.233333
+      - 아이폰 17 -> 아이폰 16 Pro: sim=1.233333
+      - 아이폰 17 -> 아이폰 15 플러스: sim=1.233333
+      - 아이폰 17 -> 아이폰 15 Pro: sim=1.233333
+      - 아이폰 17 -> 아이폰 15 PRO: sim=1.233333
+      - 아이폰 17 -> 아이폰 15 pro: sim=1.233333
+      - 아이폰 17 -> 아이폰 16 PLUS: sim=1.196970
+      - 아이폰 17 -> 아이폰 16 plus: sim=1.196970
+      - 아이폰 17 -> 아이폰 16 Plus: sim=1.196970
+      - 아이폰 17 -> 아이폰 15 plus: sim=1.196970
+      - 아이폰 17 -> 아이폰 15 Plus: sim=1.196970
+      - 아이폰 17 -> 아이폰 15 PLUS: sim=1.196970
+      - 아이폰 17 -> 아이폰 AIR: sim=1.190476
+      - 아이폰 17 -> 아이폰 Air: sim=1.190476
+      - 아이폰 17 -> 아이폰 통화녹음: sim=1.133333
+      - 아이폰 17 -> T아이폰케어 13: sim=1.111111
+      - 아이폰 17 -> T아이폰케어 14: sim=1.111111
+      - 아이폰 17 -> T아이폰파손 13: sim=1.111111
+      - 아이폰 17 -> T아이폰파손 14: sim=1.111111
+
+    *** PASSED 2nd STAGE LLM FILTER: ***
+      - 아이폰 17 -> 아이폰 17: sim=2.000000
+      - 아이폰 17 -> 아이폰 17/17 PRO: sim=1.517692
+      - 아이폰 17 -> 아이폰17: sim=1.466667
+      - 아이폰 17 -> 아이폰 신제품: sim=1.190476
+      - 아이폰 17 -> 아이폰 최신폰: sim=1.190476
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 5
+  Unique aliases: 5
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 5
+    - 아이폰 17
+    - 아이폰 17/17 PRO
+    - 아이폰17
+    - 아이폰 신제품
+    - 아이폰 최신폰
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 5
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 13
+  Unique item_nm: 3
+  Final product names:
+    - iPhone 17
+    - iPhone 17 Pro
+    - iPhone 17 Pro Max
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 74
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 42
+  Filtered out: 32 rows
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+    "title": "을지로점에서 아이폰 17 기변 안내",
+    "purpose": [
+        "대리점/매장 방문 유도",
+        "기변유도및해지방어_준실시간"
+    ],
+    "sales_script": "을지로점에서 아이폰 17 기변 안내. 지금 바로 방문 권유할까요?",
+    "product": [
+        {
+            "name": "아이폰 17",
+            "action": "기변"
+        }
+    ],
+    "channel": [
+        {
+            "type": "대리점",
+            "value": "을지로점",
+            "action": "방문"
+        }
+    ],
+    "pgm": [
+        "기변유도및해지방어_준실시간",
+        "매장오픈안내및방문유도"
+    ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 3
+================================================================================
+1. iPhone 17
+   - item_id: ['U000006958']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+2. iPhone 17 Pro
+   - item_id: ['U000006956']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+3. iPhone 17 Pro Max
+   - item_id: ['U000006955']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+
+================================================================================

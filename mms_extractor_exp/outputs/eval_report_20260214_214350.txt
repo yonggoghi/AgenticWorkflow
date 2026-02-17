@@ -1,0 +1,65 @@
+================================================================================
+Entity Extraction Mode Comparison Report
+Generated: 2026-02-14 21:43:50
+================================================================================
+
+Mode             Micro-P  Micro-R  Micro-F1  Macro-P  Macro-R  Macro-F1    TP    FP    FN
+-----------------------------------------------------------------------------------------------
+#1 dag            75.0%   69.2%    72.0%   81.7%   75.5%    74.1%    90    30    40
+#2 ont            72.9%   53.8%    61.9%   81.8%   64.0%    67.5%    70    26    60
+#3 langextract    65.7%   53.1%    58.7%   70.8%   55.1%    58.0%    69    36    61
+#4 kg             43.1%   60.0%    50.2%   49.8%   63.9%    51.9%    78   103    52
+-----------------------------------------------------------------------------------------------
+
+## Final Ranking (by Micro-F1)
+  🥇 #1: dag (F1=72.0%, P=75.0%, R=69.2%)
+  🥈 #2: ont (F1=61.9%, P=72.9%, R=53.8%)
+  🥉 #3: langextract (F1=58.7%, P=65.7%, R=53.1%)
+     #4: kg (F1=50.2%, P=43.1%, R=60.0%)
+
+### dag - Worst 5 messages
+  msg[23]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+  msg[32]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 신도SDR대리점 판교역직영점
+  msg[45]: F1=0.29 (TP=1, FP=5, FN=0)
+  msg[11]: F1=0.50 (TP=1, FP=0, FN=2)
+    Missing: PASS, 페이백쇼핑
+
+### ont - Worst 5 messages
+  msg[23]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+  msg[30]: F1=0.00 (TP=0, FP=1, FN=1)
+    Missing: T day
+  msg[32]: F1=0.00 (TP=0, FP=3, FN=1)
+    Missing: 신도SDR대리점 판교역직영점
+  msg[33]: F1=0.00 (TP=0, FP=0, FN=5)
+    Missing: T 멤버십, T 월드, 메가커피, 배달의민족, 파리바게뜨
+
+### langextract - Worst 5 messages
+  msg[8]: F1=0.00 (TP=0, FP=0, FN=1)
+    Missing: T 청소년유해차단
+  msg[23]: F1=0.00 (TP=0, FP=4, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=3, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+  msg[30]: F1=0.00 (TP=0, FP=1, FN=1)
+    Missing: T day
+  msg[32]: F1=0.00 (TP=0, FP=4, FN=1)
+    Missing: 신도SDR대리점 판교역직영점
+
+### kg - Worst 5 messages
+  msg[23]: F1=0.00 (TP=0, FP=7, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=7, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+  msg[30]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: T day
+  msg[32]: F1=0.00 (TP=0, FP=7, FN=1)
+    Missing: 신도SDR대리점 판교역직영점
+  msg[41]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: special T

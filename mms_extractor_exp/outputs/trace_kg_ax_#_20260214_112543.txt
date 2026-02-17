@@ -1,0 +1,315 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "[Web발신] 에이닷 전화를 이용해 주셔서 감사합니다. AI 안심 차단이 업그레이드 되었습니다\! 보이스피싱, 스팸, 스미싱 유형별 차단 기록을 확인하실 수 있습니다. AI 안심 ..."
+Timestamp: 2026-02-14 11:25:31
+Total Duration: 12.23 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: True
+  >>> entity_extraction_context_mode: kg <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: [Web발신] 에이닷 전화를 이용해 주셔서 감사합니다. AI 안심 차단이 업그레이드 되었습니다\! 보이스피싱, 스팸, 스미싱 유형별 차단 기록을 확인하실 수 있습니다. AI 안심 차단은 에이닷 전화 부가서비스로 에이닷 전화 이용 시 무료입니다. 지금 바로 업데이트 해보세요\!
+
+OUTPUT:
+  msg: [Web발신] 에이닷 전화를 이용해 주셔서 감사합니다. AI 안심 차단이 업그레이드 되었습니다\! 보이스피싱, 스팸, 스미싱 유형별 차단 기록을 확인하실 수 있습니다. AI 안심 차단은 에이닷 전화 부가서비스로 에이닷 전화 이용 시 무료입니다. 지금 바로 업데이트 해보세요\!
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (0.96s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.594s (62.1%)
+  kiwi_tokenization_nnp: 0.003s (0.3%)
+  fuzzy_matching: 0.251s (26.3%)
+  sequence_similarity: 0.095s (10.0%)
+  threshold_filter_merge: 0.009s (0.9%)
+
+INPUT:
+  msg: [Web발신] 에이닷 전화를 이용해 주셔서 감사합니다. AI 안심 차단이 업그레이드 되었습니다\! 보이스피싱, 스팸, 스미싱 유형별 차단 기록을 확인하실 수 있습니다. AI 안심 차단은 에이닷 전화 부가서비스로 에이닷 전화 이용 시 무료입니다. 지금 바로 업데이트 해보세요\!
+  context_mode: kg
+
+OUTPUT:
+  entities_from_kiwi: ['에이닷 전화']
+  cand_item_list: ['에이닷 전화', 'A. (에이닷) 전화', 'A. 전화', '에이닷 전화(아이폰)', 'A. (에이닷) 전화(아이폰)', '에이닷 전화 DL', '에이닷 전화 연결', 'A. (에이닷) 전화 DL', 'A. (에이닷) 전화 연결', 'AI 통화', 'A. (A.) 전화', 'A. (에이닷)전화 안심통화']
+  cand_item_count: 12
+  extra_item_pdf_shape: (6, 2)
+  extra_item_pdf_sample: [5 items]
+    First 3: [{'item_nm': 'AI 통화', 'item_id': ['NA00008568']}, {'item_nm': '에이닷 전화', 'item_id': ['NA00004249', 'NA00004249', 'NA00004249', 'NA00004249']}, {'item_nm': '에이닷 전화 DL', 'item_id': ['NA00004928', 'NA00004928']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 1
+  candidate_products_matched: 12
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.13s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [Web발신] 에이닷 전화를 이용해 주셔서 감사합니다. AI 안심 차단이 업그레이드 되었습니다\! 보이스피싱, 스팸, 스미싱 유형별 차단 기록을 확인하실 수 있습니다. AI 안심 차단은 에이닷 전화 부가서비스로 에이닷 전화 이용 시 무료입니다. 지금 바로 업데이트 해보세요\!
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 상품 및 부가서비스 가입유도_AI : 에이닷, AI, 인공지능, 챗봇, 음성비서, 통화, 서비스, 추천, 기능, 앱
+	사용법/혜택/이벤트 안내_AI : 에이닷, 이벤트, 사용법, AI, 기능, 업데이트, 혜택, 추천, 서비스, 안내
+	사용법/혜택/이벤트 안내_유선 : 결합, 인터넷, 할인, IPTV, TV, 기가, 초고속, 와이파이, 약정, 사용법, 이벤트, 혜택
+	대고객사과 및 오발송정정 안내 : 114, 사과, 오류, 불편, 죄송, 정정, 오발송, 수정
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['에이닷 전화', 'A. (에이닷) 전화', 'A. 전화', '에이닷 전화(아이폰)', 'A. (에이닷) 전화(아이폰)', '에이닷 전화 DL', '에이닷 전화 연결', 'A. (에이닷) 전화 DL', 'A. (에이닷) 전화 연결', 'AI 통화', 'A. (A.) 전화', 'A. (에이닷)전화 안심통화']
+  extra_item_pdf_shape: (6, 2)
+
+OUTPUT:
+  rag_context_length: 1313
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	상품 및 부가서비스 가입유도_AI : 에이닷, AI, 인공지능, 챗봇, 음성비서, 통화, 서비스, 추천, 기능, 앱
+	사용법/혜택/이벤트 안내_AI : 에이닷, 이벤트, 사용법, AI, 기능, 업데이트, 혜택, 추천, 서비스, 안내
+	사용법/혜택/이벤트 안내_유선 : 결합, 인터넷, 할인, IPTV, TV, 기가, 초고속, 와이...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (3.81s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [Web발신] 에이닷 전화를 이용해 주셔서 감사합니다. AI 안심 차단이 업그레이드 되었습니다\! 보이스피싱, 스팸, 스미싱 유형별 차단 기록을 확인하실 수 있습니다. AI 안심 차단은 에이닷 전화 부가서비스로 에이닷 전화 이용 시 무료입니다. 지금 바로 업데이트 해보세요\!
+  rag_context_length: 1313
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 403
+  result_json_text_preview: ```json
+{
+  "title": "AI 안심 차단 서비스 업그레이드 안내",
+  "purpose": [
+    "사용법/혜택/이벤트 안내_AI"
+  ],
+  "sales_script": "AI 안심 차단 서비스 업그레이드! 보이스피싱, 스팸, 스미싱 유형별 차단 기록 확인 가능. 지금 바로 업데이트 안내드릴까요?",
+  "product": [
+    {
+      "name": "AI 안심 차단",
+      "action": "사용"
+    }
+  ],
+  "channel": [
+    {
+      "type": "앱",
+...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 403
+  result_json_text_preview: ```json
+{
+  "title": "AI 안심 차단 서비스 업그레이드 안내",
+  "purpose": [
+    "사용법/혜택/이벤트 안내_AI"
+  ],
+  "sales_script": "AI 안심 차단 서비스 업그레이드! 보이스피싱, 스팸, 스미싱 유형별 차단 기록 확인 가능. 지금 바로 업데이트 안내드릴까요?",
+  "product": [
+    {
+      "name": "AI 안심 차단",
+      "action": "사용"
+    }
+  ],
+  "channel": [
+    {
+      "type": "앱",
+      "value": "에이닷 전화",
+      "action": "추가 정보"
+    }
+  ],
+  "pgm": [
+    "사용법/혜택/이벤트 안내_AI"
+  ]
+}
+```
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': 'AI 안심 차단', 'action': '사용'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 1
+  llm_product_names: ['AI 안심 차단']
+  llm_product_actions: ['사용']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (6.99s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['에이닷 전화']
+  entity_extraction_mode: llm
+  context_mode: kg
+
+OUTPUT:
+  extracted_entities: ['AI 안심 차단']
+  context_text: Entities: 에이닷 전화(Product:prerequisite), AI 안심 차단(Subscription:offer), 무료(Benefit:benefit)
+Relationships:
+  - 에이닷 전화 -[ENABLES]-> AI 안심 차단
+  - AI 안심 차단 -[INCLUDES]-> 무료
+  - 에이닷 전화 -[UPSELLS]-> AI 안심 차단
+DAG: (에이닷 전화:이용 중) -[업그레이드 안내]-> (AI 안심 차단:업데이트) -[혜택]-> (무료:이용)
+
+PRODUCT FOCUS:
+  extracted_entities_count: 1
+  extracted_entities: ['AI 안심 차단']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (0.23s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': 'AI 안심 차단', 'action': '사용'}]
+  extracted_entities: {...6 keys...}
+
+OUTPUT:
+  matched_products: [{'item_nm': 'AI 안심 차단', 'item_id': ['#'], 'item_name_in_msg': ['AI 안심 차단'], 'expected_action': ['사용']}]
+  matched_products_count: 1
+
+PRODUCT FOCUS:
+  matched_product_count: 1
+  product_details:
+    - item_nm: AI 안심 차단
+      item_id: ['#']
+      item_name_in_msg: ['AI 안심 차단']
+      expected_action: ['사용']
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 1
+  matched_products: [{'item_nm': 'AI 안심 차단', 'item_id': ['#'], 'item_name_in_msg': ['AI 안심 차단'], 'expected_action': ['사용']}]
+
+OUTPUT:
+  final_result_product: [{'item_nm': 'AI 안심 차단', 'item_id': ['#'], 'item_name_in_msg': ['AI 안심 차단'], 'expected_action': ['사용']}]
+  final_result_product_count: 1
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 1
+
+OUTPUT:
+  validated_product_count: 1
+  has_errors: False
+
+--------------------------------------------------------------------------------
+STEP 11: DAGExtractionStep (0.12s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  has_final_result: True
+
+OUTPUT:
+  entity_dag: ['(에이닷 전화:이용 중) -[업그레이드 안내]-> (AI 안심 차단:업데이트) -[혜택]-> (무료:이용)']
+  entity_dag_count: 1
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 15
+  Unique item_name_in_msg: 1
+  Unique item_nm_alias: 15
+  Similarity range: 0.6000 - 0.7500
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 15
+  sim_s1 range: 0.3000 - 0.7667
+  sim_s2 range: 0.2722 - 0.6000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 1
+  Filtered OUT at this stage: 14 rows
+  Sample of filtered items:
+    - AI 안심 차단 -> 티맵 차단 (s1=0.3667, s2=0.5800)
+    - AI 안심 차단 -> ABB ROAMING 차단 서비스 (s1=0.5667, s2=0.2722)
+    - AI 안심 차단 -> AI 컨택센터 (s1=0.3667, s2=0.4429)
+    - AI 안심 차단 -> SA차단 (s1=0.3000, s2=0.6000)
+    - AI 안심 차단 -> 테더링 차단 (s1=0.3667, s2=0.5000)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 1
+  Combined sim range: 1.0667 - 1.0667
+  All items with combined scores:
+    - AI 안심 차단 -> 티 맵 차단: sim=1.066667
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "AI 안심 차단 서비스 업그레이드 안내",
+  "purpose": [
+    "사용법/혜택/이벤트 안내_AI"
+  ],
+  "sales_script": "AI 안심 차단 서비스 업그레이드! 보이스피싱, 스팸, 스미싱 유형별 차단 기록 확인 가능. 지금 바로 업데이트 안내드릴까요?",
+  "product": [
+    {
+      "name": "AI 안심 차단",
+      "action": "사용"
+    }
+  ],
+  "channel": [
+    {
+      "type": "앱",
+      "value": "에이닷 전화",
+      "action": "추가 정보"
+    }
+  ],
+  "pgm": [
+    "사용법/혜택/이벤트 안내_AI"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 1
+================================================================================
+1. AI 안심 차단
+   - item_id: ['#']
+   - item_name_in_msg: ['AI 안심 차단']
+   - expected_action: ['사용']
+
+================================================================================

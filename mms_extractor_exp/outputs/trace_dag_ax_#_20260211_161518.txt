@@ -1,0 +1,525 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "을지로점에서 아이폰 17 기변하세요"
+Timestamp: 2026-02-11 16:15:12
+Total Duration: 5.40 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: logic
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: dag <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 5
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (25, 6)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: 을지로점에서 아이폰 17 기변하세요
+
+OUTPUT:
+  msg: 을지로점에서 아이폰 17 기변하세요
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (0.87s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.596s (68.6%)
+  kiwi_tokenization_nnp: 0.001s (0.1%)
+  fuzzy_matching: 0.212s (24.4%)
+  sequence_similarity: 0.047s (5.4%)
+  threshold_filter_merge: 0.008s (1.0%)
+
+INPUT:
+  msg: 을지로점에서 아이폰 17 기변하세요
+  context_mode: dag
+
+OUTPUT:
+  entities_from_kiwi: ['아이폰']
+  cand_item_list: ['아이폰', '아이폰 17', '아이폰17', '아이폰 13', '아이폰 14', '아이폰 15', '아이폰 16', '아이폰 17 프로']
+  cand_item_count: 8
+  extra_item_pdf_shape: (7, 2)
+  extra_item_pdf_sample: [{'item_nm': 'iPhone 13', 'item_id': ['U000005273']}, {'item_nm': 'iPhone 14', 'item_id': ['U000005792']}, {'item_nm': 'iPhone 15', 'item_id': ['U000006212']}, {'item_nm': 'iPhone 16', 'item_id': ['U000006532']}, {'item_nm': 'iPhone 17', 'item_id': ['U000006958', 'U000006958', 'U000006958']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 1
+  candidate_products_matched: 8
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.13s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: 을지로점에서 아이폰 17 기변하세요
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 상품및부가서비스가입유도_단말 : 신규, 출시, 갤럭시, Galaxy, Iphone, 아이폰, 사전, 예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	사용법/혜택/이벤트안내_단말 : 갤럭시, 아이폰, 사용법, 안내, 이벤트, 혜택, 기능, 팁, 활용법, 업데이트
+	타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰
+	매장오픈안내및방문유도 : 매장, 대리점, 오픈, 내방, 방문, 리뉴얼, 이전, 홍보, 프로모션, 사은품
+	기변
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['아이폰', '아이폰 17', '아이폰17', '아이폰 13', '아이폰 14', '아이폰 15', '아이폰 16', '아이폰 17 프로']
+  extra_item_pdf_shape: (7, 2)
+
+OUTPUT:
+  rag_context_length: 483
+  rag_context_preview: 
+### 광고 분류 기준 정보 ###
+	상품및부가서비스가입유도_단말 : 신규, 출시, 갤럭시, Galaxy, Iphone, 아이폰, 사전, 예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	사용법/혜택/이벤트안내_단말 : 갤럭시, 아이폰, 사용법, 안내, 이벤트, 혜택, 기능, 팁, 활용법, 업데이트
+	타사회선(가망)_win-back : 쓰던폰그대로, 15990111, 통신사이동, 통신사 이동, 번호이동, 번호 이동, 전환, 혜택, 할인, KT, LG, 알뜰폰
+	매장오픈안내및방문유도 : 매장, 대리점, 오픈, 내방, 방문, 리뉴얼,...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (3.96s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: 을지로점에서 아이폰 17 기변하세요
+  rag_context_length: 483
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 479
+  result_json_text_preview: ```json
+{
+    "title": "을지로점에서 아이폰 17 기변 안내",
+    "purpose": [
+        "대리점/매장 방문 유도",
+        "기변유도및해지방어_준실시간"
+    ],
+    "sales_script": "아이폰 17 기변 원하시면 을지로점 방문 권유. 지금 안내할까요?",
+    "product": [
+        {
+            "name": "아이폰 17",
+            "action": "기변"
+        }
+    ],
+    "channel": [
+   ...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 479
+  result_json_text_preview: ```json
+{
+    "title": "을지로점에서 아이폰 17 기변 안내",
+    "purpose": [
+        "대리점/매장 방문 유도",
+        "기변유도및해지방어_준실시간"
+    ],
+    "sales_script": "아이폰 17 기변 원하시면 을지로점 방문 권유. 지금 안내할까요?",
+    "product": [
+        {
+            "name": "아이폰 17",
+            "action": "기변"
+        }
+    ],
+    "channel": [
+        {
+            "type": "대리점",
+            "value": "을지로점",
+            "action": "방문"
+        }
+    ],
+    "pgm": [
+        "기변유도및해지방어_준실시간",
+        "매장오픈안내및방문유도"
+    ]
+}
+```
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '아이폰 17', 'action': '기변'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 1
+  llm_product_names: ['아이폰 17']
+  llm_product_actions: ['기변']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (0.00s) [SKIP]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['아이폰']
+  entity_extraction_mode: logic
+  context_mode: dag
+
+OUTPUT:
+  skipped: True
+  reason: should_execute returned False
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (0.34s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': '아이폰 17', 'action': '기변'}]
+  extracted_entities: None
+
+OUTPUT:
+  matched_products: [27 items]
+    First 3: [{'item_nm': 'T아이폰케어 13', 'item_id': ['NA00007547'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}, {'item_nm': 'T아이폰케어 14', 'item_id': ['NA00008092'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}, {'item_nm': 'T아이폰클럽', 'item_id': ['NA00005456'], 'item_name_in_msg': ['아이폰'], 'expected_action': ['기타']}]
+  matched_products_count: 27
+
+PRODUCT FOCUS:
+  matched_product_count: 27
+  product_details:
+    - item_nm: T아이폰케어 13
+      item_id: ['NA00007547']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: T아이폰케어 14
+      item_id: ['NA00008092']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: T아이폰클럽
+      item_id: ['NA00005456']
+      item_name_in_msg: ['아이폰']
+      expected_action: ['기타']
+    - item_nm: T아이폰파손 13
+      item_id: ['NA00007551']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: T아이폰파손 14
+      item_id: ['NA00008096']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 13
+      item_id: ['U000005273']
+      item_name_in_msg: ['아이폰', '아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 14
+      item_id: ['U000005792']
+      item_name_in_msg: ['아이폰', '아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 15
+      item_id: ['U000006212']
+      item_name_in_msg: ['아이폰', '아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 15 Plus
+      item_id: ['U000006214']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 15 Pro
+      item_id: ['U000006213']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 16
+      item_id: ['U000006532']
+      item_name_in_msg: ['아이폰', '아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 16 Plus
+      item_id: ['U000006533']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 16 Pro
+      item_id: ['U000006534']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 16e
+      item_id: ['U000006752']
+      item_name_in_msg: ['아이폰', '아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 17
+      item_id: ['U000006958']
+      item_name_in_msg: ['아이폰', '아이폰 17']
+      expected_action: ['기변']
+    - item_nm: iPhone 17 Pro
+      item_id: ['U000006956']
+      item_name_in_msg: ['아이폰 17', '아이폰']
+      expected_action: ['기변']
+    - item_nm: iPhone 17 Pro Max
+      item_id: ['U000006955']
+      item_name_in_msg: ['아이폰 17', '아이폰']
+      expected_action: ['기변']
+    - item_nm: iPhone Air
+      item_id: ['U000006957']
+      item_name_in_msg: ['아이폰', '아이폰 17']
+      expected_action: ['기변']
+    - item_nm: 던킨_클럽 iPhone 17
+      item_id: ['V700_9411']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: 백미당_클럽 iPhone 17
+      item_id: ['V929_9411']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: 아이디어스_클럽 iPhone 17
+      item_id: ['V962_9411']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: 아이폰 통화녹음
+      item_id: ['NA00008286']
+      item_name_in_msg: ['아이폰', '아이폰 17']
+      expected_action: ['기변']
+    - item_nm: 에이닷 전화(아이폰)
+      item_id: ['NA00005251']
+      item_name_in_msg: ['아이폰']
+      expected_action: ['기타']
+    - item_nm: 텐바이텐_클럽 iPhone 17
+      item_id: ['V964_9411']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: 투썸플레이스_클럽 iPhone 17
+      item_id: ['V711_9411']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: 티머니_클럽 iPhone 17
+      item_id: ['V961_9411']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+    - item_nm: 헉슬리_클럽 iPhone 17
+      item_id: ['V963_9411']
+      item_name_in_msg: ['아이폰 17']
+      expected_action: ['기변']
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.11s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 27
+  matched_products: [10 items]
+
+OUTPUT:
+  final_result_product: [27 items]
+    First 3: [{'item_nm': 'T아이폰케어 13', 'item_id': ['NA00007547'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}, {'item_nm': 'T아이폰케어 14', 'item_id': ['NA00008092'], 'item_name_in_msg': ['아이폰 17'], 'expected_action': ['기변']}, {'item_nm': 'T아이폰클럽', 'item_id': ['NA00005456'], 'item_name_in_msg': ['아이폰'], 'expected_action': ['기타']}]
+  final_result_product_count: 27
+  offer_type: org
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 27
+
+OUTPUT:
+  validated_product_count: 27
+  has_errors: False
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 90
+  Unique aliases: 76
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 76
+    - A. 전화(아이폰)
+    - T아이폰클럽
+    - 아이폰
+    - 아이폰 13
+    - 아이폰 14
+    - 아이폰 15
+    - 아이폰 16
+    - 아이폰 16e
+    - 아이폰 17
+    - 아이폰 AIR
+    - 아이폰 Air
+    - 아이폰 신제품
+    - 아이폰 에어
+    - 아이폰 최신폰
+    - 아이폰 통화녹음
+    - 아이폰17
+    - T money_클럽 아이폰 17
+    - T 머니_클럽 아이폰 17
+    - T-money_클럽 아이폰 17
+    - T-머니_클럽 아이폰 17
+    ... (56 more)
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 90
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 114
+  Unique item_nm: 27
+  Final product names:
+    - T아이폰클럽
+    - T아이폰케어 13
+    - T아이폰케어 14
+    - 에이닷 전화(아이폰)
+    - T아이폰파손 13
+    - 아이폰 통화녹음
+    - 백미당_클럽 iPhone 17
+    - T아이폰파손 14
+    - 던킨_클럽 iPhone 17
+    - 투썸플레이스_클럽 iPhone 17
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+    "title": "을지로점에서 아이폰 17 기변 안내",
+    "purpose": [
+        "대리점/매장 방문 유도",
+        "기변유도및해지방어_준실시간"
+    ],
+    "sales_script": "아이폰 17 기변 원하시면 을지로점 방문 권유. 지금 안내할까요?",
+    "product": [
+        {
+            "name": "아이폰 17",
+            "action": "기변"
+        }
+    ],
+    "channel": [
+        {
+            "type": "대리점",
+            "value": "을지로점",
+            "action": "방문"
+        }
+    ],
+    "pgm": [
+        "기변유도및해지방어_준실시간",
+        "매장오픈안내및방문유도"
+    ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 27
+================================================================================
+1. T아이폰케어 13
+   - item_id: ['NA00007547']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+2. T아이폰케어 14
+   - item_id: ['NA00008092']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+3. T아이폰클럽
+   - item_id: ['NA00005456']
+   - item_name_in_msg: ['아이폰']
+   - expected_action: ['기타']
+4. T아이폰파손 13
+   - item_id: ['NA00007551']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+5. T아이폰파손 14
+   - item_id: ['NA00008096']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+6. iPhone 13
+   - item_id: ['U000005273']
+   - item_name_in_msg: ['아이폰', '아이폰 17']
+   - expected_action: ['기변']
+7. iPhone 14
+   - item_id: ['U000005792']
+   - item_name_in_msg: ['아이폰', '아이폰 17']
+   - expected_action: ['기변']
+8. iPhone 15
+   - item_id: ['U000006212']
+   - item_name_in_msg: ['아이폰', '아이폰 17']
+   - expected_action: ['기변']
+9. iPhone 15 Plus
+   - item_id: ['U000006214']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+10. iPhone 15 Pro
+   - item_id: ['U000006213']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+11. iPhone 16
+   - item_id: ['U000006532']
+   - item_name_in_msg: ['아이폰', '아이폰 17']
+   - expected_action: ['기변']
+12. iPhone 16 Plus
+   - item_id: ['U000006533']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+13. iPhone 16 Pro
+   - item_id: ['U000006534']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+14. iPhone 16e
+   - item_id: ['U000006752']
+   - item_name_in_msg: ['아이폰', '아이폰 17']
+   - expected_action: ['기변']
+15. iPhone 17
+   - item_id: ['U000006958']
+   - item_name_in_msg: ['아이폰', '아이폰 17']
+   - expected_action: ['기변']
+16. iPhone 17 Pro
+   - item_id: ['U000006956']
+   - item_name_in_msg: ['아이폰 17', '아이폰']
+   - expected_action: ['기변']
+17. iPhone 17 Pro Max
+   - item_id: ['U000006955']
+   - item_name_in_msg: ['아이폰 17', '아이폰']
+   - expected_action: ['기변']
+18. iPhone Air
+   - item_id: ['U000006957']
+   - item_name_in_msg: ['아이폰', '아이폰 17']
+   - expected_action: ['기변']
+19. 던킨_클럽 iPhone 17
+   - item_id: ['V700_9411']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+20. 백미당_클럽 iPhone 17
+   - item_id: ['V929_9411']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+21. 아이디어스_클럽 iPhone 17
+   - item_id: ['V962_9411']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+22. 아이폰 통화녹음
+   - item_id: ['NA00008286']
+   - item_name_in_msg: ['아이폰', '아이폰 17']
+   - expected_action: ['기변']
+23. 에이닷 전화(아이폰)
+   - item_id: ['NA00005251']
+   - item_name_in_msg: ['아이폰']
+   - expected_action: ['기타']
+24. 텐바이텐_클럽 iPhone 17
+   - item_id: ['V964_9411']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+25. 투썸플레이스_클럽 iPhone 17
+   - item_id: ['V711_9411']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+26. 티머니_클럽 iPhone 17
+   - item_id: ['V961_9411']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+27. 헉슬리_클럽 iPhone 17
+   - item_id: ['V963_9411']
+   - item_name_in_msg: ['아이폰 17']
+   - expected_action: ['기변']
+
+================================================================================

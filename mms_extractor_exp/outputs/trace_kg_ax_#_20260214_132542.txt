@@ -1,0 +1,318 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "[SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바..."
+Timestamp: 2026-02-14 13:25:09
+Total Duration: 33.52 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: kg <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가
+
+OUTPUT:
+  msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u...
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (14.96s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.607s (4.1%)
+  kiwi_tokenization_nnp: 0.003s (0.0%)
+  fuzzy_matching: 14.013s (93.7%)
+  sequence_similarity: 0.319s (2.1%)
+  threshold_filter_merge: 0.010s (0.1%)
+
+INPUT:
+  msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가
+  context_mode: kg
+
+OUTPUT:
+  entities_from_kiwi: []
+  cand_item_list: ['SK(주)', 'A. 전화 연결', 'B tv 혜택', 'A. 전화']
+  cand_item_count: 4
+  extra_item_pdf_shape: (4, 2)
+  extra_item_pdf_sample: [{'item_nm': 'B tv 혜택', 'item_id': ['PR00000374']}, {'item_nm': 'SK(주)', 'item_id': ['X000000044']}, {'item_nm': '에이닷 전화', 'item_id': ['NA00004249']}, {'item_nm': '에이닷 전화 연결', 'item_id': ['NA00009055']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 0
+  candidate_products_matched: 4
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.14s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=112
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 상품 및 부가서비스 가입유도_구독 : T우주, 구독, 우주패스, 1505, 월정액, Netflix, Wavve, 스트리밍, 콘텐츠
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	상품 및 부가서비스 가입유도_준실시간_구독 : 상품, 서비스, 혜택, 가입, 추천, 안내, 업데이트, 구독, 준실시간
+	사용법/혜택/이벤트 안내_구독 : 우주, 구독, 혜택, 이벤트, T우주, 콘텐츠, 할인, 추천, 사용법, 서비스, 안내
+	상
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['SK(주)', 'A. 전화 연결', 'B tv 혜택', 'A. 전화']
+  extra_item_pdf_shape: (4, 2)
+
+OUTPUT:
+  rag_context_length: 1228
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	상품 및 부가서비스 가입유도_구독 : T우주, 구독, 우주패스, 1505, 월정액, Netflix, Wavve, 스트리밍, 콘텐츠
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	상품 및 부가서비스 가입유도_준실시간...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (6.74s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=112
+  rag_context_length: 1228
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 766
+  result_json_text_preview: ```json
+{
+  "title": "T우주 wavve 30만편 콘텐츠 무제한 감상",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "T우주 wavve 가입! 30만편 드라마/예능/영화 무제한. 지금 바로 감상 안내드릴까요?",
+  "product": [
+    {
+      "name": "T우주 wavve",
+      "action": "가입"
+    }
+  ],
+  "channel": [
+    {
+      "type"...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 766
+  result_json_text_preview: ```json
+{
+  "title": "T우주 wavve 30만편 콘텐츠 무제한 감상",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "T우주 wavve 가입! 30만편 드라마/예능/영화 무제한. 지금 바로 감상 안내드릴까요?",
+  "product": [
+    {
+      "name": "T우주 wavve",
+      "action": "가입"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/VN4?came=home",
+      "action": "추가 정보"
+    },
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/VN3?came=home",
+      "action
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': 'T우주 wavve', 'action': '가입'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 1
+  llm_product_names: ['T우주 wavve']
+  llm_product_actions: ['가입']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (11.46s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: []
+  entity_extraction_mode: llm
+  context_mode: kg
+
+OUTPUT:
+  extracted_entities: ['인기 예능', '30만편의 콘텐츠 무제한 감상', '인기 드라마', '인기 해외시리즈']
+  context_text: Entities: T우주 wavve(Subscription:prerequisite), 30만편의 콘텐츠 무제한 감상(Benefit:benefit), 인기 드라마(ContentOffer:offer), 인기 예능(ContentOffer:offer), 인기 해외시리즈(ContentOffer:offer), SKT 구독상품 전담 고객센터(1505, 무료)(Channel:context)
+Relationships:
+  - T우주 wavve -[INCLUDES]-> 30만편의 콘텐츠 무제한 감상
+  - T우주 wavve -[UPSELLS]-> 인...
+
+PRODUCT FOCUS:
+  extracted_entities_count: 4
+  extracted_entities: ['인기 예능', '30만편의 콘텐츠 무제한 감상', '인기 드라마', '인기 해외시리즈']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (0.22s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': 'T우주 wavve', 'action': '가입'}]
+  extracted_entities: {...6 keys...}
+
+OUTPUT:
+  matched_products: [3 items]
+    First 3: [{'item_nm': '인기 드라마', 'item_id': ['#'], 'item_name_in_msg': ['인기 드라마'], 'expected_action': ['기타']}, {'item_nm': '인기 예능', 'item_id': ['#'], 'item_name_in_msg': ['인기 예능'], 'expected_action': ['기타']}, {'item_nm': '인기 해외시리즈', 'item_id': ['#'], 'item_name_in_msg': ['인기 해외시리즈'], 'expected_action': ['기타']}]
+  matched_products_count: 3
+
+PRODUCT FOCUS:
+  matched_product_count: 3
+  product_details:
+    - item_nm: 인기 드라마
+      item_id: ['#']
+      item_name_in_msg: ['인기 드라마']
+      expected_action: ['기타']
+    - item_nm: 인기 예능
+      item_id: ['#']
+      item_name_in_msg: ['인기 예능']
+      expected_action: ['기타']
+    - item_nm: 인기 해외시리즈
+      item_id: ['#']
+      item_name_in_msg: ['인기 해외시리즈']
+      expected_action: ['기타']
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 3
+  matched_products: [3 items]
+
+OUTPUT:
+  final_result_product: [3 items]
+    First 3: [{'item_nm': '인기 드라마', 'item_id': ['#'], 'item_name_in_msg': ['인기 드라마'], 'expected_action': ['기타']}, {'item_nm': '인기 예능', 'item_id': ['#'], 'item_name_in_msg': ['인기 예능'], 'expected_action': ['기타']}, {'item_nm': '인기 해외시리즈', 'item_id': ['#'], 'item_name_in_msg': ['인기 해외시리즈'], 'expected_action': ['기타']}]
+  final_result_product_count: 3
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 3
+
+OUTPUT:
+  validated_product_count: 3
+  has_errors: False
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 12
+  Unique item_name_in_msg: 3
+  Unique item_nm_alias: 12
+  Similarity range: 0.6000 - 0.8000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 12
+  sim_s1 range: 0.2000 - 0.4000
+  sim_s2 range: 0.2462 - 0.6333
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "T우주 wavve 30만편 콘텐츠 무제한 감상",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "T우주 wavve 가입! 30만편 드라마/예능/영화 무제한. 지금 바로 감상 안내드릴까요?",
+  "product": [
+    {
+      "name": "T우주 wavve",
+      "action": "가입"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/VN4?came=home",
+      "action": "추가 정보"
+    },
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/VN3?came=home",
+      "action": "추가 정보"
+    },
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/EN713?came=HOME",
+      "action": "추가 정보"
+    },
+    {
+      "type": "전화번호",
+      "value": "1505",
+      "action": "문의"
+    }
+  ],
+  "pgm": [
+    "상품 및 부가서비스 가입유도_구독"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 3
+================================================================================
+1. 인기 드라마
+   - item_id: ['#']
+   - item_name_in_msg: ['인기 드라마']
+   - expected_action: ['기타']
+2. 인기 예능
+   - item_id: ['#']
+   - item_name_in_msg: ['인기 예능']
+   - expected_action: ['기타']
+3. 인기 해외시리즈
+   - item_id: ['#']
+   - item_name_in_msg: ['인기 해외시리즈']
+   - expected_action: ['기타']
+
+================================================================================

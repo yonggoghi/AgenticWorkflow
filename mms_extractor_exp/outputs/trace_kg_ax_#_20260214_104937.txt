@@ -1,0 +1,575 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "[Web발신] 5GX 스마트워치 출시 기념 프로모션! 기존 T플랜(스몰/미디엄/라지) 또는 5GX 요금제 고객님께 스마트워치 6개월 무료 이용 혜택을 드립니다. 갤럭시 워치7, 애..."
+Timestamp: 2026-02-14 10:49:17
+Total Duration: 20.44 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: True
+  >>> entity_extraction_context_mode: kg <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: [Web발신] 5GX 스마트워치 출시 기념 프로모션! 기존 T플랜(스몰/미디엄/라지) 또는 5GX 요금제 고객님께 스마트워치 6개월 무료 이용 혜택을 드립니다. 갤럭시 워치7, 애플워치SE 등 최신 스마트워치를 경험해 보세요.
+
+OUTPUT:
+  msg: [Web발신] 5GX 스마트워치 출시 기념 프로모션! 기존 T플랜(스몰/미디엄/라지) 또는 5GX 요금제 고객님께 스마트워치 6개월 무료 이용 혜택을 드립니다. 갤럭시 워치7, 애플워치SE 등 최신 스마트워치를 경험해 보세요.
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (1.01s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.600s (59.2%)
+  kiwi_tokenization_nnp: 0.003s (0.3%)
+  fuzzy_matching: 0.267s (26.4%)
+  sequence_similarity: 0.131s (12.9%)
+  threshold_filter_merge: 0.009s (0.9%)
+
+INPUT:
+  msg: [Web발신] 5GX 스마트워치 출시 기념 프로모션! 기존 T플랜(스몰/미디엄/라지) 또는 5GX 요금제 고객님께 스마트워치 6개월 무료 이용 혜택을 드립니다. 갤럭시 워치7, 애플워치SE 등 최신 스마트워치를 경험해 보세요.
+  context_mode: kg
+
+OUTPUT:
+  entities_from_kiwi: ['미디엄', '스몰']
+  cand_item_list: ['미디엄', '스몰', '0플랜 미디엄', '0플랜 라지', '0플랜 스몰', 'T플랜 맥스', '5G언택트_프로모션', '5GX 무제한 프로모션', '0틴플랜 미디엄']
+  cand_item_count: 9
+  extra_item_pdf_shape: (9, 2)
+  extra_item_pdf_sample: [{'item_nm': '0틴플랜 미디엄', 'item_id': ['NA00007490']}, {'item_nm': '0플랜 라지', 'item_id': ['NA00006157']}, {'item_nm': '0플랜 미디엄', 'item_id': ['NA00006156']}, {'item_nm': '0플랜 스몰', 'item_id': ['NA00006155']}, {'item_nm': '5GX 무제한 프로모션', 'item_id': ['NA00006562']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 2
+  candidate_products_matched: 9
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.13s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [Web발신] 5GX 스마트워치 출시 기념 프로모션! 기존 T플랜(스몰/미디엄/라지) 또는 5GX 요금제 고객님께 스마트워치 6개월 무료 이용 혜택을 드립니다. 갤럭시 워치7, 애플워치SE 등 최신 스마트워치를 경험해 보세요.
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	기변유도 및 해지방어 : TDS, 기기변경, 약정, 할인, 혜택, 업그레이드, 신규단말, 보상, 프로모션, 교체
+	상품 및 부가서비스 가입유도_요금제밸류업 : data, 요금제, 5G, 5GX, 요금, 무제한, 선택약정, 프라임, 슬림, 할인
+	사용법/혜택/이벤트 안내_유선 : 결합, 인터넷, 할인, IPTV, TV, 기가, 초고속, 와이파이, 약정, 사용법, 이벤트, 혜택
+	상품 및 부가서비스 가입유도_
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['미디엄', '스몰', '0플랜 미디엄', '0플랜 라지', '0플랜 스몰', 'T플랜 맥스', '5G언택트_프로모션', '5GX 무제한 프로모션', '0틴플랜 미디엄']
+  extra_item_pdf_shape: (9, 2)
+
+OUTPUT:
+  rag_context_length: 1272
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	기변유도 및 해지방어 : TDS, 기기변경, 약정, 할인, 혜택, 업그레이드, 신규단말, 보상, 프로모션, 교체
+	상품 및 부가서비스 가입유도_요금제밸류업 : data, 요금제, 5G, 5GX, 요금,...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (4.29s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [Web발신] 5GX 스마트워치 출시 기념 프로모션! 기존 T플랜(스몰/미디엄/라지) 또는 5GX 요금제 고객님께 스마트워치 6개월 무료 이용 혜택을 드립니다. 갤럭시 워치7, 애플워치SE 등 최신 스마트워치를 경험해 보세요.
+  rag_context_length: 1272
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 444
+  result_json_text_preview: ```json
+{
+  "title": "5GX 스마트워치 6개월 무료 이용 혜택",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "T플랜/5GX 요금제 고객님께 스마트워치 6개월 무료! 갤럭시 워치7, 애플워치SE 등 최신 스마트워치 경험 안내드릴까요?",
+  "product": [
+    {
+      "name": "5GX 스마트워치",
+      "action": "사용"
+    },
+    {
+      "name": "갤럭시 워치7",
+      "a...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 444
+  result_json_text_preview: ```json
+{
+  "title": "5GX 스마트워치 6개월 무료 이용 혜택",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "T플랜/5GX 요금제 고객님께 스마트워치 6개월 무료! 갤럭시 워치7, 애플워치SE 등 최신 스마트워치 경험 안내드릴까요?",
+  "product": [
+    {
+      "name": "5GX 스마트워치",
+      "action": "사용"
+    },
+    {
+      "name": "갤럭시 워치7",
+      "action": "구매"
+    },
+    {
+      "name": "애플워치SE",
+      "action": "구매"
+    }
+  ],
+  "channel": [],
+  "pgm": [
+    "기변유도 및 해지방어_신규단말출시"
+  ]
+}
+```
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '5GX 스마트워치', 'action': '사용'}, {'name': '갤럭시 워치7', 'action': '구매'}, {'name': '애플워치SE', 'action': '구매'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 3
+  llm_product_names: ['5GX 스마트워치', '갤럭시 워치7', '애플워치SE']
+  llm_product_actions: ['사용', '구매', '구매']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (13.43s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['미디엄', '스몰']
+  entity_extraction_mode: llm
+  context_mode: kg
+
+OUTPUT:
+  extracted_entities: ['스마트워치 6개월', '스마트워치 6개월 무료', '미디엄', '애플워치SE', '갤럭시 워치7', '스몰', '5GX 스마트워치', '스마트워치 6개월 무료 이용']
+  context_text: Entities: T플랜(스몰/미디엄/라지)(RatePlan:prerequisite), 5GX 요금제(RatePlan:prerequisite), 스마트워치 6개월 무료 이용(Benefit:benefit), 갤럭시 워치7(Product:offer), 애플워치SE(Product:offer), 5GX 스마트워치 출시 기념 프로모션(Campaign:context)
+Relationships:
+  - 5GX 스마트워치 출시 기념 프로모션 -[TARGETED_BY]-> T플랜(스몰/미디엄/라지)
+  - 5GX 스마트워치 출시 기념 프로모션 -[...
+
+PRODUCT FOCUS:
+  extracted_entities_count: 8
+  extracted_entities: ['스마트워치 6개월', '스마트워치 6개월 무료', '미디엄', '애플워치SE', '갤럭시 워치7', '스몰', '5GX 스마트워치', '스마트워치 6개월 무료 이용']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (1.57s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': '5GX 스마트워치', 'action': '사용'}, {'name': '갤럭시 워치7', 'action': '구매'}, {'name': '애플워치SE', 'action': '구매'}]
+  extracted_entities: {...6 keys...}
+
+OUTPUT:
+  matched_products: [4 items]
+    First 3: [{'item_nm': '갤럭시 워치7 40mm', 'item_id': ['U000006494'], 'item_name_in_msg': ['갤럭시 워치7'], 'expected_action': ['구매']}, {'item_nm': '갤럭시 워치7 44mm', 'item_id': ['U000006495'], 'item_name_in_msg': ['갤럭시 워치7'], 'expected_action': ['구매']}, {'item_nm': '갤럭시 워치8 44mm', 'item_id': ['U000006914'], 'item_name_in_msg': ['갤럭시 워치7'], 'expected_action': ['구매']}]
+  matched_products_count: 4
+  similarity_scores_count: 49
+  similarity_scores_sample:
+    - {'item_name_in_msg': '5GX 스마트워치', 'item_nm_alias': '인피니티_스마트워치', 'sim': 1.2133333333333334, 'rank': 1.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '5GX 스마트워치', 'item_nm_alias': '5G 스마트워치탭할인(모)', 'sim': 1.2034188034188034, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '5GX 스마트워치', 'item_nm_alias': '5G 스마트워치탭할인(자)', 'sim': 1.2034188034188034, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '5GX 스마트워치', 'item_nm_alias': '5GX 프리미엄(스마트기기)', 'sim': 1.1888888888888889, 'rank': 3.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '5GX 스마트워치', 'item_nm_alias': '5GX 플래티넘(스마트기기)', 'sim': 1.1888888888888889, 'rank': 3.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    ... (15 more)
+
+PRODUCT FOCUS:
+  matched_product_count: 4
+  product_details:
+    - item_nm: 갤럭시 워치7 40mm
+      item_id: ['U000006494']
+      item_name_in_msg: ['갤럭시 워치7']
+      expected_action: ['구매']
+    - item_nm: 갤럭시 워치7 44mm
+      item_id: ['U000006495']
+      item_name_in_msg: ['갤럭시 워치7']
+      expected_action: ['구매']
+    - item_nm: 갤럭시 워치8 44mm
+      item_id: ['U000006914']
+      item_name_in_msg: ['갤럭시 워치7']
+      expected_action: ['구매']
+    - item_nm: 스몰
+      item_id: ['NA00005955']
+      item_name_in_msg: ['스몰']
+      expected_action: ['기타']
+  similarity_matching:
+    - total_matches: 49
+    - unique_entities_in_msg: 4
+    - unique_aliases_matched: 49
+  top_similarity_matches:
+    - {'item_name_in_msg': '미디엄', 'item_nm_alias': '미디엄', 'sim': 2.0}
+    - {'item_name_in_msg': '스몰', 'item_nm_alias': '스몰', 'sim': 2.0}
+    - {'item_name_in_msg': '갤럭시 워치7', 'item_nm_alias': '갤럭시 워치7 40mm', 'sim': 1.6375}
+    - {'item_name_in_msg': '갤럭시 워치7', 'item_nm_alias': '갤럭시 워치7 44mm', 'sim': 1.6375}
+    - {'item_name_in_msg': '미디엄', 'item_nm_alias': '0플랜 미디엄', 'sim': 1.4942857142857142}
+    - {'item_name_in_msg': '미디엄', 'item_nm_alias': '0틴플랜 미디엄', 'sim': 1.4562499999999998}
+    - {'item_name_in_msg': '미디엄', 'item_nm_alias': '0PLAN 미디엄', 'sim': 1.4266666666666665}
+    - {'item_name_in_msg': '미디엄', 'item_nm_alias': '0Plan 미디엄', 'sim': 1.4266666666666665}
+    - {'item_name_in_msg': '미디엄', 'item_nm_alias': '0plan 미디엄', 'sim': 1.4266666666666665}
+    - {'item_name_in_msg': '스몰', 'item_nm_alias': '0플랜 스몰', 'sim': 1.4266666666666665}
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 4
+  matched_products: [4 items]
+
+OUTPUT:
+  final_result_product: [4 items]
+    First 3: [{'item_nm': '갤럭시 워치7 40mm', 'item_id': ['U000006494'], 'item_name_in_msg': ['갤럭시 워치7'], 'expected_action': ['구매']}, {'item_nm': '갤럭시 워치7 44mm', 'item_id': ['U000006495'], 'item_name_in_msg': ['갤럭시 워치7'], 'expected_action': ['구매']}, {'item_nm': '갤럭시 워치8 44mm', 'item_id': ['U000006914'], 'item_name_in_msg': ['갤럭시 워치7'], 'expected_action': ['구매']}]
+  final_result_product_count: 4
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 4
+
+OUTPUT:
+  validated_product_count: 4
+  has_errors: False
+
+--------------------------------------------------------------------------------
+STEP 11: DAGExtractionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  has_final_result: True
+
+OUTPUT:
+  entity_dag: ['(T플랜(스몰/미디엄/라지) 또는 5GX 요금제:가입함) -[ENABLES]-> (스마트워치 6개월 무료 이용:이용함)']
+  entity_dag_count: 1
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 49
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg    item_nm_alias       sim  rank  item_dmn_nm
+38              미디엄              미디엄  2.000000   1.0  요금제 및 관련 상품
+47               스몰               스몰  2.000000   1.0  요금제 및 관련 상품
+11          갤럭시 워치7     갤럭시 워치7 40mm  1.637500   1.0          단말기
+12          갤럭시 워치7     갤럭시 워치7 44mm  1.637500   1.0          단말기
+39              미디엄          0플랜 미디엄  1.494286   2.0  요금제 및 관련 상품
+40              미디엄         0틴플랜 미디엄  1.456250   3.0  요금제 및 관련 상품
+41              미디엄        0PLAN 미디엄  1.426667   4.0  요금제 및 관련 상품
+42              미디엄        0Plan 미디엄  1.426667   4.0  요금제 및 관련 상품
+43              미디엄        0plan 미디엄  1.426667   4.0  요금제 및 관련 상품
+48               스몰           0플랜 스몰  1.426667   2.0  요금제 및 관련 상품
+44              미디엄       0틴PLAN 미디엄  1.403000   5.0  요금제 및 관련 상품
+45              미디엄       0틴Plan 미디엄  1.403000   5.0  요금제 및 관련 상품
+46              미디엄       0틴plan 미디엄  1.403000   5.0  요금제 및 관련 상품
+13          갤럭시 워치7          갤럭시 A17  1.342857   2.0          단말기
+14          갤럭시 워치7  갤럭시 워치 울트라 47mm  1.323333   3.0          단말기
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 710
+  Unique item_name_in_msg: 8
+  Unique item_nm_alias: 661
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 710
+  sim_s1 range: 0.1067 - 1.0000
+  sim_s2 range: 0.0457 - 1.0000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 66
+  Filtered OUT at this stage: 644 rows
+  Sample of filtered items:
+    - 스마트워치 6개월 -> 스마트안티피싱 (s1=0.2667, s2=0.3429)
+    - 스마트워치 6개월 -> 스마트안심쇼핑 (s1=0.2667, s2=0.3429)
+    - 스마트워치 6개월 -> 스마트 도시안전_서비스&Product형(총판) (s1=0.3556, s2=0.1333)
+    - 스마트워치 6개월 -> 스마트 도시안전_서비스&프로duct형(총판) (s1=0.3556, s2=0.1391)
+    - 스마트워치 6개월 -> 스마트 도시안전_서비스&PROduct형(총판) (s1=0.3556, s2=0.1333)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 66
+  Combined sim range: 0.8778 - 2.0000
+  All items with combined scores:
+    - 스몰 -> 스몰: sim=2.000000
+    - 미디엄 -> 미디엄: sim=2.000000
+    - 갤럭시 워치7 -> 갤럭시 워치7 40mm: sim=1.637500
+    - 갤럭시 워치7 -> 갤럭시 워치7 44mm: sim=1.637500
+    - 미디엄 -> 0플랜 미디엄: sim=1.494286
+    - 미디엄 -> 0틴플랜 미디엄: sim=1.456250
+    - 미디엄 -> 0plan 미디엄: sim=1.426667
+    - 미디엄 -> 0PLAN 미디엄: sim=1.426667
+    - 미디엄 -> 0Plan 미디엄: sim=1.426667
+    - 스몰 -> 0플랜 스몰: sim=1.426667
+    - 미디엄 -> 0틴Plan 미디엄: sim=1.403000
+    - 미디엄 -> 0틴plan 미디엄: sim=1.403000
+    - 미디엄 -> 0틴PLAN 미디엄: sim=1.403000
+    - 갤럭시 워치7 -> 갤럭시 A17: sim=1.342857
+    - 갤럭시 워치7 -> 갤럭시 워치 울트라 47mm: sim=1.323333
+    - 갤럭시 워치7 -> 갤럭시 와이드7: sim=1.271429
+    - 갤럭시 워치7 -> 갤럭시 폴더블7: sim=1.271429
+    - 갤럭시 워치7 -> 갤럭시 워치8 40mm: sim=1.252381
+    - 갤럭시 워치7 -> 갤럭시 워치6 40mm: sim=1.252381
+    - 갤럭시 워치7 -> 갤럭시 워치6 44mm: sim=1.252381
+    - 갤럭시 워치7 -> 갤럭시 워치8 44mm: sim=1.252381
+    - 5GX 스마트워치 -> 인피니티_스마트워치: sim=1.213333
+    - 5GX 스마트워치 -> 5G 스마트워치탭할인(모): sim=1.203419
+    - 5GX 스마트워치 -> 5G 스마트워치탭할인(자): sim=1.203419
+    - 5GX 스마트워치 -> 5GX 플래티넘(스마트기기): sim=1.188889
+    - 5GX 스마트워치 -> 5GX 프리미엄(스마트기기): sim=1.188889
+    - 갤럭시 워치7 -> 갤럭시 Z 폴드7: sim=1.182540
+    - 갤럭시 워치7 -> 갤럭시 Z 플립7: sim=1.182540
+    - 5GX 스마트워치 -> 5G 스마트워치TAB할인(자): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치TAB할인(모): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치tab할인(자): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치Tab할인(모): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치tab할인(모): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치Tab할인(자): sim=1.137778
+    - 갤럭시 워치7 -> 갤럭시 S25: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 A24: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 A16: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 A15: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 퀀텀6: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 S25+: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 퀀텀4: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 A36: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 폴더블7 FE: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z FLIP7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z FOLD7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z Flip7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z Fold7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z flip7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z fold7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 폴더블7/폴드7: sim=1.071429
+    - 갤럭시 워치7 -> 갤럭시 폴더블6: sim=1.057143
+    - 갤럭시 워치7 -> 갤럭시 와이드6: sim=1.057143
+    - 갤럭시 워치7 -> 갤럭시 와이드8: sim=1.057143
+    - 5GX 스마트워치 -> 5GX 레귤러플러스: sim=1.044444
+    - 스마트워치 6개월 -> 인피니티_스마트워치: sim=1.044444
+    - 5GX 스마트워치 -> 5GX 프라임: sim=1.012698
+    - 5GX 스마트워치 -> 5GX 레귤러: sim=1.012698
+    - 갤럭시 워치7 -> 갤럭시 Z 플립6: sim=0.979365
+    - 갤럭시 워치7 -> 갤럭시 탭 S11: sim=0.979365
+    - 갤럭시 워치7 -> 갤럭시 탭 S10+: sim=0.979365
+    - 갤럭시 워치7 -> 갤럭시 탭 A11+: sim=0.979365
+    - 갤럭시 워치7 -> 갤럭시 Z 폴드6: sim=0.979365
+    - 5GX 스마트워치 -> 5GX 프라임(넷플릭스): sim=0.944444
+    - 5GX 스마트워치 -> T_스마트홈설치: sim=0.944444
+    - 스마트워치 6개월 무료 -> 인피니티_스마트워치: sim=0.900000
+    - 스마트워치 6개월 -> 유심 렌탈 6개월: sim=0.877778
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 49
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  17 items filtered out:
+    - 갤럭시 워치7 -> 갤럭시 폴더블7/폴드7: sim=1.071429 -> FAILED (need 1.1, got 1.071429)
+    - 갤럭시 워치7 -> 갤럭시 와이드8: sim=1.057143 -> FAILED (need 1.1, got 1.057143)
+    - 갤럭시 워치7 -> 갤럭시 와이드6: sim=1.057143 -> FAILED (need 1.1, got 1.057143)
+    - 갤럭시 워치7 -> 갤럭시 폴더블6: sim=1.057143 -> FAILED (need 1.1, got 1.057143)
+    - 스마트워치 6개월 -> 인피니티_스마트워치: sim=1.044444 -> FAILED (need 1.1, got 1.044444)
+    - 5GX 스마트워치 -> 5GX 레귤러플러스: sim=1.044444 -> FAILED (need 1.1, got 1.044444)
+    - 5GX 스마트워치 -> 5GX 레귤러: sim=1.012698 -> FAILED (need 1.1, got 1.012698)
+    - 5GX 스마트워치 -> 5GX 프라임: sim=1.012698 -> FAILED (need 1.1, got 1.012698)
+    - 갤럭시 워치7 -> 갤럭시 Z 플립6: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 워치7 -> 갤럭시 Z 폴드6: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 워치7 -> 갤럭시 탭 A11+: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 워치7 -> 갤럭시 탭 S10+: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 워치7 -> 갤럭시 탭 S11: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 5GX 스마트워치 -> 5GX 프라임(넷플릭스): sim=0.944444 -> FAILED (need 1.1, got 0.944444)
+    - 5GX 스마트워치 -> T_스마트홈설치: sim=0.944444 -> FAILED (need 1.1, got 0.944444)
+    - 스마트워치 6개월 무료 -> 인피니티_스마트워치: sim=0.900000 -> FAILED (need 1.1, got 0.900000)
+    - 스마트워치 6개월 -> 유심 렌탈 6개월: sim=0.877778 -> FAILED (need 1.1, got 0.877778)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - 스몰 -> 스몰: sim=2.000000
+    - 미디엄 -> 미디엄: sim=2.000000
+    - 갤럭시 워치7 -> 갤럭시 워치7 40mm: sim=1.637500
+    - 갤럭시 워치7 -> 갤럭시 워치7 44mm: sim=1.637500
+    - 미디엄 -> 0플랜 미디엄: sim=1.494286
+    - 미디엄 -> 0틴플랜 미디엄: sim=1.456250
+    - 스몰 -> 0플랜 스몰: sim=1.426667
+    - 미디엄 -> 0PLAN 미디엄: sim=1.426667
+    - 미디엄 -> 0Plan 미디엄: sim=1.426667
+    - 미디엄 -> 0plan 미디엄: sim=1.426667
+    - 미디엄 -> 0틴PLAN 미디엄: sim=1.403000
+    - 미디엄 -> 0틴plan 미디엄: sim=1.403000
+    - 미디엄 -> 0틴Plan 미디엄: sim=1.403000
+    - 갤럭시 워치7 -> 갤럭시 A17: sim=1.342857
+    - 갤럭시 워치7 -> 갤럭시 워치 울트라 47mm: sim=1.323333
+    - 갤럭시 워치7 -> 갤럭시 와이드7: sim=1.271429
+    - 갤럭시 워치7 -> 갤럭시 폴더블7: sim=1.271429
+    - 갤럭시 워치7 -> 갤럭시 워치8 44mm: sim=1.252381
+    - 갤럭시 워치7 -> 갤럭시 워치8 40mm: sim=1.252381
+    - 갤럭시 워치7 -> 갤럭시 워치6 44mm: sim=1.252381
+    - 갤럭시 워치7 -> 갤럭시 워치6 40mm: sim=1.252381
+    - 5GX 스마트워치 -> 인피니티_스마트워치: sim=1.213333
+    - 5GX 스마트워치 -> 5G 스마트워치탭할인(자): sim=1.203419
+    - 5GX 스마트워치 -> 5G 스마트워치탭할인(모): sim=1.203419
+    - 5GX 스마트워치 -> 5GX 플래티넘(스마트기기): sim=1.188889
+    - 5GX 스마트워치 -> 5GX 프리미엄(스마트기기): sim=1.188889
+    - 갤럭시 워치7 -> 갤럭시 Z 폴드7: sim=1.182540
+    - 갤럭시 워치7 -> 갤럭시 Z 플립7: sim=1.182540
+    - 5GX 스마트워치 -> 5G 스마트워치TAB할인(자): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치Tab할인(모): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치Tab할인(자): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치tab할인(모): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치tab할인(자): sim=1.137778
+    - 5GX 스마트워치 -> 5G 스마트워치TAB할인(모): sim=1.137778
+    - 갤럭시 워치7 -> 갤럭시 퀀텀4: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 퀀텀6: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 S25: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 A36: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 A24: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 A16: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 A15: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 S25+: sim=1.114286
+    - 갤럭시 워치7 -> 갤럭시 Z FLIP7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 폴더블7 FE: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z FOLD7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z Flip7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z Fold7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z flip7: sim=1.101732
+    - 갤럭시 워치7 -> 갤럭시 Z fold7: sim=1.101732
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 4
+  Unique aliases: 4
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 4
+    - 갤럭시 워치7 40mm
+    - 갤럭시 워치7 44mm
+    - 갤럭시 워치8 44mm
+    - 스몰
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 4
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 4
+  Unique item_nm: 4
+  Final product names:
+    - 스몰
+    - 갤럭시 워치8 44mm
+    - 갤럭시 워치7 44mm
+    - 갤럭시 워치7 40mm
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 49
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 13
+  Filtered out: 36 rows
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "5GX 스마트워치 6개월 무료 이용 혜택",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "T플랜/5GX 요금제 고객님께 스마트워치 6개월 무료! 갤럭시 워치7, 애플워치SE 등 최신 스마트워치 경험 안내드릴까요?",
+  "product": [
+    {
+      "name": "5GX 스마트워치",
+      "action": "사용"
+    },
+    {
+      "name": "갤럭시 워치7",
+      "action": "구매"
+    },
+    {
+      "name": "애플워치SE",
+      "action": "구매"
+    }
+  ],
+  "channel": [],
+  "pgm": [
+    "기변유도 및 해지방어_신규단말출시"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 4
+================================================================================
+1. 갤럭시 워치7 40mm
+   - item_id: ['U000006494']
+   - item_name_in_msg: ['갤럭시 워치7']
+   - expected_action: ['구매']
+2. 갤럭시 워치7 44mm
+   - item_id: ['U000006495']
+   - item_name_in_msg: ['갤럭시 워치7']
+   - expected_action: ['구매']
+3. 갤럭시 워치8 44mm
+   - item_id: ['U000006914']
+   - item_name_in_msg: ['갤럭시 워치7']
+   - expected_action: ['구매']
+4. 스몰
+   - item_id: ['NA00005955']
+   - item_name_in_msg: ['스몰']
+   - expected_action: ['기타']
+
+================================================================================

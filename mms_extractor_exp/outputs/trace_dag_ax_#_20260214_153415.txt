@@ -1,0 +1,397 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "(광고)[SKT] 스마트워치 무료 이용 안내   고객님, 안녕하세요. 스마트워치를 이제 무료로 이용해 보세요\! 휴대폰에 스마트워치를 연결하면 이용요금 무료 혜택을 받을 수 있습니..."
+Timestamp: 2026-02-14 15:33:46
+Total Duration: 28.55 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: True
+  >>> entity_extraction_context_mode: dag <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: (광고)[SKT] 스마트워치 무료 이용 안내   고객님, 안녕하세요. 스마트워치를 이제 무료로 이용해 보세요\! 휴대폰에 스마트워치를 연결하면 이용요금 무료 혜택을 받을 수 있습니다.   ■ 5GX 요금제 혜택 안내 - 요금제에 따라 스마트워치 1~2회선 이용요금 무료 * 자세한 혜택은 T 월드 매장 또는 SKT 고객센터 문의   ■ 유의 사항 - 휴대폰과 스마트워치 회선의 명의가 같아야 무료 이용이 가능합니다.   ■ 문의: SKT 고객센터(1558, 무료)   SKT와 함께해 주셔서 감사합니다. 무료 수신거부 1504
+
+OUTPUT:
+  msg: (광고)[SKT] 스마트워치 무료 이용 안내   고객님, 안녕하세요. 스마트워치를 이제 무료로 이용해 보세요\! 휴대폰에 스마트워치를 연결하면 이용요금 무료 혜택을 받을 수 있습니다.   ■ 5GX 요금제 혜택 안내 - 요금제에 따라 스마트워치 1~2회선 이용요금 무료 * 자세한 혜택은 T 월드 매장 또는 SKT 고객센터 문의   ■ 유의 사항 - 휴대폰과 스마트워치 회선의 명의가 같아야 무료 이용이 가능합니다.   ■ 문의: SKT 고객센터(1558, 무료)   SKT와 함께해 주셔서 감사합니다. 무료 수신거부 1504
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (1.23s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.650s (52.9%)
+  kiwi_tokenization_nnp: 0.003s (0.3%)
+  fuzzy_matching: 0.330s (26.9%)
+  sequence_similarity: 0.232s (18.9%)
+  threshold_filter_merge: 0.009s (0.7%)
+
+INPUT:
+  msg: (광고)[SKT] 스마트워치 무료 이용 안내   고객님, 안녕하세요. 스마트워치를 이제 무료로 이용해 보세요\! 휴대폰에 스마트워치를 연결하면 이용요금 무료 혜택을 받을 수 있습니다.   ■ 5GX 요금제 혜택 안내 - 요금제에 따라 스마트워치 1~2회선 이용요금 무료 * 자세한 혜택은 T 월드 매장 또는 SKT 고객센터 문의   ■ 유의 사항 - 휴대폰과 스마트워치 회선의 명의가 같아야 무료 이용이 가능합니다.   ■ 문의: SKT 고객센터(1558, 무료)   SKT와 함께해 주셔서 감사합니다. 무료 수신거부 1504
+  context_mode: dag
+
+OUTPUT:
+  entities_from_kiwi: []
+  cand_item_list: ['SK(주)', '고객감사']
+  cand_item_count: 2
+  extra_item_pdf_shape: (2, 2)
+  extra_item_pdf_sample: [{'item_nm': 'SK(주)', 'item_id': ['X000000044']}, {'item_nm': '고객감사', 'item_id': ['X100002915']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 0
+  candidate_products_matched: 2
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (1.04s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 스마트워치 무료 이용 안내   고객님, 안녕하세요. 스마트워치를 이제 무료로 이용해 보세요\! 휴대폰에 스마트워치를 연결하면 이용요금 무료 혜택을 받을 수 있습니다.   ■ 5GX 요금제 혜택 안내 - 요금제에 따라 스마트워치 1~2회선 이용요금 무료 * 자세한 혜택은 T 월드 매장 또는 SKT 고객센터 문의   ■ 유의 사항 - 휴대폰과
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 사용법/혜택/이벤트 안내_유선 : 결합, 인터넷, 할인, IPTV, TV, 기가, 초고속, 와이파이, 약정, 사용법, 이벤트, 혜택
+	상품 및 부가서비스 가입유도_유선 : 결합, 인터넷, 할인, IPTV, TV, 기가, 초고속, 와이파이, 약정
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	상품 및 부가서비스 가입유도 : 상품, 추천, 컬러링, 로밍, 가입, 이용 요금, 부가서비스, 혜택, 무료체험, 할인
+	상품 및 
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['SK(주)', '고객감사']
+  extra_item_pdf_shape: (2, 2)
+
+OUTPUT:
+  rag_context_length: 1192
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	사용법/혜택/이벤트 안내_유선 : 결합, 인터넷, 할인, IPTV, TV, 기가, 초고속, 와이파이, 약정, 사용법, 이벤트, 혜택
+	상품 및 부가서비스 가입유도_유선 : 결합, 인터넷, 할인, IPTV, TV, 기가, 초고속, 와이파이, 약정
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로,...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (4.89s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 스마트워치 무료 이용 안내   고객님, 안녕하세요. 스마트워치를 이제 무료로 이용해 보세요\! 휴대폰에 스마트워치를 연결하면 이용요금 무료 혜택을 받을 수 있습니다.   ■ 5GX 요금제 혜택 안내 - 요금제에 따라 스마트워치 1~2회선 이용요금 무료 * 자세한 혜택은 T 월드 매장 또는 SKT 고객센터 문의   ■ 유의 사항 - 휴대폰과
+  rag_context_length: 1192
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 533
+  result_json_text_preview: ```json
+{
+  "title": "스마트워치 무료 이용 5GX 요금제 혜택",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "5GX 요금제 가입 시 스마트워치 1~2회선 무료! 가입 안내드릴까요?",
+  "product": [
+    {
+      "name": "스마트워치",
+      "action": "사용"
+    },
+    {
+      "name": "5GX 요금제",
+      "action": "가입"
+    }
+  ],
+  "channe...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 533
+  result_json_text_preview: ```json
+{
+  "title": "스마트워치 무료 이용 5GX 요금제 혜택",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "5GX 요금제 가입 시 스마트워치 1~2회선 무료! 가입 안내드릴까요?",
+  "product": [
+    {
+      "name": "스마트워치",
+      "action": "사용"
+    },
+    {
+      "name": "5GX 요금제",
+      "action": "가입"
+    }
+  ],
+  "channel": [
+    {
+      "type": "대리점",
+      "value": "T 월드 매장",
+      "action": "문의"
+    },
+    {
+      "type": "전화번호",
+      "value": "SKT 고객센터(1558, 무료)",
+      "action": "문의"
+    }
+  ],
+  "pgm": [
+    "
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '스마트워치', 'action': '사용'}, {'name': '5GX 요금제', 'action': '가입'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 2
+  llm_product_names: ['스마트워치', '5GX 요금제']
+  llm_product_actions: ['사용', '가입']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (1.20s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: []
+  entity_extraction_mode: llm
+  context_mode: dag
+
+OUTPUT:
+  extracted_entities: ['스마트워치']
+  context_text: (5GX 요금제:이용) -[연결]-> (스마트워치:무료 이용)
+
+PRODUCT FOCUS:
+  extracted_entities_count: 1
+  extracted_entities: ['스마트워치']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (1.20s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': '스마트워치', 'action': '사용'}, {'name': '5GX 요금제', 'action': '가입'}]
+  extracted_entities: {...4 keys...}
+
+OUTPUT:
+  matched_products: [{'item_nm': '인피니티_스마트워치', 'item_id': ['NA00006116'], 'item_name_in_msg': ['스마트워치'], 'expected_action': ['사용']}]
+  matched_products_count: 1
+  similarity_scores_count: 1
+  similarity_scores_sample:
+    - {'item_name_in_msg': '스마트워치', 'item_nm_alias': '인피니티_스마트워치', 'sim': 1.545, 'rank': 1.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+
+PRODUCT FOCUS:
+  matched_product_count: 1
+  product_details:
+    - item_nm: 인피니티_스마트워치
+      item_id: ['NA00006116']
+      item_name_in_msg: ['스마트워치']
+      expected_action: ['사용']
+  similarity_matching:
+    - total_matches: 1
+    - unique_entities_in_msg: 1
+    - unique_aliases_matched: 1
+  top_similarity_matches:
+    - {'item_name_in_msg': '스마트워치', 'item_nm_alias': '인피니티_스마트워치', 'sim': 1.545}
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.12s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 1
+  matched_products: [{'item_nm': '인피니티_스마트워치', 'item_id': ['NA00006116'], 'item_name_in_msg': ['스마트워치'], 'expected_action': ['사용']}]
+
+OUTPUT:
+  final_result_product: [{'item_nm': '인피니티_스마트워치', 'item_id': ['NA00006116'], 'item_name_in_msg': ['스마트워치'], 'expected_action': ['사용']}]
+  final_result_product_count: 1
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 1
+
+OUTPUT:
+  validated_product_count: 1
+  has_errors: False
+
+--------------------------------------------------------------------------------
+STEP 11: DAGExtractionStep (18.88s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  has_final_result: True
+
+OUTPUT:
+  entity_dag: ['(5GX 요금제:가입) -[가입하면]-> (스마트워치:연결)', '(5GX 요금제:가입) -[가입후]-> (T월드 매장/SKT 고객센터:문의)', '(T월드 매장/SKT 고객센터:문의) -[문의하면]-> (스마트워치:무료이용)', '(스마트워치:연결) -[명의가 동일하면]-> (스마트워치:무료이용)']
+  entity_dag_count: 4
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 1
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+  item_name_in_msg item_nm_alias    sim  rank  item_dmn_nm
+0            스마트워치    인피니티_스마트워치  1.545   1.0  요금제 및 관련 상품
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 298
+  Unique item_name_in_msg: 1
+  Unique item_nm_alias: 298
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 298
+  sim_s1 range: 0.4800 - 0.9975
+  sim_s2 range: 0.0889 - 0.5475
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 2
+  Filtered OUT at this stage: 296 rows
+  Sample of filtered items:
+    - 스마트워치 -> 구축-스마트 SCO (s1=0.4800, s2=0.2400)
+    - 스마트워치 -> 구축-비용_Home 스마트 Living (s1=0.4800, s2=0.1143)
+    - 스마트워치 -> 구축-스마트 Shopper (s1=0.4800, s2=0.1714)
+    - 스마트워치 -> 스마트현장관리(20만원) (s1=0.4800, s2=0.2000)
+    - 스마트워치 -> 스마트현장관리(10만원/부가) (s1=0.4800, s2=0.1600)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 2
+  Combined sim range: 0.9600 - 1.5450
+  All items with combined scores:
+    - 스마트워치 -> 인피니티_스마트워치: sim=1.545000
+    - 스마트워치 -> 스마트홈원: sim=0.960000
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 1
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  1 items filtered out:
+    - 스마트워치 -> 스마트홈원: sim=0.960000 -> FAILED (need 1.1, got 0.960000)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - 스마트워치 -> 인피니티_스마트워치: sim=1.545000
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 1
+  Unique aliases: 1
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 1
+    - 인피니티_스마트워치
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 1
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 1
+  Unique item_nm: 1
+  Final product names:
+    - 인피니티_스마트워치
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 1
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 1
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "스마트워치 무료 이용 5GX 요금제 혜택",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "5GX 요금제 가입 시 스마트워치 1~2회선 무료! 가입 안내드릴까요?",
+  "product": [
+    {
+      "name": "스마트워치",
+      "action": "사용"
+    },
+    {
+      "name": "5GX 요금제",
+      "action": "가입"
+    }
+  ],
+  "channel": [
+    {
+      "type": "대리점",
+      "value": "T 월드 매장",
+      "action": "문의"
+    },
+    {
+      "type": "전화번호",
+      "value": "SKT 고객센터(1558, 무료)",
+      "action": "문의"
+    }
+  ],
+  "pgm": [
+    "상품 및 부가서비스 가입유도_요금제밸류업"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 1
+================================================================================
+1. 인피니티_스마트워치
+   - item_id: ['NA00006116']
+   - item_name_in_msg: ['스마트워치']
+   - expected_action: ['사용']
+
+================================================================================

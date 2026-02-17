@@ -1,0 +1,520 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "(광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI..."
+Timestamp: 2026-02-14 11:20:56
+Total Duration: 18.27 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: True
+  >>> entity_extraction_context_mode: kg <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+■ 문의 : 에이닷 고객센터(1670-0075)
+나만의 AI 개인비서, 에이닷
+무료 수신 거부 1504
+
+OUTPUT:
+  msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+■ 문의 : 에이닷 고객센터(1670-0075)
+나만의 AI 개인비서, 에이닷
+무료 수신 거부 1504
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (1.02s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.590s (57.6%)
+  kiwi_tokenization_nnp: 0.003s (0.3%)
+  fuzzy_matching: 0.249s (24.3%)
+  sequence_similarity: 0.170s (16.6%)
+  threshold_filter_merge: 0.009s (0.9%)
+
+INPUT:
+  msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+■ 문의 : 에이닷 고객센터(1670-0075)
+나만의 AI 개인비서, 에이닷
+무료 수신 거부 1504
+  context_mode: kg
+
+OUTPUT:
+  entities_from_kiwi: ['에이닷 전화']
+  cand_item_list: ['에이닷 전화', 'A. (에이닷) 전화', '자동차', '에이닷 전화(아이폰)', '에이닷 전화 DL', '에이닷 전화 연결', 'A. (에이닷)전화 안심통화', '에이닷 전화 기본모드', 'A. (에이닷) 전화(아이폰)', 'A. 전화']
+  cand_item_count: 10
+  extra_item_pdf_shape: (7, 2)
+  extra_item_pdf_sample: [5 items]
+    First 3: [{'item_nm': '에이닷 전화', 'item_id': ['NA00004249', 'NA00004249', 'NA00004249']}, {'item_nm': '에이닷 전화 DL', 'item_id': ['NA00004928']}, {'item_nm': '에이닷 전화 기본모드', 'item_id': ['NA00004301']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 1
+  candidate_products_matched: 10
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.12s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 상품 및 부가서비스 가입유도_AI : 에이닷, AI, 인공지능, 챗봇, 음성비서, 통화, 서비스, 추천, 기능, 앱
+	상품 및 부가서비스 가입유도_SKT상품외 : 보안, caps, Tmap, 택시, ADT, 홈보안, 솔루션, 서비스, 앱
+	기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	사용법/
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['에이닷 전화', 'A. (에이닷) 전화', '자동차', '에이닷 전화(아이폰)', '에이닷 전화 DL', '에이닷 전화 연결', 'A. (에이닷)전화 안심통화', '에이닷 전화 기본모드', 'A. (에이닷) 전화(아이폰)', 'A. 전화']
+  extra_item_pdf_shape: (7, 2)
+
+OUTPUT:
+  rag_context_length: 1280
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	상품 및 부가서비스 가입유도_AI : 에이닷, AI, 인공지능, 챗봇, 음성비서, 통화, 서비스, 추천, 기능, 앱
+	상품 및 부가서비스 가입유도_SKT상품외 : 보안, caps, Tmap, 택시, ADT, 홈보안, 솔루션, 서비스, 앱
+	기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (5.79s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+
+  rag_context_length: 1280
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 648
+  result_json_text_preview: ```json
+{
+  "title": "에이닷 전화 AI 안심 차단 서비스 안내",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "에이닷 전화 앱 <AI 안심 차단> 설정으로 보이스피싱 예방! 지금 설정 안내드릴까요?",
+  "product": [
+    {
+      "name": "에이닷 전화",
+      "action": "사용"
+    },
+    {
+      "name": "AI 안심 차단",
+      "action...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 648
+  result_json_text_preview: ```json
+{
+  "title": "에이닷 전화 AI 안심 차단 서비스 안내",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "에이닷 전화 앱 <AI 안심 차단> 설정으로 보이스피싱 예방! 지금 설정 안내드릴까요?",
+  "product": [
+    {
+      "name": "에이닷 전화",
+      "action": "사용"
+    },
+    {
+      "name": "AI 안심 차단",
+      "action": "사용"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://t-mms.kr/a8k/#74",
+      "action": "추가 정보"
+    },
+    {
+      "type": "앱",
+      "value": "에이닷 전화 앱",
+      "action
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '에이닷 전화', 'action': '사용'}, {'name': 'AI 안심 차단', 'action': '사용'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 2
+  llm_product_names: ['에이닷 전화', 'AI 안심 차단']
+  llm_product_actions: ['사용', '사용']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (9.90s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['에이닷 전화']
+  entity_extraction_mode: llm
+  context_mode: kg
+
+OUTPUT:
+  extracted_entities: ['스팸/피싱 자동 차단', 'AI 안심 차단', '에이닷 전화']
+  context_text: Entities: 에이닷 전화(Product:prerequisite), AI 안심 차단(Subscription:offer), 스팸/피싱 자동 차단(Benefit:benefit), 에이닷 고객센터(1670-0075)(Channel:context)
+Relationships:
+  - 에이닷 전화 -[ALREADY_USES]-> TargetCustomer
+  - 에이닷 전화 -[ENABLES]-> AI 안심 차단
+  - AI 안심 차단 -[PROVIDES]-> 스팸/피싱 자동 차단
+  - AI 안심 차단 -[UPSELLS]-> Campai...
+
+PRODUCT FOCUS:
+  extracted_entities_count: 3
+  extracted_entities: ['스팸/피싱 자동 차단', 'AI 안심 차단', '에이닷 전화']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (1.27s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': '에이닷 전화', 'action': '사용'}, {'name': 'AI 안심 차단', 'action': '사용'}]
+  extracted_entities: {...6 keys...}
+
+OUTPUT:
+  matched_products: [{'item_nm': '에이닷 전화', 'item_id': ['NA00004249'], 'item_name_in_msg': ['에이닷 전화'], 'expected_action': ['사용']}]
+  matched_products_count: 1
+  similarity_scores_count: 24
+  similarity_scores_sample:
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': 'A. (에이닷) 전화', 'sim': 1.7558333333333334, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화 DL', 'sim': 1.6966666666666665, 'rank': 3.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화 연결', 'sim': 1.6966666666666665, 'rank': 3.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화(아이폰)', 'sim': 1.6493333333333333, 'rank': 4.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    ... (15 more)
+
+PRODUCT FOCUS:
+  matched_product_count: 1
+  product_details:
+    - item_nm: 에이닷 전화
+      item_id: ['NA00004249']
+      item_name_in_msg: ['에이닷 전화']
+      expected_action: ['사용']
+  similarity_matching:
+    - total_matches: 24
+    - unique_entities_in_msg: 1
+    - unique_aliases_matched: 24
+  top_similarity_matches:
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화', 'sim': 2.0}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': 'A. (에이닷) 전화', 'sim': 1.7558333333333334}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화 DL', 'sim': 1.6966666666666665}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화 연결', 'sim': 1.6966666666666665}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화(아이폰)', 'sim': 1.6493333333333333}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화 기본모드', 'sim': 1.6106060606060604}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': 'A. (에이닷) 전화 DL', 'sim': 1.5772727272727272}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': 'A. (에이닷) 전화 연결', 'sim': 1.5772727272727272}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화(IPHONE)', 'sim': 1.551025641025641}
+    - {'item_name_in_msg': '에이닷 전화', 'item_nm_alias': '에이닷 전화(iPhone)', 'sim': 1.551025641025641}
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 1
+  matched_products: [{'item_nm': '에이닷 전화', 'item_id': ['NA00004249'], 'item_name_in_msg': ['에이닷 전화'], 'expected_action': ['사용']}]
+
+OUTPUT:
+  final_result_product: [{'item_nm': '에이닷 전화', 'item_id': ['NA00004249'], 'item_name_in_msg': ['에이닷 전화'], 'expected_action': ['사용']}]
+  final_result_product_count: 1
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 1
+
+OUTPUT:
+  validated_product_count: 1
+  has_errors: False
+
+--------------------------------------------------------------------------------
+STEP 11: DAGExtractionStep (0.16s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  has_final_result: True
+
+OUTPUT:
+  entity_dag: ['(에이닷 전화:사용 중) -[설정하면]-> (AI 안심 차단:설정) -[제공]-> (스팸/피싱 자동 차단:경험)']
+  entity_dag_count: 1
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 24
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg        item_nm_alias       sim  rank  item_dmn_nm
+0            에이닷 전화               에이닷 전화  2.000000   1.0  요금제 및 관련 상품
+1            에이닷 전화          A. (에이닷) 전화  1.755833   2.0  요금제 및 관련 상품
+2            에이닷 전화            에이닷 전화 DL  1.696667   3.0  요금제 및 관련 상품
+3            에이닷 전화            에이닷 전화 연결  1.696667   3.0  요금제 및 관련 상품
+4            에이닷 전화          에이닷 전화(아이폰)  1.649333   4.0  요금제 및 관련 상품
+5            에이닷 전화          에이닷 전화 기본모드  1.610606   5.0  요금제 및 관련 상품
+6            에이닷 전화       A. (에이닷) 전화 DL  1.577273   6.0  요금제 및 관련 상품
+7            에이닷 전화       A. (에이닷) 전화 연결  1.577273   6.0  요금제 및 관련 상품
+8            에이닷 전화       에이닷 전화(IPHONE)  1.551026   7.0  요금제 및 관련 상품
+9            에이닷 전화       에이닷 전화(iPhone)  1.551026   7.0  요금제 및 관련 상품
+10           에이닷 전화       에이닷 전화(iphone)  1.551026   7.0  요금제 및 관련 상품
+11           에이닷 전화     A. (에이닷) 전화(아이폰)  1.545000   8.0  요금제 및 관련 상품
+12           에이닷 전화     A. (에이닷) 전화 기본모드  1.517692   9.0  요금제 및 관련 상품
+13           에이닷 전화      A. (에이닷)전화 안심통화  1.517692   9.0  요금제 및 관련 상품
+14           에이닷 전화  A. (에이닷) 전화(IPHONE)  1.474000  10.0  요금제 및 관련 상품
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 260
+  Unique item_name_in_msg: 3
+  Unique item_nm_alias: 256
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 260
+  sim_s1 range: 0.1455 - 1.0000
+  sim_s2 range: 0.1619 - 1.0000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 32
+  Filtered OUT at this stage: 228 rows
+  Sample of filtered items:
+    - 스팸/피싱 자동 차단 -> 티맵 차단 (s1=0.2682, s2=0.5800)
+    - 스팸/피싱 자동 차단 -> 티 맵 차단 (s1=0.3409, s2=0.6000)
+    - 스팸/피싱 자동 차단 -> SA차단 (s1=0.1455, s2=0.4000)
+    - 스팸/피싱 자동 차단 -> 테더링 차단 (s1=0.2682, s2=0.5000)
+    - 스팸/피싱 자동 차단 -> 자동차 (s1=0.2182, s2=0.8000)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 32
+  Combined sim range: 0.9667 - 2.0000
+  All items with combined scores:
+    - 에이닷 전화 -> 에이닷 전화: sim=2.000000
+    - 에이닷 전화 -> A. (에이닷) 전화: sim=1.755833
+    - 에이닷 전화 -> 에이닷 전화 연결: sim=1.696667
+    - 에이닷 전화 -> 에이닷 전화 DL: sim=1.696667
+    - 에이닷 전화 -> 에이닷 전화(아이폰): sim=1.649333
+    - 에이닷 전화 -> 에이닷 전화 기본모드: sim=1.610606
+    - 에이닷 전화 -> A. (에이닷) 전화 DL: sim=1.577273
+    - 에이닷 전화 -> A. (에이닷) 전화 연결: sim=1.577273
+    - 에이닷 전화 -> 에이닷 전화(IPHONE): sim=1.551026
+    - 에이닷 전화 -> 에이닷 전화(iPhone): sim=1.551026
+    - 에이닷 전화 -> 에이닷 전화(iphone): sim=1.551026
+    - 에이닷 전화 -> A. (에이닷) 전화(아이폰): sim=1.545000
+    - 에이닷 전화 -> A. (에이닷)전화 안심통화: sim=1.517692
+    - 에이닷 전화 -> A. (에이닷) 전화 기본모드: sim=1.517692
+    - 에이닷 전화 -> A. (에이닷)전화 안SIM통화: sim=1.474000
+    - 에이닷 전화 -> A. (에이닷) 전화(iphone): sim=1.474000
+    - 에이닷 전화 -> A. (에이닷) 전화(iPhone): sim=1.474000
+    - 에이닷 전화 -> A. (에이닷) 전화(IPHONE): sim=1.474000
+    - 에이닷 전화 -> 에이닷 노트: sim=1.266667
+    - 에이닷 전화 -> A. 전화: sim=1.200000
+    - 에이닷 전화 -> 에이닷 NOTE: sim=1.133333
+    - 에이닷 전화 -> 에이닷 Note: sim=1.133333
+    - 에이닷 전화 -> 에이닷 note: sim=1.133333
+    - 에이닷 전화 -> A. (에이닷) 노트: sim=1.100000
+    - AI 안심 차단 -> 티 맵 차단: sim=1.066667
+    - 에이닷 전화 -> 에이닷 노트 프로: sim=1.055556
+    - 에이닷 전화 -> 에이닷 노트 맥스: sim=1.055556
+    - 에이닷 전화 -> 에이닷_자사_가입: sim=1.055556
+    - 에이닷 전화 -> 에이닷_자사_신청: sim=1.055556
+    - 에이닷 전화 -> 에이닷_타사_가입: sim=1.055556
+    - 에이닷 전화 -> 에이닷_타사_신청: sim=1.055556
+    - 에이닷 전화 -> A. (A.) 전화: sim=0.966667
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 24
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  8 items filtered out:
+    - AI 안심 차단 -> 티 맵 차단: sim=1.066667 -> FAILED (need 1.1, got 1.066667)
+    - 에이닷 전화 -> 에이닷 노트 맥스: sim=1.055556 -> FAILED (need 1.1, got 1.055556)
+    - 에이닷 전화 -> 에이닷 노트 프로: sim=1.055556 -> FAILED (need 1.1, got 1.055556)
+    - 에이닷 전화 -> 에이닷_자사_가입: sim=1.055556 -> FAILED (need 1.1, got 1.055556)
+    - 에이닷 전화 -> 에이닷_자사_신청: sim=1.055556 -> FAILED (need 1.1, got 1.055556)
+    - 에이닷 전화 -> 에이닷_타사_가입: sim=1.055556 -> FAILED (need 1.1, got 1.055556)
+    - 에이닷 전화 -> 에이닷_타사_신청: sim=1.055556 -> FAILED (need 1.1, got 1.055556)
+    - 에이닷 전화 -> A. (A.) 전화: sim=0.966667 -> FAILED (need 1.1, got 0.966667)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - 에이닷 전화 -> 에이닷 전화: sim=2.000000
+    - 에이닷 전화 -> A. (에이닷) 전화: sim=1.755833
+    - 에이닷 전화 -> 에이닷 전화 연결: sim=1.696667
+    - 에이닷 전화 -> 에이닷 전화 DL: sim=1.696667
+    - 에이닷 전화 -> 에이닷 전화(아이폰): sim=1.649333
+    - 에이닷 전화 -> 에이닷 전화 기본모드: sim=1.610606
+    - 에이닷 전화 -> A. (에이닷) 전화 연결: sim=1.577273
+    - 에이닷 전화 -> A. (에이닷) 전화 DL: sim=1.577273
+    - 에이닷 전화 -> 에이닷 전화(IPHONE): sim=1.551026
+    - 에이닷 전화 -> 에이닷 전화(iphone): sim=1.551026
+    - 에이닷 전화 -> 에이닷 전화(iPhone): sim=1.551026
+    - 에이닷 전화 -> A. (에이닷) 전화(아이폰): sim=1.545000
+    - 에이닷 전화 -> A. (에이닷) 전화 기본모드: sim=1.517692
+    - 에이닷 전화 -> A. (에이닷)전화 안심통화: sim=1.517692
+    - 에이닷 전화 -> A. (에이닷) 전화(IPHONE): sim=1.474000
+    - 에이닷 전화 -> A. (에이닷) 전화(iPhone): sim=1.474000
+    - 에이닷 전화 -> A. (에이닷) 전화(iphone): sim=1.474000
+    - 에이닷 전화 -> A. (에이닷)전화 안SIM통화: sim=1.474000
+    - 에이닷 전화 -> 에이닷 노트: sim=1.266667
+    - 에이닷 전화 -> A. 전화: sim=1.200000
+    - 에이닷 전화 -> 에이닷 NOTE: sim=1.133333
+    - 에이닷 전화 -> 에이닷 note: sim=1.133333
+    - 에이닷 전화 -> 에이닷 Note: sim=1.133333
+    - 에이닷 전화 -> A. (에이닷) 노트: sim=1.100000
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 1
+  Unique aliases: 1
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 1
+    - 에이닷 전화
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 1
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 1
+  Unique item_nm: 1
+  Final product names:
+    - 에이닷 전화
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 24
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 10
+  Filtered out: 14 rows
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "에이닷 전화 AI 안심 차단 서비스 안내",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "에이닷 전화 앱 <AI 안심 차단> 설정으로 보이스피싱 예방! 지금 설정 안내드릴까요?",
+  "product": [
+    {
+      "name": "에이닷 전화",
+      "action": "사용"
+    },
+    {
+      "name": "AI 안심 차단",
+      "action": "사용"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://t-mms.kr/a8k/#74",
+      "action": "추가 정보"
+    },
+    {
+      "type": "앱",
+      "value": "에이닷 전화 앱",
+      "action": "사용"
+    },
+    {
+      "type": "전화번호",
+      "value": "1670-0075",
+      "action": "문의"
+    }
+  ],
+  "pgm": [
+    "상품 및 부가서비스 가입유도_AI"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 1
+================================================================================
+1. 에이닷 전화
+   - item_id: ['NA00004249']
+   - item_name_in_msg: ['에이닷 전화']
+   - expected_action: ['사용']
+
+================================================================================

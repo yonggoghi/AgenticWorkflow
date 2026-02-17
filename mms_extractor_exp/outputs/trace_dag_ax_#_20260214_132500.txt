@@ -1,0 +1,716 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "[SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바..."
+Timestamp: 2026-02-14 13:24:31
+Total Duration: 29.12 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: dag <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가
+
+OUTPUT:
+  msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u...
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (14.81s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.610s (4.1%)
+  kiwi_tokenization_nnp: 0.003s (0.0%)
+  fuzzy_matching: 13.865s (93.6%)
+  sequence_similarity: 0.321s (2.2%)
+  threshold_filter_merge: 0.011s (0.1%)
+
+INPUT:
+  msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=11234&a=&u=https://link.wavve.com/list/VN4?came=home__■인기 예능 보기_http://t-mms.kr/t.do?m=#61&s=11235&a=&u=https://link.wavve.com/list/VN3?came=home__■인기 해외시리즈 보기_http://t-mms.kr/t.do?m=#61&s=11236&a=&u=https://link.wavve.com/list/EN713?came=HOME__※ 문의: SKT 구독상품 전담 고객센터(1505, 무료)_- 코로나19 확산으로 고객센터에 문의가 증가
+  context_mode: dag
+
+OUTPUT:
+  entities_from_kiwi: []
+  cand_item_list: ['SK(주)', 'A. 전화 연결', 'B tv 혜택', 'A. 전화']
+  cand_item_count: 4
+  extra_item_pdf_shape: (4, 2)
+  extra_item_pdf_sample: [{'item_nm': 'B tv 혜택', 'item_id': ['PR00000374']}, {'item_nm': 'SK(주)', 'item_id': ['X000000044']}, {'item_nm': '에이닷 전화', 'item_id': ['NA00004249']}, {'item_nm': '에이닷 전화 연결', 'item_id': ['NA00009055']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 0
+  candidate_products_matched: 4
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.13s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=112
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 상품 및 부가서비스 가입유도_구독 : T우주, 구독, 우주패스, 1505, 월정액, Netflix, Wavve, 스트리밍, 콘텐츠
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	상품 및 부가서비스 가입유도_준실시간_구독 : 상품, 서비스, 혜택, 가입, 추천, 안내, 업데이트, 구독, 준실시간
+	사용법/혜택/이벤트 안내_구독 : 우주, 구독, 혜택, 이벤트, T우주, 콘텐츠, 할인, 추천, 사용법, 서비스, 안내
+	상
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['SK(주)', 'A. 전화 연결', 'B tv 혜택', 'A. 전화']
+  extra_item_pdf_shape: (4, 2)
+
+OUTPUT:
+  rag_context_length: 1228
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	상품 및 부가서비스 가입유도_구독 : T우주, 구독, 우주패스, 1505, 월정액, Netflix, Wavve, 스트리밍, 콘텐츠
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	상품 및 부가서비스 가입유도_준실시간...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (6.78s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [SK텔레콤] 30만개의 콘텐츠가 고객님을 기다리고 있어요\! (광고)[SKT] #04 고객님, 안녕하세요.__가입하신 T우주 wavve 혜택 100% 즐기고 계신가요?__지금 바로 wavve에서 드라마/예능/해외시리즈/영화 까지\!_30만편의  콘텐츠를 무제한 감상해보세요\!__■인기 드라마 보기_http://t-mms.kr/t.do?m=#61&s=112
+  rag_context_length: 1228
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 766
+  result_json_text_preview: ```json
+{
+  "title": "T우주 wavve 30만편 콘텐츠 무제한 감상",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "T우주 wavve 가입! 30만편 드라마/예능/영화 무제한. 지금 바로 감상 안내드릴까요?",
+  "product": [
+    {
+      "name": "T우주 wavve",
+      "action": "가입"
+    }
+  ],
+  "channel": [
+    {
+      "type"...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 766
+  result_json_text_preview: ```json
+{
+  "title": "T우주 wavve 30만편 콘텐츠 무제한 감상",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "T우주 wavve 가입! 30만편 드라마/예능/영화 무제한. 지금 바로 감상 안내드릴까요?",
+  "product": [
+    {
+      "name": "T우주 wavve",
+      "action": "가입"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/VN4?came=home",
+      "action": "추가 정보"
+    },
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/VN3?came=home",
+      "action
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': 'T우주 wavve', 'action': '가입'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 1
+  llm_product_names: ['T우주 wavve']
+  llm_product_actions: ['가입']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (1.73s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: []
+  entity_extraction_mode: llm
+  context_mode: dag
+
+OUTPUT:
+  extracted_entities: ['wavve']
+  context_text: (T우주 wavve:가입) -[이용]-> (wavve:사용) -[제공]-> (30만편의 콘텐츠:무제한 감상)
+
+PRODUCT FOCUS:
+  extracted_entities_count: 1
+  extracted_entities: ['wavve']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (5.65s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': 'T우주 wavve', 'action': '가입'}]
+  extracted_entities: {...4 keys...}
+
+OUTPUT:
+  matched_products: [12 items]
+    First 3: [{'item_nm': 'Wavve 앤 데이터', 'item_id': ['NA00006577', 'PR00000208'], 'item_name_in_msg': ['wavve'], 'expected_action': ['기타']}, {'item_nm': 'Wavve 앤 데이터①ⓐ', 'item_id': ['NA00007793'], 'item_name_in_msg': ['wavve'], 'expected_action': ['기타']}, {'item_nm': 'Wavve 앤 데이터③ⓐ', 'item_id': ['NA00008010'], 'item_name_in_msg': ['wavve'], 'expected_action': ['기타']}]
+  matched_products_count: 12
+  similarity_scores_count: 108
+  similarity_scores_sample:
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 이용권', 'sim': 1.5844444444444443, 'rank': 1.0, 'item_dmn_nm': '구독 상품'}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'wavve 이용권', 'sim': 1.5844444444444443, 'rank': 1.0, 'item_dmn_nm': '구독 상품'}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 앤 데이터', 'sim': 1.4793939393939393, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 앤 데이터', 'sim': 1.4793939393939393, 'rank': 2.0, 'item_dmn_nm': '구독 상품'}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 콘텐츠 팩', 'sim': 1.4793939393939393, 'rank': 2.0, 'item_dmn_nm': '요금제 및 관련 상품'}
+    ... (15 more)
+
+PRODUCT FOCUS:
+  matched_product_count: 12
+  product_details:
+    - item_nm: Wavve 앤 데이터
+      item_id: ['NA00006577', 'PR00000208']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터①ⓐ
+      item_id: ['NA00007793']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터③ⓐ
+      item_id: ['NA00008010']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터③ⓑ
+      item_id: ['NA00008148']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터③ⓒ
+      item_id: ['NA00008116']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터③ⓓ
+      item_id: ['NA00008166']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터④ⓐ
+      item_id: ['NA00008014']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터④ⓑ
+      item_id: ['NA00008152']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터④ⓒ
+      item_id: ['NA00008121']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 앤 데이터④ⓓ
+      item_id: ['NA00008171']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve 이용권
+      item_id: ['PR00000444', 'PR00000606']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+    - item_nm: Wavve_고객유지_혜택
+      item_id: ['NA00006656']
+      item_name_in_msg: ['wavve']
+      expected_action: ['기타']
+  similarity_matching:
+    - total_matches: 108
+    - unique_entities_in_msg: 1
+    - unique_aliases_matched: 98
+  top_similarity_matches:
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 이용권', 'sim': 1.5844444444444443}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'wavve 이용권', 'sim': 1.5844444444444443}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 앤 데이터', 'sim': 1.4793939393939393}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 앤 데이터', 'sim': 1.4793939393939393}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 콘텐츠 팩', 'sim': 1.4793939393939393}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'Wavve 콘텐츠 팩', 'sim': 1.4793939393939393}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'wavve 앤 데이터', 'sim': 1.4793939393939393}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'wavve 앤 데이터', 'sim': 1.4793939393939393}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'wavve 콘텐츠 팩', 'sim': 1.4793939393939393}
+    - {'item_name_in_msg': 'wavve', 'item_nm_alias': 'wavve 콘텐츠 팩', 'sim': 1.4793939393939393}
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 12
+  matched_products: [10 items]
+
+OUTPUT:
+  final_result_product: [12 items]
+    First 3: [{'item_nm': 'Wavve 앤 데이터', 'item_id': ['NA00006577', 'PR00000208'], 'item_name_in_msg': ['wavve'], 'expected_action': ['기타']}, {'item_nm': 'Wavve 앤 데이터①ⓐ', 'item_id': ['NA00007793'], 'item_name_in_msg': ['wavve'], 'expected_action': ['기타']}, {'item_nm': 'Wavve 앤 데이터③ⓐ', 'item_id': ['NA00008010'], 'item_name_in_msg': ['wavve'], 'expected_action': ['기타']}]
+  final_result_product_count: 12
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 12
+
+OUTPUT:
+  validated_product_count: 12
+  has_errors: False
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 108
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg  item_nm_alias       sim  rank  item_dmn_nm
+0             wavve      Wavve 이용권  1.584444   1.0        구독 상품
+1             wavve      wavve 이용권  1.584444   1.0        구독 상품
+2             wavve    Wavve 앤 데이터  1.479394   2.0  요금제 및 관련 상품
+3             wavve    Wavve 앤 데이터  1.479394   2.0        구독 상품
+4             wavve    Wavve 콘텐츠 팩  1.479394   2.0  요금제 및 관련 상품
+5             wavve    Wavve 콘텐츠 팩  1.479394   2.0        구독 상품
+6             wavve    wavve 앤 데이터  1.479394   2.0  요금제 및 관련 상품
+7             wavve    wavve 앤 데이터  1.479394   2.0        구독 상품
+8             wavve    wavve 콘텐츠 팩  1.479394   2.0  요금제 및 관련 상품
+9             wavve    wavve 콘텐츠 팩  1.479394   2.0        구독 상품
+10            wavve  Wavve.Finnq카드  1.463077   3.0  요금제 및 관련 상품
+11            wavve  wavve.Finnq카드  1.463077   3.0  요금제 및 관련 상품
+12            wavve   Wavve 앤 DATA  1.452500   4.0  요금제 및 관련 상품
+13            wavve   Wavve 앤 DATA  1.452500   4.0        구독 상품
+14            wavve   Wavve 앤 Data  1.452500   4.0  요금제 및 관련 상품
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 1012
+  Unique item_name_in_msg: 1
+  Unique item_nm_alias: 1012
+  Similarity range: 0.7500 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 1012
+  sim_s1 range: 0.4800 - 0.9978
+  sim_s2 range: 0.1412 - 0.5867
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 98
+  Filtered OUT at this stage: 914 rows
+  Sample of filtered items:
+    - wavve -> wavve 앤 데이터 프리미엄_할인2 (s1=0.9962, s2=0.3113)
+    - wavve -> wavve 앤 Data 프리미엄_할인2 (s1=0.9962, s2=0.3029)
+    - wavve -> wavve 앤 DATA 프리미엄_할인2 (s1=0.9962, s2=0.3029)
+    - wavve -> wavve 앤 data 프리미엄_할인2 (s1=0.9962, s2=0.3029)
+    - wavve -> wavve 앤 데이터 Premium_할인2 (s1=0.9961, s2=0.2883)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 98
+  Combined sim range: 1.2450 - 1.5844
+  All items with combined scores:
+    - wavve -> wavve 이용권: sim=1.584444
+    - wavve -> Wavve 이용권: sim=1.584444
+    - wavve -> wavve 앤 데이터: sim=1.479394
+    - wavve -> Wavve 콘텐츠 팩: sim=1.479394
+    - wavve -> Wavve 앤 데이터: sim=1.479394
+    - wavve -> wavve 콘텐츠 팩: sim=1.479394
+    - wavve -> Wavve.Finnq카드: sim=1.463077
+    - wavve -> wavve.Finnq카드: sim=1.463077
+    - wavve -> wavve 앤 데이터④ⓓ: sim=1.452500
+    - wavve -> Wavve 앤 데이터③ⓐ: sim=1.452500
+    - wavve -> Wavve 앤 데이터③ⓑ: sim=1.452500
+    - wavve -> Wavve 앤 데이터③ⓒ: sim=1.452500
+    - wavve -> Wavve 앤 데이터③ⓓ: sim=1.452500
+    - wavve -> Wavve 앤 데이터④ⓐ: sim=1.452500
+    - wavve -> Wavve 앤 데이터④ⓑ: sim=1.452500
+    - wavve -> Wavve 앤 데이터④ⓒ: sim=1.452500
+    - wavve -> Wavve 앤 데이터④ⓓ: sim=1.452500
+    - wavve -> Wavve 연간 이용권: sim=1.452500
+    - wavve -> wavve 연간 이용권: sim=1.452500
+    - wavve -> wavve 앤 Data: sim=1.452500
+    - wavve -> wavve 앤 data: sim=1.452500
+    - wavve -> Wavve 앤 데이터①ⓐ: sim=1.452500
+    - wavve -> wavve 앤 데이터①ⓐ: sim=1.452500
+    - wavve -> wavve 앤 데이터③ⓐ: sim=1.452500
+    - wavve -> wavve 앤 데이터③ⓑ: sim=1.452500
+    - wavve -> wavve 앤 데이터③ⓒ: sim=1.452500
+    - wavve -> wavve 앤 데이터③ⓓ: sim=1.452500
+    - wavve -> wavve 앤 데이터④ⓐ: sim=1.452500
+    - wavve -> wavve 앤 데이터④ⓑ: sim=1.452500
+    - wavve -> wavve 앤 데이터④ⓒ: sim=1.452500
+    - wavve -> Wavve 앤 DATA: sim=1.452500
+    - wavve -> wavve 앤 DATA: sim=1.452500
+    - wavve -> Wavve 앤 data: sim=1.452500
+    - wavve -> Wavve 앤 Data: sim=1.452500
+    - wavve -> Wavve 앤 data④ⓓ: sim=1.429744
+    - wavve -> wavve 앤 data④ⓓ: sim=1.429744
+    - wavve -> wavve 앤 data④ⓒ: sim=1.429744
+    - wavve -> wavve 앤 data④ⓑ: sim=1.429744
+    - wavve -> wavve 앤 data④ⓐ: sim=1.429744
+    - wavve -> wavve 앤 data③ⓓ: sim=1.429744
+    - wavve -> wavve 앤 data③ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 Data③ⓒ: sim=1.429744
+    - wavve -> wavve 앤 data③ⓑ: sim=1.429744
+    - wavve -> wavve 앤 data③ⓐ: sim=1.429744
+    - wavve -> wavve 앤 data①ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 Data④ⓐ: sim=1.429744
+    - wavve -> wavve 앤 Data④ⓓ: sim=1.429744
+    - wavve -> wavve 앤 Data④ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 Data③ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 Data③ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 data④ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 Data③ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 Data①ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 DATA④ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 DATA④ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 DATA④ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 DATA④ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 DATA③ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 DATA③ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 DATA③ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 DATA③ⓐ: sim=1.429744
+    - wavve -> wavve_고객유지_혜택: sim=1.429744
+    - wavve -> wavve_유지_적립완료: sim=1.429744
+    - wavve -> wavve 앤 Data④ⓑ: sim=1.429744
+    - wavve -> wavve 앤 Data④ⓐ: sim=1.429744
+    - wavve -> wavve 앤 Data③ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 data④ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 data③ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 data③ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 data③ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 data③ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 data①ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 Data④ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 Data④ⓒ: sim=1.429744
+    - wavve -> Wavve_고객유지_혜택: sim=1.429744
+    - wavve -> Wavve_유지_적립완료: sim=1.429744
+    - wavve -> wavve 앤 Data③ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 DATA①ⓐ: sim=1.429744
+    - wavve -> wavve 앤 DATA①ⓐ: sim=1.429744
+    - wavve -> wavve 앤 DATA③ⓐ: sim=1.429744
+    - wavve -> wavve 앤 DATA③ⓑ: sim=1.429744
+    - wavve -> wavve 앤 DATA③ⓒ: sim=1.429744
+    - wavve -> wavve 앤 DATA③ⓓ: sim=1.429744
+    - wavve -> wavve 앤 DATA④ⓐ: sim=1.429744
+    - wavve -> wavve 앤 DATA④ⓑ: sim=1.429744
+    - wavve -> wavve 앤 DATA④ⓒ: sim=1.429744
+    - wavve -> wavve 앤 DATA④ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 Data④ⓑ: sim=1.429744
+    - wavve -> wavve 앤 Data①ⓐ: sim=1.429744
+    - wavve -> wavve 앤 Data③ⓐ: sim=1.429744
+    - wavve -> wavve 앤 Data③ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 data④ⓐ: sim=1.429744
+    - wavve -> wavve포인트4천: sim=1.245000
+    - wavve -> wavve콘텐츠혜택: sim=1.245000
+    - wavve -> Wavve포인트8천: sim=1.245000
+    - wavve -> Wavve콘텐츠혜택: sim=1.245000
+    - wavve -> Wavve포인트4천: sim=1.245000
+    - wavve -> wavve포인트8천: sim=1.245000
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 98
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - wavve -> wavve 이용권: sim=1.584444
+    - wavve -> Wavve 이용권: sim=1.584444
+    - wavve -> wavve 앤 데이터: sim=1.479394
+    - wavve -> Wavve 콘텐츠 팩: sim=1.479394
+    - wavve -> Wavve 앤 데이터: sim=1.479394
+    - wavve -> wavve 콘텐츠 팩: sim=1.479394
+    - wavve -> Wavve.Finnq카드: sim=1.463077
+    - wavve -> wavve.Finnq카드: sim=1.463077
+    - wavve -> wavve 앤 데이터④ⓓ: sim=1.452500
+    - wavve -> Wavve 앤 데이터③ⓐ: sim=1.452500
+    - wavve -> Wavve 앤 데이터③ⓑ: sim=1.452500
+    - wavve -> Wavve 앤 데이터③ⓒ: sim=1.452500
+    - wavve -> Wavve 앤 데이터③ⓓ: sim=1.452500
+    - wavve -> Wavve 앤 데이터④ⓐ: sim=1.452500
+    - wavve -> Wavve 앤 데이터④ⓑ: sim=1.452500
+    - wavve -> Wavve 앤 데이터④ⓒ: sim=1.452500
+    - wavve -> Wavve 앤 데이터④ⓓ: sim=1.452500
+    - wavve -> Wavve 연간 이용권: sim=1.452500
+    - wavve -> wavve 연간 이용권: sim=1.452500
+    - wavve -> wavve 앤 Data: sim=1.452500
+    - wavve -> wavve 앤 data: sim=1.452500
+    - wavve -> Wavve 앤 데이터①ⓐ: sim=1.452500
+    - wavve -> wavve 앤 데이터①ⓐ: sim=1.452500
+    - wavve -> wavve 앤 데이터③ⓐ: sim=1.452500
+    - wavve -> wavve 앤 데이터③ⓑ: sim=1.452500
+    - wavve -> wavve 앤 데이터③ⓒ: sim=1.452500
+    - wavve -> wavve 앤 데이터③ⓓ: sim=1.452500
+    - wavve -> wavve 앤 데이터④ⓐ: sim=1.452500
+    - wavve -> wavve 앤 데이터④ⓑ: sim=1.452500
+    - wavve -> wavve 앤 데이터④ⓒ: sim=1.452500
+    - wavve -> Wavve 앤 DATA: sim=1.452500
+    - wavve -> wavve 앤 DATA: sim=1.452500
+    - wavve -> Wavve 앤 data: sim=1.452500
+    - wavve -> Wavve 앤 Data: sim=1.452500
+    - wavve -> Wavve 앤 data④ⓓ: sim=1.429744
+    - wavve -> wavve 앤 data④ⓓ: sim=1.429744
+    - wavve -> wavve 앤 data④ⓒ: sim=1.429744
+    - wavve -> wavve 앤 data④ⓑ: sim=1.429744
+    - wavve -> wavve 앤 data④ⓐ: sim=1.429744
+    - wavve -> wavve 앤 data③ⓓ: sim=1.429744
+    - wavve -> wavve 앤 data③ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 Data③ⓒ: sim=1.429744
+    - wavve -> wavve 앤 data③ⓑ: sim=1.429744
+    - wavve -> wavve 앤 data③ⓐ: sim=1.429744
+    - wavve -> wavve 앤 data①ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 Data④ⓐ: sim=1.429744
+    - wavve -> wavve 앤 Data④ⓓ: sim=1.429744
+    - wavve -> wavve 앤 Data④ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 Data③ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 Data③ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 data④ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 Data③ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 Data①ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 DATA④ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 DATA④ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 DATA④ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 DATA④ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 DATA③ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 DATA③ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 DATA③ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 DATA③ⓐ: sim=1.429744
+    - wavve -> wavve_고객유지_혜택: sim=1.429744
+    - wavve -> wavve_유지_적립완료: sim=1.429744
+    - wavve -> wavve 앤 Data④ⓑ: sim=1.429744
+    - wavve -> wavve 앤 Data④ⓐ: sim=1.429744
+    - wavve -> wavve 앤 Data③ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 data④ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 data③ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 data③ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 data③ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 data③ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 data①ⓐ: sim=1.429744
+    - wavve -> Wavve 앤 Data④ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 Data④ⓒ: sim=1.429744
+    - wavve -> Wavve_고객유지_혜택: sim=1.429744
+    - wavve -> Wavve_유지_적립완료: sim=1.429744
+    - wavve -> wavve 앤 Data③ⓒ: sim=1.429744
+    - wavve -> Wavve 앤 DATA①ⓐ: sim=1.429744
+    - wavve -> wavve 앤 DATA①ⓐ: sim=1.429744
+    - wavve -> wavve 앤 DATA③ⓐ: sim=1.429744
+    - wavve -> wavve 앤 DATA③ⓑ: sim=1.429744
+    - wavve -> wavve 앤 DATA③ⓒ: sim=1.429744
+    - wavve -> wavve 앤 DATA③ⓓ: sim=1.429744
+    - wavve -> wavve 앤 DATA④ⓐ: sim=1.429744
+    - wavve -> wavve 앤 DATA④ⓑ: sim=1.429744
+    - wavve -> wavve 앤 DATA④ⓒ: sim=1.429744
+    - wavve -> wavve 앤 DATA④ⓓ: sim=1.429744
+    - wavve -> Wavve 앤 Data④ⓑ: sim=1.429744
+    - wavve -> wavve 앤 Data①ⓐ: sim=1.429744
+    - wavve -> wavve 앤 Data③ⓐ: sim=1.429744
+    - wavve -> wavve 앤 Data③ⓑ: sim=1.429744
+    - wavve -> Wavve 앤 data④ⓐ: sim=1.429744
+    - wavve -> wavve포인트4천: sim=1.245000
+    - wavve -> wavve콘텐츠혜택: sim=1.245000
+    - wavve -> Wavve포인트8천: sim=1.245000
+    - wavve -> Wavve콘텐츠혜택: sim=1.245000
+    - wavve -> Wavve포인트4천: sim=1.245000
+    - wavve -> wavve포인트8천: sim=1.245000
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 15
+  Unique aliases: 14
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 14
+    - Wavve 이용권
+    - wavve 앤 DATA
+    - Wavve 앤 Data①ⓐ
+    - wavve 앤 DATA④ⓒ
+    - wavve 앤 DATA④ⓓ
+    - wavve 앤 Data①ⓐ
+    - wavve 앤 Data③ⓐ
+    - wavve 앤 Data③ⓑ
+    - wavve 앤 Data③ⓒ
+    - wavve 앤 Data③ⓓ
+    - wavve 앤 Data④ⓐ
+    - wavve 앤 Data④ⓑ
+    - wavve 앤 Data④ⓒ
+    - wavve_고객유지_혜택
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 15
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 18
+  Unique item_nm: 12
+  Final product names:
+    - Wavve_고객유지_혜택
+    - Wavve 앤 데이터③ⓑ
+    - Wavve 앤 데이터④ⓑ
+    - Wavve 앤 데이터④ⓓ
+    - Wavve 앤 데이터③ⓓ
+    - Wavve 앤 데이터③ⓐ
+    - Wavve 앤 데이터①ⓐ
+    - Wavve 앤 데이터③ⓒ
+    - Wavve 앤 데이터④ⓒ
+    - Wavve 앤 데이터④ⓐ
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 108
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 54
+  Filtered out: 54 rows
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "T우주 wavve 30만편 콘텐츠 무제한 감상",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "T우주 wavve 가입! 30만편 드라마/예능/영화 무제한. 지금 바로 감상 안내드릴까요?",
+  "product": [
+    {
+      "name": "T우주 wavve",
+      "action": "가입"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/VN4?came=home",
+      "action": "추가 정보"
+    },
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/VN3?came=home",
+      "action": "추가 정보"
+    },
+    {
+      "type": "URL",
+      "value": "https://link.wavve.com/list/EN713?came=HOME",
+      "action": "추가 정보"
+    },
+    {
+      "type": "전화번호",
+      "value": "1505",
+      "action": "문의"
+    }
+  ],
+  "pgm": [
+    "상품 및 부가서비스 가입유도_구독"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 12
+================================================================================
+1. Wavve 앤 데이터
+   - item_id: ['NA00006577', 'PR00000208']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+2. Wavve 앤 데이터①ⓐ
+   - item_id: ['NA00007793']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+3. Wavve 앤 데이터③ⓐ
+   - item_id: ['NA00008010']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+4. Wavve 앤 데이터③ⓑ
+   - item_id: ['NA00008148']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+5. Wavve 앤 데이터③ⓒ
+   - item_id: ['NA00008116']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+6. Wavve 앤 데이터③ⓓ
+   - item_id: ['NA00008166']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+7. Wavve 앤 데이터④ⓐ
+   - item_id: ['NA00008014']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+8. Wavve 앤 데이터④ⓑ
+   - item_id: ['NA00008152']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+9. Wavve 앤 데이터④ⓒ
+   - item_id: ['NA00008121']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+10. Wavve 앤 데이터④ⓓ
+   - item_id: ['NA00008171']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+11. Wavve 이용권
+   - item_id: ['PR00000444', 'PR00000606']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+12. Wavve_고객유지_혜택
+   - item_id: ['NA00006656']
+   - item_name_in_msg: ['wavve']
+   - expected_action: ['기타']
+
+================================================================================

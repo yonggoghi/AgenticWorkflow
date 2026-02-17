@@ -1,0 +1,681 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "(광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습..."
+Timestamp: 2026-02-14 12:13:17
+Total Duration: 24.75 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: kg <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: (광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌프란시스코 왕복 항공권, 애플 액세서리 팩까지\!_Lucky 1717 이벤트 응모하고 경품 당첨의 행운을 누려 보세요.__▶ 이벤트 자세히 보기: https://t-mms.kr/aiN/#74_ _■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
+
+OUTPUT:
+  msg: (광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌프란시스코 왕복 항공권, 애플 액세서리 팩까지\!_Lucky 1717 이벤트 응모하고 경품 당첨의 행운을 누려 보세요.__▶ 이벤트 자세히 보기: https://t-mms.kr/a...
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (1.43s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.575s (40.2%)
+  kiwi_tokenization_nnp: 0.005s (0.3%)
+  fuzzy_matching: 0.400s (27.9%)
+  sequence_similarity: 0.438s (30.6%)
+  threshold_filter_merge: 0.010s (0.7%)
+
+INPUT:
+  msg: (광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌프란시스코 왕복 항공권, 애플 액세서리 팩까지\!_Lucky 1717 이벤트 응모하고 경품 당첨의 행운을 누려 보세요.__▶ 이벤트 자세히 보기: https://t-mms.kr/aiN/#74_ _■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
+  context_mode: kg
+
+OUTPUT:
+  entities_from_kiwi: ['iPhone 신제품']
+  cand_item_list: ['iPhone 신제품', 'IPHONE 신제품', 'iphone 신제품', 'iPhone', 'iphone', 'iphone 에어', 'iPhone 에어', 'SK(주)', 'iPhone 최신폰', 'iphone 최신폰', 'iPhone 17', 'iPhone 16', 'iPhone 15', 'iphone 13', 'iphone 14', 'iphone 15', 'iphone 16', 'iphone 17', 'iPhone 14', 'iPhone 13']
+  cand_item_count: 20
+  extra_item_pdf_shape: (9, 2)
+  extra_item_pdf_sample: [5 items]
+    First 3: [{'item_nm': 'SK(주)', 'item_id': ['X000000044']}, {'item_nm': 'iPhone 13', 'item_id': ['U000005273', 'U000005273']}, {'item_nm': 'iPhone 14', 'item_id': ['U000005792', 'U000005792']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 1
+  candidate_products_matched: 20
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.15s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	사용법/혜택/이벤트 안내_T멤버십 : 멤버십, T day, VIP, 등급, 할인, 쿠폰, 이벤트, 혜택, 적립, 무료
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	상품 및 부가서비스 가입유도 : 상품, 추천, 컬러링, 로밍, 가입, 이용 요금, 부가서비스, 혜택, 무료체험, 할인
+	사용법/
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: [20 items]
+  extra_item_pdf_shape: (9, 2)
+
+OUTPUT:
+  rag_context_length: 1432
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	사용법/혜택/이벤트 안내_T멤버십 : 멤버십, T day, VIP, 등급, 할인, 쿠폰, 이벤트, 혜택, 적립, 무료
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (6.99s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] iPhone 신제품 구매 혜택 안내 __#04 고객님, 안녕하세요._SK텔레콤에서 iPhone 신제품 구매하면, 최대 22만 원 캐시백 이벤트에 참여하실 수 있습니다.__현대카드로 애플 페이도 더 편리하게 이용해 보세요.__▶ 현대카드 바로 가기: https://t-mms.kr/ais/#74_ _애플 페이 티머니 충전 쿠폰 96만 원, 샌
+  rag_context_length: 1432
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 842
+  result_json_text_preview: ```json
+{
+  "title": "iPhone 신제품 구매 최대 22만원 캐시백",
+  "purpose": [
+    "상품 가입 유도",
+    "이벤트 응모 유도",
+    "혜택 안내",
+    "경품 제공 안내"
+  ],
+  "sales_script": "iPhone 신제품 구매 시 최대 22만원 캐시백! 현대카드 애플페이, Lucky 1717 이벤트 응모도 가능. 안내드릴까요?",
+  "product": [
+    {
+      "name": "iPhone 신제품",
+      "action": "구매"
+    },
+...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 842
+  result_json_text_preview: ```json
+{
+  "title": "iPhone 신제품 구매 최대 22만원 캐시백",
+  "purpose": [
+    "상품 가입 유도",
+    "이벤트 응모 유도",
+    "혜택 안내",
+    "경품 제공 안내"
+  ],
+  "sales_script": "iPhone 신제품 구매 시 최대 22만원 캐시백! 현대카드 애플페이, Lucky 1717 이벤트 응모도 가능. 안내드릴까요?",
+  "product": [
+    {
+      "name": "iPhone 신제품",
+      "action": "구매"
+    },
+    {
+      "name": "현대카드",
+      "action": "사용"
+    },
+    {
+      "name": "애플 페이",
+      "action": "사용"
+    },
+    {
+      "name": "Lucky 1717 이벤트",
+      "action": "참여"
+    }
+  ],
+  "channel": [
+  
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': 'iPhone 신제품', 'action': '구매'}, {'name': '현대카드', 'action': '사용'}, {'name': '애플 페이', 'action': '사용'}, {'name': 'Lucky 1717 이벤트', 'action': '참여'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 4
+  llm_product_names: ['iPhone 신제품', '현대카드', '애플 페이', 'Lucky 1717 이벤트']
+  llm_product_actions: ['구매', '사용', '사용', '참여']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (13.93s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['iPhone 신제품']
+  entity_extraction_mode: llm
+  context_mode: kg
+
+OUTPUT:
+  extracted_entities: ['최대 22만 원 캐시백', '애플 액세서리 팩', 'Lucky 1717 이벤트', '샌프란시스코 왕복 항공권', 'iPhone 신제품', '티머니 충전 쿠폰 96만 원']
+  context_text: Entities: iPhone 신제품(Product:offer), 최대 22만 원 캐시백(Benefit:benefit), 현대카드(PartnerBrand:context), 애플 페이(Product:context), Lucky 1717 이벤트(Event:offer), 티머니 충전 쿠폰 96만 원(Benefit:benefit), 샌프란시스코 왕복 항공권(Benefit:benefit), 애플 액세서리 팩(Benefit:benefit)
+Relationships:
+  - iPhone 신제품 -[OFFERS]-> 최대 22만 원 캐시백
+  -...
+
+PRODUCT FOCUS:
+  extracted_entities_count: 6
+  extracted_entities: ['최대 22만 원 캐시백', '애플 액세서리 팩', 'Lucky 1717 이벤트', '샌프란시스코 왕복 항공권', 'iPhone 신제품', '티머니 충전 쿠폰 96만 원']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (2.25s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': 'iPhone 신제품', 'action': '구매'}, {'name': '현대카드', 'action': '사용'}, {'name': '애플 페이', 'action': '사용'}, {'name': 'Lucky 1717 이벤트', 'action': '참여'}]
+  extracted_entities: {...6 keys...}
+
+OUTPUT:
+  matched_products: [4 items]
+    First 3: [{'item_nm': 'iPhone 17', 'item_id': ['U000006958'], 'item_name_in_msg': ['iPhone 신제품'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro', 'item_id': ['U000006956'], 'item_name_in_msg': ['iPhone 신제품'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro Max', 'item_id': ['U000006955'], 'item_name_in_msg': ['iPhone 신제품'], 'expected_action': ['구매']}]
+  matched_products_count: 4
+  similarity_scores_count: 71
+  similarity_scores_sample:
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone 신제품', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iphone 신제품', 'sim': 2.0, 'rank': 1.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone', 'sim': 1.616, 'rank': 2.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iphone', 'sim': 1.616, 'rank': 2.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone 최신폰', 'sim': 1.48, 'rank': 3.0, 'item_dmn_nm': '단말기'}
+    ... (15 more)
+
+PRODUCT FOCUS:
+  matched_product_count: 4
+  product_details:
+    - item_nm: iPhone 17
+      item_id: ['U000006958']
+      item_name_in_msg: ['iPhone 신제품']
+      expected_action: ['구매']
+    - item_nm: iPhone 17 Pro
+      item_id: ['U000006956']
+      item_name_in_msg: ['iPhone 신제품']
+      expected_action: ['구매']
+    - item_nm: iPhone 17 Pro Max
+      item_id: ['U000006955']
+      item_name_in_msg: ['iPhone 신제품']
+      expected_action: ['구매']
+    - item_nm: Lucky 1717 이벤트
+      item_id: ['#']
+      item_name_in_msg: ['Lucky 1717 이벤트']
+      expected_action: ['참여']
+  similarity_matching:
+    - total_matches: 71
+    - unique_entities_in_msg: 2
+    - unique_aliases_matched: 71
+  top_similarity_matches:
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone 신제품', 'sim': 2.0}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iphone 신제품', 'sim': 2.0}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone', 'sim': 1.616}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iphone', 'sim': 1.616}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone 최신폰', 'sim': 1.48}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iphone 최신폰', 'sim': 1.48}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone 13', 'sim': 1.382222222222222}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone 14', 'sim': 1.382222222222222}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone 15', 'sim': 1.382222222222222}
+    - {'item_name_in_msg': 'iPhone 신제품', 'item_nm_alias': 'iPhone 16', 'sim': 1.382222222222222}
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 4
+  matched_products: [4 items]
+
+OUTPUT:
+  final_result_product: [4 items]
+    First 3: [{'item_nm': 'iPhone 17', 'item_id': ['U000006958'], 'item_name_in_msg': ['iPhone 신제품'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro', 'item_id': ['U000006956'], 'item_name_in_msg': ['iPhone 신제품'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro Max', 'item_id': ['U000006955'], 'item_name_in_msg': ['iPhone 신제품'], 'expected_action': ['구매']}]
+  final_result_product_count: 4
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 4
+
+OUTPUT:
+  validated_product_count: 4
+  has_errors: False
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 71
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg item_nm_alias       sim  rank item_dmn_nm
+0        iPhone 신제품    iPhone 신제품  2.000000   1.0         단말기
+1        iPhone 신제품    iphone 신제품  2.000000   1.0         단말기
+2        iPhone 신제품        iPhone  1.616000   2.0         단말기
+3        iPhone 신제품        iphone  1.616000   2.0         단말기
+4        iPhone 신제품    iPhone 최신폰  1.480000   3.0         단말기
+5        iPhone 신제품    iphone 최신폰  1.480000   3.0         단말기
+6        iPhone 신제품     iPhone 13  1.382222   4.0         단말기
+7        iPhone 신제품     iPhone 14  1.382222   4.0         단말기
+8        iPhone 신제품     iPhone 15  1.382222   4.0         단말기
+9        iPhone 신제품     iPhone 16  1.382222   4.0         단말기
+10       iPhone 신제품     iPhone 17  1.382222   4.0         단말기
+11       iPhone 신제품     iPhone 에어  1.382222   4.0         단말기
+12       iPhone 신제품     iphone 13  1.382222   4.0         단말기
+13       iPhone 신제품     iphone 14  1.382222   4.0         단말기
+14       iPhone 신제품     iphone 15  1.382222   4.0         단말기
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 894
+  Unique item_name_in_msg: 5
+  Unique item_nm_alias: 894
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 893
+  sim_s1 range: 0.1714 - 1.0000
+  sim_s2 range: 0.2435 - 1.0000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 113
+  Filtered OUT at this stage: 780 rows
+  Sample of filtered items:
+    - 최대 22만 원 캐시백 -> TDS캐시백 (s1=0.2000, s2=0.4000)
+    - 최대 22만 원 캐시백 -> TDS캐시백2 (s1=0.2000, s2=0.3429)
+    - 최대 22만 원 캐시백 -> TDS캐시백3 (s1=0.2000, s2=0.3429)
+    - Lucky 1717 이벤트 -> V 비즈링_이벤트 (s1=0.3524, s2=0.5111)
+    - Lucky 1717 이벤트 -> 이벤트안내 (s1=0.1714, s2=0.4800)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 113
+  Combined sim range: 0.9164 - 2.0000
+  All items with combined scores:
+    - iPhone 신제품 -> iPhone 신제품: sim=2.000000
+    - iPhone 신제품 -> iphone 신제품: sim=2.000000
+    - iPhone 신제품 -> iPhone: sim=1.616000
+    - iPhone 신제품 -> iphone: sim=1.616000
+    - iPhone 신제품 -> iPhone 최신폰: sim=1.480000
+    - iPhone 신제품 -> iphone 최신폰: sim=1.480000
+    - iPhone 신제품 -> iPhone 14: sim=1.382222
+    - iPhone 신제품 -> iPhone 16: sim=1.382222
+    - iPhone 신제품 -> iphone 16: sim=1.382222
+    - iPhone 신제품 -> iPhone 17: sim=1.382222
+    - iPhone 신제품 -> iPhone 에어: sim=1.382222
+    - iPhone 신제품 -> iphone 17: sim=1.382222
+    - iPhone 신제품 -> iPhone 15: sim=1.382222
+    - iPhone 신제품 -> iphone 13: sim=1.382222
+    - iPhone 신제품 -> iphone 14: sim=1.382222
+    - iPhone 신제품 -> iphone 15: sim=1.382222
+    - iPhone 신제품 -> iPhone 13: sim=1.382222
+    - iPhone 신제품 -> iphone 에어: sim=1.382222
+    - iPhone 신제품 -> iPhone 16e: sim=1.320000
+    - iPhone 신제품 -> iPhone AIR: sim=1.320000
+    - iPhone 신제품 -> iphone AIR: sim=1.320000
+    - iPhone 신제품 -> iphone Air: sim=1.320000
+    - iPhone 신제품 -> iphone 16e: sim=1.320000
+    - iPhone 신제품 -> iPhone Air: sim=1.320000
+    - iPhone 신제품 -> iphone 통화녹음: sim=1.269091
+    - iPhone 신제품 -> iPhone 통화녹음: sim=1.269091
+    - iPhone 신제품 -> iPhone 17 프로: sim=1.193333
+    - iPhone 신제품 -> iPhone 15 프로: sim=1.193333
+    - iPhone 신제품 -> iphone 15 프로: sim=1.193333
+    - iPhone 신제품 -> iPhone 16 프로: sim=1.193333
+    - iPhone 신제품 -> iphone 16 프로: sim=1.193333
+    - iPhone 신제품 -> iphone 17 프로: sim=1.193333
+    - iPhone 신제품 -> iPhone 17 시리즈: sim=1.157436
+    - iPhone 신제품 -> iPhone 17 pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 17 Pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 17 PRO: sim=1.157436
+    - iPhone 신제품 -> iPhone 16 pro: sim=1.157436
+    - iPhone 신제품 -> iphone 15 플러스: sim=1.157436
+    - iPhone 신제품 -> iphone 15 PRO: sim=1.157436
+    - iPhone 신제품 -> iphone 15 Pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 16 플러스: sim=1.157436
+    - iPhone 신제품 -> iphone 16 PRO: sim=1.157436
+    - iPhone 신제품 -> iPhone 15 플러스: sim=1.157436
+    - iPhone 신제품 -> iphone 15 pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 15 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 17 시리즈: sim=1.157436
+    - iPhone 신제품 -> iphone 16 pro: sim=1.157436
+    - iPhone 신제품 -> iphone 17 PRO: sim=1.157436
+    - iPhone 신제품 -> iphone 16 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 17 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 17 pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 15 PRO: sim=1.157436
+    - iPhone 신제품 -> iPhone 16 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 16 플러스: sim=1.157436
+    - iPhone 신제품 -> iPhone 15 pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 16 PRO: sim=1.157436
+    - 애플 액세서리 팩 -> 5G 액세서리 할인: sim=1.146667
+    - iPhone 신제품 -> iphone HDV 암호화: sim=1.126667
+    - iPhone 신제품 -> iphone 15 PLUS: sim=1.126667
+    - iPhone 신제품 -> iphone 15 Plus: sim=1.126667
+    - iPhone 신제품 -> iphone 15 plus: sim=1.126667
+    - iPhone 신제품 -> iPhone 16 plus: sim=1.126667
+    - iPhone 신제품 -> iphone 16 plus: sim=1.126667
+    - iPhone 신제품 -> iphone 16 PLUS: sim=1.126667
+    - iPhone 신제품 -> iPhone 15 PLUS: sim=1.126667
+    - iPhone 신제품 -> iPhone 15 Plus: sim=1.126667
+    - iPhone 신제품 -> iPhone 15 plus: sim=1.126667
+    - iPhone 신제품 -> iphone 16 Plus: sim=1.126667
+    - iPhone 신제품 -> iPhone 16 PLUS: sim=1.126667
+    - iPhone 신제품 -> iPhone 16 Plus: sim=1.126667
+    - iPhone 신제품 -> iPhone HDV 암호화: sim=1.126667
+    - iPhone 신제품 -> iphone 16 프로 맥스: sim=1.083333
+    - iPhone 신제품 -> iphone 15 프로 맥스: sim=1.083333
+    - iPhone 신제품 -> iphone 17 프로 맥스: sim=1.083333
+    - iPhone 신제품 -> iphone 17/17 프로: sim=1.083333
+    - iPhone 신제품 -> 던킨_클럽 iPhone 17: sim=1.083333
+    - iPhone 신제품 -> 던킨_클럽 iphone 17: sim=1.083333
+    - iPhone 신제품 -> iPhone 17 프로 맥스: sim=1.083333
+    - iPhone 신제품 -> iPhone 17/17 프로: sim=1.083333
+    - iPhone 신제품 -> iPhone 16 프로 맥스: sim=1.083333
+    - iPhone 신제품 -> iPhone 15 프로 맥스: sim=1.083333
+    - iPhone 신제품 -> A. 전화(iPhone): sim=1.083030
+    - iPhone 신제품 -> iPhone17: sim=1.080000
+    - iPhone 신제품 -> iphone17: sim=1.080000
+    - iPhone 신제품 -> TiPhone파손 14: sim=1.026667
+    - iPhone 신제품 -> TiPhone케어 14: sim=1.026667
+    - iPhone 신제품 -> TiPhone클럽_보험: sim=1.026667
+    - iPhone 신제품 -> TiPhone파손 13: sim=1.026667
+    - iPhone 신제품 -> TiPhone케어 13: sim=1.026667
+    - iPhone 신제품 -> Tiphone케어 13: sim=1.026667
+    - iPhone 신제품 -> Tiphone파손 13: sim=1.026667
+    - iPhone 신제품 -> Tiphone파손 14: sim=1.026667
+    - iPhone 신제품 -> Tiphone케어 14: sim=1.026667
+    - iPhone 신제품 -> 에이닷 전화(iPhone): sim=1.015897
+    - iPhone 신제품 -> Tiphone클럽: sim=1.013333
+    - iPhone 신제품 -> TiPhone클럽: sim=1.013333
+    - iPhone 신제품 -> A. (A.) 전화(iPhone): sim=0.999231
+    - iPhone 신제품 -> T iphone케어 15: sim=0.990769
+    - iPhone 신제품 -> T iPhone파손9_예: sim=0.990769
+    - iPhone 신제품 -> T iPhone파손7_예: sim=0.990769
+    - iPhone 신제품 -> T iPhone파손5_예: sim=0.990769
+    - iPhone 신제품 -> T iPhone파손 15: sim=0.990769
+    - iPhone 신제품 -> T iPhone케어7_예: sim=0.990769
+    - iPhone 신제품 -> T iphone파손 15: sim=0.990769
+    - iPhone 신제품 -> iphone레터링수신허용: sim=0.990769
+    - iPhone 신제품 -> T iPhone케어 15: sim=0.990769
+    - iPhone 신제품 -> TiPhone클럽_RVI: sim=0.990769
+    - iPhone 신제품 -> iPhone레터링수신허용: sim=0.990769
+    - iPhone 신제품 -> 아이폰 신제품: sim=0.977143
+    - iPhone 신제품 -> T iPhone파손9: sim=0.916364
+    - iPhone 신제품 -> T iPhone파손7: sim=0.916364
+    - iPhone 신제품 -> T iPhone파손5: sim=0.916364
+    - iPhone 신제품 -> T iPhone케어7: sim=0.916364
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 71
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  42 items filtered out:
+    - iPhone 신제품 -> iPhone 17 프로 맥스: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> iPhone 17/17 프로: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> 던킨_클럽 iphone 17: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> 던킨_클럽 iPhone 17: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> iPhone 15 프로 맥스: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> iphone 17/17 프로: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> iphone 17 프로 맥스: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> iphone 16 프로 맥스: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> iphone 15 프로 맥스: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> iPhone 16 프로 맥스: sim=1.083333 -> FAILED (need 1.1, got 1.083333)
+    - iPhone 신제품 -> A. 전화(iPhone): sim=1.083030 -> FAILED (need 1.1, got 1.083030)
+    - iPhone 신제품 -> iPhone17: sim=1.080000 -> FAILED (need 1.1, got 1.080000)
+    - iPhone 신제품 -> iphone17: sim=1.080000 -> FAILED (need 1.1, got 1.080000)
+    - iPhone 신제품 -> Tiphone케어 14: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> TiPhone케어 13: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> TiPhone케어 14: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> Tiphone파손 14: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> Tiphone파손 13: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> TiPhone클럽_보험: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> TiPhone파손 13: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> TiPhone파손 14: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> Tiphone케어 13: sim=1.026667 -> FAILED (need 1.1, got 1.026667)
+    - iPhone 신제품 -> 에이닷 전화(iPhone): sim=1.015897 -> FAILED (need 1.1, got 1.015897)
+    - iPhone 신제품 -> Tiphone클럽: sim=1.013333 -> FAILED (need 1.1, got 1.013333)
+    - iPhone 신제품 -> TiPhone클럽: sim=1.013333 -> FAILED (need 1.1, got 1.013333)
+    - iPhone 신제품 -> A. (A.) 전화(iPhone): sim=0.999231 -> FAILED (need 1.1, got 0.999231)
+    - iPhone 신제품 -> T iphone파손 15: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> T iphone케어 15: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> T iPhone파손9_예: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> T iPhone파손7_예: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> iPhone레터링수신허용: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> TiPhone클럽_RVI: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> T iPhone파손5_예: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> T iPhone파손 15: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> T iPhone케어7_예: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> iphone레터링수신허용: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> T iPhone케어 15: sim=0.990769 -> FAILED (need 1.1, got 0.990769)
+    - iPhone 신제품 -> 아이폰 신제품: sim=0.977143 -> FAILED (need 1.1, got 0.977143)
+    - iPhone 신제품 -> T iPhone파손9: sim=0.916364 -> FAILED (need 1.1, got 0.916364)
+    - iPhone 신제품 -> T iPhone파손5: sim=0.916364 -> FAILED (need 1.1, got 0.916364)
+    - iPhone 신제품 -> T iPhone케어7: sim=0.916364 -> FAILED (need 1.1, got 0.916364)
+    - iPhone 신제품 -> T iPhone파손7: sim=0.916364 -> FAILED (need 1.1, got 0.916364)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - iPhone 신제품 -> iPhone 신제품: sim=2.000000
+    - iPhone 신제품 -> iphone 신제품: sim=2.000000
+    - iPhone 신제품 -> iPhone: sim=1.616000
+    - iPhone 신제품 -> iphone: sim=1.616000
+    - iPhone 신제품 -> iphone 최신폰: sim=1.480000
+    - iPhone 신제품 -> iPhone 최신폰: sim=1.480000
+    - iPhone 신제품 -> iphone 14: sim=1.382222
+    - iPhone 신제품 -> iPhone 17: sim=1.382222
+    - iPhone 신제품 -> iPhone 15: sim=1.382222
+    - iPhone 신제품 -> iPhone 에어: sim=1.382222
+    - iPhone 신제품 -> iPhone 14: sim=1.382222
+    - iPhone 신제품 -> iphone 에어: sim=1.382222
+    - iPhone 신제품 -> iPhone 16: sim=1.382222
+    - iPhone 신제품 -> iPhone 13: sim=1.382222
+    - iPhone 신제품 -> iphone 13: sim=1.382222
+    - iPhone 신제품 -> iphone 15: sim=1.382222
+    - iPhone 신제품 -> iphone 16: sim=1.382222
+    - iPhone 신제품 -> iphone 17: sim=1.382222
+    - iPhone 신제품 -> iphone 16e: sim=1.320000
+    - iPhone 신제품 -> iPhone Air: sim=1.320000
+    - iPhone 신제품 -> iPhone AIR: sim=1.320000
+    - iPhone 신제품 -> iphone AIR: sim=1.320000
+    - iPhone 신제품 -> iPhone 16e: sim=1.320000
+    - iPhone 신제품 -> iphone Air: sim=1.320000
+    - iPhone 신제품 -> iphone 통화녹음: sim=1.269091
+    - iPhone 신제품 -> iPhone 통화녹음: sim=1.269091
+    - iPhone 신제품 -> iphone 16 프로: sim=1.193333
+    - iPhone 신제품 -> iphone 15 프로: sim=1.193333
+    - iPhone 신제품 -> iPhone 15 프로: sim=1.193333
+    - iPhone 신제품 -> iphone 17 프로: sim=1.193333
+    - iPhone 신제품 -> iPhone 17 프로: sim=1.193333
+    - iPhone 신제품 -> iPhone 16 프로: sim=1.193333
+    - iPhone 신제품 -> iPhone 16 pro: sim=1.157436
+    - iPhone 신제품 -> iphone 15 pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 17 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 16 pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 17 pro: sim=1.157436
+    - iPhone 신제품 -> iphone 16 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 17 PRO: sim=1.157436
+    - iPhone 신제품 -> iphone 16 PRO: sim=1.157436
+    - iPhone 신제품 -> iphone 17 Pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 15 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 15 플러스: sim=1.157436
+    - iPhone 신제품 -> iPhone 17 시리즈: sim=1.157436
+    - iPhone 신제품 -> iphone 17 pro: sim=1.157436
+    - iPhone 신제품 -> iphone 15 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 17 시리즈: sim=1.157436
+    - iPhone 신제품 -> iphone 15 PRO: sim=1.157436
+    - iPhone 신제품 -> iPhone 17 PRO: sim=1.157436
+    - iPhone 신제품 -> iPhone 15 pro: sim=1.157436
+    - iPhone 신제품 -> iPhone 15 PRO: sim=1.157436
+    - iPhone 신제품 -> iPhone 15 플러스: sim=1.157436
+    - iPhone 신제품 -> iPhone 16 플러스: sim=1.157436
+    - iPhone 신제품 -> iPhone 16 PRO: sim=1.157436
+    - iPhone 신제품 -> iPhone 16 Pro: sim=1.157436
+    - iPhone 신제품 -> iphone 16 플러스: sim=1.157436
+    - 애플 액세서리 팩 -> 5G 액세서리 할인: sim=1.146667
+    - iPhone 신제품 -> iphone 16 plus: sim=1.126667
+    - iPhone 신제품 -> iphone 16 Plus: sim=1.126667
+    - iPhone 신제품 -> iphone 16 PLUS: sim=1.126667
+    - iPhone 신제품 -> iphone 15 plus: sim=1.126667
+    - iPhone 신제품 -> iphone 15 Plus: sim=1.126667
+    - iPhone 신제품 -> iphone 15 PLUS: sim=1.126667
+    - iPhone 신제품 -> iPhone HDV 암호화: sim=1.126667
+    - iPhone 신제품 -> iPhone 16 plus: sim=1.126667
+    - iPhone 신제품 -> iphone HDV 암호화: sim=1.126667
+    - iPhone 신제품 -> iPhone 16 Plus: sim=1.126667
+    - iPhone 신제품 -> iPhone 16 PLUS: sim=1.126667
+    - iPhone 신제품 -> iPhone 15 plus: sim=1.126667
+    - iPhone 신제품 -> iPhone 15 Plus: sim=1.126667
+    - iPhone 신제품 -> iPhone 15 PLUS: sim=1.126667
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 2
+  Unique aliases: 2
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 2
+    - iPhone 신제품
+    - iPhone 17 시리즈
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 2
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 6
+  Unique item_nm: 3
+  Final product names:
+    - iPhone 17
+    - iPhone 17 Pro
+    - iPhone 17 Pro Max
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 71
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 2
+  Filtered out: 69 rows
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "iPhone 신제품 구매 최대 22만원 캐시백",
+  "purpose": [
+    "상품 가입 유도",
+    "이벤트 응모 유도",
+    "혜택 안내",
+    "경품 제공 안내"
+  ],
+  "sales_script": "iPhone 신제품 구매 시 최대 22만원 캐시백! 현대카드 애플페이, Lucky 1717 이벤트 응모도 가능. 안내드릴까요?",
+  "product": [
+    {
+      "name": "iPhone 신제품",
+      "action": "구매"
+    },
+    {
+      "name": "현대카드",
+      "action": "사용"
+    },
+    {
+      "name": "애플 페이",
+      "action": "사용"
+    },
+    {
+      "name": "Lucky 1717 이벤트",
+      "action": "참여"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://t-mms.kr/ais/#74",
+      "action": "추가 정보"
+    },
+    {
+      "type": "URL",
+      "value": "https://t-mms.kr/aiN/#74",
+      "action": "추가 정보"
+    },
+    {
+      "type": "전화번호",
+      "value": "SKT 고객센터(1558, 무료)",
+      "action": "문의"
+    }
+  ],
+  "pgm": [
+    "기변유도 및 해지방어_신규단말출시"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 4
+================================================================================
+1. iPhone 17
+   - item_id: ['U000006958']
+   - item_name_in_msg: ['iPhone 신제품']
+   - expected_action: ['구매']
+2. iPhone 17 Pro
+   - item_id: ['U000006956']
+   - item_name_in_msg: ['iPhone 신제품']
+   - expected_action: ['구매']
+3. iPhone 17 Pro Max
+   - item_id: ['U000006955']
+   - item_name_in_msg: ['iPhone 신제품']
+   - expected_action: ['구매']
+4. Lucky 1717 이벤트
+   - item_id: ['#']
+   - item_name_in_msg: ['Lucky 1717 이벤트']
+   - expected_action: ['참여']
+
+================================================================================

@@ -1,0 +1,865 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "[SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세..."
+Timestamp: 2026-02-15 10:19:53
+Total Duration: 83.68 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: kg <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: [SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세요. _아이폰 신제품 출시 기념 이벤트를 안내드립니다. _매장에 방문해 편하게 상담받고 다양한 혜택도 누려 보세요.__■ 아이폰 신제품 개통 혜택_- T 즉시보상 최대 70% 혜택_- 제휴 카드 추가 할인__■ 갤럭시 Z 플립7/Z 폴드7, 효도폰, 키즈폰_- 최대 할인 제공__■ 매장 방문 혜택_① 액정 보호 필름 무료 교체_② 키친타월 증정__▶ [단골이라서 더 드림] 혜택 자세히 보기: https://t-mms.kr/aiC/#74_* 대리점 공식 홈페이지로 연결__■ 티원대리점 화순점_- 주소: 전라남도 화순군 화순읍 광덕로 187_- 연락처: 061-927-7722__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
+
+OUTPUT:
+  msg: [SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세요. _아이폰 신제품 출시 기념 이벤트를 안내드립니다. _매장에 방문해 편하게 상담받고 다양한 혜택도 누려 보세요.__■ 아이폰 신제품 개통 혜택_- T 즉시보상 최대 70% 혜택_- 제휴 카드 추가 할인__■ 갤럭시 Z 플립7/Z 폴드7, 효도폰, 키즈폰_- 최대 할인 제공__■ 매장 방문 혜택_① 액정 보호 필름 무료 교체_② 키친타월 증정__▶ [단골...
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (15.42s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.635s (4.1%)
+  kiwi_tokenization_nnp: 0.009s (0.1%)
+  fuzzy_matching: 0.325s (2.1%)
+  sequence_similarity: 14.435s (93.6%)
+  threshold_filter_merge: 0.014s (0.1%)
+
+INPUT:
+  msg: [SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세요. _아이폰 신제품 출시 기념 이벤트를 안내드립니다. _매장에 방문해 편하게 상담받고 다양한 혜택도 누려 보세요.__■ 아이폰 신제품 개통 혜택_- T 즉시보상 최대 70% 혜택_- 제휴 카드 추가 할인__■ 갤럭시 Z 플립7/Z 폴드7, 효도폰, 키즈폰_- 최대 할인 제공__■ 매장 방문 혜택_① 액정 보호 필름 무료 교체_② 키친타월 증정__▶ [단골이라서 더 드림] 혜택 자세히 보기: https://t-mms.kr/aiC/#74_* 대리점 공식 홈페이지로 연결__■ 티원대리점 화순점_- 주소: 전라남도 화순군 화순읍 광덕로 187_- 연락처: 061-927-7722__■ 문의: SKT 고객센터(1558, 무료)__SKT와 함께해 주셔서 감사합니다.__무료 수신거부 1504
+  context_mode: kg
+
+OUTPUT:
+  entities_from_kiwi: ['갤럭시 Z 플립7', '아이폰 신제품']
+  cand_item_list: [22 items]
+    First 3: ['아이폰 신제품', '갤럭시 Z 플립7/폴드7', '갤럭시 Z 플립7']
+  cand_item_count: 22
+  extra_item_pdf_shape: (14, 2)
+  extra_item_pdf_sample: [5 items]
+    First 3: [{'item_nm': 'SK(주)', 'item_id': ['X000000044']}, {'item_nm': 'SK텔레콤(주)_T 우주 이벤트 적립', 'item_id': ['V275_8011']}, {'item_nm': 'iPhone 17', 'item_id': ['U000006958', 'U000006958', 'U000006958']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 2
+  candidate_products_matched: 22
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.15s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세요. _아이폰 신제품 출시 기념 이벤트를 안내드립니다. _매장에 방문해 편하게 상담받고 다양한 혜택도 누려 보세요.__■ 아이폰 신제품 개통 혜택_- T 즉시보상 최대 70% 혜택
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	매장오픈안내 및 방문유도 : 매장, 대리점, 오픈, 내방, 방문, 리뉴얼, 이전, 홍보, 프로모션, 사은품, 직영점, 이벤트, 행사, 기념, 개통, 할인, 혜택, 안내드립니다, 주소, 연락처, 상담
+	사용법/혜택/이벤트 안내_T멤버십 : 멤버십, 
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: [20 items]
+  extra_item_pdf_shape: (14, 2)
+
+OUTPUT:
+  rag_context_length: 1540
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	매장오픈안내 및 방문유도 : 매장, 대리...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (9.27s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: [SK텔레콤] 티원대리점 화순점에서 아이폰 신제품 출시 기념 할인 행사 안내드립니다.\t(광고)[SKT] 티원대리점 화순점 아이폰 신제품 출시 기념 이벤트 안내__고객님, 안녕하세요. _아이폰 신제품 출시 기념 이벤트를 안내드립니다. _매장에 방문해 편하게 상담받고 다양한 혜택도 누려 보세요.__■ 아이폰 신제품 개통 혜택_- T 즉시보상 최대 70% 혜택
+  rag_context_length: 1540
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 1125
+  result_json_text_preview: ```json
+{
+  "title": "티원대리점 화순점 아이폰 신제품 출시 기념 할인",
+  "purpose": [
+    "상품 가입 유도",
+    "대리점/매장 방문 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "아이폰 신제품, 티원대리점 화순점에서 최대 70% T즉시보상+제휴카드 할인! 매장 방문 시 액정 필름 무료+키친타월 증정. 안내드릴까요?",
+  "product": [
+    {
+      "name": "아이폰 신제품",
+      "action": "구매"
+    },
+    {
+   ...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 1125
+  result_json_text_preview: ```json
+{
+  "title": "티원대리점 화순점 아이폰 신제품 출시 기념 할인",
+  "purpose": [
+    "상품 가입 유도",
+    "대리점/매장 방문 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "아이폰 신제품, 티원대리점 화순점에서 최대 70% T즉시보상+제휴카드 할인! 매장 방문 시 액정 필름 무료+키친타월 증정. 안내드릴까요?",
+  "product": [
+    {
+      "name": "아이폰 신제품",
+      "action": "구매"
+    },
+    {
+      "name": "갤럭시 Z 플립7/Z 폴드7",
+      "action": "구매"
+    },
+    {
+      "name": "효도폰",
+      "action": "구매"
+    },
+    {
+      "name": "키즈폰",
+      "action": "구매"
+    },
+    {
+      "name": "T 즉시보상",
+  
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [8 items]
+    First 3: [{'name': '아이폰 신제품', 'action': '구매'}, {'name': '갤럭시 Z 플립7/Z 폴드7', 'action': '구매'}, {'name': '효도폰', 'action': '구매'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 8
+  llm_product_names: ['아이폰 신제품', '갤럭시 Z 플립7/Z 폴드7', '효도폰', '키즈폰', 'T 즉시보상', '제휴 카드 추가 할인', '액정 보호 필름 무료 교체', '키친타월']
+  llm_product_actions: ['구매', '구매', '구매', '구매', '기타', '기타', '기타', '기타']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (56.23s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['갤럭시 Z 플립7', '아이폰 신제품']
+  entity_extraction_mode: llm
+  context_mode: kg
+
+OUTPUT:
+  extracted_entities: ['아이폰 신제품', '키즈폰', 'T 즉시보상', '갤럭시 Z 플립7', '키친타월', '제휴 카드 추가 할인', '키친타월 증정', '갤럭시 Z 플립7/Z 폴드7', '효도폰', '액정 보호 필름 무료 교체', 'Z 폴드7']
+  context_text: Entities: SK텔레콤(통신사:prerequisite), 아이폰 신제품(Product:offer), 갤럭시 Z 플립7(Product:offer), Z 폴드7(Product:offer), 효도폰(Product:offer), 키즈폰(Product:offer), T 즉시보상(Campaign:offer), 제휴 카드 추가 할인(Benefit:offer), 액정 보호 필름 무료 교체(Benefit:benefit), 키친타월 증정(Benefit:benefit), 티원대리점 화순점(Channel:context), 단골라서 더 드림(Camp...
+
+PRODUCT FOCUS:
+  extracted_entities_count: 11
+  extracted_entities: ['아이폰 신제품', '키즈폰', 'T 즉시보상', '갤럭시 Z 플립7', '키친타월', '제휴 카드 추가 할인', '키친타월 증정', '갤럭시 Z 플립7/Z 폴드7', '효도폰', '액정 보호 필름 무료 교체']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (2.36s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [8 items]
+  extracted_entities: {...6 keys...}
+
+OUTPUT:
+  matched_products: [9 items]
+    First 3: [{'item_nm': 'iPhone 17', 'item_id': ['U000006958'], 'item_name_in_msg': ['아이폰 신제품'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro', 'item_id': ['U000006956'], 'item_name_in_msg': ['아이폰 신제품'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro Max', 'item_id': ['U000006955'], 'item_name_in_msg': ['아이폰 신제품'], 'expected_action': ['구매']}]
+  matched_products_count: 9
+  similarity_scores_count: 85
+  similarity_scores_sample:
+    - {'item_name_in_msg': 'Z 폴드7', 'item_nm_alias': '갤럭시 Z 폴드7', 'sim': 1.6177777777777778, 'rank': 1.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': 'Z 폴드7', 'item_nm_alias': 'GALAXY Z 폴드7', 'sim': 1.5191666666666666, 'rank': 2.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': 'Z 폴드7', 'item_nm_alias': 'Galaxy Z 폴드7', 'sim': 1.5191666666666666, 'rank': 2.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': 'Z 폴드7', 'item_nm_alias': 'galaxy Z 폴드7', 'sim': 1.5191666666666666, 'rank': 2.0, 'item_dmn_nm': '단말기'}
+    - {'item_name_in_msg': 'Z 폴드7', 'item_nm_alias': '갤럭시 Z 플립7/폴드7', 'sim': 1.4076923076923076, 'rank': 3.0, 'item_dmn_nm': '단말기'}
+    ... (15 more)
+
+PRODUCT FOCUS:
+  matched_product_count: 9
+  product_details:
+    - item_nm: iPhone 17
+      item_id: ['U000006958']
+      item_name_in_msg: ['아이폰 신제품']
+      expected_action: ['구매']
+    - item_nm: iPhone 17 Pro
+      item_id: ['U000006956']
+      item_name_in_msg: ['아이폰 신제품']
+      expected_action: ['구매']
+    - item_nm: iPhone 17 Pro Max
+      item_id: ['U000006955']
+      item_name_in_msg: ['아이폰 신제품']
+      expected_action: ['구매']
+    - item_nm: 갤럭시 Z 폴드7
+      item_id: ['U000006916']
+      item_name_in_msg: ['Z 폴드7', '갤럭시 Z 플립7', '갤럭시 Z 플립7/Z 폴드7']
+      expected_action: ['구매']
+    - item_nm: 갤럭시 Z 플립7
+      item_id: ['U000006917']
+      item_name_in_msg: ['갤럭시 Z 플립7', '갤럭시 Z 플립7/Z 폴드7']
+      expected_action: ['구매']
+    - item_nm: 효도폰
+      item_id: ['#']
+      item_name_in_msg: ['효도폰']
+      expected_action: ['구매']
+    - item_nm: 키즈폰
+      item_id: ['#']
+      item_name_in_msg: ['키즈폰']
+      expected_action: ['구매']
+    - item_nm: T 즉시보상
+      item_id: ['#']
+      item_name_in_msg: ['T 즉시보상']
+      expected_action: ['기타']
+    - item_nm: 제휴 카드 추가 할인
+      item_id: ['#']
+      item_name_in_msg: ['제휴 카드 추가 할인']
+      expected_action: ['기타']
+  similarity_matching:
+    - total_matches: 85
+    - unique_entities_in_msg: 4
+    - unique_aliases_matched: 68
+  top_similarity_matches:
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7', 'sim': 2.0}
+    - {'item_name_in_msg': '아이폰 신제품', 'item_nm_alias': '아이폰 신제품', 'sim': 2.0}
+    - {'item_name_in_msg': '갤럭시 Z 플립7/Z 폴드7', 'item_nm_alias': '갤럭시 Z 플립7/폴드7', 'sim': 1.8533333333333335}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7 FE', 'sim': 1.7725}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7/폴드7', 'sim': 1.7315384615384615}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립6', 'sim': 1.6888888888888887}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7/FOLD7', 'sim': 1.666}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7/Fold7', 'sim': 1.666}
+    - {'item_name_in_msg': '갤럭시 Z 플립7', 'item_nm_alias': '갤럭시 Z 플립7/fold7', 'sim': 1.666}
+    - {'item_name_in_msg': '갤럭시 Z 플립7/Z 폴드7', 'item_nm_alias': '갤럭시 Z 플립7', 'sim': 1.6360000000000001}
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.24s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 9
+  matched_products: [9 items]
+
+OUTPUT:
+  final_result_product: [9 items]
+    First 3: [{'item_nm': 'iPhone 17', 'item_id': ['U000006958'], 'item_name_in_msg': ['아이폰 신제품'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro', 'item_id': ['U000006956'], 'item_name_in_msg': ['아이폰 신제품'], 'expected_action': ['구매']}, {'item_nm': 'iPhone 17 Pro Max', 'item_id': ['U000006955'], 'item_name_in_msg': ['아이폰 신제품'], 'expected_action': ['구매']}]
+  final_result_product_count: 9
+  offer_type: org
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 9
+
+OUTPUT:
+  validated_product_count: 9
+  has_errors: False
+
+================================================================================
+SIMILARITY SCORES DETAIL (Step 7)
+================================================================================
+Total rows: 85
+Columns: ['item_name_in_msg', 'item_nm_alias', 'sim', 'rank', 'item_dmn_nm']
+
+Sample (top 15 by similarity):
+   item_name_in_msg    item_nm_alias       sim  rank item_dmn_nm
+6         갤럭시 Z 플립7        갤럭시 Z 플립7  2.000000   1.0         단말기
+73          아이폰 신제품          아이폰 신제품  2.000000   1.0         단말기
+56  갤럭시 Z 플립7/Z 폴드7    갤럭시 Z 플립7/폴드7  1.853333   1.0         단말기
+7         갤럭시 Z 플립7     갤럭시 Z 플립7 FE  1.772500   2.0         단말기
+8         갤럭시 Z 플립7    갤럭시 Z 플립7/폴드7  1.731538   3.0         단말기
+9         갤럭시 Z 플립7        갤럭시 Z 플립6  1.688889   4.0         단말기
+10        갤럭시 Z 플립7  갤럭시 Z 플립7/FOLD7  1.666000   5.0         단말기
+11        갤럭시 Z 플립7  갤럭시 Z 플립7/Fold7  1.666000   5.0         단말기
+12        갤럭시 Z 플립7  갤럭시 Z 플립7/fold7  1.666000   5.0         단말기
+57  갤럭시 Z 플립7/Z 폴드7        갤럭시 Z 플립7  1.636000   2.0         단말기
+0             Z 폴드7        갤럭시 Z 폴드7  1.617778   1.0         단말기
+58  갤럭시 Z 플립7/Z 폴드7        갤럭시 Z 폴드7  1.600000   3.0         단말기
+1             Z 폴드7     GALAXY Z 폴드7  1.519167   2.0         단말기
+2             Z 폴드7     Galaxy Z 폴드7  1.519167   2.0         단말기
+3             Z 폴드7     galaxy Z 폴드7  1.519167   2.0         단말기
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+  map_products_high_sim_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 1398
+  Unique item_name_in_msg: 8
+  Unique item_nm_alias: 1316
+  Similarity range: 0.6000 - 1.0000
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 1397
+  sim_s1 range: 0.1600 - 1.0000
+  sim_s2 range: 0.0552 - 1.0000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 175
+  Filtered OUT at this stage: 1222 rows
+  Sample of filtered items:
+    - 아이폰 신제품 -> 아이폰12 클럽 P 과금 (s1=0.4571, s2=0.2462)
+    - 아이폰 신제품 -> T아이폰클럽 (s1=0.3429, s2=0.4000)
+    - 아이폰 신제품 -> 아이폰레터링수신허용 (s1=0.4571, s2=0.3200)
+    - 아이폰 신제품 -> 아이폰레터Ring수신허용 (s1=0.4571, s2=0.2462)
+    - 아이폰 신제품 -> 아이폰레터RING수신허용 (s1=0.4571, s2=0.2462)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 175
+  Combined sim range: 0.9111 - 2.0000
+  All items with combined scores:
+    - 아이폰 신제품 -> 아이폰 신제품: sim=2.000000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7: sim=2.000000
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7/폴드7: sim=1.853333
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7 FE: sim=1.772500
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/폴드7: sim=1.731538
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립6: sim=1.688889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/Fold7: sim=1.666000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/fold7: sim=1.666000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/FOLD7: sim=1.666000
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7: sim=1.636000
+    - Z 폴드7 -> 갤럭시 Z 폴드7: sim=1.617778
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 폴드7: sim=1.600000
+    - Z 폴드7 -> GALAXY Z 폴드7: sim=1.519167
+    - Z 폴드7 -> Galaxy Z 폴드7: sim=1.519167
+    - Z 폴드7 -> galaxy Z 폴드7: sim=1.519167
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드7: sim=1.511111
+    - 아이폰 신제품 -> 아이폰: sim=1.494286
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립5 5G: sim=1.477778
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7 FE: sim=1.470000
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP7/폴드7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip7/폴드7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7/FOLD7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7/Fold7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7/fold7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip7/폴드7: sim=1.443333
+    - Z 폴드7 -> 갤럭시 Z 플립7/폴드7: sim=1.407692
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold7: sim=1.397980
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립6: sim=1.351111
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 폴드6: sim=1.351111
+    - 아이폰 신제품 -> 아이폰 최신폰: sim=1.342857
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드6: sim=1.333333
+    - 갤럭시 Z 플립7/Z 폴드7 -> GALAXY Z 플립7/폴드7: sim=1.303333
+    - 갤럭시 Z 플립7/Z 폴드7 -> galaxy Z 플립7/폴드7: sim=1.303333
+    - 갤럭시 Z 플립7/Z 폴드7 -> Galaxy Z 플립7/폴드7: sim=1.303333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립5 5G: sim=1.260000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> galaxy Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립7: sim=1.200000
+    - 아이폰 신제품 -> 아이폰 13: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 17: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 16: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 15: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 14: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 에어: sim=1.190476
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 A17: sim=1.182540
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드5 5G: sim=1.166667
+    - Z 폴드7 -> 갤럭시 Z 폴드6: sim=1.162222
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 폴드5 5G: sim=1.140000
+    - 아이폰 신제품 -> 아이폰 16e: sim=1.114286
+    - 아이폰 신제품 -> 아이폰 AIR: sim=1.114286
+    - 아이폰 신제품 -> 아이폰 Air: sim=1.114286
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드7: sim=1.111111
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7: sim=1.111111
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP5 5G: sim=1.109524
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Fold7: sim=1.095758
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip7: sim=1.095758
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FOLD7: sim=1.095758
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip7: sim=1.095758
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z fold7: sim=1.095758
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP7: sim=1.095758
+    - 갤럭시 Z 플립7 -> galaxy Z 플립7 FE: sim=1.086667
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립7 FE: sim=1.086667
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립7 FE: sim=1.086667
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/폴드7: sim=1.066667
+    - 키즈폰 -> 쿠키즈: sim=1.066667
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip7 FE: sim=1.063810
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP7 FE: sim=1.063810
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip7 FE: sim=1.063810
+    - 아이폰 신제품 -> 아이폰 통화녹음: sim=1.057143
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 A11+: sim=1.022222
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S10+: sim=1.022222
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S11: sim=1.022222
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/fold7: sim=1.009524
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/FOLD7: sim=1.009524
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/Fold7: sim=1.009524
+    - 제휴 카드 추가 할인 -> 밴드 실버 할인: sim=0.980303
+    - 갤럭시 Z 플립7 -> 갤럭시 S25: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 A36: sim=0.979365
+    - 아이폰 신제품 -> 아이폰 15 프로: sim=0.979365
+    - 아이폰 신제품 -> 아이폰 16 프로: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 S25+: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 퀀텀4: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 A24: sim=0.979365
+    - 아이폰 신제품 -> 아이폰 17 프로: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 A16: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 A15: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 퀀텀6: sim=0.979365
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 엣지: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S24 FE: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S23 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S24 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S23+ 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 FE: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 S24+ 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 A25 5G: sim=0.977778
+    - 갤럭시 Z 플립7 -> 갤럭시 A35 5G: sim=0.977778
+    - 아이폰 신제품 -> iphone 신제품: sim=0.977143
+    - 아이폰 신제품 -> iPhone 신제품: sim=0.977143
+    - 아이폰 신제품 -> IPHONE 신제품: sim=0.977143
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Fold6: sim=0.969697
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP6: sim=0.969697
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip6: sim=0.969697
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FOLD6: sim=0.969697
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z fold6: sim=0.969697
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip6: sim=0.969697
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z fold5 5G: sim=0.953333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip5 5G: sim=0.953333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Fold5 5G: sim=0.953333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip5 5G: sim=0.953333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FOLD5 5G: sim=0.953333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP5 5G: sim=0.953333
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB A11+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 울트라: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 S9(삭제금지): sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 갤럭시 퀀텀6: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB S10+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB S11: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab A11+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab S10+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab S11: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 tab A11+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 tab S10+: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 tab S11: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 갤럭시 퀀텀4: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블5 5G: sim=0.941414
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7 FE: sim=0.941414
+    - 갤럭시 Z 플립7/Z 폴드7 -> GALAXY Z 폴드7: sim=0.933333
+    - 갤럭시 Z 플립7/Z 폴드7 -> Galaxy Z 폴드7: sim=0.933333
+    - 갤럭시 Z 플립7/Z 폴드7 -> galaxy Z 폴드7: sim=0.933333
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S9+ 5G: sim=0.924747
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S9 5G: sim=0.924747
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 A9+ 5G: sim=0.924747
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드8: sim=0.922222
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블6: sim=0.922222
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드6: sim=0.922222
+    - 갤럭시 Z 플립7 -> 갤럭시 워치6 44mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치7 40mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치6 40mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치7 44mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치8 40mm: sim=0.911111
+    - 갤럭시 Z 플립7 -> galaxy Z 플립6: sim=0.911111
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립6: sim=0.911111
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립6: sim=0.911111
+    - 갤럭시 Z 플립7 -> 갤럭시 워치8 44mm: sim=0.911111
+
+------------------------------------------------------------
+STAGE 5: AFTER HIGH SIMILARITY THRESHOLD (sim>=1.1) *** CRITICAL ***
+------------------------------------------------------------
+  Rows remaining: 85
+
+  *** FILTERED OUT AT HIGH_SIMILARITY_THRESHOLD (1.1): ***
+  90 items filtered out:
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FOLD7: sim=1.095758 -> FAILED (need 1.1, got 1.095758)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip7: sim=1.095758 -> FAILED (need 1.1, got 1.095758)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip7: sim=1.095758 -> FAILED (need 1.1, got 1.095758)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP7: sim=1.095758 -> FAILED (need 1.1, got 1.095758)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z fold7: sim=1.095758 -> FAILED (need 1.1, got 1.095758)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Fold7: sim=1.095758 -> FAILED (need 1.1, got 1.095758)
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립7 FE: sim=1.086667 -> FAILED (need 1.1, got 1.086667)
+    - 갤럭시 Z 플립7 -> galaxy Z 플립7 FE: sim=1.086667 -> FAILED (need 1.1, got 1.086667)
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립7 FE: sim=1.086667 -> FAILED (need 1.1, got 1.086667)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/폴드7: sim=1.066667 -> FAILED (need 1.1, got 1.066667)
+    - 키즈폰 -> 쿠키즈: sim=1.066667 -> FAILED (need 1.1, got 1.066667)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP7 FE: sim=1.063810 -> FAILED (need 1.1, got 1.063810)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip7 FE: sim=1.063810 -> FAILED (need 1.1, got 1.063810)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip7 FE: sim=1.063810 -> FAILED (need 1.1, got 1.063810)
+    - 아이폰 신제품 -> 아이폰 통화녹음: sim=1.057143 -> FAILED (need 1.1, got 1.057143)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S11: sim=1.022222 -> FAILED (need 1.1, got 1.022222)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S10+: sim=1.022222 -> FAILED (need 1.1, got 1.022222)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 A11+: sim=1.022222 -> FAILED (need 1.1, got 1.022222)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/FOLD7: sim=1.009524 -> FAILED (need 1.1, got 1.009524)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/Fold7: sim=1.009524 -> FAILED (need 1.1, got 1.009524)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7/fold7: sim=1.009524 -> FAILED (need 1.1, got 1.009524)
+    - 제휴 카드 추가 할인 -> 밴드 실버 할인: sim=0.980303 -> FAILED (need 1.1, got 0.980303)
+    - 아이폰 신제품 -> 아이폰 16 프로: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 아이폰 신제품 -> 아이폰 15 프로: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 아이폰 신제품 -> 아이폰 17 프로: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25+: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 퀀텀4: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 A36: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 A24: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 A16: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 A15: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 퀀텀6: sim=0.979365 -> FAILED (need 1.1, got 0.979365)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 엣지: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 FE: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S24+ 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S24 FE: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S24 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S23+ 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 S23 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 A35 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 갤럭시 Z 플립7 -> 갤럭시 A25 5G: sim=0.977778 -> FAILED (need 1.1, got 0.977778)
+    - 아이폰 신제품 -> iphone 신제품: sim=0.977143 -> FAILED (need 1.1, got 0.977143)
+    - 아이폰 신제품 -> IPHONE 신제품: sim=0.977143 -> FAILED (need 1.1, got 0.977143)
+    - 아이폰 신제품 -> iPhone 신제품: sim=0.977143 -> FAILED (need 1.1, got 0.977143)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z fold6: sim=0.969697 -> FAILED (need 1.1, got 0.969697)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip6: sim=0.969697 -> FAILED (need 1.1, got 0.969697)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Fold6: sim=0.969697 -> FAILED (need 1.1, got 0.969697)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip6: sim=0.969697 -> FAILED (need 1.1, got 0.969697)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FOLD6: sim=0.969697 -> FAILED (need 1.1, got 0.969697)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP6: sim=0.969697 -> FAILED (need 1.1, got 0.969697)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Fold5 5G: sim=0.953333 -> FAILED (need 1.1, got 0.953333)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip5 5G: sim=0.953333 -> FAILED (need 1.1, got 0.953333)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FOLD5 5G: sim=0.953333 -> FAILED (need 1.1, got 0.953333)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP5 5G: sim=0.953333 -> FAILED (need 1.1, got 0.953333)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip5 5G: sim=0.953333 -> FAILED (need 1.1, got 0.953333)
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z fold5 5G: sim=0.953333 -> FAILED (need 1.1, got 0.953333)
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab S10+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB S10+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 S25 울트라: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 갤럭시 퀀텀6: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 S9(삭제금지): sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB A11+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 갤럭시 퀀텀4: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블5 5G: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 tab S11: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7 FE: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 TAB S11: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab A11+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 tab S10+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 tab A11+: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7 -> 갤럭시 Tab S11: sim=0.941414 -> FAILED (need 1.1, got 0.941414)
+    - 갤럭시 Z 플립7/Z 폴드7 -> GALAXY Z 폴드7: sim=0.933333 -> FAILED (need 1.1, got 0.933333)
+    - 갤럭시 Z 플립7/Z 폴드7 -> Galaxy Z 폴드7: sim=0.933333 -> FAILED (need 1.1, got 0.933333)
+    - 갤럭시 Z 플립7/Z 폴드7 -> galaxy Z 폴드7: sim=0.933333 -> FAILED (need 1.1, got 0.933333)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 A9+ 5G: sim=0.924747 -> FAILED (need 1.1, got 0.924747)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S9+ 5G: sim=0.924747 -> FAILED (need 1.1, got 0.924747)
+    - 갤럭시 Z 플립7 -> 갤럭시 탭 S9 5G: sim=0.924747 -> FAILED (need 1.1, got 0.924747)
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블6: sim=0.922222 -> FAILED (need 1.1, got 0.922222)
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드8: sim=0.922222 -> FAILED (need 1.1, got 0.922222)
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드6: sim=0.922222 -> FAILED (need 1.1, got 0.922222)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치8 44mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치8 40mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치7 44mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치7 40mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치6 44mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> 갤럭시 워치6 40mm: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> galaxy Z 플립6: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립6: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립6: sim=0.911111 -> FAILED (need 1.1, got 0.911111)
+
+  *** ITEMS THAT PASSED (sim>=1.1): ***
+    - 아이폰 신제품 -> 아이폰 신제품: sim=2.000000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7: sim=2.000000
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7/폴드7: sim=1.853333
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7 FE: sim=1.772500
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/폴드7: sim=1.731538
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립6: sim=1.688889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/fold7: sim=1.666000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/FOLD7: sim=1.666000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립7/Fold7: sim=1.666000
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7: sim=1.636000
+    - Z 폴드7 -> 갤럭시 Z 폴드7: sim=1.617778
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 폴드7: sim=1.600000
+    - Z 폴드7 -> GALAXY Z 폴드7: sim=1.519167
+    - Z 폴드7 -> Galaxy Z 폴드7: sim=1.519167
+    - Z 폴드7 -> galaxy Z 폴드7: sim=1.519167
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드7: sim=1.511111
+    - 아이폰 신제품 -> 아이폰: sim=1.494286
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 플립5 5G: sim=1.477778
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7 FE: sim=1.470000
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z flip7/폴드7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z FLIP7/폴드7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z Flip7/폴드7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7/FOLD7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7/Fold7: sim=1.443333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립7/fold7: sim=1.443333
+    - Z 폴드7 -> 갤럭시 Z 플립7/폴드7: sim=1.407692
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD7: sim=1.397980
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7: sim=1.397980
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립6: sim=1.351111
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 폴드6: sim=1.351111
+    - 아이폰 신제품 -> 아이폰 최신폰: sim=1.342857
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드6: sim=1.333333
+    - 갤럭시 Z 플립7/Z 폴드7 -> galaxy Z 플립7/폴드7: sim=1.303333
+    - 갤럭시 Z 플립7/Z 폴드7 -> GALAXY Z 플립7/폴드7: sim=1.303333
+    - 갤럭시 Z 플립7/Z 폴드7 -> Galaxy Z 플립7/폴드7: sim=1.303333
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 플립5 5G: sim=1.260000
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7 FE: sim=1.255556
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold6: sim=1.236364
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/폴드7: sim=1.228889
+    - 갤럭시 Z 플립7 -> Galaxy Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> galaxy Z 플립7: sim=1.200000
+    - 갤럭시 Z 플립7 -> GALAXY Z 플립7: sim=1.200000
+    - 아이폰 신제품 -> 아이폰 14: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 13: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 15: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 에어: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 16: sim=1.190476
+    - 아이폰 신제품 -> 아이폰 17: sim=1.190476
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/FOLD7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip7/fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip7/Fold7: sim=1.184967
+    - 갤럭시 Z 플립7 -> 갤럭시 A17: sim=1.182540
+    - 갤럭시 Z 플립7 -> 갤럭시 Z 폴드5 5G: sim=1.166667
+    - Z 폴드7 -> 갤럭시 Z 폴드6: sim=1.162222
+    - 갤럭시 Z 플립7/Z 폴드7 -> 갤럭시 Z 폴드5 5G: sim=1.140000
+    - 아이폰 신제품 -> 아이폰 16e: sim=1.114286
+    - 아이폰 신제품 -> 아이폰 AIR: sim=1.114286
+    - 아이폰 신제품 -> 아이폰 Air: sim=1.114286
+    - 갤럭시 Z 플립7 -> 갤럭시 폴더블7: sim=1.111111
+    - 갤럭시 Z 플립7 -> 갤럭시 와이드7: sim=1.111111
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FLIP5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z flip5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z fold5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z FOLD5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Flip5 5G: sim=1.109524
+    - 갤럭시 Z 플립7 -> 갤럭시 Z Fold5 5G: sim=1.109524
+
+------------------------------------------------------------
+STAGE 6: map_products_to_entities INPUT
+------------------------------------------------------------
+  Input rows: 6
+  Unique aliases: 3
+
+------------------------------------------------------------
+STAGE 7: HIGH SIMILARITY ITEMS (for final filtering)
+------------------------------------------------------------
+  Items passing high_sim_threshold: 3
+    - 갤럭시 Z 폴드7
+    - 갤럭시 Z 플립7
+    - 아이폰 신제품
+
+------------------------------------------------------------
+STAGE 8: AFTER FINAL FILTERING (stop_items, 'test' removed)
+------------------------------------------------------------
+  Rows remaining: 6
+
+------------------------------------------------------------
+STAGE 9: AFTER MERGE WITH item_pdf_all
+------------------------------------------------------------
+  Rows after merge: 8
+  Unique item_nm: 5
+  Final product names:
+    - 갤럭시 Z 폴드7
+    - iPhone 17
+    - iPhone 17 Pro
+    - 갤럭시 Z 플립7
+    - iPhone 17 Pro Max
+
+------------------------------------------------------------
+STAGE 10: MERGE WITH alias_pdf_raw (result_builder)
+------------------------------------------------------------
+  Rows after merge: 85
+  Type distribution: {}
+
+------------------------------------------------------------
+STAGE 11: AFTER SUBSTRING FILTER (non-expansion types)
+------------------------------------------------------------
+  Rows remaining: 13
+  Filtered out: 72 rows
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "티원대리점 화순점 아이폰 신제품 출시 기념 할인",
+  "purpose": [
+    "상품 가입 유도",
+    "대리점/매장 방문 유도",
+    "혜택 안내"
+  ],
+  "sales_script": "아이폰 신제품, 티원대리점 화순점에서 최대 70% T즉시보상+제휴카드 할인! 매장 방문 시 액정 필름 무료+키친타월 증정. 안내드릴까요?",
+  "product": [
+    {
+      "name": "아이폰 신제품",
+      "action": "구매"
+    },
+    {
+      "name": "갤럭시 Z 플립7/Z 폴드7",
+      "action": "구매"
+    },
+    {
+      "name": "효도폰",
+      "action": "구매"
+    },
+    {
+      "name": "키즈폰",
+      "action": "구매"
+    },
+    {
+      "name": "T 즉시보상",
+      "action": "기타"
+    },
+    {
+      "name": "제휴 카드 추가 할인",
+      "action": "기타"
+    },
+    {
+      "name": "액정 보호 필름 무료 교체",
+      "action": "기타"
+    },
+    {
+      "name": "키친타월",
+      "action": "기타"
+    }
+  ],
+  "channel": [
+    {
+      "type": "대리점",
+      "value": "티원대리점 화순점",
+      "action": "방문"
+    },
+    {
+      "type": "URL",
+      "value": "https://t-mms.kr/aiC/#74_",
+      "action": "추가 정보"
+    },
+    {
+      "type": "전화번호",
+      "value": "061-927-7722",
+      "action": "문의"
+    },
+    {
+      "type": "전화번호",
+      "value": "1558",
+      "action": "문의"
+    }
+  ],
+  "pgm": [
+    "매장오픈안내 및 방문유도"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 9
+================================================================================
+1. iPhone 17
+   - item_id: ['U000006958']
+   - item_name_in_msg: ['아이폰 신제품']
+   - expected_action: ['구매']
+2. iPhone 17 Pro
+   - item_id: ['U000006956']
+   - item_name_in_msg: ['아이폰 신제품']
+   - expected_action: ['구매']
+3. iPhone 17 Pro Max
+   - item_id: ['U000006955']
+   - item_name_in_msg: ['아이폰 신제품']
+   - expected_action: ['구매']
+4. 갤럭시 Z 폴드7
+   - item_id: ['U000006916']
+   - item_name_in_msg: ['Z 폴드7', '갤럭시 Z 플립7', '갤럭시 Z 플립7/Z 폴드7']
+   - expected_action: ['구매']
+5. 갤럭시 Z 플립7
+   - item_id: ['U000006917']
+   - item_name_in_msg: ['갤럭시 Z 플립7', '갤럭시 Z 플립7/Z 폴드7']
+   - expected_action: ['구매']
+6. 효도폰
+   - item_id: ['#']
+   - item_name_in_msg: ['효도폰']
+   - expected_action: ['구매']
+7. 키즈폰
+   - item_id: ['#']
+   - item_name_in_msg: ['키즈폰']
+   - expected_action: ['구매']
+8. T 즉시보상
+   - item_id: ['#']
+   - item_name_in_msg: ['T 즉시보상']
+   - expected_action: ['기타']
+9. 제휴 카드 추가 할인
+   - item_id: ['#']
+   - item_name_in_msg: ['제휴 카드 추가 할인']
+   - expected_action: ['기타']
+
+================================================================================

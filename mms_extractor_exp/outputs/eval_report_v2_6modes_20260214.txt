@@ -1,0 +1,89 @@
+================================================================================
+Entity Extraction Mode Comparison Report
+Generated: 2026-02-14 20:42:43
+================================================================================
+
+Mode             Micro-P  Micro-R  Micro-F1  Macro-P  Macro-R  Macro-F1    TP    FP    FN
+-----------------------------------------------------------------------------------------------
+#1 ax             55.9%   73.2%    63.4%   61.4%   86.9%    65.6%   109    86    40
+#2 dag            69.9%   57.7%    63.2%   70.7%   62.6%    61.3%    86    37    63
+#3 cld            52.3%   77.2%    62.3%   59.7%   88.4%    65.2%   115   105    34
+#4 ont            71.1%   46.3%    56.1%   74.9%   52.4%    56.9%    69    28    80
+#5 langextract    62.9%   44.3%    52.0%   61.1%   41.4%    45.4%    66    39    83
+#6 kg             39.1%   48.3%    43.2%   41.8%   48.8%    41.4%    72   112    77
+-----------------------------------------------------------------------------------------------
+
+## Final Ranking (by Micro-F1)
+  🥇 #1: ax (F1=63.4%, P=55.9%, R=73.2%)
+  🥈 #2: dag (F1=63.2%, P=69.9%, R=57.7%)
+  🥉 #3: cld (F1=62.3%, P=52.3%, R=77.2%)
+     #4: ont (F1=56.1%, P=71.1%, R=46.3%)
+     #5: langextract (F1=52.0%, P=62.9%, R=44.3%)
+     #6: kg (F1=43.2%, P=39.1%, R=48.3%)
+
+### ax - Worst 5 messages
+  msg[10]: F1=0.13 (TP=1, FP=3, FN=10)
+    Missing: CU, T 멤버십, T 멤버십 앱, 도미노피자, 뚜레쥬르, 세븐일레븐, 파리바게뜨, 파파존스, 폴 바셋, 피자헛
+  msg[38]: F1=0.25 (TP=1, FP=6, FN=0)
+  msg[47]: F1=0.25 (TP=1, FP=5, FN=1)
+    Missing: T 멤버십
+  msg[48]: F1=0.25 (TP=1, FP=6, FN=0)
+  msg[11]: F1=0.29 (TP=1, FP=4, FN=1)
+    Missing: 페이백쇼핑
+
+### dag - Worst 5 messages
+  msg[0]: F1=0.00 (TP=0, FP=0, FN=8)
+    Missing: 0 청년 89(넷플릭스), 0 청년 다이렉트 62(넷플릭스), 5GX 프라임(넷플릭스), Netflix 광고형 스탠다드, T 우주, T 우주패스 Netflix, Wavve, 다이렉트5G 62(넷플릭스)
+  msg[6]: F1=0.00 (TP=0, FP=1, FN=2)
+    Missing: 에이닷, 에이닷 전화
+  msg[7]: F1=0.00 (TP=0, FP=1, FN=2)
+    Missing: 5GX, T 월드
+  msg[11]: F1=0.00 (TP=0, FP=1, FN=2)
+    Missing: PASS, 페이백쇼핑
+  msg[19]: F1=0.00 (TP=0, FP=1, FN=1)
+    Missing: 0 day
+
+### cld - Worst 5 messages
+  msg[25]: F1=0.20 (TP=1, FP=8, FN=0)
+  msg[41]: F1=0.20 (TP=1, FP=8, FN=0)
+  msg[42]: F1=0.25 (TP=1, FP=6, FN=0)
+  msg[10]: F1=0.29 (TP=2, FP=1, FN=9)
+    Missing: CU, T 멤버십 앱, 도미노피자, 뚜레쥬르, 세븐일레븐, 파리바게뜨, 파파존스, 폴 바셋, 피자헛
+  msg[11]: F1=0.33 (TP=1, FP=3, FN=1)
+    Missing: 페이백쇼핑
+
+### ont - Worst 5 messages
+  msg[6]: F1=0.00 (TP=0, FP=1, FN=2)
+    Missing: 에이닷, 에이닷 전화
+  msg[7]: F1=0.00 (TP=0, FP=1, FN=2)
+    Missing: 5GX, T 월드
+  msg[11]: F1=0.00 (TP=0, FP=1, FN=2)
+    Missing: PASS, 페이백쇼핑
+  msg[23]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+
+### langextract - Worst 5 messages
+  msg[0]: F1=0.00 (TP=0, FP=0, FN=8)
+    Missing: 0 청년 89(넷플릭스), 0 청년 다이렉트 62(넷플릭스), 5GX 프라임(넷플릭스), Netflix 광고형 스탠다드, T 우주, T 우주패스 Netflix, Wavve, 다이렉트5G 62(넷플릭스)
+  msg[6]: F1=0.00 (TP=0, FP=1, FN=2)
+    Missing: 에이닷, 에이닷 전화
+  msg[7]: F1=0.00 (TP=0, FP=1, FN=2)
+    Missing: 5GX, T 월드
+  msg[8]: F1=0.00 (TP=0, FP=0, FN=1)
+    Missing: T 청소년유해차단
+  msg[11]: F1=0.00 (TP=0, FP=2, FN=2)
+    Missing: PASS, 페이백쇼핑
+
+### kg - Worst 5 messages
+  msg[0]: F1=0.00 (TP=0, FP=1, FN=8)
+    Missing: 0 청년 89(넷플릭스), 0 청년 다이렉트 62(넷플릭스), 5GX 프라임(넷플릭스), Netflix 광고형 스탠다드, T 우주, T 우주패스 Netflix, Wavve, 다이렉트5G 62(넷플릭스)
+  msg[6]: F1=0.00 (TP=0, FP=2, FN=2)
+    Missing: 에이닷, 에이닷 전화
+  msg[7]: F1=0.00 (TP=0, FP=2, FN=2)
+    Missing: 5GX, T 월드
+  msg[11]: F1=0.00 (TP=0, FP=2, FN=2)
+    Missing: PASS, 페이백쇼핑
+  msg[19]: F1=0.00 (TP=0, FP=1, FN=1)
+    Missing: 0 day

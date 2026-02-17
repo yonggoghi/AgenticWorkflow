@@ -1,0 +1,352 @@
+================================================================================
+PRODUCT EXTRACTION TRACE REPORT (ENHANCED)
+================================================================================
+Message ID: #
+Message: "(광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI..."
+Timestamp: 2026-02-14 11:42:02
+Total Duration: 15.24 seconds
+
+--------------------------------------------------------------------------------
+EXTRACTOR CONFIGURATION (KEY FOR DEBUGGING)
+--------------------------------------------------------------------------------
+  llm_model: ax
+  entity_extraction_mode: llm
+  product_info_extraction_mode: llm
+  offer_info_data_src: local
+  extract_entity_dag: False
+  >>> entity_extraction_context_mode: kg <<<  (THIS AFFECTS ENTITY EXTRACTION)
+  num_cand_pgms: 15
+  item_data_shape: (46175, 14)
+  pgm_data_shape: (27, 5)
+
+--------------------------------------------------------------------------------
+STEP 1: InputValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  mms_msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+■ 문의 : 에이닷 고객센터(1670-0075)
+나만의 AI 개인비서, 에이닷
+무료 수신 거부 1504
+
+OUTPUT:
+  msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+■ 문의 : 에이닷 고객센터(1670-0075)
+나만의 AI 개인비서, 에이닷
+무료 수신 거부 1504
+  is_fallback: False
+
+--------------------------------------------------------------------------------
+STEP 2: EntityExtractionStep (1.04s) [OK]
+--------------------------------------------------------------------------------
+SUB-STEP TIMINGS:
+  kiwi_sentence_split: 0.602s (57.6%)
+  kiwi_tokenization_nnp: 0.003s (0.3%)
+  fuzzy_matching: 0.254s (24.3%)
+  sequence_similarity: 0.172s (16.5%)
+  threshold_filter_merge: 0.009s (0.9%)
+
+INPUT:
+  msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+■ 문의 : 에이닷 고객센터(1670-0075)
+나만의 AI 개인비서, 에이닷
+무료 수신 거부 1504
+  context_mode: kg
+
+OUTPUT:
+  entities_from_kiwi: ['에이닷 전화']
+  cand_item_list: ['에이닷 전화', 'A. (에이닷) 전화', '자동차', '에이닷 전화(아이폰)', '에이닷 전화 DL', '에이닷 전화 연결', 'A. (에이닷)전화 안심통화', '에이닷 전화 기본모드', 'A. (에이닷) 전화(아이폰)', 'A. 전화']
+  cand_item_count: 10
+  extra_item_pdf_shape: (7, 2)
+  extra_item_pdf_sample: [5 items]
+    First 3: [{'item_nm': '에이닷 전화', 'item_id': ['NA00004249', 'NA00004249', 'NA00004249']}, {'item_nm': '에이닷 전화 DL', 'item_id': ['NA00004928']}, {'item_nm': '에이닷 전화 기본모드', 'item_id': ['NA00004301']}]
+
+PRODUCT FOCUS:
+  nnp_tokens_extracted: 1
+  candidate_products_matched: 10
+
+--------------------------------------------------------------------------------
+STEP 3: ProgramClassificationStep (0.12s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+
+
+OUTPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  pgm_cand_info: 상품 및 부가서비스 가입유도_AI : 에이닷, AI, 인공지능, 챗봇, 음성비서, 통화, 서비스, 추천, 기능, 앱
+	상품 및 부가서비스 가입유도_SKT상품외 : 보안, caps, Tmap, 택시, ADT, 홈보안, 솔루션, 서비스, 앱
+	기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인, 프로모션, 구매, 단말기, 폴더블
+	타사고객대상캠페인 (가망고객,winback고객) : 15990111, 쓰던폰그대로, 통신사이동, 번호이동, 전환, 혜택, 할인, KT, LG, 알뜰폰, TDS
+	사용법/
+
+--------------------------------------------------------------------------------
+STEP 4: ContextPreparationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pgm_info_keys: ['pgm_cand_info', 'similarities', 'pgm_pdf_tmp']
+  cand_item_list: ['에이닷 전화', 'A. (에이닷) 전화', '자동차', '에이닷 전화(아이폰)', '에이닷 전화 DL', '에이닷 전화 연결', 'A. (에이닷)전화 안심통화', '에이닷 전화 기본모드', 'A. (에이닷) 전화(아이폰)', 'A. 전화']
+  extra_item_pdf_shape: (7, 2)
+
+OUTPUT:
+  rag_context_length: 1280
+  rag_context_preview: 
+### 광고 분류 기준 정보 (pgm 후보 목록) ###
+For the pgm field, select up to 1 from the following list. Copy the name EXACTLY.
+	상품 및 부가서비스 가입유도_AI : 에이닷, AI, 인공지능, 챗봇, 음성비서, 통화, 서비스, 추천, 기능, 앱
+	상품 및 부가서비스 가입유도_SKT상품외 : 보안, caps, Tmap, 택시, ADT, 홈보안, 솔루션, 서비스, 앱
+	기변유도 및 해지방어_신규단말출시 : 신규, 출시, 갤럭시, Iphone, 사전예약, 할인...
+  has_product_element: False
+
+--------------------------------------------------------------------------------
+STEP 5: LLMExtractionStep (5.64s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  msg: (광고)[SKT] 에이닷 전화 이용 안내
+고객님, 안녕하세요. 최근 외화 거래를 노린 보이스피싱 범죄가 늘어나고 있어요! 지금 에이닷 전화 앱에서 <AI 안심 차단> 설정하면 AI가 알아서 스팸/피싱 자동 차단해 드려요.
+가족, 지인에게도 에이닷 전화 앱 추천하고 보이스피싱 예방해 보세요.
+▶  지금 설정하기: https://t-mms.kr/a8k/#74
+
+  rag_context_length: 1280
+  has_product_element: False
+
+OUTPUT:
+  result_json_text_length: 648
+  result_json_text_preview: ```json
+{
+  "title": "에이닷 전화 AI 안심 차단 서비스 안내",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "에이닷 전화 앱 <AI 안심 차단> 설정으로 보이스피싱 예방! 지금 설정 안내드릴까요?",
+  "product": [
+    {
+      "name": "에이닷 전화",
+      "action": "사용"
+    },
+    {
+      "name": "AI 안심 차단",
+      "action...
+
+--------------------------------------------------------------------------------
+STEP 6: ResponseParsingStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  result_json_text_length: 648
+  result_json_text_preview: ```json
+{
+  "title": "에이닷 전화 AI 안심 차단 서비스 안내",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "에이닷 전화 앱 <AI 안심 차단> 설정으로 보이스피싱 예방! 지금 설정 안내드릴까요?",
+  "product": [
+    {
+      "name": "에이닷 전화",
+      "action": "사용"
+    },
+    {
+      "name": "AI 안심 차단",
+      "action": "사용"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://t-mms.kr/a8k/#74",
+      "action": "추가 정보"
+    },
+    {
+      "type": "앱",
+      "value": "에이닷 전화 앱",
+      "action
+
+OUTPUT:
+  json_objects_keys: ['title', 'purpose', 'sales_script', 'product', 'channel', 'pgm']
+  json_objects_product: [{'name': '에이닷 전화', 'action': '사용'}, {'name': 'AI 안심 차단', 'action': '사용'}]
+  is_fallback: False
+
+PRODUCT FOCUS:
+  llm_extracted_products: 2
+  llm_product_names: ['에이닷 전화', 'AI 안심 차단']
+  llm_product_actions: ['사용', '사용']
+
+--------------------------------------------------------------------------------
+STEP 7: EntityContextExtractionStep (8.20s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  entities_from_kiwi: ['에이닷 전화']
+  entity_extraction_mode: llm
+  context_mode: kg
+
+OUTPUT:
+  extracted_entities: ['AI 안심 차단', '스팸/피싱 자동 차단']
+  context_text: Entities: 에이닷 전화(Product:prerequisite), AI 안심 차단(Subscription:offer), 스팸/피싱 자동 차단(Benefit:benefit), 에이닷 고객센터(1670-0075)(Channel:context)
+Relationships:
+  - 에이닷 전화 -[ENABLES]-> AI 안심 차단
+  - AI 안심 차단 -[OFFERS]-> 스팸/피싱 자동 차단
+  - AI 안심 차단 -[UPSELLS]-> 에이닷 전화
+DAG: (에이닷 전화:사용 중) -[설정하면]-> (AI 안심 차단:활성화) -...
+
+PRODUCT FOCUS:
+  extracted_entities_count: 2
+  extracted_entities: ['AI 안심 차단', '스팸/피싱 자동 차단']
+
+--------------------------------------------------------------------------------
+STEP 8: VocabularyFilteringStep (0.23s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  json_objects_product: [{'name': '에이닷 전화', 'action': '사용'}, {'name': 'AI 안심 차단', 'action': '사용'}]
+  extracted_entities: {...6 keys...}
+
+OUTPUT:
+  matched_products: [{'item_nm': 'AI 안심 차단', 'item_id': ['#'], 'item_name_in_msg': ['AI 안심 차단'], 'expected_action': ['사용']}]
+  matched_products_count: 1
+
+PRODUCT FOCUS:
+  matched_product_count: 1
+  product_details:
+    - item_nm: AI 안심 차단
+      item_id: ['#']
+      item_name_in_msg: ['AI 안심 차단']
+      expected_action: ['사용']
+
+--------------------------------------------------------------------------------
+STEP 9: ResultConstructionStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  matched_products_count: 1
+  matched_products: [{'item_nm': 'AI 안심 차단', 'item_id': ['#'], 'item_name_in_msg': ['AI 안심 차단'], 'expected_action': ['사용']}]
+
+OUTPUT:
+  final_result_product: [{'item_nm': 'AI 안심 차단', 'item_id': ['#'], 'item_name_in_msg': ['AI 안심 차단'], 'expected_action': ['사용']}]
+  final_result_product_count: 1
+  offer_type: product
+
+--------------------------------------------------------------------------------
+STEP 10: ValidationStep (0.00s) [OK]
+--------------------------------------------------------------------------------
+INPUT:
+  pre_validation_product_count: 1
+
+OUTPUT:
+  validated_product_count: 1
+  has_errors: False
+
+================================================================================
+DETAILED FILTERING ANALYSIS (WHY PRODUCTS ARE FILTERED)
+================================================================================
+
+------------------------------------------------------------
+THRESHOLDS USED:
+------------------------------------------------------------
+  entity_llm_fuzzy_threshold: 0.6
+  combined_similarity_threshold: 0.4
+  high_similarity_threshold: 1.1
+
+------------------------------------------------------------
+STAGE 1: FUZZY SIMILARITY (entity_llm_fuzzy_threshold)
+------------------------------------------------------------
+  Rows after fuzzy matching: 21
+  Unique item_name_in_msg: 2
+  Unique item_nm_alias: 17
+  Similarity range: 0.6000 - 0.7500
+
+------------------------------------------------------------
+STAGE 2: SEQUENCE SIMILARITY (before combined_similarity_threshold)
+------------------------------------------------------------
+  Rows: 21
+  sim_s1 range: 0.1455 - 0.7667
+  sim_s2 range: 0.2722 - 0.8000
+
+------------------------------------------------------------
+STAGE 3: AFTER COMBINED THRESHOLD (sim_s1>=0.4 AND sim_s2>=0.4)
+------------------------------------------------------------
+  Rows remaining: 1
+  Filtered OUT at this stage: 20 rows
+  Sample of filtered items:
+    - AI 안심 차단 -> 티맵 차단 (s1=0.3667, s2=0.5800)
+    - AI 안심 차단 -> ABB ROAMING 차단 서비스 (s1=0.5667, s2=0.2722)
+    - AI 안심 차단 -> AI 컨택센터 (s1=0.3667, s2=0.4429)
+    - AI 안심 차단 -> SA차단 (s1=0.3000, s2=0.6000)
+    - AI 안심 차단 -> 테더링 차단 (s1=0.3667, s2=0.5000)
+
+------------------------------------------------------------
+STAGE 4: COMBINED SCORE (sim = sim_s1 + sim_s2)
+------------------------------------------------------------
+  Rows: 1
+  Combined sim range: 1.0667 - 1.0667
+  All items with combined scores:
+    - AI 안심 차단 -> 티 맵 차단: sim=1.066667
+
+================================================================================
+================================================================================
+LLM RESPONSE (Step 5 - Main Extraction)
+================================================================================
+```json
+{
+  "title": "에이닷 전화 AI 안심 차단 서비스 안내",
+  "purpose": [
+    "상품 가입 유도",
+    "혜택 안내",
+    "웹/앱 접속 유도"
+  ],
+  "sales_script": "에이닷 전화 앱 <AI 안심 차단> 설정으로 보이스피싱 예방! 지금 설정 안내드릴까요?",
+  "product": [
+    {
+      "name": "에이닷 전화",
+      "action": "사용"
+    },
+    {
+      "name": "AI 안심 차단",
+      "action": "사용"
+    }
+  ],
+  "channel": [
+    {
+      "type": "URL",
+      "value": "https://t-mms.kr/a8k/#74",
+      "action": "추가 정보"
+    },
+    {
+      "type": "앱",
+      "value": "에이닷 전화 앱",
+      "action": "사용"
+    },
+    {
+      "type": "전화번호",
+      "value": "1670-0075",
+      "action": "문의"
+    }
+  ],
+  "pgm": [
+    "상품 및 부가서비스 가입유도_AI"
+  ]
+}
+```
+
+================================================================================
+FINAL PRODUCTS: 1
+================================================================================
+1. AI 안심 차단
+   - item_id: ['#']
+   - item_name_in_msg: ['AI 안심 차단']
+   - expected_action: ['사용']
+
+================================================================================

@@ -1,0 +1,95 @@
+================================================================================
+Entity Extraction Mode Comparison Report
+Generated: 2026-02-14 21:44:34
+================================================================================
+
+Mode             Micro-P  Micro-R  Micro-F1  Macro-P  Macro-R  Macro-F1    TP    FP    FN
+-----------------------------------------------------------------------------------------------
+#1 cld_dag        70.0%   86.2%    77.2%   77.0%   91.8%    79.2%   112    48    18
+#2 ax_dag         75.0%   69.2%    72.0%   81.7%   75.5%    74.1%    90    30    40
+#3 cld            51.5%   81.5%    63.1%   58.4%   93.1%    65.9%   106   100    24
+#4 ax_ont         72.9%   53.8%    61.9%   81.8%   64.0%    67.5%    70    26    60
+#5 ax             52.2%   73.8%    61.1%   57.5%   90.3%    64.4%    96    88    34
+#6 ax_langextract   65.7%   53.1%    58.7%   70.8%   55.1%    58.0%    69    36    61
+#7 ax_kg          43.1%   60.0%    50.2%   49.8%   63.9%    51.9%    78   103    52
+-----------------------------------------------------------------------------------------------
+
+## Final Ranking (by Micro-F1)
+  🥇 #1: cld_dag (F1=77.2%, P=70.0%, R=86.2%)
+  🥈 #2: ax_dag (F1=72.0%, P=75.0%, R=69.2%)
+  🥉 #3: cld (F1=63.1%, P=51.5%, R=81.5%)
+     #4: ax_ont (F1=61.9%, P=72.9%, R=53.8%)
+     #5: ax (F1=61.1%, P=52.2%, R=73.8%)
+     #6: ax_langextract (F1=58.7%, P=65.7%, R=53.1%)
+     #7: ax_kg (F1=50.2%, P=43.1%, R=60.0%)
+
+### cld_dag - Worst 5 messages
+  msg[41]: F1=0.17 (TP=1, FP=10, FN=0)
+  msg[49]: F1=0.33 (TP=1, FP=3, FN=1)
+    Missing: T 월드
+  msg[45]: F1=0.33 (TP=1, FP=4, FN=0)
+  msg[32]: F1=0.40 (TP=1, FP=3, FN=0)
+  msg[23]: F1=0.50 (TP=1, FP=2, FN=0)
+
+### ax_dag - Worst 5 messages
+  msg[23]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+  msg[32]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 신도SDR대리점 판교역직영점
+  msg[45]: F1=0.29 (TP=1, FP=5, FN=0)
+  msg[11]: F1=0.50 (TP=1, FP=0, FN=2)
+    Missing: PASS, 페이백쇼핑
+
+### cld - Worst 5 messages
+  msg[25]: F1=0.20 (TP=1, FP=8, FN=0)
+  msg[41]: F1=0.20 (TP=1, FP=8, FN=0)
+  msg[10]: F1=0.31 (TP=2, FP=1, FN=8)
+    Missing: CU, 도미노피자, 뚜레쥬르, 세븐일레븐, 파리바게뜨, 파파존스, 폴 바셋, 피자헛
+  msg[38]: F1=0.33 (TP=1, FP=4, FN=0)
+  msg[45]: F1=0.33 (TP=1, FP=4, FN=0)
+
+### ax_ont - Worst 5 messages
+  msg[23]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+  msg[30]: F1=0.00 (TP=0, FP=1, FN=1)
+    Missing: T day
+  msg[32]: F1=0.00 (TP=0, FP=3, FN=1)
+    Missing: 신도SDR대리점 판교역직영점
+  msg[33]: F1=0.00 (TP=0, FP=0, FN=5)
+    Missing: T 멤버십, T 월드, 메가커피, 배달의민족, 파리바게뜨
+
+### ax - Worst 5 messages
+  msg[10]: F1=0.14 (TP=1, FP=3, FN=9)
+    Missing: CU, T 멤버십 앱, 도미노피자, 뚜레쥬르, 세븐일레븐, 파리바게뜨, 파파존스, 폴 바셋, 피자헛
+  msg[38]: F1=0.25 (TP=1, FP=6, FN=0)
+  msg[48]: F1=0.25 (TP=1, FP=6, FN=0)
+  msg[47]: F1=0.29 (TP=1, FP=5, FN=0)
+  msg[1]: F1=0.33 (TP=1, FP=4, FN=0)
+
+### ax_langextract - Worst 5 messages
+  msg[8]: F1=0.00 (TP=0, FP=0, FN=1)
+    Missing: T 청소년유해차단
+  msg[23]: F1=0.00 (TP=0, FP=4, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=3, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+  msg[30]: F1=0.00 (TP=0, FP=1, FN=1)
+    Missing: T day
+  msg[32]: F1=0.00 (TP=0, FP=4, FN=1)
+    Missing: 신도SDR대리점 판교역직영점
+
+### ax_kg - Worst 5 messages
+  msg[23]: F1=0.00 (TP=0, FP=7, FN=1)
+    Missing: 다원대리점 분당수내점
+  msg[25]: F1=0.00 (TP=0, FP=7, FN=1)
+    Missing: 서울ent대리점 둔촌역점
+  msg[30]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: T day
+  msg[32]: F1=0.00 (TP=0, FP=7, FN=1)
+    Missing: 신도SDR대리점 판교역직영점
+  msg[41]: F1=0.00 (TP=0, FP=2, FN=1)
+    Missing: special T
