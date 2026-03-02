@@ -6,20 +6,19 @@
 // 2. 학습, 테스트, 서비스용 데이터 준비
 // 3. Click 예측 모델 학습
 // 4. Gap 예측 모델 학습
-// 5. 학습된 모델 저장
+// 5. 학습된 모델 저장 (Click, Gap)
 //
 // [실행 방법]
 // 1. data_transformation.scala 완료 후 실행
-// 2. Paragraph 1-8: 순차 실행
+// 2. Paragraph 1-10: 순차 실행
 // =============================================================================
 
 
 // ===== Paragraph 1: Imports and Configuration =====
 
 import com.microsoft.azure.synapse.ml.causal
-import ml.dmlc.xgboost4j.scala.spark.{XGBoostClassificationModel, XGBoostClassifier, XGBoostRegressor}
+import ml.dmlc.xgboost4j.scala.spark.{XGBoostClassificationModel, XGBoostClassifier}
 import org.apache.spark.ml.classification._
-import org.apache.spark.ml.regression._
 import org.apache.spark.ml.feature._
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.ml.{Pipeline, PipelineModel, linalg}
@@ -29,7 +28,7 @@ import org.apache.spark.sql.functions.explode
 import org.apache.spark.sql.types.{DateType, StringType, TimestampType}
 import org.apache.spark.sql.{DataFrame, SparkSession, functions => F}
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, MulticlassClassificationEvaluator, RegressionEvaluator}
+import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, MulticlassClassificationEvaluator}
 
 import java.sql.Date
 import java.text.DecimalFormat
@@ -38,7 +37,6 @@ import java.time.{ZoneId, ZonedDateTime}
 import com.microsoft.azure.synapse.{ml => sml}
 import com.microsoft.azure.synapse.ml.lightgbm.LightGBMClassifier
 
-import collection.JavaConverters._
 import scala.collection.JavaConverters._
 import org.apache.spark.ml.linalg.Vector
 
@@ -72,15 +70,15 @@ println(s"  Optimal partitions: $optimalPartitions (Executors: $executorInstance
 // =============================================================================
 
 // ⚠️  중요: data_transformation.scala에서 저장한 버전과 일치해야 합니다.
-val transformedDataVersion = "1"  // data_transformation.scala의 transformedDataVersion과 일치
+val transformedDataVersion = "2"  // data_transformation.scala의 transformedDataVersion과 일치
 
 // data_transformation.scala에서 사용한 날짜 설정 (재현을 위해 동일하게 설정)
-val predictionDTSta = "20251201"  // 테스트 시작일
-val predictionDTEnd = "20260101"  // 테스트 종료일
+val predictionDTSta = "20260201"  // 테스트 시작일
+val predictionDTEnd = "20260301"  // 테스트 종료일
 
 // 학습 기간 정보 (data_transformation.scala와 동일)
 val trainPeriod = 3  // 학습 개월 수
-val trainSendMonth = "202511"  // 학습 기준 월
+val trainSendMonth = "202601"  // 학습 기준 월
 
 // Helper functions (data_transformation.scala에서 사용한 것과 동일)
 def getPreviousMonths(startMonthStr: String, periodM: Int): Array[String] = {
@@ -107,12 +105,11 @@ val trainDataPath = s"aos/sto/transformedTrainDF_v${transformedDataVersion}_${tr
 val testDataPath = s"aos/sto/transformedTestDF_v${transformedDataVersion}_${predictionDTSta}-${predictionDTEnd}"
 
 // 모델 저장 버전
-val modelVersion = "1"  // 모델 저장 버전 번호
+val modelVersion = "2"  // 모델 저장 버전 번호
 
 // Feature column 이름 (data_transformation.scala와 일치)
 val indexedLabelColClick = "click_yn"
 val indexedLabelColGap = "hour_gap"
-val indexedLabelColReg = "res_utility"
 
 val indexedFeatureColClick = "indexedFeaturesClick"
 val scaledFeatureColClick = "scaledFeaturesClick"
@@ -155,7 +152,7 @@ val transformerGap = PipelineModel.load(transformerGapPath)
 println("Gap transformer loaded successfully")
 
 // 2. Transformed training data 로딩
-// ✅ persist 필요: Click/Gap/Reg 모델에서 여러 번 재사용 (3회)
+// ✅ persist 필요: Click/Gap 모델에서 여러 번 재사용 (2회)
 println(s"Loading transformed training data from: $trainDataPath")
 val transformedTrainDF = spark.read.parquet(trainDataPath)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
@@ -283,25 +280,6 @@ val xgbg = new XGBoostClassifier("xgbc_gap")
 
 println("XGBoost Gap model defined")
 
-// ========================================
-// Response Utility Regression 모델 정의
-// ========================================
-
-// XGBoost for Regression
-val xgbr = new XGBoostRegressor("xgbr")
-  .setLabelCol(indexedLabelColReg)
-  .setFeaturesCol(indexedFeatureColGap)
-  .setMissing(0)
-  .setSeed(0)
-  .setMaxDepth(6)
-  .setObjective("reg:squarederror")
-  .setNumRound(100)
-  .setNumWorkers(10)
-  .setEvalMetric("rmse")
-  .setPredictionCol("pred_xgbr")
-
-println("XGBoost Regression model defined")
-
 println("=" * 80)
 println("All models defined successfully")
 println("=" * 80)
@@ -340,6 +318,7 @@ val trainSampleClick = transformedTrainDF
         42L
     )
     .withColumn("sample_weight", F.expr(s"case when $indexedLabelColClick>0.0 then 10.0 else 1.0 end"))
+    .cache()  // GBT는 100 iteration마다 DAG 재실행 → 동일 샘플 보장 + 재계산 방지
 
 println("Training samples prepared")
 
@@ -350,6 +329,7 @@ val pipelineModelClick = pipelineMLClick.fit(trainSampleClick)
 
 val elapsedClick = (System.currentTimeMillis() - startTimeClick) / 1000
 println(s"Click model training completed in ${elapsedClick}s")
+trainSampleClick.unpersist()
 
 println("=" * 80)
 
@@ -398,43 +378,7 @@ println(s"Gap model training completed in ${elapsedGap}s")
 println("=" * 80)
 
 
-// ===== Paragraph 7: Response Utility Regression Model Training =====
-
-println("=" * 80)
-println("Training Response Utility Regression Model")
-println("=" * 80)
-
-// 학습에 사용할 모델 선택
-val modelRegforCV = xgbr  // 기본값: XGBoost Regressor
-
-val pipelineMLReg = new Pipeline().setStages(Array(modelRegforCV))
-
-println(s"Preparing training samples for Regression model...")
-println(s"  - Click filter: click_yn > 0")
-
-// ✅ persist 필요: fit()에서 여러 번 읽음 (2회)
-// ❌ repartition 제거: AQE가 자동 최적화
-// ❌ count() 제거: 드라이버 액션 불필요
-val trainSampleReg = transformedTrainDF
-    .filter("click_yn>0")
-    .persist(StorageLevel.MEMORY_AND_DISK_SER)
-
-println("Training samples prepared")
-
-println("Training Regression model...")
-val startTimeReg = System.currentTimeMillis()
-
-val pipelineModelReg = pipelineMLReg.fit(trainSampleReg)
-
-val elapsedReg = (System.currentTimeMillis() - startTimeReg) / 1000
-println(s"Regression model training completed in ${elapsedReg}s")
-
-trainSampleReg.unpersist()
-
-println("=" * 80)
-
-
-// ===== Paragraph 8: Save Trained Models =====
+// ===== Paragraph 7: Save Trained Models =====
 
 println("=" * 80)
 println("Saving Trained Models")
@@ -443,7 +387,6 @@ println("=" * 80)
 // 모델 저장 경로
 val modelClickPath = s"aos/sto/pipelineModelClick_${modelClickforCV.uid}_v${modelVersion}_${trainSendYmList.head}-${trainSendYmList.last}"
 val modelGapPath = s"aos/sto/pipelineModelGap_${modelGapforCV.uid}_v${modelVersion}_${trainSendYmList.head}-${trainSendYmList.last}"
-// val modelRegPath = s"aos/sto/pipelineModelReg_${modelRegforCV.uid}_v${modelVersion}_${trainSendYmList.head}-${trainSendYmList.last}"
 
 println(s"Saving Click model to: $modelClickPath")
 pipelineModelClick.write.overwrite().save(modelClickPath)
@@ -453,16 +396,12 @@ println(s"Saving Gap model to: $modelGapPath")
 pipelineModelGap.write.overwrite().save(modelGapPath)
 println("Gap model saved successfully")
 
-// println(s"Saving Regression model to: $modelRegPath")
-// pipelineModelReg.write.overwrite().save(modelRegPath)
-// println("Regression model saved successfully")
-
 println("=" * 80)
 println("All models saved successfully")
 println("=" * 80)
 
 
-// ===== Paragraph 9: Model Prediction on Test Dataset =====
+// ===== Paragraph 8: Model Prediction on Test Dataset =====
 
 // 테스트 데이터 중복 제거 후 예측 - 파티션 최적화
 val testDataForPred = transformedTestDF
@@ -486,7 +425,7 @@ val predictionsGapDev = pipelineModelGap.transform(testDataForPred)
 println("Gap predictions cached")
 
 
-// ===== Paragraph 10: Click Model Performance Evaluation (Precision@K per Hour & MAP) =====
+// ===== Paragraph 9: Click Model Performance Evaluation (Precision@K per Hour & MAP) =====
 
 val stagesClick = pipelineModelClick.stages
 
@@ -554,125 +493,106 @@ stagesClick.foreach { stage =>
     
     // K 값들
     val kValues = Array(100, 500, 1000, 2000, 5000, 10000)
-    
+
+    // 시간대 범위
+    val hours = (9 to 18).toArray
+
+    // ========================================
+    // Precision@K / Recall@K 일괄 계산 (1회만)
+    // ========================================
+    // metricsPerK: Array[(precision, recall, clickedK)] — 각 K값에 대해
+    println("\n메트릭 계산 중... (Precision@K & Recall@K, 1회 계산 후 재사용)")
+    val precisionRecallResults = hours.map { hour =>
+        val hourData = hourlyUserPredictions.filter(s"hour = $hour")
+        val totalClicked = hourData.filter("actual_click > 0").count().toDouble
+
+        val metricsPerK = kValues.map { k =>
+            val topK = hourData.orderBy(F.desc("click_prob")).limit(k)
+            val totalK = topK.count().toDouble
+            val clickedK = topK.filter("actual_click > 0").count().toDouble
+
+            val precision = if (totalK > 0) clickedK / totalK else 0.0
+            val recall = if (totalClicked > 0) clickedK / totalClicked else 0.0
+
+            (precision, recall, clickedK)
+        }
+
+        (hour, metricsPerK)
+    }
+
+    // ========================================
+    // Part 1: Precision@K per Hour (시간대별 평가)
+    // ========================================
+
+    println("=" * 80)
+    println("Part 1: Precision@K per Hour (시간대별 상위 K명 선택 시 클릭률)")
+    println("=" * 80)
+
     println("\n시간대별 Precision@K:")
     println("-" * 100)
     println(f"Hour | ${"K=100"}%8s | ${"K=500"}%8s | ${"K=1000"}%9s | ${"K=2000"}%9s | ${"K=5000"}%9s | ${"K=10000"}%10s |")
     println("-" * 100)
-    
-    // 각 시간대별로 계산
-    val hours = (9 to 18).toArray
-    
-    hours.foreach { hour =>
-        val hourData = hourlyUserPredictions.filter(s"hour = $hour")
-        
-        val precisions = kValues.map { k =>
-            // 확률 상위 K명 선택
-            val topK = hourData
-                .orderBy(F.desc("click_prob"))
-                .limit(k)
-            
-            val totalK = topK.count().toDouble
-            val clickedK = topK.filter("actual_click > 0").count().toDouble
-            
-            if (totalK > 0) clickedK / totalK else 0.0
-        }
-        
+
+    precisionRecallResults.foreach { case (hour, metricsPerK) =>
+        val precisions = metricsPerK.map(_._1)
         println(f"$hour%4d | ${precisions(0) * 100}%7.2f%% | ${precisions(1) * 100}%7.2f%% | ${precisions(2) * 100}%8.2f%% | ${precisions(3) * 100}%8.2f%% | ${precisions(4) * 100}%8.2f%% | ${precisions(5) * 100}%9.2f%% |")
     }
-    
+
     println("-" * 100)
-    
+
     // 전체 평균 (시간대별 평균)
     println("\n전체 평균 Precision@K (시간대별 평균):")
-    kValues.foreach { k =>
-        val avgPrecision = hours.map { hour =>
-            val hourData = hourlyUserPredictions.filter(s"hour = $hour")
-            val topK = hourData.orderBy(F.desc("click_prob")).limit(k)
-            val totalK = topK.count().toDouble
-            val clickedK = topK.filter("actual_click > 0").count().toDouble
-            if (totalK > 0) clickedK / totalK else 0.0
-        }.sum / hours.length
-        
+    kValues.zipWithIndex.foreach { case (k, kIdx) =>
+        val avgPrecision = precisionRecallResults.map(_._2(kIdx)._1).sum / hours.length
         println(f"  Precision@$k%5d: $avgPrecision%.4f (${avgPrecision * 100}%.2f%%)")
     }
-    
+
     // ========================================
     // Part 1.5: Recall@K per Hour (시간대별 커버리지)
     // ========================================
-    
+
     println("\n" + "=" * 80)
     println("Part 1.5: Recall@K per Hour (시간대별 상위 K명이 전체 클릭자 중 차지하는 비율)")
     println("=" * 80)
-    
+
     println("\n시간대별 Recall@K:")
     println("-" * 100)
     println(f"Hour | ${"K=100"}%8s | ${"K=500"}%8s | ${"K=1000"}%9s | ${"K=2000"}%9s | ${"K=5000"}%9s | ${"K=10000"}%10s |")
     println("-" * 100)
-    
-    hours.foreach { hour =>
-        val hourData = hourlyUserPredictions.filter(s"hour = $hour")
-        val totalClicked = hourData.filter("actual_click > 0").count().toDouble
-        
-        val recalls = kValues.map { k =>
-            // 확률 상위 K명 선택
-            val topK = hourData
-                .orderBy(F.desc("click_prob"))
-                .limit(k)
-            
-            val clickedK = topK.filter("actual_click > 0").count().toDouble
-            
-            if (totalClicked > 0) clickedK / totalClicked else 0.0
-        }
-        
+
+    precisionRecallResults.foreach { case (hour, metricsPerK) =>
+        val recalls = metricsPerK.map(_._2)
         println(f"$hour%4d | ${recalls(0) * 100}%7.2f%% | ${recalls(1) * 100}%7.2f%% | ${recalls(2) * 100}%8.2f%% | ${recalls(3) * 100}%8.2f%% | ${recalls(4) * 100}%8.2f%% | ${recalls(5) * 100}%9.2f%% |")
     }
-    
+
     println("-" * 100)
-    
+
     // 전체 평균 Recall
     println("\n전체 평균 Recall@K (시간대별 평균):")
-    kValues.foreach { k =>
-        val avgRecall = hours.map { hour =>
-            val hourData = hourlyUserPredictions.filter(s"hour = $hour")
-            val totalClicked = hourData.filter("actual_click > 0").count().toDouble
-            val topK = hourData.orderBy(F.desc("click_prob")).limit(k)
-            val clickedK = topK.filter("actual_click > 0").count().toDouble
-            if (totalClicked > 0) clickedK / totalClicked else 0.0
-        }.sum / hours.length
-        
+    kValues.zipWithIndex.foreach { case (k, kIdx) =>
+        val avgRecall = precisionRecallResults.map(_._2(kIdx)._2).sum / hours.length
         println(f"  Recall@$k%5d: $avgRecall%.4f (${avgRecall * 100}%.2f%%)")
     }
-    
+
     // Precision-Recall 트레이드오프 분석
     println("\n" + "=" * 80)
     println("Precision-Recall 트레이드오프 (시간대별 평균)")
     println("=" * 80)
     println(f"${"K"}%8s | ${"Precision"}%10s | ${"Recall"}%8s | ${"F1-Score"}%10s | ${"클릭자/발송"}%12s |")
     println("-" * 80)
-    
-    kValues.foreach { k =>
-        val (avgPrec, avgRec, avgClicked) = hours.map { hour =>
-            val hourData = hourlyUserPredictions.filter(s"hour = $hour")
-            val totalClicked = hourData.filter("actual_click > 0").count().toDouble
-            val topK = hourData.orderBy(F.desc("click_prob")).limit(k)
-            val totalK = topK.count().toDouble
-            val clickedK = topK.filter("actual_click > 0").count().toDouble
-            
-            val prec = if (totalK > 0) clickedK / totalK else 0.0
-            val rec = if (totalClicked > 0) clickedK / totalClicked else 0.0
-            
-            (prec, rec, clickedK)
-        }.reduce((a, b) => (a._1 + b._1, a._2 + b._2, a._3 + b._3))
-        
-        val finalPrec = avgPrec / hours.length
-        val finalRec = avgRec / hours.length
+
+    kValues.zipWithIndex.foreach { case (k, kIdx) =>
+        val (sumPrec, sumRec, sumClicked) = precisionRecallResults.map(_._2(kIdx))
+            .reduce((a, b) => (a._1 + b._1, a._2 + b._2, a._3 + b._3))
+
+        val finalPrec = sumPrec / hours.length
+        val finalRec = sumRec / hours.length
         val f1 = if (finalPrec + finalRec > 0) 2 * (finalPrec * finalRec) / (finalPrec + finalRec) else 0.0
-        val avgClickedPerHour = avgClicked / hours.length
-        
+        val avgClickedPerHour = sumClicked / hours.length
+
         println(f"$k%8d | ${finalPrec * 100}%9.2f%% | ${finalRec * 100}%7.2f%% | $f1%10.4f | ${avgClickedPerHour}%12.1f |")
     }
-    
+
     println("-" * 80)
     println("\n💡 해석:")
     println("- K 증가 → Precision 감소, Recall 증가 (정상)")
@@ -774,7 +694,7 @@ stagesClick.foreach { stage =>
             F.col("send_ym"),
             F.col("send_hournum_cd").cast("int").alias("hour"),
             F.col(indexedLabelColClick).alias("actual_click"),
-            F.expr("vector_to_array(prob_gbtc_click)[1]").alias("click_prob")
+            F.expr(s"vector_to_array(prob_$evalModelName)[1]").alias("click_prob")
         )
         .groupBy("svc_mgmt_num", "send_ym")
         .agg(
@@ -915,29 +835,10 @@ stagesClick.foreach { stage =>
     println("  → MAP으로 전체 모델 품질 추적")
     
     // ========================================
-    // 로그 저장용 데이터 사전 수집 (unpersist 전에 모든 계산 완료)
+    // 로그 저장 준비 (precisionRecallResults는 위에서 이미 계산됨)
     // ========================================
-    println("\n로그 저장을 위한 데이터 수집 중...")
-    
-    // Precision@K와 Recall@K를 한 번에 계산하여 로컬로 수집
-    val precisionRecallResults = hours.map { hour =>
-        val hourData = hourlyUserPredictions.filter(s"hour = $hour")
-        val totalClicked = hourData.filter("actual_click > 0").count().toDouble
-        
-        val metricsPerK = kValues.map { k =>
-            val topK = hourData.orderBy(F.desc("click_prob")).limit(k)
-            val totalK = topK.count().toDouble
-            val clickedK = topK.filter("actual_click > 0").count().toDouble
-            
-            val precision = if (totalK > 0) clickedK / totalK else 0.0
-            val recall = if (totalClicked > 0) clickedK / totalClicked else 0.0
-            
-            (precision, recall)
-        }
-        
-        (hour, metricsPerK)
-    }
-    
+    println("\n로그 저장 준비 중...")
+
     // MAP 및 User Metrics를 로컬 변수로 저장
     val mapValue = map
     val validAPsLength = validAPs.length
@@ -1073,7 +974,7 @@ stagesClick.foreach { stage =>
 }
 
 
-// ===== Paragraph 11: Gap Model Performance Evaluation (Precision, Recall, F1) =====
+// ===== Paragraph 10: Gap Model Performance Evaluation (Precision, Recall, F1) =====
 
 val stagesGap = pipelineModelGap.stages
 
