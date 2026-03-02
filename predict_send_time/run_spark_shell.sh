@@ -31,8 +31,8 @@ APP_NAME="predict_ost"
 DRIVER_CORES=8
 DRIVER_MEMORY="50g"           # XGBoost 모델 학습 결과 수집용
 EXECUTOR_CORES=5              # 4→5: XGBoost 병렬 처리 효율
-EXECUTOR_MEMORY="35g"         # 36g→35g: YARN 44GB 제한 준수 (35+1+7=43GB)
-NUM_EXECUTORS=30              # 100→80: 리소스 효율화
+EXECUTOR_MEMORY="30g"         # 35g→30g: memoryOverhead 증가를 위해 감소 (30+1+12=43GB)
+NUM_EXECUTORS=60              # 30→60: 디스크 spill / heap OOM 감소 (executor당 데이터 절반으로 감소)
 
 echo "=========================================="
 echo "Starting Spark Shell (Optimized for ML Pipeline)"
@@ -49,6 +49,15 @@ echo "Executor: ${EXECUTOR_CORES} cores, ${EXECUTOR_MEMORY} memory, ${NUM_EXECUT
 echo "Total: $((NUM_EXECUTORS * EXECUTOR_CORES)) cores, $((NUM_EXECUTORS * ${EXECUTOR_MEMORY%g}))GB memory"
 echo "=========================================="
 echo ""
+
+# 스크립트 파일 인자 지원: bash run_spark_shell.sh [script_file.scala]
+# 예시: bash run_spark_shell.sh data_transformation.scala
+EXTRA_ARGS=""
+if [ -n "$1" ]; then
+    EXTRA_ARGS="-i $1"
+    echo "Script: $1"
+    echo "=========================================="
+fi
 
 spark-shell \
   --master $SPARK_MASTER \
@@ -84,8 +93,8 @@ spark-shell \
   `# 0.9→0.8: XGBoost off-heap 메모리 고려` \
   --conf spark.memory.storageFraction=0.5 \
   `# 0.4→0.5: 대량 캐싱을 위한 storage 메모리 증가` \
-  --conf spark.executor.memoryOverhead=7g \
-  `# 6g→7g: container 안정성 확보 (max 44GB 제한 고려)` \
+  --conf spark.executor.memoryOverhead=12g \
+  `# 7g→12g: Word2Vec transform 중 물리 메모리 초과 방지 (YARN kill 대응)` \
   --conf spark.driver.maxResultSize=30g \
   `# 20g→30g: 모델 결과 수집` \
   --conf spark.memory.offHeap.enabled=true \
@@ -156,7 +165,8 @@ spark-shell \
   --conf spark.executor.extraJavaOptions="-XX:+UseG1GC -XX:InitiatingHeapOccupancyPercent=35 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=5 -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200" \
   `# Executor GC threads: Conc <= Parallel (container JVM crash 방지)` \
   \
-  --jars /home/skinet/myfiles/data_bus/xgboost4j_2.12-3.1.1.jar,/home/skinet/myfiles/data_bus/xgboost4j-spark_2.12-3.1.1.jar,/home/skinet/myfiles/data_bus/synapseml_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/synapseml-core_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/synapseml-lightgbm_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/lightgbmlib-3.3.510.jar,/home/skinet/myfiles/data_bus/spray-json_2.12-1.3.6.jar,/home/skinet/myfiles/data_bus/spark-ml-feature-importance-helper-1.0.1.jar,/home/skinet/myfiles/data_driven_marketing/target/data_driven_marketing-1.1-SNAPSHOT.jar,/home/skinet/myfiles/data_bus/basicdataset-0.26.0.jar,/home/skinet/myfiles/data_bus/spark-excel_2.12-3.1.3_0.20.4.jar,/home/skinet/myfiles/data_bus/lightgbm-0.36.0.jar,/home/skinet/myfiles/data_bus/onnxruntime-engine-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-engine-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-model-zoo-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-native-cpu-precxx11-2.1.1.jar,/home/skinet/myfiles/data_bus/pytorch-jni-2.1.1-0.26.0.jar,/home/skinet/myfiles/data_bus/sentencepiece-0.26.0.jar,/home/skinet/myfiles/data_bus/timeseries-0.26.0.jar,/home/skinet/myfiles/data_bus/tokenizers-0.26.0.jar,/home/skinet/myfiles/data_bus/xgboost-0.26.0.jar,/home/skinet/myfiles/data_bus/xgboost-gpu-0.26.0.jar,/home/skinet/myfiles/data_bus/spark-nlp-assembly-5.5.1.jar,/home/skinet/myfiles/data_bus/jsl-openvino-cpu_2.12-0.1.0.jar,/home/skinet/myfiles/data_bus/jsl-llamacpp-cpu_2.12-0.1.4.jar,/home/skinet/myfiles/data_bus/neo4j-connector-apache-spark_2.12-4.1.5_for_spark_3.jar,/home/skinet/myfiles/data_bus/graphframes-0.8.2-spark3.1-s_2.12.jar,/home/skinet/myfiles/data_bus/jmetalsp-spark-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/jmetalsp-examples-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/jmetalsp-spark-example-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/ortools-linux-x86-64-9.8.3296.jar,/home/skinet/myfiles/data_bus/ortools-java-9.8.3296.jar,/home/skinet/myfiles/data_bus/jna-5.13.0.jar,/home/skinet/myfiles/data_bus/jna-platform-5.13.0.jar
+  --jars /home/skinet/myfiles/data_bus/xgboost4j_2.12-3.1.1.jar,/home/skinet/myfiles/data_bus/xgboost4j-spark_2.12-3.1.1.jar,/home/skinet/myfiles/data_bus/synapseml_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/synapseml-core_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/synapseml-lightgbm_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/lightgbmlib-3.3.510.jar,/home/skinet/myfiles/data_bus/spray-json_2.12-1.3.6.jar,/home/skinet/myfiles/data_bus/spark-ml-feature-importance-helper-1.0.1.jar,/home/skinet/myfiles/data_driven_marketing/target/data_driven_marketing-1.1-SNAPSHOT.jar,/home/skinet/myfiles/data_bus/basicdataset-0.26.0.jar,/home/skinet/myfiles/data_bus/spark-excel_2.12-3.1.3_0.20.4.jar,/home/skinet/myfiles/data_bus/lightgbm-0.36.0.jar,/home/skinet/myfiles/data_bus/onnxruntime-engine-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-engine-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-model-zoo-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-native-cpu-precxx11-2.1.1.jar,/home/skinet/myfiles/data_bus/pytorch-jni-2.1.1-0.26.0.jar,/home/skinet/myfiles/data_bus/sentencepiece-0.26.0.jar,/home/skinet/myfiles/data_bus/timeseries-0.26.0.jar,/home/skinet/myfiles/data_bus/tokenizers-0.26.0.jar,/home/skinet/myfiles/data_bus/xgboost-0.26.0.jar,/home/skinet/myfiles/data_bus/xgboost-gpu-0.26.0.jar,/home/skinet/myfiles/data_bus/spark-nlp-assembly-5.5.1.jar,/home/skinet/myfiles/data_bus/jsl-openvino-cpu_2.12-0.1.0.jar,/home/skinet/myfiles/data_bus/jsl-llamacpp-cpu_2.12-0.1.4.jar,/home/skinet/myfiles/data_bus/neo4j-connector-apache-spark_2.12-4.1.5_for_spark_3.jar,/home/skinet/myfiles/data_bus/graphframes-0.8.2-spark3.1-s_2.12.jar,/home/skinet/myfiles/data_bus/jmetalsp-spark-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/jmetalsp-examples-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/jmetalsp-spark-example-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/ortools-linux-x86-64-9.8.3296.jar,/home/skinet/myfiles/data_bus/ortools-java-9.8.3296.jar,/home/skinet/myfiles/data_bus/jna-5.13.0.jar,/home/skinet/myfiles/data_bus/jna-platform-5.13.0.jar \
+  $EXTRA_ARGS
 
 # ===== 추가 최적화 옵션 (필요시 주석 해제) =====
 #

@@ -26,7 +26,7 @@ import org.apache.spark.sql.functions.explode
 import org.apache.spark.sql.types.{DateType, StringType, TimestampType}
 import org.apache.spark.sql.{DataFrame, SparkSession, functions => F}
 import org.apache.spark.storage.StorageLevel
-import org.joda.time.{LocalDate, Years}
+import org.joda.time.Years
 
 import java.sql.Date
 import java.text.DecimalFormat
@@ -44,11 +44,11 @@ spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled", "true")
 spark.conf.set("spark.sql.adaptive.skewJoin.enabled", "true")
 spark.conf.set("spark.sql.adaptive.advisoryPartitionSizeInBytes", "128MB")
 spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "50m")
+// Parquet 파일 수가 많을 때 mergeSchemaInParallel → broadcast_0 실패 방지
+spark.conf.set("spark.sql.parquet.mergeSchema", "false")
 
-// 메모리 최적화 설정 (OOM 방지)
-spark.conf.set("spark.executor.memoryOverhead", "4g")
-spark.conf.set("spark.memory.fraction", "0.8")
-spark.conf.set("spark.memory.storageFraction", "0.3")
+// 메모리 최적화 설정: memoryOverhead, memory.fraction, memory.storageFraction 은
+// static config로 런타임 변경 불가 → run_spark_shell.sh --conf 에서 이미 설정됨
 
 // 동적 파티션 개수 계산 (코어 수 × 익스큐터 개수)
 val executorInstances = spark.sparkContext.getConf.getInt("spark.executor.instances", 10)
@@ -110,8 +110,8 @@ println("Helper functions defined")
 val rawDataVersion = "1"  // raw_data_generation.scala에서 생성한 버전과 일치
 
 // 기본 설정: 테스트 날짜 범위
-val predictionDTSta = "20251201"  // 테스트 데이터 시작 날짜
-val predictionDTEnd = "20260101"  // 테스트 데이터 종료 날짜
+val predictionDTSta = "20260201"  // 테스트 데이터 시작 날짜
+val predictionDTEnd = "20260301"  // 테스트 데이터 종료 날짜
 
 // 학습 기간 설정 (테스트 기준 자동 계산)
 val trainSendMonth = getPreviousDayMonth(predictionDTSta)  // 학습 데이터 기준 월 (예: 20251201 → 202511)
@@ -136,14 +136,14 @@ val testSendYmList = if (testSendMonth == testEndMonth) {
 }
 
 // Transformed data 저장 버전
-val transformedDataVersion = "1"  // 저장할 버전 번호
+val transformedDataVersion = "2"  // 저장할 버전 번호
 
 // Undersampling 설정 (클래스 불균형 해소)
 val undersamplingEnabled = true  // Undersampling 활성화 여부
 val genSampleNumMulti = 10.0     // Undersampling 배수 (클수록 더 많은 데이터 유지)
 
 // Pipeline fitting 샘플링 비율 (메모리 절약)
-val pipelineSampleRate = 0.3
+val pipelineSampleRate = 0.1
 
 // 시간대 설정
 val startHour = 9
@@ -210,7 +210,9 @@ println("=" * 80)
 val rawDataPath = s"aos/sto/rawDF${rawDataVersion}"
 println(s"Loading from: $rawDataPath")
 
-val rawDF = spark.read.parquet(rawDataPath)
+val rawDF = spark.read
+    .option("mergeSchema", "false")  // 파티션 수 과다 시 mergeSchemaInParallel broadcast 실패 방지
+    .parquet(rawDataPath)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
 println(s"Raw data loaded and cached")
@@ -595,29 +597,77 @@ val transformPipelineGap = makePipeline(
     userDefinedFeatureListForAssembler = userDefinedFeatureListForAssemblerGap
 )
 
-// Pipeline fitting (샘플 데이터로 수행 - balanced 데이터 사용)
-println(s"Fitting Click transformer pipeline (sample rate: $pipelineSampleRate)...")
-val transformerClick = transformPipelineClick.fit(
-    trainDFRevBalanced.sample(false, pipelineSampleRate, 42)
-)
-println("Click transformer fitted successfully")
+// ===== Diagnostic: pre-fit 상태 출력 =====
+println("=" * 80)
+println("[DIAG] Pre-fit diagnostics")
+println(s"[DIAG] pipelineSampleRate : $pipelineSampleRate")
+println(s"[DIAG] embSize            : ${params.getOrElse("embSize", "N/A")}")
+println(s"[DIAG] vocabSize          : ${params.getOrElse("vocabSize", "N/A")}")
+println(s"[DIAG] trainDFRevBalanced columns : ${trainDFRevBalanced.columns.length}")
+println(s"[DIAG] trainDFRevBalanced partitions: ${trainDFRevBalanced.rdd.getNumPartitions}")
+println(s"[DIAG] Click pipeline stages: ${transformPipelineClick.getStages.map(_.getClass.getSimpleName).mkString(", ")}")
+println(s"[DIAG] Gap   pipeline stages: ${transformPipelineGap.getStages.map(_.getClass.getSimpleName).mkString(", ")}")
+println("=" * 80)
 
-// Click transformer 적용 (persist 제거 - 중간 결과는 1번만 사용)
+// Pipeline fitting — DAG 끊기 위해 sample 후 cache+count 먼저 수행
+println(s"Preparing sample for Click fit (sample rate: $pipelineSampleRate)...")
+val sampleForClickFit = trainDFRevBalanced.sample(false, pipelineSampleRate, 42)
+    .cache()
+val sampleClickCount = sampleForClickFit.count()
+println(s"[DIAG] sampleForClickFit count: $sampleClickCount, partitions: ${sampleForClickFit.rdd.getNumPartitions}")
+
+println(s"Fitting Click transformer pipeline...")
+val transformerClick = try {
+    val t = transformPipelineClick.fit(sampleForClickFit)
+    println("Click transformer fitted successfully")
+    t
+} catch {
+    case e: Exception =>
+        println(s"[ERROR] Click fit failed: ${e.getClass.getName}: ${e.getMessage}")
+        e.printStackTrace()
+        throw e
+} finally {
+    sampleForClickFit.unpersist()
+}
+
+// Click transformer 적용 후 cache — Gap fit의 DAG 기점으로 사용
 println("Transforming training data with Click transformer...")
 var transformedTrainDF = transformerClick.transform(trainDFRevBalanced)
-println("Training data transformed with Click pipeline")
+    .persist(StorageLevel.MEMORY_AND_DISK_SER)  // cache() → SER: 메모리 부족 시 disk spill (Word2Vec OOM 방지)
+val clickTransformedCount = transformedTrainDF.count()
+println(s"[DIAG] transformedTrainDF (after Click) count: $clickTransformedCount, partitions: ${transformedTrainDF.rdd.getNumPartitions}")
+println("Training data transformed with Click pipeline (cached)")
 
-println(s"Fitting Gap transformer pipeline (sample rate: $pipelineSampleRate)...")
-val transformerGap = transformPipelineGap.fit(
-    transformedTrainDF.sample(false, pipelineSampleRate, 42)
-)
-println("Gap transformer fitted successfully")
+// Gap fit 용 sample — cache 적용된 transformedTrainDF에서 sampling
+println(s"Preparing sample for Gap fit (sample rate: $pipelineSampleRate)...")
+val sampleForGapFit = transformedTrainDF.sample(false, pipelineSampleRate, 42)
+    .cache()
+val sampleGapCount = sampleForGapFit.count()
+println(s"[DIAG] sampleForGapFit count: $sampleGapCount, partitions: ${sampleForGapFit.rdd.getNumPartitions}")
+
+println(s"Fitting Gap transformer pipeline...")
+val transformerGap = try {
+    val t = transformPipelineGap.fit(sampleForGapFit)
+    println("Gap transformer fitted successfully")
+    t
+} catch {
+    case e: Exception =>
+        println(s"[ERROR] Gap fit failed: ${e.getClass.getName}: ${e.getMessage}")
+        e.printStackTrace()
+        throw e
+} finally {
+    sampleForGapFit.unpersist()
+}
 
 // Gap transformer 적용 (최종 결과만 persist - write에서 반복 사용)
 println("Transforming training data with Gap transformer...")
+val clickTransformedCache = transformedTrainDF  // unpersist 용 참조 보관
 transformedTrainDF = transformerGap.transform(transformedTrainDF)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
+val gapTransformedCount = transformedTrainDF.count()
+println(s"[DIAG] transformedTrainDF (after Gap) count: $gapTransformedCount")
 println("Training data transformed with Gap pipeline (cached)")
+clickTransformedCache.unpersist()  // Click cache 해제 (Gap 결과가 persist됨)
 
 // Test 데이터 변환 (persist 제거 - write에서 1번만 사용)
 println("Transforming test data...")
