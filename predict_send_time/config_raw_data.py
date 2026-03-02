@@ -4,29 +4,28 @@ NOTEBOOK_ID = "2MGAYX8RV"
 
 # Paragraph IDs (Pre)
 PARAGRAPH_IDS_PRE = [
-    "paragraph_1764658338256_686533166",
-    "paragraph_1764742922351_426209997",
-    "paragraph_1764742953919_436300403",
-    "paragraph_1764659911196_1763551717",
-    "paragraph_1764641394585_598529380",
-    "paragraph_1764739202982_181479704",
-    "paragraph_1764739017819_1458690185",
-    "paragraph_1764738582669_1614068999",
-    "paragraph_1764756027560_85739584",
+    "paragraph_1769065562524_818109154",
+    "paragraph_1769065580237_1824324894",
+    "paragraph_1769065662219_1359456026",
+    # "paragraph_1769065764840_1048421149",  # cmpgn response
+    "paragraph_1769065684865_340267885",
+    "paragraph_1769065710945_984026000",
+    "paragraph_1769066189746_1740835897",
 ]
 
 # Paragraph IDs (Main)
 PARAGRAPH_IDS = [
-    "paragraph_1766323923540_1041552789",
-    "paragraph_1767594403472_2124174124",
-    "paragraph_1764755002817_1620624445",
-    "paragraph_1764832142136_413314670",
-    "paragraph_1766224516076_433149416",
+    "paragraph_1769066472190_225347954",
+    "paragraph_1769066587839_841547563",
+    "paragraph_1769066604135_312143659",
+    "paragraph_1769067385382_178977657",
+    "paragraph_1769067895375_1127112915",
+    "paragraph_1769068077012_1009764160"
 ]
 
 # Parameters - Nested Loop Support
 # 상위 루프: sendMonth (먼저 실행)
-PARAMS_OUTER = [f"sendMonth:{ym}" for ym in range(202510, 202513)]  # 또는 ["sendMonth:202511", "sendMonth:202512"]
+PARAMS_OUTER = [f"sendMonth:{ym}" for ym in [202602]] # 또는 ["sendMonth:202511", "sendMonth:202512"]
 
 # 하위 루프: suffix (각 sendMonth마다 반복)
 PARAMS_INNER = [f"suffix:{hex(i)[2:]}" for i in range(0, 16)]  # 0-f 전체

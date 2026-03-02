@@ -196,10 +196,10 @@ def run_paragraph(zepp_url, notebook_id, paragraph_id, params=None):
     return True
 
 
-def run_pre_paragraphs(zepp_url, notebook_id, paragraph_ids_pre):
+def run_pre_paragraphs(zepp_url, notebook_id, paragraph_ids_pre, params=None):
     """Run all pre-paragraphs. Returns True if all success."""
     for paragraph_id in paragraph_ids_pre:
-        if not run_paragraph(zepp_url, notebook_id, paragraph_id):
+        if not run_paragraph(zepp_url, notebook_id, paragraph_id, params):
             return False
     return True
 
@@ -321,69 +321,94 @@ def main():
     if restart_at_start:
         restart_spark(zepp_url)
         print("Initial Spark restart completed\n")
-    
-    # Step 1: Run PRE paragraphs with retry (once for all params)
-    print(f"\n{'='*80}")
-    print(f"=== Running PRE paragraphs ===")
-    print(f"{'='*80}")
-    
-    for attempt in range(MAX_RETRIES):
-        print(f"\nPRE attempt {attempt + 1}/{MAX_RETRIES}")
-        
-        if run_pre_paragraphs(zepp_url, notebook_id, paragraph_ids_pre):
-            print("PRE paragraphs completed successfully")
-            break
-        
-        print(f"PRE paragraphs failed.")
+
+    # Determine execution structure: nested (OUTER/INNER) or flat (PARAMS)
+    has_outer_inner = (
+        hasattr(config, "PARAMS_OUTER") and hasattr(config, "PARAMS_INNER")
+        and config.PARAMS_OUTER and config.PARAMS_INNER
+    )
+
+    if has_outer_inner:
+        outer_list = config.PARAMS_OUTER
+        inner_list = config.PARAMS_INNER
+        if outer_list and isinstance(outer_list[0], str):
+            outer_list = [[p] for p in outer_list]
+        if inner_list and isinstance(inner_list[0], str):
+            inner_list = [[p] for p in inner_list]
     else:
-        # All retry attempts exhausted for PRE
-        print("\n" + "="*80)
-        print("ERROR: PRE paragraphs failed after max retries. Exiting.")
-        print("="*80)
-        return
-    
-    # Step 2: Run MAIN paragraphs for each param with individual retry
-    print(f"\n{'='*80}")
-    print(f"=== Running MAIN paragraphs for {len(params_to_run)} parameter combination(s) ===")
-    print(f"{'='*80}")
-    
+        outer_list = [None]   # PRE runs once with no params
+        inner_list = params_to_run
+
     failed_params = []
     skipped_params = []
-    
-    for idx, param_list in enumerate(params_to_run, 1):
+
+    for outer_param in outer_list:
+        # Step 1: Run PRE paragraphs with outer params (e.g., sendMonth)
+        pre_params_json = build_params_json(outer_param) if outer_param else None
+        pre_label = f"params: {outer_param}" if outer_param else "no params"
+
         print(f"\n{'='*80}")
-        print(f"Processing parameter combination {idx}/{len(params_to_run)}")
-        if param_list is not None:
-            print(f"Parameters: {param_list}")
+        print(f"=== Running PRE paragraphs ({pre_label}) ===")
         print(f"{'='*80}")
-        
-        # Smart Detection: Check if already completed
-        if not args.force and is_param_completed_fn is not None:
-            try:
-                if is_param_completed_fn(param_list):
-                    print(f"✓ SKIPPED (output already exists): {param_list}")
-                    skipped_params.append(param_list)
-                    continue
-            except Exception as e:
-                print(f"⚠️  Completion check failed, will execute: {e}")
-        
-        # Retry for this specific parameter combination
-        success = False
+
         for attempt in range(MAX_RETRIES):
-            print(f"\nAttempt {attempt + 1}/{MAX_RETRIES} for params {param_list}")
-            
-            if run_main_paragraphs_with_param(zepp_url, notebook_id, paragraph_ids, param_list):
-                print(f"✓ Params {param_list} completed successfully")
-                success = True
+            print(f"\nPRE attempt {attempt + 1}/{MAX_RETRIES}")
+
+            if run_pre_paragraphs(zepp_url, notebook_id, paragraph_ids_pre, pre_params_json):
+                print("PRE paragraphs completed successfully")
                 break
-            
-            print(f"✗ Params {param_list} failed.")
-        
-        if not success:
-            print(f"\n✗✗✗ ERROR: Params {param_list} failed after max retries.")
-            failed_params.append(param_list)
-        
-        # Continue to next parameter combination even if this one failed
+
+            print(f"PRE paragraphs failed.")
+        else:
+            print("\n" + "="*80)
+            print("ERROR: PRE paragraphs failed after max retries. Exiting.")
+            print("="*80)
+            return
+
+        # Step 2: Build MAIN param combinations for this outer
+        if has_outer_inner:
+            current_params = [outer_param + inner for inner in inner_list]
+        else:
+            current_params = inner_list
+
+        print(f"\n{'='*80}")
+        print(f"=== Running MAIN paragraphs for {len(current_params)} combination(s) ===")
+        print(f"{'='*80}")
+
+        for idx, param_list in enumerate(current_params, 1):
+            print(f"\n{'='*80}")
+            print(f"Processing parameter combination {idx}/{len(current_params)}")
+            if param_list is not None:
+                print(f"Parameters: {param_list}")
+            print(f"{'='*80}")
+
+            # Smart Detection: Check if already completed
+            if not args.force and is_param_completed_fn is not None:
+                try:
+                    if is_param_completed_fn(param_list):
+                        print(f"✓ SKIPPED (output already exists): {param_list}")
+                        skipped_params.append(param_list)
+                        continue
+                except Exception as e:
+                    print(f"⚠️  Completion check failed, will execute: {e}")
+
+            # Retry for this specific parameter combination
+            success = False
+            for attempt in range(MAX_RETRIES):
+                print(f"\nAttempt {attempt + 1}/{MAX_RETRIES} for params {param_list}")
+
+                if run_main_paragraphs_with_param(zepp_url, notebook_id, paragraph_ids, param_list):
+                    print(f"✓ Params {param_list} completed successfully")
+                    success = True
+                    break
+
+                print(f"✗ Params {param_list} failed.")
+
+            if not success:
+                print(f"\n✗✗✗ ERROR: Params {param_list} failed after max retries.")
+                failed_params.append(param_list)
+
+            # Continue to next parameter combination even if this one failed
     
     # Summary
     print(f"\n{'='*80}")
