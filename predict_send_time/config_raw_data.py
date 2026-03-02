@@ -7,7 +7,7 @@ PARAGRAPH_IDS_PRE = [
     "paragraph_1769065562524_818109154",
     "paragraph_1769065580237_1824324894",
     "paragraph_1769065662219_1359456026",
-    # "paragraph_1769065764840_1048421149",  # cmpgn response
+    "paragraph_1769065764840_1048421149",  # cmpgn response
     "paragraph_1769065684865_340267885",
     "paragraph_1769065710945_984026000",
     "paragraph_1769066189746_1740835897",
