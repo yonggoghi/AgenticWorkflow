@@ -403,26 +403,41 @@ println("=" * 80)
 
 // ===== Paragraph 8: Model Prediction on Test Dataset =====
 
-// 테스트 데이터 중복 제거 후 예측 - 파티션 최적화
+// [P8-1] testDataForPred 준비 및 materialization
+spark.sparkContext.setJobDescription("P8-1: testDataForPred materialize")
 val testDataForPred = transformedTestDF
     .filter("cmpgn_typ=='Sales'")
     .dropDuplicates("svc_mgmt_num", "chnl_typ", "cmpgn_typ", "send_ym", "send_hournum_cd", "click_yn")
     .repartition(400)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Test data for prediction prepared and cached")
+val t8_1 = System.currentTimeMillis()
+val testCount = testDataForPred.count()
+println(s"[P8-1] testDataForPred materialized: $testCount rows (${(System.currentTimeMillis()-t8_1)/1000}s)")
 
-println("Generating Click predictions...")
+// [P8-2] Click 모델 transform + materialization
+spark.sparkContext.setJobDescription("P8-2: predictionsClickDev transform+materialize")
+println("[P8-2] Generating Click predictions...")
 val predictionsClickDev = pipelineModelClick.transform(testDataForPred)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Click predictions cached")
+val t8_2 = System.currentTimeMillis()
+val clickCount = predictionsClickDev.count()
+println(s"[P8-2] predictionsClickDev materialized: $clickCount rows (${(System.currentTimeMillis()-t8_2)/1000}s)")
 
-println("Generating Gap predictions...")
+// [P8-3] Gap 모델 transform + materialization
+spark.sparkContext.setJobDescription("P8-3: predictionsGapDev transform+materialize")
+println("[P8-3] Generating Gap predictions...")
 val predictionsGapDev = pipelineModelGap.transform(testDataForPred)
     .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-println("Gap predictions cached")
+val t8_3 = System.currentTimeMillis()
+val gapCount = predictionsGapDev.count()
+println(s"[P8-3] predictionsGapDev materialized: $gapCount rows (${(System.currentTimeMillis()-t8_3)/1000}s)")
+
+// 두 transform 완료 후 testDataForPred 해제
+testDataForPred.unpersist()
+println("[P8] testDataForPred unpersisted")
 
 
 // ===== Paragraph 9: Click Model Performance Evaluation (Precision@K per Hour & MAP) =====
@@ -471,6 +486,8 @@ stagesClick.foreach { stage =>
     // suffix 기반 샘플링 (shuffle 없이 빠르게 처리)
     val suffixRange = (0 to 8).map(_.toHexString)  // 0~9: 약 62.5% 샘플링, 0~f: 100%
     
+    // [P9-1] hourlyUserPredictions 생성 및 materialization
+    spark.sparkContext.setJobDescription(s"P9-1: hourlyUserPredictions materialize ($evalModelName)")
     val hourlyUserPredictions = predictionsClickDev
         .filter("click_yn >= 0")
         .withColumn("suffix", F.substring(F.col("svc_mgmt_num"), -1, 1))  // 마지막 자리 추출
@@ -491,7 +508,12 @@ stagesClick.foreach { stage =>
         .repartition(200)  // 집계 후 파티션 조정
         .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
-    predictionsClickDev.unpersist()  // hourlyUserPredictions 생성 완료 → 불필요
+    val t9_1 = System.currentTimeMillis()
+    val hourlyCount = hourlyUserPredictions.count()
+    println(s"[P9-1] hourlyUserPredictions materialized: $hourlyCount rows (${(System.currentTimeMillis()-t9_1)/1000}s)")
+    // hourlyUserPredictions가 cache에 올라간 후 predictionsClickDev 해제
+    predictionsClickDev.unpersist()
+    println("[P9-1] predictionsClickDev unpersisted")
 
     // K 값들
     val kValues = Array(100, 500, 1000, 2000, 5000, 10000)
@@ -503,7 +525,8 @@ stagesClick.foreach { stage =>
     // Precision@K / Recall@K 일괄 계산 (1회만)
     // ========================================
     // metricsPerK: Array[(precision, recall, clickedK)] — 각 K값에 대해
-    println("\n메트릭 계산 중... (Precision@K & Recall@K, 1회 계산 후 재사용)")
+    spark.sparkContext.setJobDescription(s"P9-2: precisionRecallResults ($evalModelName)")
+    println("\n[P9-2] 메트릭 계산 중... (Precision@K & Recall@K, 1회 계산 후 재사용)")
     val precisionRecallResults = hours.map { hour =>
         val hourData = hourlyUserPredictions.filter(s"hour = $hour")
         val totalClicked = hourData.filter("actual_click > 0").count().toDouble
@@ -618,6 +641,8 @@ stagesClick.foreach { stage =>
     
     // 각 시간대별로 AP 계산
     // Window 없이 driver에서 계산: 시간대 필터 후 ~600K rows × 1 col ≈ 5MB → OOM 위험 없음
+    spark.sparkContext.setJobDescription(s"P9-3: hourlyAPs MAP ($evalModelName)")
+    println(s"\n[P9-3] MAP 계산 중...")
     val hourlyAPs = hours.map { hour =>
         val sortedClicks = hourlyUserPredictions
             .filter(s"hour = $hour")
