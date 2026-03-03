@@ -53,11 +53,20 @@ echo ""
 # 스크립트 파일 인자 지원: bash run_spark_shell.sh [script_file.scala]
 # 예시: bash run_spark_shell.sh data_transformation.scala
 EXTRA_ARGS=""
+SCRIPT_NAME="interactive"
 if [ -n "$1" ]; then
     EXTRA_ARGS="-i $1"
+    SCRIPT_NAME=$(basename "$1" .scala)
     echo "Script: $1"
     echo "=========================================="
 fi
+
+# 로그 파일 (화면 + 파일 동시 저장)
+LOG_DIR="/data/myfiles/aos_ost/predict"
+mkdir -p "$LOG_DIR"
+LOG_FILE="${LOG_DIR}/run_${SCRIPT_NAME}_$(date +%Y%m%d_%H%M%S).log"
+echo "Log: $LOG_FILE"
+echo "=========================================="
 
 spark-shell \
   --master $SPARK_MASTER \
@@ -166,7 +175,13 @@ spark-shell \
   `# Executor GC threads: Conc <= Parallel (container JVM crash 방지)` \
   \
   --jars /home/skinet/myfiles/data_bus/xgboost4j_2.12-3.1.1.jar,/home/skinet/myfiles/data_bus/xgboost4j-spark_2.12-3.1.1.jar,/home/skinet/myfiles/data_bus/synapseml_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/synapseml-core_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/synapseml-lightgbm_2.12-1.1.0.jar,/home/skinet/myfiles/data_bus/lightgbmlib-3.3.510.jar,/home/skinet/myfiles/data_bus/spray-json_2.12-1.3.6.jar,/home/skinet/myfiles/data_bus/spark-ml-feature-importance-helper-1.0.1.jar,/home/skinet/myfiles/data_driven_marketing/target/data_driven_marketing-1.1-SNAPSHOT.jar,/home/skinet/myfiles/data_bus/basicdataset-0.26.0.jar,/home/skinet/myfiles/data_bus/spark-excel_2.12-3.1.3_0.20.4.jar,/home/skinet/myfiles/data_bus/lightgbm-0.36.0.jar,/home/skinet/myfiles/data_bus/onnxruntime-engine-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-engine-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-model-zoo-0.26.0.jar,/home/skinet/myfiles/data_bus/pytorch-native-cpu-precxx11-2.1.1.jar,/home/skinet/myfiles/data_bus/pytorch-jni-2.1.1-0.26.0.jar,/home/skinet/myfiles/data_bus/sentencepiece-0.26.0.jar,/home/skinet/myfiles/data_bus/timeseries-0.26.0.jar,/home/skinet/myfiles/data_bus/tokenizers-0.26.0.jar,/home/skinet/myfiles/data_bus/xgboost-0.26.0.jar,/home/skinet/myfiles/data_bus/xgboost-gpu-0.26.0.jar,/home/skinet/myfiles/data_bus/spark-nlp-assembly-5.5.1.jar,/home/skinet/myfiles/data_bus/jsl-openvino-cpu_2.12-0.1.0.jar,/home/skinet/myfiles/data_bus/jsl-llamacpp-cpu_2.12-0.1.4.jar,/home/skinet/myfiles/data_bus/neo4j-connector-apache-spark_2.12-4.1.5_for_spark_3.jar,/home/skinet/myfiles/data_bus/graphframes-0.8.2-spark3.1-s_2.12.jar,/home/skinet/myfiles/data_bus/jmetalsp-spark-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/jmetalsp-examples-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/jmetalsp-spark-example-2.1-SNAPSHOT-jar-with-dependencies.jar,/home/skinet/myfiles/data_bus/ortools-linux-x86-64-9.8.3296.jar,/home/skinet/myfiles/data_bus/ortools-java-9.8.3296.jar,/home/skinet/myfiles/data_bus/jna-5.13.0.jar,/home/skinet/myfiles/data_bus/jna-platform-5.13.0.jar \
-  $EXTRA_ARGS
+  $EXTRA_ARGS \
+  2>&1 | tee "$LOG_FILE"
+
+echo ""
+echo "=========================================="
+echo "Log saved: $LOG_FILE"
+echo "=========================================="
 
 # ===== 추가 최적화 옵션 (필요시 주석 해제) =====
 #
