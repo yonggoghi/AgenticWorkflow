@@ -183,8 +183,9 @@ println("=" * 80)
 val gbtc = new GBTClassifier("gbtc_click")
   .setLabelCol(indexedLabelColClick)
   .setFeaturesCol(indexedFeatureColClick)
-  .setMaxIter(100)
+  .setMaxIter(50)           // 100→50: shuffle 트래픽 절반으로 감소 (cluster 안정성)
   .setMaxDepth(4)
+  .setSubsamplingRate(0.8)  // 추가: 각 iteration당 데이터 80% 사용 → 메모리/shuffle 감소
   .setFeatureSubsetStrategy("auto")
   .setPredictionCol("pred_gbtc_click")
   .setProbabilityCol("prob_gbtc_click")
@@ -318,9 +319,10 @@ val trainSampleClick = transformedTrainDF
         42L
     )
     .withColumn("sample_weight", F.expr(s"case when $indexedLabelColClick>0.0 then 10.0 else 1.0 end"))
-    .cache()  // GBT는 100 iteration마다 DAG 재실행 → 동일 샘플 보장 + 재계산 방지
+    .cache()  // GBT는 iteration마다 DAG 재실행 → 동일 샘플 보장 + 재계산 방지
 
-println("Training samples prepared")
+val trainClickCount = trainSampleClick.count()  // fit() 전에 cache materialization 완료 → peak 메모리 분리
+println(s"Training samples prepared: $trainClickCount rows")
 
 println("Training Click prediction model...")
 val startTimeClick = System.currentTimeMillis()

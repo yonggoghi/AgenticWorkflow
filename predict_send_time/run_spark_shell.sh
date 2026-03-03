@@ -127,6 +127,12 @@ spark-shell \
   --conf spark.broadcast.compress=true \
   --conf spark.broadcast.blockSize=64m \
   \
+  `# ===== Shuffle Fetch 재시도 (executor 일시 불안정 대응) =====` \
+  --conf spark.shuffle.io.maxRetries=10 \
+  `# 3→10: shuffle block fetch 실패 시 재시도 횟수` \
+  --conf spark.shuffle.io.retryWait=60s \
+  `# 5s→60s: 재시도 전 대기 (bad node 복구 또는 blacklisting 대기)` \
+  \
   `# ===== Network & Timeout =====` \
   --conf spark.network.timeout=1800s \
   `# 1200s→1800s(30분): 노드 불안정 시 타임아웃 여유` \
