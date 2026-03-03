@@ -489,8 +489,10 @@ stagesClick.foreach { stage =>
             F.max("actual_click").alias("actual_click")
         )
         .repartition(200)  // 집계 후 파티션 조정
-        .persist(StorageLevel.MEMORY_AND_DISK_SER)  // cache → persist로 변경
-    
+        .persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+    predictionsClickDev.unpersist()  // hourlyUserPredictions 생성 완료 → 불필요
+
     // K 값들
     val kValues = Array(100, 500, 1000, 2000, 5000, 10000)
 
@@ -615,40 +617,30 @@ stagesClick.foreach { stage =>
     println("-" * 80)
     
     // 각 시간대별로 AP 계산
+    // Window 없이 driver에서 계산: 시간대 필터 후 ~600K rows × 1 col ≈ 5MB → OOM 위험 없음
     val hourlyAPs = hours.map { hour =>
-        val hourData = hourlyUserPredictions
+        val sortedClicks = hourlyUserPredictions
             .filter(s"hour = $hour")
-            .orderBy(F.desc("click_prob"))  // 확률 순 정렬
-            .withColumn("rank", F.row_number().over(Window.orderBy(F.desc("click_prob"))).cast("long"))
-            .cache()
-        
-        val totalClicked = hourData.filter("actual_click > 0").count()
-        
+            .orderBy(F.desc("click_prob"))
+            .select("actual_click")
+            .collect()
+            .map(r => r.get(0) match {
+                case d: Double => d
+                case l: Long   => l.toDouble
+                case i: Int    => i.toDouble
+                case _         => 0.0
+            })
+
+        val totalClicked = sortedClicks.count(_ > 0)
+
         if (totalClicked > 0) {
-            // 클릭한 사용자들의 순위
-            val clickedRanks = hourData
-                .filter("actual_click > 0")
-                .select("rank")
-                .collect()
-                .map { row =>
-                    // 타입 안전하게 처리
-                    val rank = row.get(0) match {
-                        case i: Int => i.toLong
-                        case l: Long => l
-                        case _ => row.getLong(0)
-                    }
-                    rank.toDouble
-                }
-            
-            // AP 계산: sum(precision@rank) / total_relevant
-            val ap = clickedRanks.zipWithIndex.map { case (rank, idx) =>
-                (idx + 1).toDouble / rank  // precision@rank = (idx+1) / rank
+            // AP = sum(precision@rank_i for each clicked position) / total_clicked
+            var clicks = 0
+            val ap = sortedClicks.zipWithIndex.map { case (c, i) =>
+                if (c > 0) { clicks += 1; clicks.toDouble / (i + 1) } else 0.0
             }.sum / totalClicked
-            
-            hourData.unpersist()
-            (hour, totalClicked, ap)
+            (hour, totalClicked.toLong, ap)
         } else {
-            hourData.unpersist()
             (hour, 0L, 0.0)
         }
     }
@@ -678,156 +670,15 @@ stagesClick.foreach { stage =>
     println(f"   해석: 각 시간대별로 클릭자를 얼마나 상위에 랭킹했는지 평균")
     println(f"   기준: MAP > 0.3 (양호), > 0.5 (우수), > 0.7 (매우 우수)")
     
-    // ========================================
-    // Part 2.5: 사용자별 MAP (보조 지표 - 비표준)
-    // ========================================
-    
     println("\n" + "=" * 80)
-    println("Part 2.5: 사용자별 MAP (보조 지표 - 사용자 관점)")
+    println("💡 종합 해석 가이드")
     println("=" * 80)
-    
-    // 각 사용자별 시간대별 확률 및 클릭 여부
-    val userAPData = predictionsClickDev
-        .filter("click_yn >= 0")
-        .select(
-            F.col("svc_mgmt_num"),
-            F.col("send_ym"),
-            F.col("send_hournum_cd").cast("int").alias("hour"),
-            F.col(indexedLabelColClick).alias("actual_click"),
-            F.expr(s"vector_to_array(prob_$evalModelName)[1]").alias("click_prob")
-        )
-        .groupBy("svc_mgmt_num", "send_ym")
-        .agg(
-            F.collect_list(
-                F.struct(
-                    F.col("hour"),
-                    F.col("click_prob"),
-                    F.col("actual_click")
-                )
-            ).alias("hourly_data")
-        )
-        .withColumn("hourly_data_sorted", 
-            F.expr("array_sort(hourly_data, (left, right) -> case when left.click_prob > right.click_prob then -1 when left.click_prob < right.click_prob then 1 else 0 end)")
-        )
-        .withColumn("clicked_hours_count",
-            F.expr("size(filter(hourly_data, x -> x.actual_click > 0))")
-        )
-        .filter("clicked_hours_count > 0")  // 실제 클릭이 있는 사용자만
-        .withColumn("ap", 
-            F.expr("""
-                aggregate(
-                    sequence(0, size(hourly_data_sorted) - 1),
-                    cast(0.0 as double),
-                    (acc, i) -> case 
-                        when element_at(hourly_data_sorted, i + 1).actual_click > 0 
-                        then acc + (
-                            size(filter(slice(hourly_data_sorted, 1, i + 1), x -> x.actual_click > 0)) 
-                            / cast(i + 1 as double)
-                        )
-                        else acc
-                    end
-                ) / clicked_hours_count
-            """)
-        )
-        .cache()
-    
-    val userMAP = userAPData
-        .agg(F.avg("ap"))
-        .first()
-        .getDouble(0)
-    
-    val totalUsersMAP = userAPData.count()
-    
-    println(f"\n사용자별 MAP: $userMAP%.4f")
-    println(f"  → 평가 대상 사용자 수: $totalUsersMAP")
-    println(f"  → 의미: 각 사용자별로 클릭 시간대를 얼마나 상위에 예측했는지")
-    println(f"  → 주의: IR 표준 MAP과 다름! 보조 지표로만 활용")
-    
-    // AP 분포
-    println("\n사용자별 AP 분포:")
-    userAPData
-        .selectExpr("floor(ap * 10) / 10 as ap_bucket")
-        .groupBy("ap_bucket")
-        .count()
-        .orderBy("ap_bucket")
-        .withColumn("percentage", F.expr(s"count * 100.0 / $totalUsersMAP"))
-        .show(10, false)
-    
-    // ========================================
-    // Part 3: 보조 지표 (참고용)
-    // ========================================
-    
-    println("\n" + "=" * 80)
-    println("Part 3: 보조 지표 (사용자별 Top-K Accuracy - 참고용)")
-    println("=" * 80)
-    
-    val userMetrics = userAPData
-        .withColumn("top1_hour", F.expr("hourly_data_sorted[0].hour"))
-        .withColumn("actual_click_hours", 
-            F.expr("transform(filter(hourly_data, x -> x.actual_click > 0), x -> x.hour)")
-        )
-        .withColumn("top1_match", 
-            F.expr("array_contains(actual_click_hours, top1_hour)")
-        )
-        .withColumn("top3_hours",
-            F.expr("transform(slice(hourly_data_sorted, 1, 3), x -> x.hour)")
-        )
-        .withColumn("top3_match",
-            F.expr("size(array_intersect(top3_hours, actual_click_hours)) > 0")
-        )
-        .cache()
-    
-    val top1Acc = userMetrics.filter("top1_match").count().toDouble / totalUsersMAP
-    val top3Acc = userMetrics.filter("top3_match").count().toDouble / totalUsersMAP
-    
-    println(f"Top-1 Accuracy: $top1Acc%.4f (${top1Acc * 100}%.2f%%)")
-    println(f"  → 랜덤 대비: ${top1Acc / 0.1}%.2f배")
-    println(f"Top-3 Accuracy: $top3Acc%.4f (${top3Acc * 100}%.2f%%)")
-    
-    println("\n" + "=" * 80)
-    println("💡 종합 해석 가이드 (정보검색 관점)")
-    println("=" * 80)
-    println("\n★ 정보검색 시스템 매핑:")
-    println("  질의어(Query)  → 시간대 (9시, 10시, ..., 18시)")
-    println("  문서(Document) → 사용자")
-    println("  관련성         → 해당 시간대 클릭 여부")
-    println("  검색 결과      → 확률 순 사용자 리스트")
-    
-    println("\n1. Precision@K per Hour (IR 표준 ✓):")
-    println("   - 의미: 질의어(시간대) q에 대해 상위 K개 문서(사용자) 중 관련 문서 비율")
+    println("\n1. Precision@K per Hour: 시간대별 상위 K명 발송 시 클릭률")
     println("   - 활용: 각 시간대별 발송 인원(K) 결정")
-    println("   - 전략: 높은 Precision 시간대에 더 많은 예산")
-    
-    println("\n2. Recall@K per Hour (IR 표준 ✓):")
-    println("   - 의미: 질의어(시간대) q에 대해 전체 관련 문서 중 상위 K개에 포함된 비율")
+    println("\n2. Recall@K per Hour: 전체 클릭자 중 상위 K명에 포함된 비율")
     println("   - 활용: K에 따른 커버리지 파악")
-    println("   - 전략: 목표 Recall 달성을 위한 최소 K 결정")
-    
-    println("\n3. Precision-Recall 트레이드오프:")
-    println("   - F1-Score 최대 지점 = 효율과 커버리지 균형점")
-    println("   - 비즈니스 목표에 따라 K 선택")
-    
-    println("\n4. MAP - 시간대별 (IR 표준 ✓):")
-    println("   - 의미: 각 질의어(시간대)별 AP를 평균")
-    println("   - AP = 각 관련 문서(클릭자)의 순위에서 precision 평균")
-    println("   - 활용: 전체 모델 품질 평가, 모델 간 비교")
-    println("   - 기준: MAP > 0.3 (양호), > 0.5 (우수), > 0.7 (매우 우수)")
-    
-    println("\n5. 사용자별 MAP (비표준, 보조):")
-    println("   - 의미: 각 사용자별로 클릭 시간대를 얼마나 상위에 예측했는지")
-    println("   - 주의: IR 표준과 다름! 관점이 반대 (사용자 중심)")
-    println("   - 활용: Top-K Accuracy와 유사, 보조 지표로만 사용")
-    
-    println("\n6. Top-K Accuracy (보조):")
-    println("   - 사용자 관점 평가")
-    println("   - 랜덤 대비 성능 확인")
-    
-    println("\n★ 표준 IR 평가 vs 우리 평가:")
-    println("  ✓ Precision@K per Hour: 완벽히 일치")
-    println("  ✓ Recall@K per Hour: 완벽히 일치")
-    println("  ✓ MAP (시간대별): 완벽히 일치")
-    println("  ⚠ 사용자별 MAP: 비표준 (보조용)")
-    
+    println("\n3. MAP (시간대별 IR 표준):")
+    println("   - 기준: MAP > 0.3 양호, > 0.5 우수, > 0.7 매우 우수")
     println("\n실전 활용 예시:")
     println("  목표: 시간당 1000명 발송, 최소 Recall 20%")
     println("  → Recall@1000 >= 20%인 시간대 선택")
@@ -839,18 +690,12 @@ stagesClick.foreach { stage =>
     // ========================================
     println("\n로그 저장 준비 중...")
 
-    // MAP 및 User Metrics를 로컬 변수로 저장
+    // 로컬 변수로 저장
     val mapValue = map
     val validAPsLength = validAPs.length
-    val userMAPValue = userMAP
-    val totalUsersMAPValue = totalUsersMAP
-    
-    println("데이터 수집 완료. 메모리 해제 중...")
-    
-    // 이제 안전하게 unpersist
+
+    println("메모리 해제 중...")
     hourlyUserPredictions.unpersist()
-    userAPData.unpersist()
-    userMetrics.unpersist()
     
     println("메모리 해제 완료. 로그 저장 시작...")
     
@@ -952,8 +797,6 @@ stagesClick.foreach { stage =>
         writer.println("[MAP - Mean Average Precision]")
         writer.println(f"MAP (시간대별): $mapValue%.4f")
         writer.println(f"Evaluated Hours: $validAPsLength/10")
-        writer.println(f"User-based MAP: $userMAPValue%.4f")
-        writer.println(f"Evaluated Users: $totalUsersMAPValue")
         writer.println()
         
         // 해석 가이드
